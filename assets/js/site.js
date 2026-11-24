@@ -135,7 +135,17 @@
     wrap.refresh = paint;
     paint();
   }
-  function enhanceAll(root) { (root || document).querySelectorAll("select").forEach(enhanceSelect); }
+  /* label table cells with their column name so tables can stack as cards on phones */
+  function labelTables(root) {
+    (root || document).querySelectorAll("table.table").forEach(t => {
+      const heads = [...t.querySelectorAll("thead th")].map(th => th.textContent.trim());
+      if (heads.length < 2) return;
+      t.querySelectorAll("tbody tr").forEach(tr => [...tr.children].forEach((c, i) => { if (heads[i]) c.setAttribute("data-label", heads[i]); }));
+      t.classList.add("stack");
+    });
+  }
+  function enhanceAll(root) { (root || document).querySelectorAll("select").forEach(enhanceSelect); labelTables(root); }
+  document.addEventListener("DOMContentLoaded", () => labelTables(document));
   window.AIC = { store, enhanceSelect, enhanceAll };
 
   function checkbox(id, label) {

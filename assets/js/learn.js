@@ -113,7 +113,36 @@
     :root{--nyu-violet:#2a5791!important;--nyu-violet-dark:#1f4373!important;--nyu-violet-light:#5b7fb2!important;
       --nyu-violet-50:#f3f6fa!important;--nyu-violet-100:#e3eaf3!important;--nyu-violet-200:#c9d6e8!important;--nyu-violet-rgb:42,87,145!important;--nyu-glow:none!important}
     html,body{background:#f7f4ee!important;height:auto!important;min-height:0!important}
-    .nyu-progress,.skip-link{display:none!important}`;
+    .nyu-progress,.skip-link{display:none!important}
+    body{overflow-wrap:break-word}
+    img,video,iframe,canvas{max-width:100%!important;height:auto}
+    @media (max-width:700px){
+      html,body{overflow-x:hidden!important}
+      body{margin:0!important}
+      .nyu-course{padding:14px 12px 40px!important}
+      table:not(.aic-stack){display:block!important;max-width:100%!important;overflow-x:auto!important;min-width:0!important}
+      table:not(.aic-stack) th,table:not(.aic-stack) td{min-width:140px}
+      table.aic-stack{display:block!important;min-width:0!important;width:100%!important;border:0!important;background:none!important;box-shadow:none!important}
+      table.aic-stack caption{display:block;text-align:left}
+      table.aic-stack thead{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+      table.aic-stack tbody,table.aic-stack tr,table.aic-stack td,table.aic-stack th{display:block!important;width:auto!important;min-width:0!important}
+      table.aic-stack tr{border:1px solid #d9d2c5!important;border-radius:10px;margin:0 0 10px;padding:6px 12px;background:#fff!important}
+      table.aic-stack td,table.aic-stack tbody th{border:0!important;padding:6px 0!important;position:static!important;text-align:left!important;background:none!important;color:#1f1d1a;white-space:normal!important;overflow-wrap:anywhere}
+      table.aic-stack tr>*+*{border-top:1px dashed #e4ded3!important}
+      table.aic-stack [data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:700;letter-spacing:.02em;color:#5a544b;margin-bottom:2px}
+      pre{max-width:100%;overflow-x:auto}
+      .nyu-section__header{gap:12px!important}
+      .nyu-section__num{width:36px!important;height:36px!important}
+      .nyu-section__title{font-size:1.45rem!important;min-width:0}
+      h1,h2,h3,h4{overflow-wrap:anywhere;min-width:0}
+      [class*="__actions"],[class*="stepper"],[class*="-stepper__list"],[class*="__controls"],[class*="__buttons"]{flex-wrap:wrap!important}
+      [class*="nyu-"],[class*="lab-"]{min-width:0}
+      .nyu-card,[class*="__item"]{max-width:100%}
+      [style*="grid-template-columns"],[class*="grid"]{max-width:100%}
+      [style*="grid-template-columns"],.nyu-stats,.nyu-tf-strip__row,.nyu-split,.nyu-compare,.nyu-pillars,.nyu-stat-row,.nyu-cards{grid-template-columns:minmax(0,1fr)!important}
+      .confusion-grid{grid-template-columns:minmax(0,auto) minmax(0,1fr) minmax(0,1fr)!important;font-size:13px}
+      .nyu-define{white-space:normal!important;max-width:100%;text-align:left}
+    }`;
   const RETINT_DARK = `
     :root{--ink:#efe9de!important;--ink-soft:#c9c1b5!important;--ink-mute:#a39b8f!important;--rule:rgba(239,233,222,.12)!important;
       --surface:#1c1a18!important;--surface-sunken:#161513!important;--code-bg:#262421!important;--code-ink:#efe9de!important;
@@ -141,6 +170,14 @@
           st.textContent = themeCss();
           /* links that leave the course open in a new tab */
           $$("a[href^='http']", d).forEach(a => a.setAttribute("target", "_blank"));
+          /* label each cell with its column name, so tables can stack as cards on phones */
+          $$("table", d).forEach(t => {
+            if (t.classList.contains("aic-stack")) return;
+            const heads = $$("thead th", t).map(th => th.textContent.trim());
+            if (heads.length < 2) return;
+            $$("tbody tr", t).forEach(tr => [...tr.children].forEach((c, i) => { if (heads[i]) c.setAttribute("data-label", heads[i]); }));
+            t.classList.add("aic-stack");
+          });
           fit(fr);
           if ("ResizeObserver" in window) new ResizeObserver(() => fit(fr)).observe(d.body);
           setTimeout(() => fit(fr), 600); setTimeout(() => fit(fr), 2000);
