@@ -1,0 +1,399 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 1 · Section 6 · AI Reshaping the Cyber Battlefield · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+  <style>
+    /* Ensure card grids align cleanly */
+    .nyu-cards--3 .nyu-card,
+    .nyu-cards--2 .nyu-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .nyu-cards--3 .nyu-card p:last-child,
+    .nyu-cards--2 .nyu-card p:last-child,
+    .nyu-cards--3 .nyu-card dl:last-child,
+    .nyu-cards--2 .nyu-card dl:last-child {
+      margin-bottom: 0;
+      flex: 1 1 auto;
+    }
+    .nyu-cards--3,
+    .nyu-cards--2 {
+      align-items: stretch;
+    }
+    /* Numbered evaluation items: consistent spacing, preserve left padding for badge */
+    .vendor-eval .vendor-eval__item {
+      padding: 0.75rem 0 0.75rem calc(28px + 1rem);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="nyu-course" tabindex="-1">
+
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <!-- ====================== HERO ====================== -->
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 1 · Section 6 of 7</div>
+      <h1 class="nyu-hero__title">AI Is Reshaping the Cyber Battlefield</h1>
+      <p class="nyu-hero__subtitle">
+        How AI transforms the threat landscape by lowering barriers to entry,
+        compressing attack timelines, and introducing novel attack surfaces.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          ~15 min read
+        </span>
+        <span aria-label="Number of parts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          3 parts
+        </span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          2 knowledge checks
+        </span>
+      </div>
+    </header>
+
+    <!-- ====================== TOC ====================== -->
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Three Structural Shifts in the Threat Landscape</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Dual-Use Implications: Offense and Defense</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Evaluating AI Security Claims</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <!-- ====================== OBJECTIVES ====================== -->
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Identify</strong> three distinct ways AI reshapes cybersecurity: democratizing access, accelerating speed, and enabling new attack surfaces.</span></li>
+          <li><span><strong>Evaluate</strong> "AI-powered" security claims using a structured five-question framework.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Three Structural Shifts in the Threat Landscape</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          AI does not create new categories of attack. Phishing, malware, social engineering, and
+          vulnerability exploitation all predate AI. The structural impact is more fundamental:
+          AI transforms <strong>who</strong> can conduct attacks, <strong>how quickly</strong>
+          attack chains execute, and <strong>what</strong> constitutes a viable target.
+        </p>
+
+        <!-- Three shift cards using nyu-cards -->
+        <div class="nyu-cards nyu-cards--3 nyu-cards--stacked">
+          <div class="nyu-card">
+            <div class="nyu-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Lowered Barriers to Entry</h3>
+            <p>
+              AI lowers the barrier to entry for cybercrime. Tasks that once required years of expertise
+              can now be performed by novices with access to the right tools. NCC Group tracked
+              <strong>124 distinct ransomware groups</strong> in 2025, up 50% year over year, driven
+              largely by AI-powered
+              <button type="button" class="nyu-define" data-term="ransomware-as-a-service">Ransomware-as-a-Service (RaaS)</button>
+              platforms that let anyone with a subscription launch sophisticated campaigns.
+            </p>
+          </div>
+
+          <div class="nyu-card">
+            <div class="nyu-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Compressed Attack Timelines</h3>
+            <p>
+              The CrowdStrike 2026 Global Threat Report found that the average time from initial access
+              to lateral movement dropped to <strong>29 minutes</strong>, with the fastest observed breakout
+              at just <strong>27 seconds</strong>. In one intrusion, data exfiltration began within four
+              minutes. Traditional incident response playbooks assume hours, not seconds.
+            </p>
+          </div>
+
+          <div class="nyu-card">
+            <div class="nyu-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Novel Attack Surfaces</h3>
+            <p>
+              AI systems themselves become targets. CrowdStrike documented adversaries injecting
+              malicious prompts into GenAI tools at over <strong>90 organizations</strong>, exploiting
+              AI development platforms to deploy ransomware, and publishing fake AI servers that
+              impersonated trusted services to intercept sensitive data.
+            </p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--danger nyu-callout--case-study" role="note" aria-labelledby="deepfake-title">
+          <h3 class="nyu-callout__title" id="deepfake-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+            Case Study: The $11 Voice Clone
+          </h3>
+          <p>
+            <a href="https://arxiv.org/html/2410.03791v2" target="_blank" rel="noopener">UC Berkeley's Center for Long-Term Cybersecurity (CLTC) documented</a> that criminals can
+            now clone a person's voice using about an hour of YouTube footage and an <strong>$11/month
+            subscription</strong>. Researchers found attackers using AI-generated identities to apply for
+            remote jobs at tech firms, passing background checks with fabricated histories and deepfake
+            video interviews. Once hired, these fake "employees" gained privileged access to internal
+            systems. This is not a theoretical risk. It is a documented attack pattern that did not
+            exist before generative AI made it economically viable.
+          </p>
+
+          <div class="nyu-embed nyu-embed--deepfake-quiz" role="group" aria-labelledby="deepfake-quiz-source">
+            <div class="nyu-embed__framewrap">
+              <div
+                id="deepfakes-audio-quiz"
+                class="nyu-pym-embed"
+                data-pym-src="https://visuals.otsops.com/projects/deepfakes-audio-quiz/index.html"
+                data-pym-fallback-src="https://visuals.otsops.com/projects/deepfakes-audio-quiz/index.html?initialWidth=738&amp;childId=deepfakes-audio-quiz&amp;parentTitle=AI%20deepfakes%20are%20costing%20billions%20in%20fraud%20%E2%80%93%20NBC%20Bay%20Area&amp;="
+                data-pym-title="Deepfakes audio quiz from UC Berkeley Center for Long-Term Cybersecurity">
+                <iframe
+                  class="nyu-embed__frame"
+                  src="https://visuals.otsops.com/projects/deepfakes-audio-quiz/index.html?initialWidth=738&amp;childId=deepfakes-audio-quiz&amp;parentTitle=AI%20deepfakes%20are%20costing%20billions%20in%20fraud%20%E2%80%93%20NBC%20Bay%20Area&amp;="
+                  title="Deepfakes audio quiz from UC Berkeley Center for Long-Term Cybersecurity"
+                  loading="lazy"
+                  frameborder="0"
+                 >
+                </iframe>
+              </div>
+            </div>
+            <p class="nyu-embed__credit" id="deepfake-quiz-source">
+              Source: University of California, Berkeley,
+              <a href="https://cltc.berkeley.edu/" target="_blank" rel="noopener">Center for Long-Term Cybersecurity (CLTC)</a>.
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Dual-Use Implications: Offense and Defense</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Every AI capability in cybersecurity is
+          <button type="button" class="nyu-define" data-term="dual-use-m01">dual-use</button>.
+          The same underlying technology serves attackers and defenders. But the advantages are not symmetric.
+        </p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Defensive Applications</h3>
+            <dl class="nyu-deflist nyu-deflist--success">
+              <dt>Data volume</dt>
+              <dd>Legitimate organizations generate massive datasets of normal behavior, giving ML models rich training material for anomaly detection.</dd>
+              <dt>Infrastructure scale</dt>
+              <dd>Defenders can deploy AI at the network edge, email gateway, and endpoint simultaneously.</dd>
+              <dt>Organizational context</dt>
+              <dd>Defenders know their own environment. Attackers must discover it.</dd>
+              <dt>Adoption is growing</dt>
+              <dd>64% of organizations now assess the security of AI tools before deployment, up from 37% in 2025 (WEF 2026).</dd>
+            </dl>
+          </div>
+
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Offensive Applications</h3>
+            <dl class="nyu-deflist nyu-deflist--danger">
+              <dt>Faster feedback loops</dt>
+              <dd>Attackers know immediately if a phishing email was clicked or a payload executed. Defenders often learn about breaches weeks later.</dd>
+              <dt>Lower cost to entry</dt>
+              <dd>AI-powered RaaS platforms and $11 voice cloning subscriptions mean sophisticated attacks no longer require sophisticated attackers.</dd>
+              <dt>Only need to succeed once</dt>
+              <dd>Defenders must protect every entry point. Attackers only need one to work.</dd>
+              <dt>AI systems as targets</dt>
+              <dd>Adversaries are now attacking the AI tools defenders rely on, creating a new category of risk.</dd>
+            </dl>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="who-wins-title">
+          <h3 class="nyu-callout__title" id="who-wins-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Asymmetric Impact Across Organizations
+          </h3>
+          <p>The net impact of AI on organizational security posture is context-dependent and actively debated in the research community. Well-resourced organizations with mature security programs can operationalize AI's defensive capabilities effectively. Under-resourced organizations face disproportionate risk because attacker-side AI tools are inexpensive, require minimal expertise, and need no dedicated infrastructure. The WEF 2026 report identifies this as <strong>"widening cyber inequity"</strong>: the gap between organizations that can defend themselves and those that cannot is growing, and AI is accelerating this divergence.</p>
+        </aside>
+
+        <!-- Knowledge Check 1 -->
+        <div class="nyu-quiz" aria-labelledby="q1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="q1-prompt">
+            A small hospital with a 3-person IT team and a Fortune 500 bank with a 200-person
+            SOC both adopt the same "AI-powered" threat detection platform. Based on what you have
+            learned about how AI reshapes cybersecurity, which organization is likely to benefit more?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="q1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="AI doesn't level the playing field; it widens the gap. A threat detection tool that generates 500 alerts per day is useless to a 3-person hospital IT team that also manages WiFi. Without the staff, data, and infrastructure to act on AI outputs, the technology becomes noise, not capability.">The hospital, because AI levels the playing field by giving small teams the same capabilities as large ones.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The bank, because AI amplifies existing capabilities: the bank has the data volume, staff expertise, and infrastructure to train models effectively and act on their outputs.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="AI products don't perform identically regardless of context. The same model trained on the bank's millions of daily transactions will be far more accurate than one trained on the hospital's limited data. And operational effectiveness depends on having staff to investigate alerts and infrastructure to respond: resources the hospital lacks.">Both equally, because the same AI product performs identically regardless of context.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="AI-powered threat detection is real technology with genuine capabilities; this isn't a marketing-only claim. The question is whether a specific organization has the data, expertise, and operational capacity to benefit from it. Dismissing it entirely ignores documented effectiveness in well-resourced environments.">Neither, because AI-powered threat detection is purely marketing.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. AI does not level the playing field. It widens the gap. The bank has more data to train on, more analysts to act on alerts, and infrastructure to integrate the tool into workflows. A tool that generates 500 alerts per day is useless to a team of three that also manages the WiFi. This is the 'cyber inequity' problem the WEF 2026 report identifies: attacker-side AI tools are cheap and infrastructure-free, while defender-side AI tools require organizational capacity to deploy effectively."
+               data-incorrect-msg="Not quite. The key insight is that AI amplifies existing capabilities rather than replacing them. A tool that surfaces threats is only as valuable as the team's ability to respond. The bank has 200 analysts, massive training data, and integration infrastructure. The hospital has three people who also manage the WiFi. Same tool, very different outcomes. This is the 'cyber inequity' problem."></div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Evaluating AI Security Claims</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Virtually every cybersecurity vendor now describes their products as "AI-powered." The majority
+          of these claims lack specificity, rely on self-reported metrics, and are designed for marketing
+          rather than technical evaluation. A structured framework for evaluating AI claims is essential
+          for any security professional. The following five questions apply to any AI claim you encounter,
+          in this course and throughout your career.
+        </p>
+
+        <div class="nyu-numbered vendor-eval">
+          <div class="vendor-eval__item">
+            <strong>What TYPE of AI?</strong> Rule-based? Classical ML? Deep learning? LLM? If the vendor
+            cannot specify, they may not understand their own product.
+          </div>
+          <div class="vendor-eval__item">
+            <strong>What METRIC, on what DATA, vs. what BASELINE?</strong> "99.5% accuracy" means nothing without context. On what dataset? With what class balance? Compared to random guessing, the previous product, or a human analyst?
+          </div>
+          <div class="vendor-eval__item">
+            <strong>Who EVALUATED it?</strong> Vendor self-reported? Independent lab? Peer-reviewed? A vendor testing their own product is like a student grading their own exam.
+          </div>
+          <div class="vendor-eval__item">
+            <strong>What are the FAILURE MODES?</strong> Every system fails. If a vendor cannot describe how theirs fails, they do not understand it.
+          </div>
+          <div class="vendor-eval__item">
+            <strong>What CHANGES between test and deployment?</strong> A model tested on 2023 attack data and deployed against 2026 attackers has a validity gap. Base rates change, traffic patterns shift, adversaries adapt.
+          </div>
+        </div>
+
+        <p>
+          These claims are everywhere. Test them with the framework:
+        </p>
+
+        <div class="nyu-stat-row">
+          <div class="nyu-stat-block">
+            <div class="nyu-stat-block__number">94%</div>
+            <div class="nyu-stat-block__label">of leaders say AI will be the most significant driver of change in cybersecurity</div>
+            <div class="nyu-stat-block__source">WEF Global Cybersecurity Outlook 2026</div>
+          </div>
+          <div class="nyu-stat-block">
+            <div class="nyu-stat-block__number">87%</div>
+            <div class="nyu-stat-block__label">identified AI-related vulnerabilities as the fastest-growing cyber risk in 2025</div>
+            <div class="nyu-stat-block__source">WEF Global Cybersecurity Outlook 2026</div>
+          </div>
+          <div class="nyu-stat-block">
+            <div class="nyu-stat-block__number">89%</div>
+            <div class="nyu-stat-block__label">year-over-year increase in AI-enabled adversary operations</div>
+            <div class="nyu-stat-block__source">CrowdStrike 2026 Global Threat Report</div>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="example-title">
+          <h3 class="nyu-callout__title" id="example-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            Try It: Apply the Framework
+          </h3>
+          <p>CrowdStrike 2026 claims "AI-enabled adversary operations increased 89% year-over-year." Run the five questions. CrowdStrike is a vendor that sells endpoint protection (question 3). They do not disclose classification criteria for "AI-enabled" (question 2). Increased detection could reflect better identification, not more attacks (question 2 again). The 89% conflates volume with success rate (question 4). The data is still useful, but not at face value.</p>
+        </aside>
+
+        <!-- Knowledge Check 2 -->
+        <div class="nyu-quiz" aria-labelledby="q2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="q2-prompt">
+            A vendor pitches your CISO: "Our AI-powered platform detects 99.7% of threats
+            with near-zero false positives." Which of the five evaluation questions is
+            <em>most critical</em> to ask first?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="q2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Knowing the AI type (deep learning, random forest, etc.) tells you about the model architecture, but it doesn't help you evaluate '99.7% detection.' A well-tuned decision tree can outperform a deep neural network on certain datasets. The metric methodology matters more than the algorithm.">What type of AI does it use?</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">What metric, on what data, vs. what baseline? Because "99.7%" is meaningless without knowing the dataset, class balance, and comparison point.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Vendor claims aren't 'automatically unreliable'; many vendors do legitimate testing. The problem isn't who ran the test but how it was measured. A vendor reporting honestly on a 50/50 test set still produces numbers that are misleading for your 0.1% attack-rate environment.">Who evaluated it? Because vendor claims are automatically unreliable.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Test-to-deployment gap is a real concern and worth asking, but it's the second question, not the first. If '99.7%' was measured on a 50/50 dataset and your environment has 0.1% malicious traffic, the number is already meaningless before you even consider deployment differences. Start with the metric methodology.">What changes between test and deployment? Because lab results never match production.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. The metric question is the most urgent because '99.7% detection' is doing heavy rhetorical work with zero information content. On a dataset with 1% malicious traffic, 99.7% detection still means missed threats. 'Near-zero false positives' at enterprise scale could still mean thousands of false alerts per day. Without knowing the dataset, prevalence, and baseline comparison, the number is marketing, not measurement."
+               data-incorrect-msg="All five questions matter, but start with the metric question. '99.7%' sounds impressive, but without knowing the dataset, class balance, and baseline comparison, it could mean almost anything. On a dataset with 1% malicious traffic, this is a different achievement than on a 50/50 split. The other questions are important follow-ups, but this one determines whether the number means what it appears to mean."></div>
+        </div>
+      </section>
+
+      <!-- ====================== MODULE COMPLETE ====================== -->
+      <aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="module-complete">
+        <h3 class="nyu-callout__title" id="module-complete"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Module 1 Complete</h3>
+        <p>Across six sections this module covered what machine learning is and how it differs from rule-based detection, how training and inference work, five model families applied to a network intrusion dataset, how language models produce text and why they hallucinate, the metrics used to judge a detector, and how AI is changing attacker and defender capability. These give you the vocabulary the rest of the course assumes.</p>
+      </aside>
+
+      <!-- ====================== UP NEXT ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 7: References &amp; Readings.</strong> We collect every source cited across this module, indexed by section, for review and for the activities. Beyond that, Module 2 opens the black box: how text becomes computation, how tokens become vectors, and how a transformer turns those vectors into a prediction. The vendor-evaluation habits you built here carry directly into it, because the questions worth asking about a model depend on knowing what the model is actually doing.</p>
+        </aside>
+
+    </main>
+
+    <!-- ====================== FOOTER ====================== -->
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

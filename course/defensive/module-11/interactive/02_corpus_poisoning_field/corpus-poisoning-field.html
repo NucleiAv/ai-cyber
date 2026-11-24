@@ -1,0 +1,726 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Corpus Poisoning: 5 in 400 Million</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redsoft:#fdf5f5;--redline:#efc9c9;
+  --green:#0f7a43;--greensoft:#f4faf6;--greenline:#c3e2d0;
+  --blue:#2563eb;--bluesoft:#eff6ff;--blueline:#bfdbfe;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid rgba(87,6,140,.25);outline-offset:2px}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) var(--paper)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+
+.wrap{max-width:900px;margin:0 auto;padding:0}
+.hdr{padding:18px 28px 0}
+.eyebrow{font-family:var(--mono);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet);margin-bottom:6px}
+.title{font-size:1.15rem;font-weight:700;color:var(--ink);line-height:1.3}
+.subtitle{font-size:.82rem;color:var(--ink2);margin-top:6px;line-height:1.55}
+
+.canvas-wrap{position:relative;width:100%;padding:8px 0 0;overflow:visible}
+canvas{display:block;width:100%;cursor:default}
+
+/* ── toolbar: controls + inline stats ── */
+.toolbar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  padding:10px 28px 0;
+}
+.toolbar-left{display:flex;gap:6px;flex-shrink:0}
+.ctrl-btn{
+  min-height:32px;padding:0 14px;border:1px solid var(--vline);
+  border-radius:8px;background:var(--bg);font-family:var(--mono);
+  font-size:.72rem;font-weight:600;color:var(--violet);
+  transition:.16s;letter-spacing:.01em;
+}
+.ctrl-btn:hover{background:var(--vsoft);border-color:var(--violet2)}
+.ctrl-btn.active{background:var(--violet);color:#fff;border-color:var(--violet)}
+.ctrl-btn:disabled{opacity:.45;cursor:not-allowed}
+.toolbar-stats{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:.66rem;color:var(--ink2);
+}
+.tstat{display:flex;align-items:baseline;gap:4px}
+.tstat-label{font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);font-size:.58rem}
+.tstat-val{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.tstat-sub{color:var(--ink3);font-size:.58rem}
+.tstat-sep{width:1px;height:14px;background:var(--line2);flex-shrink:0}
+
+/* ── narration ── */
+.narration{
+  margin:0 28px;padding:10px 14px;
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  display:flex;align-items:center;gap:10px;
+  min-height:44px;transition:border-color .4s;
+}
+.narration.phase-search{border-color:var(--blueline)}
+.narration.phase-poison{border-color:var(--redline)}
+.narration.phase-result{border-color:var(--greenline)}
+.narr-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  background:var(--violet);transition:background .4s;
+}
+.narration.phase-search .narr-dot{background:var(--blue)}
+.narration.phase-poison .narr-dot{background:var(--red)}
+.narration.phase-result .narr-dot{background:var(--green)}
+.narr-text{
+  font-family:var(--mono);font-size:.72rem;font-weight:500;
+  color:var(--ink2);line-height:1.45;
+  transition:opacity .35s;
+}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 28px 20px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:.62rem;font-weight:600;letter-spacing:.04em;color:var(--ink2)}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-dot.legit{background:var(--violet)}
+.legend-dot.poison{background:var(--red)}
+.legend-dot.query{background:var(--blue)}
+.legend-dot.retrieved{background:var(--green)}
+
+@media(max-width:600px){
+  .hdr{padding:14px 16px 0}
+  .title{font-size:1rem}
+  .subtitle{font-size:.76rem;margin-top:4px}
+  .toolbar{padding:8px 16px 0}
+  .toolbar-stats{gap:6px}
+  .tstat-sep{display:none}
+  .narration{margin:0 16px}
+  .legend{padding:8px 16px 14px}
+}
+@media(prefers-reduced-motion:reduce){
+  canvas{display:none}
+  .narration::after{content:"Animation paused (reduced motion preference).";font-size:.78rem;color:var(--ink3)}
+  .narr-dot,.narr-text{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="eyebrow">Corpus Poisoning</div>
+    <h1 class="title">5 in 400 Million: Why Scale Does Not Protect You</h1>
+    <p class="subtitle">A corpus of 400 million documents. An attacker injects 5. When a user query arrives, similarity search surfaces the poisoned documents because they were crafted to score highest. The corpus size is irrelevant; retrieval is driven by embedding similarity, not random sampling.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="ctrl-btn" id="btnQuery" aria-label="Send a user query into the corpus">Send Query</button>
+      <button class="ctrl-btn" id="btnReset" aria-label="Reset the simulation">Reset</button>
+    </div>
+    <div class="toolbar-stats">
+      <span class="tstat"><span class="tstat-label">Corpus</span> <span class="tstat-val">400M</span></span>
+      <span class="tstat-sep"></span>
+      <span class="tstat"><span class="tstat-label">Poisoned</span> <span class="tstat-val">5</span> <span class="tstat-sub">(0.0000013%)</span></span>
+      <span class="tstat-sep"></span>
+      <span class="tstat"><span class="tstat-label">Top-k</span> <span class="tstat-val" id="statTopK">--</span></span>
+      <span class="tstat-sep"></span>
+      <span class="tstat"><span class="tstat-label">Poisoned in top-k</span> <span class="tstat-val" id="statHit">--</span> <span class="tstat-sub" id="statRate"></span></span>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+  </div>
+
+  <div class="narration" id="narration">
+    <div class="narr-dot"></div>
+    <div class="narr-text" id="narrText">400 million documents sit in the corpus. Five of them are adversarial, crafted to match specific query embeddings. They are invisible at this scale: 0.0000013% of the total.</div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot legit"></div>Legitimate document</div>
+    <div class="legend-item"><div class="legend-dot poison"></div>Poisoned document</div>
+    <div class="legend-item"><div class="legend-dot query"></div>User query</div>
+    <div class="legend-item"><div class="legend-dot retrieved"></div>Retrieved (top-k)</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   Corpus Poisoning, 5 in 400 Million Particle Field
+   Pure Canvas + requestAnimationFrame, 60fps
+   ═══════════════════════════════════════════════════════════ */
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const narrEl = document.getElementById('narration');
+const narrText = document.getElementById('narrText');
+const btnQuery = document.getElementById('btnQuery');
+const btnReset = document.getElementById('btnReset');
+
+let W, H, DPR, scale;
+
+const COL = {
+  ink:'#15171C', ink2:'#565a63', ink3:'#5c6270',
+  violet:'#57068C', vA:'rgba(87,6,140,',
+  blue:'#2563eb', bA:'rgba(37,99,235,',
+  green:'#0f7a43', gA:'rgba(15,122,67,',
+  red:'#c02626', rA:'rgba(192,38,38,',
+  paper:'#f7f8fa',
+};
+
+/* ═══════════════ Particle system ═══════════════ */
+
+const TOTAL_PARTICLES = 2400;  // visual stand-in for 400M
+const POISON_COUNT = 5;
+const TOP_K = 5;
+
+let particles = [];
+let poisonIndices = [];
+let queryParticle = null;
+
+// Simulation state machine, every narration change requires a click.
+// IDLE → (click) → QUERY_IN (auto-animate descent) → QUERY_ARRIVED (wait)
+//   → (click) → SCANNING (auto-animate ring) → SCAN_DONE (wait)
+//   → (click) → RETRIEVING (auto-animate highlights) → REVEAL_DONE (wait)
+//   → (click) → RESULT (wait) → (click) → restart
+const STATE = { IDLE:0, QUERY_IN:1, QUERY_ARRIVED:2, SCANNING:3, SCAN_DONE:4, RETRIEVING:5, REVEAL_DONE:6, RESULT:7 };
+let simState = STATE.IDLE;
+let stateT = 0;
+let scanRing = 0;
+let retrievedSet = new Set();
+let pulses = [];
+let poisonHitsCount = 0;
+
+function initParticles() {
+  particles = [];
+  poisonIndices = [];
+  retrievedSet = new Set();
+  pulses = [];
+  queryParticle = null;
+  simState = STATE.IDLE;
+  stateT = 0;
+  scanRing = 0;
+
+  // Distribute particles in a roughly circular field
+  for (let i = 0; i < TOTAL_PARTICLES; i++) {
+    // Use rejection sampling for a nice circular distribution
+    let px, py;
+    do {
+      px = Math.random() * 2 - 1;
+      py = Math.random() * 2 - 1;
+    } while (px*px + py*py > 0.92);
+
+    particles.push({
+      // Normalized coords (-1 to 1), mapped to canvas in draw
+      nx: px,
+      ny: py,
+      baseR: 1.0 + Math.random() * 0.8,
+      alpha: 0.15 + Math.random() * 0.25,
+      drift: Math.random() * Math.PI * 2,
+      driftSpeed: 0.0003 + Math.random() * 0.0006,
+      driftR: 0.2 + Math.random() * 0.5,
+      poison: false,
+      similarity: 0,  // computed during scan
+      retrieved: false,
+      highlightT: 0,
+    });
+  }
+
+  // Place 5 poison particles, scattered in different quadrants
+  // They don't cluster together visually, showing they can be anywhere
+  const poisonPositions = [
+    { nx: 0.35, ny: -0.22 },
+    { nx: -0.55, ny: 0.40 },
+    { nx: 0.10, ny: 0.58 },
+    { nx: -0.30, ny: -0.50 },
+    { nx: 0.62, ny: 0.12 },
+  ];
+  for (let i = 0; i < POISON_COUNT; i++) {
+    const idx = Math.floor(Math.random() * (particles.length - i));
+    poisonIndices.push(idx);
+    particles[idx].poison = true;
+    particles[idx].nx = poisonPositions[i].nx;
+    particles[idx].ny = poisonPositions[i].ny;
+    particles[idx].alpha = 0.18; // same as others in idle, invisible
+  }
+
+  updateStats('--', '--', '');
+  setNarration('', '400 million documents sit in the corpus. Five of them are adversarial, crafted to match specific query embeddings. They are invisible at this scale: 0.0000013% of the total.');
+}
+
+/* ═══════════════ Layout ═══════════════ */
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = rect.width;
+  scale = W / 900;
+  H = W * 0.62;  // taller field to show density
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // Pull narration up into canvas dead space
+  const usedBottom = H * 0.5 + (H * 0.44) + 20 * scale;
+  const dead = H - usedBottom;
+  if (dead > 8) {
+    narrEl.style.marginTop = (-Math.min(dead - 4, 40 * scale)) + 'px';
+  } else {
+    narrEl.style.marginTop = '0';
+  }
+}
+
+// Map particle normalized coords to canvas
+function toX(nx) { return W * 0.5 + nx * W * 0.44; }
+function toY(ny) { return H * 0.5 + ny * H * 0.44; }
+
+/* ═══════════════ UI helpers ═══════════════ */
+
+function updateStats(topk, hit, rate) {
+  const elK = document.getElementById('statTopK');
+  const elH = document.getElementById('statHit');
+  const elR = document.getElementById('statRate');
+  if (elK) elK.textContent = topk;
+  if (elH) elH.textContent = hit;
+  if (elR) elR.textContent = rate;
+}
+
+function setNarration(phase, text) {
+  narrText.style.opacity = '0';
+  setTimeout(() => {
+    narrText.textContent = text;
+    narrEl.className = 'narration ' + phase;
+    narrText.style.opacity = '1';
+  }, 180);
+}
+
+/* ═══════════════ Step-based flow, every text change requires a click ═══════════════ */
+
+function updateButton(label, disabled) {
+  btnQuery.textContent = label;
+  btnQuery.disabled = disabled;
+  if (disabled) btnQuery.classList.add('active');
+  else btnQuery.classList.remove('active');
+}
+
+function stepForward() {
+  switch (simState) {
+    case STATE.IDLE:
+    case STATE.RESULT:
+      // → Send query (animate descent)
+      if (simState === STATE.RESULT) initParticles();
+      queryParticle = {
+        x: W * 0.5, y: -20,
+        targetY: H * 0.5, r: 5 * scale, arrived: false,
+      };
+      simState = STATE.QUERY_IN;
+      stateT = 0; scanRing = 0;
+      retrievedSet.clear(); pulses = [];
+      particles.forEach(p => { p.retrieved = false; p.similarity = 0; p.highlightT = 0; });
+      updateButton('...', true);
+      setNarration('phase-search', 'A user query enters the embedding space. The retrieval engine will compute cosine similarity against all 400 million document embeddings to find the closest matches.');
+      break;
+
+    case STATE.QUERY_ARRIVED:
+      // → Start scanning (animate ring expansion)
+      simState = STATE.SCANNING;
+      stateT = 0;
+      updateButton('Scanning...', true);
+      setNarration('phase-search', 'Scanning the embedding space. The retrieval engine computes cosine similarity between the query vector and every document embedding to rank them by relevance.');
+      break;
+
+    case STATE.SCAN_DONE:
+      // → Reveal top-k results (animate highlights)
+      simState = STATE.RETRIEVING;
+      stateT = 0;
+      const ranked = particles
+        .map((p, i) => ({ sim: p.similarity, idx: i, poison: p.poison }))
+        .filter(p => p.sim > 0)
+        .sort((a, b) => b.sim - a.sim);
+      for (let i = 0; i < TOP_K && i < ranked.length; i++) {
+        retrievedSet.add(ranked[i].idx);
+        particles[ranked[i].idx].retrieved = true;
+      }
+      poisonHitsCount = 0;
+      retrievedSet.forEach(idx => { if (particles[idx].poison) poisonHitsCount++; });
+      updateStats(TOP_K, poisonHitsCount + ' / ' + TOP_K, (poisonHitsCount / TOP_K * 100).toFixed(0) + '% poisoned');
+      updateButton('Revealing...', true);
+      setNarration('phase-poison', poisonHitsCount + ' of the ' + TOP_K + ' highest-scoring documents are adversarial. The attacker crafted their embeddings to maximize cosine similarity against this query. Legitimate documents cannot compete with purpose-built vectors.');
+      break;
+
+    case STATE.REVEAL_DONE:
+      // → Show final analysis
+      simState = STATE.RESULT;
+      stateT = 0;
+      updateButton('Run Again', false);
+      setNarration('phase-result', 'The attacker spent roughly $60 on domain purchases and web crawling. Content review at this scale is impossible: 5 documents in 400 million is 0.0000013% of the corpus. Retrieval is driven by embedding similarity, not random sampling, so corpus size provides no protection.');
+      break;
+  }
+}
+
+function resetSim() {
+  initParticles();
+  updateButton('Send Query', false);
+}
+
+btnQuery.addEventListener('click', stepForward);
+btnReset.addEventListener('click', resetSim);
+
+/* ═══════════════ Drawing ═══════════════ */
+
+let lastFrame = 0;
+let time = 0;
+
+function draw(ts) {
+  if (!lastFrame) lastFrame = ts;
+  const dt = ts - lastFrame;
+  lastFrame = ts;
+  time += dt;
+  stateT += dt;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // ── background: subtle radial gradient showing "corpus" ──
+  const bgGrad = ctx.createRadialGradient(W*0.5, H*0.5, 0, W*0.5, H*0.5, W*0.48);
+  bgGrad.addColorStop(0, 'rgba(87,6,140,0.025)');
+  bgGrad.addColorStop(0.7, 'rgba(87,6,140,0.012)');
+  bgGrad.addColorStop(1, 'rgba(87,6,140,0)');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── corpus label ──
+  const fs = Math.max(12, 13.5 * scale);
+  ctx.font = `600 ${fs * 0.9}px "JetBrains Mono",monospace`;
+  ctx.fillStyle = COL.ink3;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('EMBEDDING SPACE, 400M DOCUMENTS', W * 0.5, 8 * scale);
+
+  // ── scan ring (during scanning + scan_done phases) ──
+  if (simState === STATE.SCANNING || simState === STATE.SCAN_DONE) {
+    const maxR = W * 0.48;
+    if (simState === STATE.SCANNING) scanRing = Math.min(maxR, scanRing + dt * 0.18 * scale);
+    const ringAlpha = simState === STATE.SCAN_DONE ? 0.04 : 0.12 * (1 - scanRing / maxR);
+
+    // scanning ring
+    ctx.beginPath();
+    ctx.arc(W * 0.5, H * 0.5, scanRing, 0, Math.PI * 2);
+    ctx.strokeStyle = COL.bA + ringAlpha + ')';
+    ctx.lineWidth = 2 * scale;
+    ctx.stroke();
+
+    // filled area
+    ctx.beginPath();
+    ctx.arc(W * 0.5, H * 0.5, scanRing, 0, Math.PI * 2);
+    ctx.fillStyle = COL.bA + (ringAlpha * 0.15) + ')';
+    ctx.fill();
+
+    // Compute similarity for particles inside scan ring (only during active scan)
+    if (simState === STATE.SCANNING) {
+      particles.forEach(p => {
+        const px = toX(p.nx), py = toY(p.ny);
+        const dx = px - W * 0.5, dy = py - H * 0.5;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= scanRing) {
+          if (p.poison) {
+            p.similarity = 0.95 + Math.random() * 0.049;
+          } else if (p.similarity === 0) {
+            p.similarity = 0.1 + Math.random() * 0.65;
+          }
+        }
+      });
+    }
+
+    // Transition: when ring reaches max → pause for user (only from SCANNING)
+    if (simState === STATE.SCANNING && scanRing >= maxR) {
+      simState = STATE.SCAN_DONE;
+      stateT = 0;
+      updateButton('Reveal Results', false);
+      setNarration('phase-search', 'Similarity search is complete. Every document now has a cosine similarity score against the query. The system will return the top-' + TOP_K + ' highest-scoring results. Click "Reveal Results" to see which documents scored highest.');
+    }
+  }
+
+  // ── draw particles ──
+  const driftTime = time * 0.001;
+  particles.forEach((p, i) => {
+    const bx = toX(p.nx);
+    const by = toY(p.ny);
+    // gentle drift
+    const dx = Math.sin(driftTime * p.driftSpeed * 1000 + p.drift) * p.driftR * scale;
+    const dy = Math.cos(driftTime * p.driftSpeed * 1000 + p.drift * 1.3) * p.driftR * scale * 0.7;
+    const fx = bx + dx;
+    const fy = by + dy;
+    let r = p.baseR * scale;
+    let alpha = p.alpha;
+    let col = COL.vA;
+
+    // During idle / pre-scan: poison looks identical to legit
+    if (simState === STATE.IDLE) {
+      // all same violet
+    }
+
+    // Retrieved particles glow green and grow
+    if (p.retrieved && (simState === STATE.RETRIEVING || simState === STATE.REVEAL_DONE || simState === STATE.RESULT)) {
+      p.highlightT = Math.min(1, p.highlightT + dt * 0.003);
+      const ease = p.highlightT * p.highlightT * (3 - 2 * p.highlightT); // smoothstep
+      if (p.poison) {
+        col = COL.rA;
+        r = (p.baseR + 6 * ease) * scale;
+        alpha = 0.3 + 0.65 * ease;
+        // red glow
+        if (ease > 0.3) {
+          const glowR = r * (2 + ease * 2);
+          const glow = ctx.createRadialGradient(fx, fy, r * 0.5, fx, fy, glowR);
+          glow.addColorStop(0, COL.rA + (0.18 * ease) + ')');
+          glow.addColorStop(1, COL.rA + '0)');
+          ctx.fillStyle = glow;
+          ctx.fillRect(fx - glowR, fy - glowR, glowR * 2, glowR * 2);
+        }
+      } else {
+        col = COL.gA;
+        r = (p.baseR + 3 * ease) * scale;
+        alpha = 0.3 + 0.45 * ease;
+      }
+    }
+    // During scanning / scan_done, scanned particles brighten slightly
+    else if ((simState === STATE.SCANNING || simState === STATE.SCAN_DONE) && p.similarity > 0) {
+      alpha = p.alpha + p.similarity * 0.15;
+      if (p.poison && p.similarity > 0.9) {
+        // poison starts revealing as red
+        col = COL.rA;
+        alpha = 0.35 + p.similarity * 0.3;
+        r = (p.baseR + 2) * scale;
+      }
+    }
+
+    ctx.beginPath();
+    ctx.arc(fx, fy, r, 0, Math.PI * 2);
+    ctx.fillStyle = col + alpha + ')';
+    ctx.fill();
+  });
+
+  // ── query particle ──
+  if (queryParticle) {
+    const qx = queryParticle.x;
+    let qy = queryParticle.y;
+
+    if (simState === STATE.QUERY_IN) {
+      // Animate query descending to center
+      qy = queryParticle.y + (queryParticle.targetY - queryParticle.y) * 0.04;
+      queryParticle.y = qy;
+      if (Math.abs(qy - queryParticle.targetY) < 2) {
+        queryParticle.y = queryParticle.targetY;
+        // Query arrived → wait for user click to start scan
+        simState = STATE.QUERY_ARRIVED;
+        stateT = 0;
+        updateButton('Begin Search', false);
+      }
+    } else {
+      qy = queryParticle.y;
+    }
+
+    // Query glow
+    const qGlow = ctx.createRadialGradient(qx, qy, 0, qx, qy, 30 * scale);
+    qGlow.addColorStop(0, COL.bA + '0.2)');
+    qGlow.addColorStop(1, COL.bA + '0)');
+    ctx.fillStyle = qGlow;
+    ctx.fillRect(qx - 35 * scale, qy - 35 * scale, 70 * scale, 70 * scale);
+
+    // Query dot
+    ctx.beginPath();
+    ctx.arc(qx, qy, queryParticle.r, 0, Math.PI * 2);
+    ctx.fillStyle = COL.blue;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5 * scale;
+    ctx.stroke();
+
+    // Label
+    if (simState !== STATE.QUERY_IN || qy > H * 0.15) {
+      ctx.font = `700 ${Math.max(12, 13.7143 * scale)}px "JetBrains Mono",monospace`;
+      ctx.fillStyle = COL.ink;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('USER QUERY', qx, qy - queryParticle.r - 6 * scale);
+    }
+  }
+
+  // ── Result phase: draw connecting lines from query to retrieved ──
+  if ((simState === STATE.RETRIEVING || simState === STATE.REVEAL_DONE || simState === STATE.RESULT) && queryParticle) {
+    retrievedSet.forEach(idx => {
+      const p = particles[idx];
+      if (!p.retrieved) return;
+      const ease = p.highlightT * p.highlightT * (3 - 2 * p.highlightT);
+      if (ease < 0.1) return;
+
+      const bx = toX(p.nx), by = toY(p.ny);
+      const dx = Math.sin(time * 0.001 * p.driftSpeed * 1000 + p.drift) * p.driftR * scale;
+      const dy = Math.cos(time * 0.001 * p.driftSpeed * 1000 + p.drift * 1.3) * p.driftR * scale * 0.7;
+      const fx = bx + dx, fy = by + dy;
+
+      ctx.beginPath();
+      ctx.moveTo(queryParticle.x, queryParticle.y);
+      ctx.lineTo(fx, fy);
+      const lineCol = p.poison ? COL.rA : COL.gA;
+      ctx.strokeStyle = lineCol + (0.25 * ease) + ')';
+      ctx.lineWidth = 1.2 * scale;
+      ctx.setLineDash([3 * scale, 4 * scale]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // similarity score label
+      if (ease > 0.5) {
+        const mx = (queryParticle.x + fx) / 2;
+        const my = (queryParticle.y + fy) / 2;
+        const simText = p.similarity.toFixed(3);
+        const labelFs = Math.max(12, 13.8462 * scale);
+        ctx.font = `700 ${labelFs}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = p.poison ? COL.red : COL.green;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Background pill
+        const tw = ctx.measureText(simText).width + 6 * scale;
+        const th = labelFs + 4 * scale;
+        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = 0.88 * ease;
+        const px0 = mx - tw/2, py0 = my - th/2, pillR = th * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(px0 + pillR, py0);
+        ctx.lineTo(px0 + tw - pillR, py0);
+        ctx.arcTo(px0 + tw, py0, px0 + tw, py0 + pillR, pillR);
+        ctx.lineTo(px0 + tw, py0 + th - pillR);
+        ctx.arcTo(px0 + tw, py0 + th, px0 + tw - pillR, py0 + th, pillR);
+        ctx.lineTo(px0 + pillR, py0 + th);
+        ctx.arcTo(px0, py0 + th, px0, py0 + th - pillR, pillR);
+        ctx.lineTo(px0, py0 + pillR);
+        ctx.arcTo(px0, py0, px0 + pillR, py0, pillR);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = p.poison ? COL.red : COL.green;
+        ctx.fillText(simText, mx, my);
+      }
+    });
+  }
+
+  // ── Retrieving → Reveal done (after highlight animations settle, wait for click) ──
+  if (simState === STATE.RETRIEVING) {
+    let allSettled = true;
+    retrievedSet.forEach(idx => { if (particles[idx].highlightT < 0.95) allSettled = false; });
+    if (allSettled && stateT > 1200) {
+      simState = STATE.REVEAL_DONE;
+      stateT = 0;
+      updateButton('See Analysis', false);
+    }
+  }
+
+  // ── Draw poison indicators in reveal_done + result states ──
+  if (simState === STATE.REVEAL_DONE || simState === STATE.RESULT) {
+    retrievedSet.forEach(idx => {
+      const p = particles[idx];
+      if (!p.poison || !p.retrieved) return;
+      const bx = toX(p.nx), by = toY(p.ny);
+      const dx = Math.sin(time * 0.001 * p.driftSpeed * 1000 + p.drift) * p.driftR * scale;
+      const dy = Math.cos(time * 0.001 * p.driftSpeed * 1000 + p.drift * 1.3) * p.driftR * scale * 0.7;
+      const fx = bx + dx, fy = by + dy;
+
+      // Pulsing ring
+      const pulse = 0.5 + 0.5 * Math.sin(time * 0.004);
+      const pr = (p.baseR + 6) * scale + 4 * scale * pulse;
+      ctx.beginPath();
+      ctx.arc(fx, fy, pr, 0, Math.PI * 2);
+      ctx.strokeStyle = COL.rA + (0.3 + 0.15 * pulse) + ')';
+      ctx.lineWidth = 1.5 * scale;
+      ctx.stroke();
+
+      // "POISONED" label
+      const lfs = Math.max(12, 14 * scale);
+      ctx.font = `700 ${lfs}px "JetBrains Mono",monospace`;
+      ctx.fillStyle = COL.red;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('POISONED', fx, fy - pr - 3 * scale);
+    });
+  }
+
+  requestAnimationFrame(draw);
+}
+
+/* ═══════════════ Init ═══════════════ */
+
+function init() {
+  resize();
+  initParticles();
+  requestAnimationFrame(draw);
+}
+window.addEventListener('resize', resize);
+init();
+
+/* ── Iframe height reporting ── */
+function sh() {
+  const el = document.querySelector('.wrap');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  window.parent.postMessage({ kind:'nyu-embed-height', height: Math.ceil(r.top + r.height + 2), src: location.href }, '*');
+}
+const ro = new ResizeObserver(sh);
+ro.observe(document.querySelector('.wrap'));
+window.addEventListener('load', sh);
+document.addEventListener('transitionend', sh);
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

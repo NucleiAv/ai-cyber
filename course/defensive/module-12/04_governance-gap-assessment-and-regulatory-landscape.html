@@ -1,0 +1,480 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 12 · Section 4 · The Governance Gap Assessment and the Regulatory Landscape · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 12 &middot; Section 4 of 5</div>
+      <h1 class="nyu-hero__title">The Governance Gap Assessment and the Regulatory Landscape</h1>
+      <p class="nyu-hero__subtitle">Assess one deployment across all four RMF functions, then learn a method for reading regulations that keep changing.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~23 min + applied activities</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 7 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          2 knowledge checks
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Scenario: NorthShore Mutual</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Assessment, Demonstrated on One Function</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> The Full Assessment: Your Turn</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> The Regulatory Landscape, as of July 2026</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Classify Without Memorizing</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Decision Point: Publish the Jailbreak?</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> Closing Reflection and Check</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Evaluate</strong> an AI security deployment for governance gaps by applying all four <button type="button" class="nyu-define" data-term="nist-ai-rmf">RMF</button> functions as a structured checklist, producing evidence-tied findings and named-artifact recommendations.</span></li>
+          <li><span><strong>Assess</strong> the relevance of current AI regulation to a described deployment using the locate-classify-map-datestamp method, without relying on memorized regulatory detail.</span></li>
+          <li><span><strong>Justify</strong> a committed position on an unsettled dual-use disclosure question, structured by governance criteria rather than intuition.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The Scenario: NorthShore Mutual</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Here is the full NorthShore Mutual brief. Treat it as the complete record of what an assessor could learn in a first week on site; everything the assessment needs is here.</p>
+
+        <p>NorthShore Mutual, a mid-size financial services firm, runs a 14-person <button type="button" class="nyu-define" data-term="soc">SOC</button>. Its AI footprint, as of this quarter:</p>
+
+        <ul>
+          <li>An LLM triage assistant in production for eight months, evaluated once at launch on aggregate metrics and never re-evaluated.</li>
+          <li>An agentic remediation pilot with write access to the <button type="button" class="nyu-define" data-term="edr">EDR</button> platform, deployed by an enthusiastic engineer, with no pre-deployment review and no named business owner.</li>
+          <li>A vendor GenAI add-on bought last quarter through standard software procurement, with no AI-specific questions asked.</li>
+          <li>No AI acceptable-use policy, and analysts have been observed pasting alert payloads into personal chatbot accounts.</li>
+          <li>Comprehensive logging, with no AI-specific detections, no AI incident procedure, and no designated rollback authority.</li>
+          <li>A <button type="button" class="nyu-define" data-term="ciso">CISO</button> (chief information security officer) whose stated goal is "AI everywhere by Q3."</li>
+          <li>A subsidiary in Frankfurt, Germany, that shares the tooling.</li>
+        </ul>
+
+        <p>While reading the brief, think like an assessor: each sentence is either evidence of a control, evidence of a gap, or irrelevant detail.</p>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Assessment, Demonstrated on One Function</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The assessment method runs each function through four moves: guiding questions, evidence hunt, findings graded present/partial/absent, and recommendations that name artifacts. Here is a walkthrough of Govern as a <button type="button" class="nyu-define" data-term="gap-assessment">gap assessment</button>, in the same format the next activity uses.</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Guiding questions</h4>
+              <p class="nyu-process__detail">Who has authority to approve AI deployments, against what criteria? What policies govern AI use? Who is accountable for each system?</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Evidence hunt</h4>
+              <p class="nyu-process__detail">Here is what the brief yields: the agent pilot went live with no review and has no named owner. The GenAI add-on passed through procurement with no AI-specific evaluation. No acceptable-use policy exists, and shadow AI is already observable. The CISO's Q3 goal is a stated intention with no decision structure behind it.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Findings</h4>
+              <p class="nyu-process__detail">(1) Deployment approval authority: <strong>absent</strong>. Evidence: the agent pilot deployed on one engineer's initiative; no review record exists for any of the three systems. (2) AI use policy: <strong>absent</strong>. Evidence: none exists; personal-chatbot use is occurring unmanaged. (3) System ownership: <strong>partial</strong>. Evidence: the triage assistant sits inside SOC operations with implicit ownership; the agent and the add-on have none.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Recommendations</h4>
+              <p class="nyu-process__detail">For (1): a pre-deployment review gate, owned by a named security architecture function, with written criteria covering permissions, blast radius, and data exposure. The agent pilot goes through it retroactively, first. For (2): the acceptable-use policy drafted in Section 3, adopted with the enforcement mechanisms its clauses name. For (3): an ownership register where every AI system gets a named business owner or gets decommissioned.</p>
+            </div>
+          </li>
+        </ol>
+
+        <p>Every finding ties to a specific sentence in the brief, and every recommendation names an artifact with an owner. None of them say "improve governance." That is the standard for the next activity too.</p>
+
+        <p>That walkthrough only covers Govern. Map, Measure, and Manage are next, and two of the scenario's most consequential gaps live in those three functions.</p>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">The Full Assessment: Your Turn</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>With Govern completed, the remaining three functions are next. Three activities walk through them using the same steps the demonstration used: tie evidence to a function, pick the recommendation that names an artifact, and rank from risk. The <a href="https://airc.nist.gov/airmf-resources/playbook/" target="_blank" rel="noopener">NIST AI RMF Playbook</a> offers per-function action vocabulary if a bin feels ambiguous.</p>
+
+        <h3 class="nyu-subsection-title">Activity 1: sort the evidence into functions</h3>
+
+        <div class="nyu-sort">
+          <p>Each chip is a line of evidence from the NorthShore brief. Sort it into the function where the gap lives. Drag chips into bins, or use <kbd>Tab</kbd> then <kbd>Enter</kbd> to cycle a chip through the bins with the keyboard.</p>
+          <div class="nyu-sort__pool" aria-label="Evidence lines to sort">
+            <span class="nyu-sort__chip" data-bin="map" data-hint="Map. Classifying a deployment under a regulation's use-context logic is a Map move: intended use, affected parties, consequence of error.">Nobody has classified the Frankfurt-shared tooling under EU rules</span>
+            <span class="nyu-sort__chip" data-bin="measure" data-hint="Measure. Both problems sit here: no re-evaluation means drift goes undetected, and aggregate-only metrics conceal per-group disparities.">Evaluated once at launch, aggregate metrics only, never re-evaluated</span>
+            <span class="nyu-sort__chip" data-bin="manage" data-hint="Manage. Detection without a response procedure is a Manage gap. The logs exist; what is missing is who acts on them, how, and with what authority to roll back.">No AI incident procedure, no designated rollback authority</span>
+            <span class="nyu-sort__chip" data-bin="map" data-hint="Map. Failure-consequence analysis is a core Map question: what does this system affect, and what is the cost when it errs?">No document answers "what happens when each system is wrong?"</span>
+            <span class="nyu-sort__chip" data-bin="measure" data-hint="Measure. A system with no tracked metrics has a Measure gap regardless of how well it seems to perform; without numbers, nobody can tell.">The write-capable agent has no error or rollback-frequency metrics</span>
+            <span class="nyu-sort__chip" data-bin="manage" data-hint="Manage. An expansion goal with no risk-ranked treatment plan means identified risks are not being prioritized or gated.">"AI everywhere by Q3" with no risk-ranked plan gating it</span>
+          </div>
+          <div class="nyu-sort__bins">
+            <div class="nyu-sort__bin" data-bin="map">
+              <h4>Map (context and consequences)</h4>
+              <div class="nyu-sort__bin-list"></div>
+            </div>
+            <div class="nyu-sort__bin" data-bin="measure">
+              <h4>Measure (metrics and tracking)</h4>
+              <div class="nyu-sort__bin-list"></div>
+            </div>
+            <div class="nyu-sort__bin" data-bin="manage">
+              <h4>Manage (treatment and response)</h4>
+              <div class="nyu-sort__bin-list"></div>
+            </div>
+          </div>
+          <div class="nyu-sort__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check sorting</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+            <span class="nyu-sort__score" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Activity 2: rank from risk</h3>
+
+        <div class="nyu-quiz" aria-labelledby="fa2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Ranking Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="fa2-prompt">The assessment produces many recommendations. Ranked from risk, not effort, which one goes first?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="fa2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The policy matters and is cheap, which is exactly why "cheapest first" is the trap this question sets. Ranked from risk, a document does not outrank a write-capable agent that can change endpoint security state today with no owner and no review behind it.">Adopt the AI acceptable-use policy, since it is the cheapest control and closes the shadow-AI exposure.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Establish the pre-deployment review gate and put the write-capable agent through it retroactively, first.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Disaggregated evaluation is the only path to seeing the triage assistant's failures, and it belongs in the top three. But that risk is informational and accumulating; the agent's risk is destructive and live. Consequence and exposure rank the agent first.">Stand up the quarterly disaggregated evaluation of the triage assistant.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The Q3 goal is an intention, not a control, and revising it changes nothing on the ground by itself. The systems already deployed carry the live risk no matter what the roadmap says.">Persuade the CISO to withdraw the "AI everywhere by Q3" goal.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. A write-capable agent with no owner and no review is the largest live blast radius in the brief, and the deletion incident we studied earlier showed what happens with exactly this configuration. Second in the ranking: the AI incident runbook with rollback authority, because when the agent's risk materializes, NorthShore currently has no owner for the response. Third: the disaggregated evaluation."
+               data-incorrect-msg="Not quite. Rank from consequence and exposure: the write-capable agent with no owner and no review can destroy things today, which puts the review gate (applied to it retroactively) first."></div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Activity 3: what the other checklist cannot see</h3>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            The Distinction Question
+          </h3>
+          <p class="nyu-scenario__prompt">Pick one finding from this assessment that the application-security checklist we used previously could not have produced, and settle on why before revealing. What does that difference reveal about the organizational layer?</p>
+          <button class="nyu-scenario__btn">Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p>The application-security checklist would find the chatbot-layer gaps: missing input validation, no output filtering on the triage assistant, no rate limits on the add-on. What it structurally cannot find is "no person had authority to approve the agent's write access," because no technical category asks who decides. That is the organizational layer: the OWASP assessment interrogates the system, while the RMF assessment interrogates the organization around the system. NorthShore's most dangerous gap falls in the second category, and a technical checklist alone would never have found it.</p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </span>
+            Possible Complete Model Assessment (open after the three activities)
+          </h3>
+          <p class="nyu-scenario__prompt">The full findings-and-recommendations record for Map, Measure, and Manage, in the same format as the Govern demonstration. For every finding, ask: did the activities above surface this? If not, which lens did I skip?</p>
+          <button class="nyu-scenario__btn">Show Possible Model Assessment</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>Map.</strong> (1) System context and failure-consequence analysis: <em>absent</em>. Evidence: the add-on passed procurement "with no AI-specific questions asked"; the agent went live with no review; no document answers "what happens when each system is wrong?" Recommendation: a one-page context record per AI system (purpose, decision consumers, failure consequences, affected parties), owned by each system's business owner, re-reviewed on workflow change. (2) Regulatory exposure mapping: <em>absent</em>. Evidence: "a Frankfurt subsidiary that shares the tooling," and nothing in the brief shows anyone has classified the deployments under EU rules. Recommendation: a deployment-classification memo per system, owned by the compliance function, date-stamped, using the method taught later in this section.</p>
+            <p><strong>Measure.</strong> (1) Ongoing and disaggregated evaluation: <em>absent</em>. Evidence: "evaluated once at launch on aggregate metrics and never re-evaluated." Both problems matter: no re-evaluation means drift goes undetected, and aggregate-only evaluation means the kind of disparity the lab demonstrated could be present and hidden. Recommendation: a quarterly evaluation report, disaggregated by business unit, with a named review owner. (2) Metrics for agent actions: <em>absent</em>. Evidence: the write-capable agent has no stated success, error, or rollback-frequency metrics anywhere in the brief. Recommendation: an agent action ledger with error-rate reporting, owned by the SOC lead.</p>
+            <p><strong>Manage.</strong> (1) AI incident procedure and rollback authority: <em>absent</em>. Evidence: "no AI incident procedure, no designated rollback authority" despite comprehensive logging, which means they can detect problems but have no process for responding to them. Recommendation: an AI incident runbook with severity tiers, an escalation owner, and named rollback authority for each system, exercised in a tabletop before the next deployment. (2) Risk-ranked treatment plan: <em>absent</em>. Evidence: "AI everywhere by Q3" is an intention, not a plan; nothing prioritizes which risks get treated first. Recommendation: a risk register for the three existing systems, reviewed monthly, gating the Q3 expansion.</p>
+            <p><strong>Two gaps that depend on earlier material.</strong> If the aggregate-only evaluation (Measure) or the ungoverned write-capable agent (Govern/Map) did not come up during the activities, revisit the disaggregation lab and the agency discussion from earlier in the module. Both of those gaps are hard to spot without the concepts we built there.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4: REGULATORY ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">The Regulatory Landscape, as of July 2026</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Dated Content, and a Disclaimer
+          </h3>
+          <p>Everything in this block is stated as of July 2026 and is expected to change. No assessment in this course tests a regulatory date. This is method instruction, not legal advice.</p>
+        </aside>
+
+        <p>Between late 2023 and mid-2026, the United States enacted and then rescinded a comprehensive AI risk-management order, and the European Union adopted a major AI law and then deferred parts of its own timeline. Regulations matter for deployment decisions, but they change faster than most people expect. The durable skill is knowing how to read them, not memorizing their current state.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/04_regulatory_timeline/regulatory-volatility-timeline.html" title="Interactive: an animated three-lane timeline from 2023 to 2028 showing the US order struck through and replaced, EU milestones landing on schedule, and the high-risk deadline detaching from 2026 and sliding to 2027 and 2028, ending with the compliance-anchored versus risk-anchored comparison and the four-step reading method" loading="lazy"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">The EU's approach: risk tiers by use context</h3>
+
+        <p>The <button type="button" class="nyu-define" data-term="eu-ai-act">EU AI Act</button>, in force since August 2024, classifies AI systems by what they are used for, not what architecture they use.</p>
+
+        <table class="nyu-table">
+          <thead>
+            <tr><th scope="col">Tier</th><th scope="col">Logic</th><th scope="col">Security-relevant example</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Prohibited</strong></td>
+              <td>Practices the Act bans outright regardless of safeguards</td>
+              <td>Untargeted scraping of facial images to build recognition databases, the practice at the center of the enforcement case from earlier in this module</td>
+            </tr>
+            <tr>
+              <td><strong>High-risk</strong></td>
+              <td>Uses with significant potential impact; triggers the full obligation chain</td>
+              <td>An AI system operating as a safety component in the management of critical digital infrastructure</td>
+            </tr>
+            <tr>
+              <td><strong>Transparency-required</strong></td>
+              <td>Systems whose users must know they are interacting with AI or seeing generated content</td>
+              <td>A customer-facing security chatbot; AI-generated incident summaries shared externally</td>
+            </tr>
+            <tr>
+              <td><strong>Minimal</strong></td>
+              <td>Everything else; no new obligations</td>
+              <td>An internal spell-checker or code-completion aid with no consequential decisions attached</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><button type="button" class="nyu-define" data-term="high-risk-tier">High-risk</button> classification triggers a set of obligations: risk management, data governance, human oversight (<a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32024R1689#art_14" target="_blank" rel="noopener">Article 14</a>, assigned as reading before the next part), and accuracy and cybersecurity requirements. Whether a security AI deployment lands in a high-risk category is a classification argument, the kind of move the Map function trains, and it turns on intended use, deployment context, and what happens downstream when the system errs. General-purpose model obligations took effect in August 2025, and a simplification package agreed in June 2026 deferred the high-risk compliance dates into 2027 and 2028. Those dates are stated here to be checked, not memorized.</p>
+
+        <h3 class="nyu-subsection-title">The US approach, currently: acceleration</h3>
+
+        <p>The October 2023 executive order that built federal AI governance around risk management was rescinded in January 2025. The replacement shifted direction: a new order, follow-on memoranda, and a national action plan focused on removing regulatory barriers and accelerating adoption, with federal AI security workstreams covering threat-information sharing and AI incident response capacity. A deployment decision made in 2024 under one federal posture faced a different posture in 2026. Organizations that had built their governance around risk management rather than compliance with one specific rule set absorbed the change without rebuilding. The rules changed, but the underlying risks had not.</p>
+
+        <h3 class="nyu-subsection-title">The method: locate, classify, map, date-stamp</h3>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Locate</h4>
+              <p class="nyu-process__detail">Find the current text and status of the regulation, including amendments. Never trust a summary older than the last news cycle, and that includes this one.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Classify</h4>
+              <p class="nyu-process__detail">Place the deployment under the regulation's own logic: use context, affected parties, consequence of error.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Map</h4>
+              <p class="nyu-process__detail">Identify the obligations that classification triggers and attach each to an owner and an artifact. This is the gap-assessment move again, just with legal categories. Note that <button type="button" class="nyu-define" data-term="deployer-obligation">deployer obligations</button> exist independently of anything the vendor claims.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Date-stamp</h4>
+              <p class="nyu-process__detail">State the conclusion as "as of [date], based on [text version]." Every analysis has a shelf life, and treating it as permanent is how outdated compliance memos become liabilities.</p>
+            </div>
+          </li>
+        </ol>
+
+        <h3 class="nyu-subsection-title">Brief note on Certification and standards!</h3>
+
+        <p>An international standard for AI management systems now exists, and vendors increasingly advertise certification against it. Read those claims carefully: certification means a management process exists and was audited. It does not mean any particular system is safe, just as a guardrail's presence did not mean a chatbot was secure. That is the <button type="button" class="nyu-define" data-term="certification-vs-safety">certification-versus-safety</button> distinction. In a procurement conversation, certification tells us about process maturity. It is a starting point for asking better questions, not a substitute for them.</p>
+      </section>
+
+      <!-- ====================== SECTION 5: RT-3 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Classify Without Memorizing</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--tip" role="note">
+          <h3 class="nyu-callout__title">Required Reading Before This Task</h3>
+          <p>Read <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32024R1689#art_14" target="_blank" rel="noopener">Article 14 (Human Oversight)</a> of the EU AI Act before continuing. It is about a page and takes roughly 10 minutes. As we read, pay attention to which oversight requirements assume the human operator can actually override or stop the system, and think about how that sits with the automation-bias evidence we covered earlier in this module.</p>
+        </aside>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Reasoning Task: The Frankfurt Question
+          </h3>
+          <p class="nyu-scenario__prompt">Use the regulatory landscape we covered in Section 4 (the EU AI Act tiers, the US policy reversal, and the locate-classify-map-datestamp method) along with Article 14. Keep the four-step method in mind: <strong>locate</strong> the relevant text, <strong>classify</strong> by use context, <strong>map</strong> obligations to owners, and <strong>date-stamp</strong> the conclusion.</p>
+          <ol class="nyu-scenario__prompt" style="margin-top:0.5em; padding-left:1.4em;">
+            <li style="margin-bottom:0.4em;">Does NorthShore's agentic remediation pilot, as used by the Frankfurt subsidiary, plausibly fall in an EU high-risk category? Point to the specific classification logic or high-risk list entry that supports the argument, and identify the one additional fact about the deployment that would most change the answer.</li>
+            <li style="margin-bottom:0.4em;">What date-stamp caveat does this analysis need?</li>
+            <li>Which RMF function does this entire exercise fall under? Be ready to explain why.</li>
+          </ol>
+          <button class="nyu-scenario__btn">Show possible considerations</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>(1)</strong> Two classifications are defensible, and we are not picking one here on purpose. The argument turns on whether the EDR estate the agent can modify qualifies as management of critical digital infrastructure, and whether the agent acts as a safety component in that management. If NorthShore's infrastructure is ordinary corporate IT, the high-risk hook weakens; if the Frankfurt subsidiary processes payments or operates regulated financial infrastructure, it strengthens. A good answer argues from use context either way and names the flip-fact: what the EDR estate actually protects.</p>
+            <p><strong>(2)</strong> A workable caveat: "This classification is based on the consolidated Act text as amended through June 2026, accessed July 2026; the high-risk timeline and category definitions are under active revision and this analysis expires with them."</p>
+            <p><strong>(3)</strong> Map. Classify the system by intended use, affected parties, and consequence of error, under someone else's category scheme. The regulation supplies the categories; the cognitive move is the one the assessment already trained.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 6: DISCUSSION ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Decision Point: Publish the Jailbreak?</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Commit Before You Reveal
+          </h3>
+          <p class="nyu-scenario__prompt">During an authorized engagement, the red team develops a novel technique that reliably bypasses the guardrail stack the vendor sells to hundreds of other security teams. The vendor's fix will take an estimated six months. A practitioner conference's call for papers closes Friday.</p>
+          <p class="nyu-scenario__prompt">As team lead, choose one of the three options below. Before revealing, settle three things: which option to commit to, which two of the four boundary criteria (authorization, scope, reversibility, accountability) carry the most weight in the argument, and what the strongest objection to that choice would be. "It depends" is not an available conclusion.</p>
+          <div class="nyu-commit-choice" style="display:flex;gap:10px;flex-wrap:wrap;margin:1em 0;">
+            <button type="button" class="nyu-sequence__btn nyu-commit-choice__opt" data-choice="submit" style="flex:1;min-width:140px;">Submit for publication</button>
+            <button type="button" class="nyu-sequence__btn nyu-commit-choice__opt" data-choice="disclose" style="flex:1;min-width:140px;">Disclose to vendor only</button>
+            <button type="button" class="nyu-sequence__btn nyu-commit-choice__opt" data-choice="hold" style="flex:1;min-width:140px;">Hold entirely</button>
+          </div>
+          <button class="nyu-scenario__btn" style="display:none;" data-requires-choice="true">Show possible considerations</button>
+          <div class="nyu-scenario__answer">
+            <p>The field has not settled this question. Here are possible arguments for each position. Use them to check whether your own reasoning engaged the real trade-offs or argued against a weaker version of the opposing view.</p>
+            <p><strong>The case for publishing.</strong> Hundreds of teams are deploying a control with a known reliable bypass; six months of silence trains no defenders, and capable attackers rediscover techniques independently. Publication with the vendor notified first is how the security field built its entire defensive knowledge base. The accountability criterion: publishing puts the team's name and reasoning on the record. The cost of this choice: some attackers who would not have found the technique now have it, and the vendor's other customers absorb that risk without having chosen it.</p>
+            <p><strong>The case for vendor-only disclosure.</strong> Coordinated disclosure exists because publication timing changes who benefits first, and here there is a single vendor who can ship a fix. The scope criterion: the engagement authorized testing one deployment, not arming the public against everyone's. The cost of this choice: six months is a long exposure window even by the vendor's own estimate, other customers stay untrained and unwarned, and history says vendor timelines slip when the pressure of a disclosure deadline is removed.</p>
+            <p><strong>The case for holding entirely.</strong> A technique that defeats a widely deployed control class is closer to a capability than a bug report; no single door to knock on means no coordinated fix, and reversibility is zero once released. The cost of this choice: defenders stay blind, the technique's rediscovery is a matter of time, and holding concentrates the knowledge in exactly two places (the team and whoever finds it next) with no accountability structure around either.</p>
+            <p><strong>Now check your own reasoning.</strong> Look at the objection you wrote before revealing: did it engage one of the other two positions as described above, or did it argue against a simplified version? If it was the simplified version, go back and try again with the harder form. Reasonable people will land in different places here, and that is the point. Disclosure norms for AI capabilities are still being worked out, and this kind of disagreement is part of the territory.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 7: REFLECTION + KC ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">Closing Reflection and Check</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>At the start of this module, we recorded positions on three statements: that governance paperwork does not stop attacks, that a human reviewing every AI decision handles the automation risk, and that excellent aggregate precision and recall mean a detector treats all users fairly. Find those notes before continuing.</p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </span>
+            Closing Reflection
+          </h3>
+          <p>Look at each of the three positions you wrote down at the start. For each one, ask: did anything in this module change my mind, or did it confirm what I already thought? Be specific: point to the number, the case, or the concept that did the work. For example, did the disaggregation lab change how you think about aggregate metrics? Did the NorthShore assessment change how you think about governance paperwork?</p>
+          <p>Then one more question: pick one governance question from this module that we did not settle. What evidence would it take to settle it? A few candidates worth considering: whether governance programs measurably reduce AI incidents, whether human oversight requirements can scale as systems speed up, and whether the field will converge on disclosure norms for AI capabilities.</p>
+        </aside>
+
+        <div class="nyu-quiz" aria-labelledby="kc4-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc4-prompt">Your team is deploying an LLM-based fraud detector for a bank with EU operations. A colleague asks whether the EU AI Act applies. What is the most likely next step?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc4-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The summary is date-stamped because it goes stale. The EU timeline was amended in June 2026, after this kind of summary would have been written, and it may move again. Compliance answers should never anchor on remembered dates.">Cite the compliance deadlines from the regulatory landscape section of this module, since those dates were verified when the course was written.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Locate the current text and status of the Act, including any amendments, because the landscape changes faster than any summary.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Classification is the second step, and it requires the current text; categories and timelines have already been amended once. Classifying from memory is the memorization failure in different clothing.">Classify the system as high-risk immediately, since fraud detection directly affects individuals and financial decisions carry legal consequence.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Deployer obligations exist independently of what the vendor claims, and vendor compliance statements are marketing until verified. The deploying organization has to run its own analysis.">Wait for the vendor to confirm compliance, since they bear primary liability and deployers inherit their classification and risk assessment.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Locate, classify under the Act's use-context logic, map obligations to owners, date-stamp the conclusion. The method works regardless of how the specific regulations change."
+               data-incorrect-msg="Not quite. The first step of the method is locate: find the current text and status. Summaries go stale. The EU timeline was already amended once since this section was written."></div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
+            </span>
+            Going deeper: three ungraded exercises
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p><strong>1. Map the findings to the draft security profile.</strong> NIST has published a draft profile that connects the AI RMF to the Cybersecurity Framework (CSF) that most security teams already work with. Take the top three recommendations from the model assessment and find where each one lands in that profile's structure. Then look for one finding that does not fit cleanly into any category. That gap tells us something about the limits of the current taxonomy, similar to what we saw when mapping attacks across taxonomies earlier in the course.</p>
+            <p><strong>2. Red-team the policy statements.</strong> Load a local model, give it NorthShore's acceptable-use statements from Section 3 of this module (The Responsible AI-Use Policy), and prompt it to find loopholes and ambiguities. Then validate each claimed loophole against the actual statement text before accepting it, because the model may confidently describe loopholes in rules that do not actually say what it claims. The real exercise is counting how many of the claimed loopholes hold up when checked against the text.</p>
+            <p><strong>3. The fairness question, taken seriously.</strong> Read the source on incompatible fairness properties (Chouldechova 2017 or Kleinberg et al. 2016, listed in the module's References &amp; Readings page). Choose one of the three fairness properties from Module 12, Section 2 (Ethics You Can Measure): <button type="button" class="nyu-define" data-term="equalized-odds">equalized odds</button>, <button type="button" class="nyu-define" data-term="equal-opportunity">equal opportunity</button>, or <button type="button" class="nyu-define" data-term="demographic-parity">demographic parity</button>. Commit to one for the lab's classifier, and weigh, honestly, what that choice knowingly gives up.</p>
+            <p>All three are ungraded. Each takes 30 to 45 minutes.</p>
+          </div>
+        </div>
+
+      <!-- ====================== MODULE COMPLETE ====================== -->
+      <aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="module-complete">
+        <h3 class="nyu-callout__title" id="module-complete"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Module 12 Complete</h3>
+        <p>Across four sections this module covered the NIST AI RMF as a way to move from technical measurements to organizational decisions, four ethical concerns specific to security AI and how to measure them, the responsible AI use policy as an operational control, and a governance gap assessment set against the current regulatory landscape.</p>
+      </aside>
+
+        <!-- Up Next -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 5: References &amp; Readings.</strong> It collects every source behind this module, indexed by section. Beyond that, Module 13 looks forward: agentic AI, autonomous security systems, and what this field asks of a career. The governance concepts we covered here carry over directly, starting with who approves what an agent is allowed to do.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

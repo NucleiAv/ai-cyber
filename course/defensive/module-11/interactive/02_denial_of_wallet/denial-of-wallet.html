@@ -1,0 +1,724 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Denial-of-Wallet: Token Cost Explosion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redsoft:#fdf5f5;--redline:#efc9c9;
+  --green:#0f7a43;--greensoft:#f0f9f3;--greenline:#c3e2d0;
+  --blue:#2563eb;--bluesoft:#eff6ff;--blueline:#bfdbfe;
+  --amber:#8a5d00;--amberbg:#FCF1DC;--amberline:#e5d3a8;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid rgba(87,6,140,.25);outline-offset:2px}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) var(--paper)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+
+.wrap{max-width:920px;margin:0 auto;padding:0}
+.hdr{padding:14px 24px 0}
+.eyebrow{font-family:var(--mono);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet);margin-bottom:6px}
+.title{font-size:1.15rem;font-weight:700;color:var(--ink);line-height:1.3}
+.subtitle{font-size:.8rem;color:var(--ink2);margin-top:6px;line-height:1.55}
+
+/* -- toolbar -- */
+.toolbar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  padding:10px 24px 0;
+}
+.toolbar-left{display:flex;gap:6px;flex-shrink:0}
+.ctrl-btn{
+  min-height:32px;padding:0 14px;border:1px solid var(--vline);
+  border-radius:8px;background:var(--bg);font-family:var(--mono);
+  font-size:.72rem;font-weight:600;color:var(--violet);
+  transition:.16s;letter-spacing:.01em;
+}
+.ctrl-btn:hover{background:var(--vsoft);border-color:var(--violet2)}
+.ctrl-btn.active{background:var(--violet);color:#fff;border-color:var(--violet)}
+.ctrl-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* -- scenario layout -- */
+.scenario{padding:12px 24px 0;display:flex;flex-direction:column;gap:12px}
+
+/* -- billing banner -- */
+.billing{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;
+}
+.bill-card{
+  border:1px solid var(--line);border-radius:10px;padding:10px 14px;
+  background:var(--bg);transition:border-color .4s,background .4s;
+}
+.bill-card.danger{border-color:var(--red);background:var(--redsoft)}
+.bill-card.safe{border-color:var(--greenline);background:var(--greensoft)}
+.bill-label{
+  font-family:var(--mono);font-size:.56rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:4px;
+}
+.bill-val{
+  font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--ink);
+  font-variant-numeric:tabular-nums;transition:color .3s;
+}
+.bill-card.danger .bill-val{color:var(--ink)}
+.bill-card.safe .bill-val{color:var(--ink)}
+.bill-sub{
+  font-family:var(--mono);font-size:.58rem;color:var(--ink3);margin-top:2px;
+  font-variant-numeric:tabular-nums;
+}
+
+/* -- request log -- */
+.log-wrap{
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  background:var(--bg);
+}
+.log-hdr{
+  padding:8px 14px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.log-title{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--ink)}
+.log-badge{
+  font-family:var(--mono);font-size:.56rem;font-weight:700;letter-spacing:.05em;
+  padding:2px 8px;border-radius:5px;text-transform:uppercase;
+}
+.log-badge.running{background:var(--amberbg);color:var(--ink)}
+.log-badge.blocked{background:var(--greensoft);color:var(--ink)}
+.log-badge.breach{background:var(--redsoft);color:var(--ink)}
+.log-body{
+  max-height:220px;overflow-y:auto;padding:0;
+}
+.log-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.62rem}
+.log-table th{
+  text-align:left;font-weight:600;color:var(--ink3);font-size:.56rem;
+  letter-spacing:.04em;text-transform:uppercase;
+  padding:6px 10px;border-bottom:2px solid var(--line2);
+  position:sticky;top:0;background:var(--bg);z-index:2;
+  box-shadow:0 1px 0 var(--line2);
+}
+.log-table td{padding:5px 10px;border-bottom:1px solid var(--line);color:var(--ink2)}
+.log-table thead tr{opacity:1;transform:none}
+.log-table tbody tr{opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s}
+.log-table tbody tr.visible{opacity:1;transform:translateY(0)}
+.log-table tr.is-attack td{color:var(--red)}
+.log-table tr.is-blocked td{color:#0a552f;text-decoration:line-through;opacity:0.75}
+.cost-col{font-weight:700;text-align:right}
+.tokens-col{text-align:right}
+
+/* -- rate limit comparison -- */
+.limits{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.limit-card{
+  border:1px solid var(--line);border-radius:10px;padding:10px 14px;
+  background:var(--bg);transition:border-color .4s,background .4s;
+}
+.limit-card.fail{border-color:var(--red);background:var(--redsoft)}
+.limit-card.pass{border-color:var(--greenline);background:var(--greensoft)}
+.limit-tag{
+  font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.05em;
+  padding:2px 8px;border-radius:5px;text-transform:uppercase;display:inline-block;
+  margin-bottom:6px;
+}
+.limit-tag.req{background:var(--amberbg);color:var(--ink)}
+.limit-tag.tok{background:var(--greensoft);color:var(--ink)}
+.limit-title{font-family:var(--mono);font-size:.74rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+.limit-desc{font-family:var(--mono);font-size:.62rem;color:var(--ink2);line-height:1.45;margin-bottom:8px}
+.limit-meter{position:relative;height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.limit-fill{height:100%;border-radius:5px;width:0;transition:width .5s ease}
+.limit-fill.red{background:var(--red)}
+.limit-fill.green{background:var(--green)}
+.limit-fill.amber{background:var(--amber)}
+.limit-stats{
+  display:flex;justify-content:space-between;margin-top:4px;
+  font-family:var(--mono);font-size:.56rem;color:var(--ink3);
+}
+.limit-verdict{
+  font-family:var(--mono);font-size:.64rem;font-weight:700;margin-top:6px;
+  display:none;
+}
+.limit-verdict.show{display:block}
+
+/* -- narration -- */
+.narration{
+  margin:10px 24px 0;padding:10px 14px;
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  display:flex;align-items:flex-start;gap:10px;
+  min-height:44px;transition:border-color .4s;
+}
+.narration.phase-legit{border-color:var(--vline)}
+.narration.phase-attack{border-color:var(--redline)}
+.narration.phase-result{border-color:var(--amberline)}
+.narr-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;
+  background:var(--violet);transition:background .4s;
+}
+.narration.phase-legit .narr-dot{background:var(--violet)}
+.narration.phase-attack .narr-dot{background:var(--red)}
+.narration.phase-result .narr-dot{background:var(--amber)}
+.narr-text{
+  font-family:var(--mono);font-size:.72rem;font-weight:500;
+  color:var(--ink2);line-height:1.5;
+  transition:opacity .35s;
+}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:8px 24px 16px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:.62rem;font-weight:600;letter-spacing:.04em;color:var(--ink2)}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-dot.legit{background:var(--blue)}
+.legend-dot.attack{background:var(--red)}
+.legend-dot.blocked{background:var(--green)}
+
+@media(max-width:640px){
+  .billing{grid-template-columns:1fr}
+  .limits{grid-template-columns:1fr}
+  .hdr{padding:14px 16px 0}
+  .toolbar{padding:8px 16px 0}
+  .scenario{padding:10px 16px 0}
+  .narration{margin:8px 16px 0}
+  .legend{padding:6px 16px 12px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="eyebrow">Denial-of-Wallet</div>
+    <h1 class="title">Token Cost Explosion</h1>
+    <p class="subtitle">A stolen API key generates massive compute bills at machine speed. Request-count rate limiting fails because one long-context request can cost as much as dozens of small ones. Token-based rate limiting catches the actual resource consumption.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="ctrl-btn" id="btnStep">Start Normal Traffic</button>
+      <button class="ctrl-btn" id="btnReset">Reset</button>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <!-- billing banner -->
+    <div class="billing">
+      <div class="bill-card" id="billCost">
+        <div class="bill-label">Accumulated cost</div>
+        <div class="bill-val" id="totalCost">$0.00</div>
+        <div class="bill-sub" id="costRate"></div>
+      </div>
+      <div class="bill-card" id="billReqs">
+        <div class="bill-label">Requests sent</div>
+        <div class="bill-val" id="totalReqs">0</div>
+        <div class="bill-sub" id="reqRate"></div>
+      </div>
+      <div class="bill-card" id="billTokens">
+        <div class="bill-label">Tokens consumed</div>
+        <div class="bill-val" id="totalTokens">0</div>
+        <div class="bill-sub" id="tokenRate"></div>
+      </div>
+    </div>
+
+    <!-- request log -->
+    <div class="log-wrap">
+      <div class="log-hdr">
+        <span class="log-title">API Request Log</span>
+        <span class="log-badge running" id="logBadge">Idle</span>
+      </div>
+      <div class="log-body" id="logBody">
+        <table class="log-table">
+          <thead><tr class="visible"><th>Time</th><th>Source</th><th>Model</th><th>Prompt</th><th class="tokens-col">Tokens</th><th class="cost-col">Cost</th></tr></thead>
+          <tbody id="logTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- rate limit comparison -->
+    <div class="limits">
+      <div class="limit-card" id="limReq">
+        <span class="limit-tag req">Request-Count Limit</span>
+        <div class="limit-title">100 requests / minute</div>
+        <div class="limit-desc">Counts each API call equally regardless of size. A 50-token request and a 128K-token request both count as 1.</div>
+        <div class="limit-meter"><div class="limit-fill amber" id="limReqFill"></div></div>
+        <div class="limit-stats"><span id="limReqUsed">0 / 100</span><span id="limReqPct">0%</span></div>
+        <div class="limit-verdict" id="limReqVerdict"></div>
+      </div>
+      <div class="limit-card" id="limTok">
+        <span class="limit-tag tok">Token-Based Limit</span>
+        <div class="limit-title">500,000 tokens / minute</div>
+        <div class="limit-desc">Counts actual resource consumption. A 128K-token request uses 256x the budget of a 500-token request.</div>
+        <div class="limit-meter"><div class="limit-fill green" id="limTokFill"></div></div>
+        <div class="limit-stats"><span id="limTokUsed">0 / 500K</span><span id="limTokPct">0%</span></div>
+        <div class="limit-verdict" id="limTokVerdict"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="narration" id="narration">
+    <div class="narr-dot"></div>
+    <div class="narr-text" id="narrText">An LLM API serves legitimate users. Each request has a token count and a dollar cost. The billing dashboard tracks accumulated spend while two rate-limiting strategies monitor usage. Watch what happens when an attacker gets hold of the API key.</div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot legit"></div>Legitimate request</div>
+    <div class="legend-item"><div class="legend-dot attack"></div>Attacker request</div>
+    <div class="legend-item"><div class="legend-dot blocked"></div>Blocked by rate limit</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   Denial-of-Wallet, Token Cost Explosion
+   HTML-driven, self-paced state machine
+   ═══════════════════════════════════════════════════════════ */
+
+const btnStep = document.getElementById('btnStep');
+const btnReset = document.getElementById('btnReset');
+const narrEl = document.getElementById('narration');
+const narrText = document.getElementById('narrText');
+
+const totalCostEl = document.getElementById('totalCost');
+const totalReqsEl = document.getElementById('totalReqs');
+const totalTokensEl = document.getElementById('totalTokens');
+const costRateEl = document.getElementById('costRate');
+const reqRateEl = document.getElementById('reqRate');
+const tokenRateEl = document.getElementById('tokenRate');
+const billCost = document.getElementById('billCost');
+const billReqs = document.getElementById('billReqs');
+const billTokens = document.getElementById('billTokens');
+const logBadge = document.getElementById('logBadge');
+const logBody = document.getElementById('logBody');
+const logTbody = document.getElementById('logTbody');
+
+const limReqFill = document.getElementById('limReqFill');
+const limReqUsed = document.getElementById('limReqUsed');
+const limReqPct = document.getElementById('limReqPct');
+const limReqVerdict = document.getElementById('limReqVerdict');
+const limReqCard = document.getElementById('limReq');
+
+const limTokFill = document.getElementById('limTokFill');
+const limTokUsed = document.getElementById('limTokUsed');
+const limTokPct = document.getElementById('limTokPct');
+const limTokVerdict = document.getElementById('limTokVerdict');
+const limTokCard = document.getElementById('limTok');
+
+/* ═══════════════ Data ═══════════════ */
+
+const LEGIT_REQUESTS = [
+  { source: 'support-bot', model: 'gpt-4o', prompt: 'Customer asks about return policy', tokens: 420, cost: 0.006 },
+  { source: 'support-bot', model: 'gpt-4o', prompt: 'Shipping status inquiry', tokens: 380, cost: 0.005 },
+  { source: 'search-api', model: 'gpt-4o-mini', prompt: 'Product description generation', tokens: 650, cost: 0.004 },
+  { source: 'support-bot', model: 'gpt-4o', prompt: 'Billing dispute resolution', tokens: 510, cost: 0.007 },
+  { source: 'analytics', model: 'gpt-4o-mini', prompt: 'Summarize weekly metrics', tokens: 880, cost: 0.005 },
+  { source: 'support-bot', model: 'gpt-4o', prompt: 'Password reset instructions', tokens: 290, cost: 0.004 },
+];
+
+const ATTACK_REQUESTS = [
+  { source: 'stolen-key', model: 'gpt-4-turbo', prompt: '"Repeat the following 10,000 times..."', tokens: 127800, cost: 3.83 },
+  { source: 'stolen-key', model: 'gpt-4-turbo', prompt: '"Translate this 200-page doc to 12 languages"', tokens: 118400, cost: 3.55 },
+  { source: 'stolen-key', model: 'gpt-4-turbo', prompt: '"Analyze every CVE from 2020-2024..."', tokens: 125600, cost: 3.77 },
+  { source: 'stolen-key', model: 'gpt-4-turbo', prompt: '"Generate a 50,000-word research paper..."', tokens: 131000, cost: 3.93 },
+  { source: 'stolen-key', model: 'gpt-4-turbo', prompt: '"Rewrite this codebase in 8 languages..."', tokens: 122200, cost: 3.67 },
+  { source: 'stolen-key', model: 'gpt-4-turbo', prompt: '"Summarize all SEC filings 2015-2024..."', tokens: 128900, cost: 3.87 },
+  { source: 'stolen-key', model: 'gpt-4-turbo', prompt: '"Full audit of infrastructure logs..."', tokens: 119700, cost: 3.59 },
+  { source: 'stolen-key', model: 'gpt-4-turbo', prompt: '"Generate synthetic training data..."', tokens: 126300, cost: 3.79 },
+];
+
+/* ═══════════════ State Machine ═══════════════ */
+
+const STATE = {
+  IDLE: 0,
+  NORMAL_TRAFFIC: 1,     // Show legitimate requests flowing
+  NORMAL_DONE: 2,        // Pause, explain baseline
+  ATTACK_START: 3,       // Attacker begins, request-count limit doesn't catch it
+  ATTACK_DONE: 4,        // Show the damage
+  TOKEN_LIMIT: 5,        // Replay with token-based limit active
+  TOKEN_DONE: 6,         // Show that it was caught
+  ANALYSIS: 7,
+};
+
+let simState = STATE.IDLE;
+let totalCost = 0;
+let totalReqs = 0;
+let totalTokens = 0;
+let reqLimitUsed = 0;
+let tokLimitUsed = 0;
+let animInterval = null;
+let requestQueue = [];
+let queueIndex = 0;
+
+const REQ_LIMIT = 100;
+const TOK_LIMIT = 500000;
+
+/* ═══════════════ UI Helpers ═══════════════ */
+
+function setNarration(phase, text) {
+  narrText.style.opacity = '0';
+  setTimeout(() => {
+    narrText.textContent = text;
+    narrEl.className = 'narration ' + phase;
+    narrText.style.opacity = '1';
+  }, 180);
+}
+
+function updateButton(label, disabled) {
+  btnStep.textContent = label;
+  btnStep.disabled = disabled;
+  if (disabled) btnStep.classList.add('active');
+  else btnStep.classList.remove('active');
+}
+
+function formatNum(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n.toString();
+}
+
+function updateBilling() {
+  totalCostEl.textContent = '$' + totalCost.toFixed(2);
+  totalReqsEl.textContent = totalReqs.toString();
+  totalTokensEl.textContent = formatNum(totalTokens);
+
+  // Cost danger thresholds
+  if (totalCost > 10) {
+    billCost.className = 'bill-card danger';
+  } else {
+    billCost.className = 'bill-card';
+  }
+}
+
+function updateLimits(checkToken) {
+  // Request-count meter
+  const reqPct = Math.min(100, (reqLimitUsed / REQ_LIMIT) * 100);
+  limReqFill.style.width = reqPct + '%';
+  limReqUsed.textContent = reqLimitUsed + ' / ' + REQ_LIMIT;
+  limReqPct.textContent = Math.round(reqPct) + '%';
+
+  if (reqPct >= 100) {
+    limReqFill.className = 'limit-fill red';
+  } else if (reqPct >= 60) {
+    limReqFill.className = 'limit-fill amber';
+  }
+
+  // Token meter
+  const tokPct = Math.min(100, (tokLimitUsed / TOK_LIMIT) * 100);
+  limTokFill.style.width = tokPct + '%';
+  limTokUsed.textContent = formatNum(tokLimitUsed) + ' / 500K';
+  limTokPct.textContent = Math.round(tokPct) + '%';
+
+  if (tokPct >= 100) {
+    limTokFill.className = 'limit-fill red';
+  } else if (tokPct >= 60) {
+    limTokFill.className = 'limit-fill amber';
+  } else {
+    limTokFill.className = 'limit-fill green';
+  }
+}
+
+function addLogRow(req, isAttack, blocked, delay) {
+  const tr = document.createElement('tr');
+  if (isAttack && !blocked) tr.className = 'is-attack';
+  if (blocked) tr.className = 'is-blocked';
+
+  const time = new Date();
+  const ts = time.getHours().toString().padStart(2,'0') + ':' +
+             time.getMinutes().toString().padStart(2,'0') + ':' +
+             time.getSeconds().toString().padStart(2,'0') + '.' +
+             Math.floor(Math.random()*999).toString().padStart(3,'0');
+
+  const cells = [
+    ts,
+    req.source,
+    req.model,
+    req.prompt,
+    blocked ? 'BLOCKED' : formatNum(req.tokens),
+    blocked ? '--' : '$' + req.cost.toFixed(3),
+  ];
+
+  cells.forEach((val, i) => {
+    const td = document.createElement('td');
+    td.textContent = val;
+    if (i === 4) td.className = 'tokens-col';
+    if (i === 5) td.className = 'cost-col';
+    tr.appendChild(td);
+  });
+
+  logTbody.appendChild(tr);
+  setTimeout(() => {
+    tr.classList.add('visible');
+    logBody.scrollTop = logBody.scrollHeight;
+  }, delay);
+}
+
+/* ═══════════════ Animation ═══════════════ */
+
+function processQueue(onDone) {
+  if (queueIndex >= requestQueue.length) {
+    if (animInterval) { clearInterval(animInterval); animInterval = null; }
+    if (onDone) onDone();
+    return;
+  }
+
+  const item = requestQueue[queueIndex];
+  queueIndex++;
+
+  const blocked = item.blocked || false;
+
+  if (!blocked) {
+    totalCost += item.req.cost;
+    totalReqs++;
+    totalTokens += item.req.tokens;
+    reqLimitUsed++;
+    tokLimitUsed += item.req.tokens;
+  }
+
+  addLogRow(item.req, item.isAttack, blocked, 20);
+  updateBilling();
+  updateLimits();
+}
+
+function startQueue(items, interval, onDone) {
+  requestQueue = items;
+  queueIndex = 0;
+  if (animInterval) clearInterval(animInterval);
+  animInterval = setInterval(() => processQueue(onDone), interval);
+}
+
+/* ═══════════════ Reset ═══════════════ */
+
+function resetSim() {
+  if (animInterval) { clearInterval(animInterval); animInterval = null; }
+  simState = STATE.IDLE;
+  totalCost = 0; totalReqs = 0; totalTokens = 0;
+  reqLimitUsed = 0; tokLimitUsed = 0;
+  logTbody.innerHTML = '';
+  updateBilling();
+  billCost.className = 'bill-card';
+  billReqs.className = 'bill-card';
+  billTokens.className = 'bill-card';
+  costRateEl.textContent = '';
+  reqRateEl.textContent = '';
+  tokenRateEl.textContent = '';
+  logBadge.textContent = 'Idle';
+  logBadge.className = 'log-badge running';
+  limReqFill.style.width = '0';
+  limReqFill.className = 'limit-fill amber';
+  limReqUsed.textContent = '0 / 100';
+  limReqPct.textContent = '0%';
+  limTokFill.style.width = '0';
+  limTokFill.className = 'limit-fill green';
+  limTokUsed.textContent = '0 / 500K';
+  limTokPct.textContent = '0%';
+  limReqVerdict.className = 'limit-verdict';
+  limReqVerdict.textContent = '';
+  limTokVerdict.className = 'limit-verdict';
+  limTokVerdict.textContent = '';
+  limReqCard.className = 'limit-card';
+  limTokCard.className = 'limit-card';
+  updateButton('Start Normal Traffic', false);
+  setNarration('phase-legit', 'An LLM API serves legitimate users. Each request has a token count and a dollar cost. The billing dashboard tracks accumulated spend while two rate-limiting strategies monitor usage. Watch what happens when an attacker gets hold of the API key.');
+}
+
+/* ═══════════════ Step Flow ═══════════════ */
+
+function stepForward() {
+  switch (simState) {
+    case STATE.IDLE: {
+      simState = STATE.NORMAL_TRAFFIC;
+      logBadge.textContent = 'Live';
+      logBadge.className = 'log-badge running';
+      updateButton('Processing...', true);
+
+      const items = LEGIT_REQUESTS.map(r => ({ req: r, isAttack: false }));
+      startQueue(items, 400, () => {
+        simState = STATE.NORMAL_DONE;
+        costRateEl.textContent = '~$0.005 per request avg';
+        reqRateEl.textContent = '~6 requests so far';
+        tokenRateEl.textContent = '~500 tokens per request avg';
+        updateButton('Simulate Stolen Key', false);
+        setNarration('phase-legit', 'Normal traffic: 6 legitimate requests totaling about $0.03 and ~3,100 tokens. Each request uses 300 to 900 tokens. The request-count meter barely moved. The token meter barely moved. This is the baseline cost of normal operations.');
+      });
+      break;
+    }
+
+    case STATE.NORMAL_DONE: {
+      simState = STATE.ATTACK_START;
+      logBadge.textContent = 'ATTACK';
+      logBadge.className = 'log-badge breach';
+      updateButton('Attack running...', true);
+
+      setNarration('phase-attack', 'An attacker compromises an API key and begins sending requests programmatically. Each request uses the maximum context window (128K tokens) with expensive models. The request-count limit sees only 8 additional requests. The token limit sees 1,000,000+ tokens consumed.');
+
+      const items = ATTACK_REQUESTS.map(r => ({ req: r, isAttack: true }));
+      startQueue(items, 500, () => {
+        simState = STATE.ATTACK_DONE;
+        costRateEl.textContent = '$' + totalCost.toFixed(2) + ' total';
+        reqRateEl.textContent = totalReqs + ' total requests';
+        tokenRateEl.textContent = formatNum(totalTokens) + ' total tokens';
+
+        // request-count verdict
+        limReqVerdict.textContent = 'PASSED. Only ' + totalReqs + ' requests. Limit is 100. Attack was invisible.';
+        limReqVerdict.style.color = 'var(--ink)';
+        limReqVerdict.className = 'limit-verdict show';
+        limReqCard.className = 'limit-card fail';
+
+        // token verdict
+        limTokVerdict.textContent = 'WOULD HAVE BLOCKED at ~4 requests. Token budget exhausted.';
+        limTokVerdict.style.color = 'var(--ink)';
+        limTokVerdict.className = 'limit-verdict show';
+        limTokCard.className = 'limit-card pass';
+
+        billCost.className = 'bill-card danger';
+
+        updateButton('Replay with Token Limit', false);
+        setNarration('phase-attack', 'The damage: $' + totalCost.toFixed(2) + ' in under a minute from ' + totalReqs + ' requests. The request-count limit saw only ' + totalReqs + ' of its 100-request budget used. It did nothing. But the token-based limit would have hit 500K tokens after just 4 attacker requests and blocked everything after that. The attack was invisible to one metric and obvious to the other.');
+      });
+      break;
+    }
+
+    case STATE.ATTACK_DONE: {
+      // Replay the attack with token-based blocking
+      simState = STATE.TOKEN_LIMIT;
+      totalCost = 0; totalReqs = 0; totalTokens = 0;
+      reqLimitUsed = 0; tokLimitUsed = 0;
+      logTbody.innerHTML = '';
+      updateBilling();
+      billCost.className = 'bill-card';
+      limReqFill.style.width = '0';
+      limReqFill.className = 'limit-fill amber';
+      limReqUsed.textContent = '0 / 100';
+      limReqPct.textContent = '0%';
+      limTokFill.style.width = '0';
+      limTokFill.className = 'limit-fill green';
+      limTokUsed.textContent = '0 / 500K';
+      limTokPct.textContent = '0%';
+      limReqVerdict.className = 'limit-verdict';
+      limTokVerdict.className = 'limit-verdict';
+      limReqCard.className = 'limit-card';
+      limTokCard.className = 'limit-card';
+
+      logBadge.textContent = 'REPLAY';
+      logBadge.className = 'log-badge running';
+      updateButton('Replaying...', true);
+
+      setNarration('phase-legit', 'Same traffic replayed, but now the token-based limit is enforced. Legitimate requests pass through normally. Watch what happens when the attacker\'s first max-context requests hit the token budget.');
+
+      // Build queue: legit first, then attack with blocking after token limit hit
+      const items = [];
+      LEGIT_REQUESTS.forEach(r => items.push({ req: r, isAttack: false }));
+
+      let runningTokens = LEGIT_REQUESTS.reduce((s, r) => s + r.tokens, 0);
+      ATTACK_REQUESTS.forEach(r => {
+        if (runningTokens + r.tokens > TOK_LIMIT) {
+          items.push({ req: r, isAttack: true, blocked: true });
+        } else {
+          items.push({ req: r, isAttack: true, blocked: false });
+          runningTokens += r.tokens;
+        }
+      });
+
+      startQueue(items, 400, () => {
+        simState = STATE.TOKEN_DONE;
+
+        costRateEl.textContent = '$' + totalCost.toFixed(2) + ' total';
+        reqRateEl.textContent = totalReqs + ' passed';
+        tokenRateEl.textContent = formatNum(totalTokens) + ' tokens used';
+
+        limTokVerdict.textContent = 'BLOCKED. Token budget exhausted. Remaining requests rejected.';
+        limTokVerdict.style.color = 'var(--ink)';
+        limTokVerdict.className = 'limit-verdict show';
+        limTokCard.className = 'limit-card pass';
+
+        if (totalCost < 15) billCost.className = 'bill-card safe';
+
+        updateButton('See Analysis', false);
+        setNarration('phase-legit', 'With token-based limiting: $' + totalCost.toFixed(2) + ' total instead of $30+. The limit caught the attack after the token budget was exhausted because it measures actual resource consumption, not just request count. The remaining attacker requests were rejected. Legitimate traffic that came before the attack was unaffected.');
+      });
+      break;
+    }
+
+    case STATE.TOKEN_DONE: {
+      simState = STATE.ANALYSIS;
+      updateButton('Run Again', false);
+      setNarration('phase-result', 'Request-count rate limiting treats all requests as equal. An attacker who sends 8 requests at 128K tokens each consumes 1,024,000 tokens and $30+ in compute while using only 8% of a 100-request limit. Token-based rate limiting measures what actually costs money: the tokens processed. This is why token-based limiting is necessary for any API-exposed LLM. The unit of abuse is the token, not the request.');
+      break;
+    }
+
+    case STATE.ANALYSIS: {
+      resetSim();
+      break;
+    }
+  }
+}
+
+btnStep.addEventListener('click', stepForward);
+btnReset.addEventListener('click', resetSim);
+
+/* ═══════════════ Init ═══════════════ */
+resetSim();
+
+/* -- Iframe height reporting -- */
+function sh() {
+  const el = document.querySelector('.wrap');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  window.parent.postMessage({ kind:'nyu-embed-height', height: Math.ceil(r.top + r.height + 2), src: location.href }, '*');
+}
+const ro = new ResizeObserver(sh);
+ro.observe(document.querySelector('.wrap'));
+window.addEventListener('load', sh);
+document.addEventListener('transitionend', sh);
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

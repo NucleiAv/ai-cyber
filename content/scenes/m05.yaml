@@ -1,0 +1,38 @@
+- title: Stale truth, and how grounding fixes it
+  stats: [Source used, Revision date, Telemetry advice]
+  nodes:
+    analyst: {label: Analyst, x: 0, y: 2, kind: box, tag: "17 April 2024"}
+    model: {label: Kestrel model, x: 2, y: 2, kind: def, tag: data up to 13 April}
+    cache: {label: Cached advisory, x: 2, y: 0, kind: box, tag: revision 12 April}
+    live: {label: Live advisory, x: 4, y: 0, kind: def, tag: revision 16 April}
+    fw: {label: Kestrel firewalls, x: 4, y: 2, kind: box, tag: "PAN-OS 11.1.1, telemetry off"}
+  links: [[analyst, model], [cache, model], [live, model], [model, fw]]
+  steps:
+    - title: Ask the model with no source
+      text: The model answers from its weights, frozen on 13 April. It says disabling telemetry mitigates CVE-2024-3400, in all five runs.
+      on: [analyst, model]
+      flow: [[analyst, model, ink], [model, analyst, atk]]
+      mark: {model: warn}
+      stats: [Weights, "13 April", Mitigates]
+    - title: That advice was withdrawn
+      text: Palo Alto changed the advisory on 16 April. Telemetry does not need to be on to be exposed, and turning it off no longer helps. High probability and five matching runs did not catch this.
+      on: [live]
+      stats: [Weights, "13 April", Stale truth]
+    - title: Pipeline A grounds on a cache
+      text: Pipeline A pastes the 12 April copy. The model is faithful to its source and still repeats the old workaround.
+      on: [cache, model]
+      flow: [[cache, model, atk]]
+      mark: {cache: warn}
+      stats: [Cache, "12 April", Mitigates]
+    - title: Pipeline B fetches live
+      text: Pipeline B fetches the 16 April revision. Now the briefing says telemetry is not a mitigation and the hotfix is required.
+      on: [live, model]
+      flow: [[live, model, def]]
+      mark: {model: ok}
+      stats: [Live, "16 April", No longer effective]
+    - title: Print the source date on every briefing
+      text: Kestrel's firewalls are almost certainly exposed, and hotfix 11.1.1-h1 protects them. Show "advisory revision of 16 April, retrieved 17 April" so the analyst checks currency before anyone acts.
+      on: [fw]
+      flow: [[model, fw, def]]
+      mark: {fw: warn}
+      stats: [Live, "16 April", Patch now]

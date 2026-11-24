@@ -1,0 +1,296 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stale Truth: The Frozen Model</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --nyu-violet: #57068C; --nyu-violet-dark: #3D0461; --nyu-violet-50: #F5EDFA;
+      --nyu-violet-100: #E8D8F2; --nyu-violet-200: #D2B3E5;
+      --danger: #C42A2A; --danger-bg: #FBE8E8;
+      --success: #166B3A; --success-bg: #E6F4EC;
+      --warning: #8A5D00; --warning-bg: #FCF1DC;
+      --ice: #1E6E8C; --ice-bg: #E4F2F7; --ice-border: #BBDFEA;
+      --ink: #1A1A1A; --ink-soft: #3A3A3A; --ink-mute: #6B6B6B;
+      --rule: #E2E2E2; --surface: #FFFFFF; --surface-sunken: #F6F4F8;
+      --shadow: 0 10px 30px rgba(18, 22, 33, 0.06);
+      --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--surface-sunken); padding: 12px 16px 8px; }
+    main { width: min(880px, 100%); margin: 0 auto; }
+    .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; box-shadow: var(--shadow); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; margin-bottom: 12px; }
+    .topbar h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+    .btn { appearance: none; border: 1px solid var(--nyu-violet); background: var(--nyu-violet); color: #fff; border-radius: 8px; padding: 9px 18px; font: inherit; font-weight: 600; font-size: 0.86rem; cursor: pointer; transition: background 140ms ease, transform 140ms ease; }
+    .btn:hover { background: var(--nyu-violet-dark); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .intro { margin: 14px 16px 14px; font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); }
+    .intro b { color: var(--ink); }
+
+    /* MODEL ROW (frozen, never changes) */
+    .modelrow { display: flex; align-items: center; gap: 13px; margin: 0 16px 12px; padding: 12px 14px; background: var(--ice-bg); border: 1px solid var(--ice-border); border-radius: 11px; }
+    .modelrow__icon { flex: none; width: 38px; height: 38px; border-radius: 9px; background: #fff; border: 1px solid var(--ice-border); display: flex; align-items: center; justify-content: center; color: #1A1A1A; }  /* teal on --ice-bg is same-hue */
+    .modelrow__icon svg { width: 22px; height: 22px; }
+    .modelrow__main { flex: 1; min-width: 0; }
+    .modelrow__label { font-family: var(--mono); font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #1A1A1A; }  /* teal on the --ice-bg tint is same-hue */
+    .modelrow__rec { font-size: 0.96rem; color: var(--ink); margin-top: 2px; }
+    .modelrow__rec b { font-family: var(--mono); font-weight: 700; }
+    .modelrow__status { flex: none; font-family: var(--mono); font-size: 0.72rem; font-weight: 700; padding: 5px 11px; border-radius: 999px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: background 250ms ease, color 250ms ease; background: #166534; color: #fff; }
+    .modelrow__status svg { width: 13px; height: 13px; }
+    .modelrow__status.bad { background: #991B1B; color: #fff; }
+    @media (max-width: 560px) { .modelrow { flex-wrap: wrap; } .modelrow__status { margin-left: 51px; } }
+
+    /* REALITY ROW (moving) */
+    .realityrow { margin: 0 16px 10px; }
+    .realityrow__label { font-family: var(--mono); font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--nyu-violet); margin-bottom: 4px; }
+    .stepper { position: relative; height: 104px; padding: 0 4px; }
+    .stepline { position: absolute; left: 2%; right: 2%; top: 44px; height: 2px; background: var(--rule); }
+
+    .cutoff { position: absolute; top: 28px; height: 32px; border-left: 2px dashed var(--ice); z-index: 1; }
+    .cutoff span { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ice); white-space: nowrap; }
+
+    .rel { position: absolute; top: 44px; transform: translateX(-50%); text-align: center; width: 84px; }
+    .rel__dot { width: 15px; height: 15px; border-radius: 50%; background: #fff; border: 2.5px solid var(--nyu-violet-200); margin: -7px auto 0; transition: all 250ms ease; position: relative; z-index: 2; }
+    .rel.current .rel__dot { border-color: var(--success); background: var(--success); box-shadow: 0 0 0 5px rgba(22,107,58,0.16); }
+    .rel.superseded .rel__dot { border-color: var(--danger); background: var(--danger-bg); }
+    .rel__v { font-family: var(--mono); font-size: 0.74rem; font-weight: 700; color: var(--ink-soft); margin-top: 13px; white-space: nowrap; }
+    .rel.current .rel__v { color: var(--success); }
+    .rel.superseded .rel__v { color: var(--danger); text-decoration: line-through; }
+    .rel__date { font-family: var(--mono); font-size: 0.6rem; color: var(--ink-mute); }
+    .rel__tag { font-family: var(--mono); font-size: 0.56rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 2px; height: 0.8rem; }
+    .rel.current .rel__tag { color: var(--success); }
+
+    .now { position: absolute; top: 22px; height: 22px; width: 2px; background: var(--nyu-violet); z-index: 4; }
+    .now__badge { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #fff; background: var(--nyu-violet); padding: 1px 7px; border-radius: 5px; white-space: nowrap; }
+    .now::after { content: ""; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); width: 11px; height: 11px; border-radius: 50%; background: var(--nyu-violet); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(87,6,140,0.4); }
+
+    .narration { margin: 6px 16px 12px; padding: 12px 14px; background: var(--surface-sunken); border: 1px solid var(--rule); border-left: 4px solid var(--nyu-violet); border-radius: 9px; font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); min-height: 3.4em; }
+    .narration strong { color: var(--ink); }
+
+    .checks { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 16px 14px; }
+    .chk { display: inline-flex; align-items: center; gap: 7px; font-size: 0.78rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--rule); color: var(--ink-mute); transition: all 250ms ease; }
+    .chk svg { width: 15px; height: 15px; }
+    .chk b { font-weight: 700; }
+    .chk.pass { background: #166534; border-color: #166534; color: #fff; }
+    .chk.fail { background: #991B1B; border-color: #991B1B; color: #fff; }
+
+    @media (prefers-reduced-motion: reduce) { .now, .rel__dot, .modelrow__status, .chk { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card topbar">
+      <h1>Stale Truth: A Model Frozen at Its Cutoff</h1>
+      <button class="btn" id="playBtn" type="button">Advance time</button>
+    </div>
+
+    <div class="card">
+      <p class="intro">A language model is trained up to a fixed <b>cutoff date</b>, then never updates on its own. This one finished training in December 2021, just after Log4j <b>2.15.0</b> shipped. Press <b>Advance time</b> and watch what its advice does as the real fix keeps changing.</p>
+
+      <!-- The model: frozen, never changes -->
+      <div class="modelrow">
+        <div class="modelrow__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1"/></svg>
+        </div>
+        <div class="modelrow__main">
+          <div class="modelrow__label">The model &middot; frozen at its training cutoff (Dec 2021)</div>
+          <div class="modelrow__rec">Always recommends: <b>upgrade to 2.15.0</b></div>
+        </div>
+        <div class="modelrow__status" id="modelStatus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg>still correct</div>
+      </div>
+
+      <!-- Reality: keeps moving -->
+      <div class="realityrow">
+        <div class="realityrow__label">Reality &middot; the Log4j fix kept evolving</div>
+        <div class="stepper" id="stepper">
+          <div class="stepline"></div>
+          <div class="cutoff" id="cutoff"><span>training cutoff</span></div>
+          <!-- release markers injected -->
+          <div class="now" id="now"><span class="now__badge">now</span></div>
+        </div>
+      </div>
+
+      <p class="narration" id="narration">Press <strong>Advance time</strong> to begin. At the start, the model and reality agree.</p>
+
+      <div class="checks">
+        <span class="chk" id="chkExist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/></svg>Existence check</span>
+        <span class="chk" id="chkCurrency"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/></svg>Currency check</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    'use strict';
+    var $ = function (id) { return document.getElementById(id); };
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var RELEASES = [
+      { v: '2.15.0', date: 'Dec 10', x: 13 },
+      { v: '2.16.0', date: 'Dec 13', x: 38 },
+      { v: '2.17.0', date: 'Dec 17', x: 63 },
+      { v: '2.17.1', date: 'Dec 28', x: 87 }
+    ];
+    var CUTOFF_X = 25;
+
+    var stepper = $('stepper'), now = $('now');
+    $('cutoff').style.left = CUTOFF_X + '%';
+
+    var relEls = [];
+    RELEASES.forEach(function (r) {
+      var d = document.createElement('div'); d.className = 'rel'; d.style.left = r.x + '%';
+      d.innerHTML = '<div class="rel__dot"></div><div class="rel__v">' + r.v + '</div><div class="rel__date">' + r.date + ', 2021</div><div class="rel__tag"></div>';
+      stepper.appendChild(d); relEls.push(d);
+    });
+
+    var ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg>';
+    var ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+    var STEPS = [
+      { idx: 0,
+        narr: 'Right now it is December 2021. The model just finished training, so <strong>2.15.0 really is the current fix</strong>. The model is correct.',
+        currency: 'pass', stale: false },
+      { idx: 1,
+        narr: 'Three days later, <strong>2.15.0 is found incomplete</strong> and replaced by 2.16.0. The model never saw this, so it still says &ldquo;2.15.0.&rdquo; Its advice did not change, but the world did.',
+        currency: 'fail', stale: true },
+      { idx: 2,
+        narr: 'More fixes follow (2.17.0). Reality keeps moving forward; the model stays frozen at its cutoff, still recommending a version that was superseded weeks ago.',
+        currency: 'fail', stale: true },
+      { idx: 3,
+        narr: '<strong>Stale truth.</strong> Long after, the model still confidently recommends 2.15.0. It is not hallucinating, the version is real, so the <strong>existence check passes</strong>. Only the <strong>currency check</strong> (&ldquo;is this still the fix today?&rdquo;) catches that the answer expired.',
+        currency: 'fail', stale: true }
+    ];
+
+    function setChk(el, state, label) {
+      el.className = 'chk ' + state;
+      el.innerHTML = (state === 'pass' ? ICON_OK : (state === 'fail' ? ICON_X : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/></svg>')) + label;
+    }
+
+    function applyStep(s, animate) {
+      // releases: current = idx (green), earlier = superseded (red/struck)
+      relEls.forEach(function (d, i) {
+        d.classList.remove('current', 'superseded');
+        var tag = d.querySelector('.rel__tag');
+        if (i < s.idx) { d.classList.add('superseded'); tag.textContent = ''; }
+        else if (i === s.idx) { d.classList.add('current'); tag.textContent = 'current fix'; }
+        else { tag.textContent = ''; }
+      });
+      // model status badge: recommendation never changes, validity flips
+      var ms = $('modelStatus');
+      if (s.stale) { ms.className = 'modelrow__status bad'; ms.innerHTML = ICON_X + 'now superseded'; }
+      else { ms.className = 'modelrow__status'; ms.innerHTML = ICON_OK + 'still correct'; }
+      // checks
+      setChk($('chkExist'), 'pass', 'Existence check: 2.15.0 is real');
+      setChk($('chkCurrency'), s.currency === 'pass' ? 'pass' : 'fail', s.currency === 'pass' ? 'Currency check: still current' : 'Currency check: superseded');
+      $('narration').innerHTML = s.narr;
+    }
+
+    function reset() {
+      relEls.forEach(function (d) { d.className = 'rel'; d.querySelector('.rel__tag').textContent = ''; });
+      now.style.left = RELEASES[0].x + '%';
+      $('modelStatus').className = 'modelrow__status';
+      $('modelStatus').innerHTML = ICON_OK + 'still correct';
+      setChk($('chkExist'), '', 'Existence check');
+      setChk($('chkCurrency'), '', 'Currency check');
+      $('narration').innerHTML = 'Press <strong>Advance time</strong> to begin. At the start, the model and reality agree.';
+    }
+
+    var busy = false, raf = null;
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    // smooth, frame-by-frame movement of the "now" marker
+    function glideNow(toX, dur) {
+      return new Promise(function (resolve) {
+        if (reduce || dur <= 0) { now.style.left = toX + '%'; resolve(); return; }
+        var from = parseFloat(now.style.left); if (isNaN(from)) from = RELEASES[0].x;
+        var t0 = null;
+        function fr(t) {
+          if (t0 === null) t0 = t;
+          var p = Math.min(1, (t - t0) / dur);
+          var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+          now.style.left = (from + (toX - from) * e) + '%';
+          if (p < 1) raf = requestAnimationFrame(fr); else resolve();
+        }
+        raf = requestAnimationFrame(fr);
+      });
+    }
+
+    async function run() {
+      if (busy) return; busy = true;
+      var btn = $('playBtn'); btn.disabled = true;
+      reset();
+      await sleep(reduce ? 0 : 500);
+      applyStep(STEPS[0]);
+      await sleep(reduce ? 800 : 2400);
+      for (var i = 1; i < STEPS.length; i++) {
+        await glideNow(RELEASES[STEPS[i].idx].x, reduce ? 0 : 1600);
+        applyStep(STEPS[i]);
+        await sleep(reduce ? 800 : 2500);
+      }
+      btn.disabled = false; btn.textContent = 'Replay'; busy = false;
+    }
+
+    $('playBtn').addEventListener('click', run);
+    reset();
+
+    /* ---------- Embed height reporting ---------- */
+    var mainEl = document.querySelector('main');
+    var lastReported = 0;
+    function reportHeight() {
+      var h = Math.ceil(mainEl.getBoundingClientRect().bottom + 10);
+      if (h > 50 && h !== lastReported) { lastReported = h; window.parent.postMessage({ kind: 'nyu-embed-height', height: h }, '*'); }
+    }
+    window.addEventListener('load', function () { lastReported = 0; reportHeight(); });
+    window.addEventListener('resize', function () { requestAnimationFrame(reportHeight); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { lastReported = 0; reportHeight(); });
+    if ('ResizeObserver' in window) new ResizeObserver(function () { requestAnimationFrame(reportHeight); }).observe(mainEl);
+    reportHeight();
+  </script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

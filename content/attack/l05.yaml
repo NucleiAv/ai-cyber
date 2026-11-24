@@ -1,0 +1,167 @@
+slug: l05
+num: "05"
+lecture: 5
+week: 5
+short: Supply chain, dependencies
+title: Supply chain, malicious models and hijacked names
+time: about 3.5 hours
+lede: Why loading a model file can run an attacker's code, how model names on a hub get hijacked, and how to load models safely.
+owasp: [LLM03]
+agentic: [ASI04]
+atlas: [AML.T0010.003, AML.T0011.000, AML.T0115.001, AML.T0111]
+other_fw:
+  - [NIST AI 100-2 E2025, "Lists supply chain attacks on models and data as a group of attacks on AI systems."]
+  - [SLSA and Sigstore, "Supply chain frameworks that lesson 6 applies to models."]
+
+idea: |
+  Most teams do not train models. They download them. A model file from a public hub is code and data from a stranger.
+
+  Many PyTorch model files use Python **pickle**. Pickle can store instructions that say "when you load me, call this function". So a model file can run any command on the machine that loads it.
+
+  !eli5 Pickle is like a flat-pack furniture box that also contains the assembly robot. You open the box, and the robot starts to build whatever it was told to build, even if that is not a chair.
+
+terms:
+  - [Serialization, "Turning objects in memory into bytes, so they can be saved to a file."]
+  - [Deserialization, "Turning saved bytes back into objects. With pickle, this step can call functions."]
+  - ["__reduce__", "A Python method that tells pickle how to rebuild an object. An attacker returns a function to call, such as os.system, with its argument."]
+  - [safetensors, "A model file format that stores only numbers. Loading it cannot run code."]
+  - [weights_only, "A torch.load setting. When True, PyTorch loads only tensors and safe types. It is the default since PyTorch 2.6."]
+  - [Namespace, "The owner part of a model name on a hub, such as the 'meta-llama' in 'meta-llama/Llama-2-7b'."]
+  - [Typosquatting, "Publishing under a name that looks like a real one, such as 'EleuterAI' for 'EleutherAI'."]
+
+how: |
+  ### How a pickle payload runs
+
+  1. The attacker writes a class with a `__reduce__` method. The method returns a function, such as `os.system`, and an argument, such as a shell command.
+  2. The attacker saves an object of that class with `torch.save`. The file looks like a normal `.pth` model.
+  3. The victim runs `torch.load` on the file with `weights_only=False`.
+  4. Pickle rebuilds the object. To rebuild it, it calls the function with the argument. The command runs with the victim's permissions.
+
+  ### How a model name gets hijacked
+
+  Unit 42 (2025) showed **model namespace reuse**. When an author deletes an account on Hugging Face, or an organization changes its name, the old name can become free. Anyone can register it and upload a new model. Code and cloud catalogs that still pull the old name now pull the attacker's model.
+
+  ### How a model can lie without code
+
+  Mithril Security showed **PoisonGPT** in 2023. They changed one fact inside an open model with a model editing method, so it gave a false answer to one question and normal answers to everything else. Then they uploaded it under a look-alike name. No scanner looks for a changed fact.
+
+diagrams:
+  - type: flow
+    title: Loading a malicious model file
+    nodes: [["Attacker writes __reduce__ payload", "atk"], ["torch.save makes model.pth", "box"], ["File shared on a hub or in a repo", "box"], ["Victim runs torch.load with weights_only=False", "raised"], ["os.system runs the command", "atk"]]
+    edges: [["", "atk"], "upload", "download", ["unpickle", "atk"]]
+    caption: The command runs before the victim's code ever looks at the model. Since PyTorch 2.6 the default weights_only=True blocks this.
+  - type: flow
+    title: Model namespace reuse
+    nodes: [["Author deletes account", "box"], ["Name becomes free", "box"], ["Attacker registers the same name", "atk"], ["Pipeline pulls by name", "raised"], ["Attacker's model is deployed", "atk"]]
+    edges: ["", "", "uploads", ""]
+    caption: Pin models by exact commit or hash, not only by name.
+
+attack_steps:
+  - Pick a popular model or a name that code still references.
+  - Build a payload file with `__reduce__`, or edit the model's behavior.
+  - Publish it under a trusted-looking name, a typo, or a freed namespace.
+  - Make it look real. Copy the model card, add downloads, stars or a demo.
+  - Wait for a pipeline or a developer to load it.
+
+cases:
+  - [JFrog, 2024, "JFrog reported about 100 malicious models on Hugging Face. Some opened a reverse shell to the attacker when loaded."]
+  - [PoisonGPT, 2023, "Mithril Security edited GPT-J to state one false fact and published it under a look-alike of EleutherAI's name."]
+  - [Namespace reuse, 2025, "Unit 42 registered freed model names and showed that platforms that deploy by name, including Google Vertex AI and Azure AI Foundry catalogs, could pull the replacement."]
+
+defense: |
+  - Prefer **safetensors** files. They hold only numbers.
+  - Keep `torch.load(..., weights_only=True)`, the default in PyTorch 2.6 and later. Never turn it off for a file you did not create.
+  - Scan model files with **ModelScan** or picklescan before use. Scanners use block lists, so attackers look for functions that the list misses. Treat a clean scan as one signal, not proof.
+  - Pin each model by its exact revision or file hash. Mirror approved models into your own registry.
+  - Load unknown models only in a sandbox with no secrets and no network.
+  - Research tools such as **PickleBall** go further. They read the code that defines a model class and allow only the objects that a real file of that class needs.
+
+defense_diagrams:
+  - type: layers
+    title: Loading a model you downloaded
+    attack: malicious model.pth
+    layers:
+      - ["Trusted source and pinned hash", "Only approved models, fixed by revision", "partial"]
+      - ["ModelScan in CI", "Flags known dangerous calls such as os.system", "partial"]
+      - ["safetensors or weights_only=True", "No code runs during load", "stop"]
+      - ["Sandbox without secrets or network", "Limits harm if something still runs", "stop"]
+
+lab:
+  intro: |
+    Solve LLMGoat A03. Then build the malicious model from the slides. The payload here only prints a message, but the same method can run any command. **Run it only in a throwaway virtual machine or container.**
+  steps:
+    - Solve LLMGoat A03, supply chain. Save the prompt.
+    - Make a new folder in a throwaway environment. Install PyTorch.
+    - Create payload.py with the code below and run it. It writes malicious_model.pth.
+    - Create victim.py. It calls torch.load with weights_only=False on the file.
+    - Run victim.py. The message "goodbye world!" prints. That proves loading ran code.
+    - Run victim.py again with weights_only=True. PyTorch refuses to load the file.
+    - "Extend task. Install ModelScan and scan malicious_model.pth. Then try to change the payload so the scan misses it, and note what you learn."
+  code: |
+    # payload.py
+    import torch
+
+    class MaliciousPayload:
+        def __reduce__(self):
+            import os
+            # pickle will call os.system(...) when it rebuilds this object
+            return (os.system, ("python3 -c \"print('goodbye world!')\"",))
+
+    torch.save(MaliciousPayload(), "malicious_model.pth")
+
+    # victim.py
+    import torch
+    torch.load("malicious_model.pth", weights_only=False)   # unsafe on purpose
+  hints:
+    - On Windows, python3 may be called python. Change the command if nothing prints.
+    - If torch.load raises an error about weights_only, you are on PyTorch 2.6 or later and the safe default is on. That is the point of the last step.
+  links: [llmgoat, modelscan, torchload, safetensors]
+
+readings:
+  - [pickleball, "Explains why pickle loading is unsafe and proposes policies, generated from library code, that allow only the objects a model class needs."]
+  - [supplyprob, "A map of open problems across the LLM supply chain, from data and models to tooling and deployment."]
+  - [unit42ns, "The namespace reuse attack, with cloud platform examples and advice to pin by revision."]
+  - [mithril, "Compares prompt injection with supply chain poisoning, with the PoisonGPT example."]
+  - [torchload, "Read the warning box. It says never to load untrusted data with weights_only=False."]
+star: [pickleball, unit42ns]
+
+questions:
+  - - When a developer downloads llama-2-7b from Hugging Face, what guarantee do they have that the weights were not tampered with?
+    - |
+      Few guarantees, and they depend on how the model is pulled.
+
+      - **The name.** You trust that the namespace still belongs to Meta. Namespace reuse shows that a name can change owners.
+      - **The file hash.** The hub shows a hash for each file. It proves the file did not change after upload. It does not prove the uploaded file was safe.
+      - **The format.** Official Llama releases use safetensors, which cannot run code on load. Many community copies and fine-tunes still ship pickle files.
+      - **The behavior.** Nothing proves the weights act as claimed. A poisoned or edited model looks normal on most tests.
+
+      For the official release in safetensors, pinned to a revision, with checked hashes, the risk is low. For community copies, there is little guarantee. Signing and provenance, covered in lesson 6, are the way to get more.
+
+quiz:
+  - q: What does weights_only=True do in torch.load?
+    opts: ["Loads only tensors and safe types, so pickle cannot call functions", "Makes loading faster", "Removes the model's bias"]
+    a: 0
+    why: It limits what the unpickler may build. It is the default since PyTorch 2.6.
+  - q: Which file format cannot run code when loaded?
+    opts: [".pth with pickle", "safetensors", ".bin with pickle"]
+    a: 1
+    why: safetensors stores only raw tensors and a small header.
+  - q: How do you defend against model namespace reuse?
+    opts: ["Use a bigger model", "Pin the exact revision or hash and mirror approved models", "Turn off the GPU"]
+    a: 1
+    why: A pinned revision cannot change when the name changes owner.
+
+deliverables:
+  - Your answer to the discussion question.
+  - The prompt that solved LLMGoat A03.
+  - payload.py and victim.py, with a screenshot of "goodbye world!" in your terminal.
+
+refs:
+  - "[PickleBall, secure deserialization of pickle-based ML models](@pickleball), 2025."
+  - "[Large language model supply chain, open problems](@supplyprob), 2024."
+  - "Unit 42. [Model namespace reuse](@unit42ns), 2025."
+  - "Mithril Security. [Prompt injection vs supply chain poisoning](@mithril)."
+  - "PyTorch. [torch.load documentation](@torchload) and [serialization notes](@torchser)."
+  - "JFrog. [Malicious ML models discovered on Hugging Face](https://jfrog.com/blog/data-scientists-targeted-by-malicious-hugging-face-ml-models-with-silent-backdoor/), 2024."
+  - "OWASP. [LLM03 2025 Supply chain](https://genai.owasp.org/llmrisk/llm032025-supply-chain/)."

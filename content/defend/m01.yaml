@@ -1,0 +1,107 @@
+n: 1
+short: AI foundations
+title: AI foundations
+time: 7 sections · about 3.5 hours
+lede: What AI and machine learning really are, how a model learns, how to measure a detector, and how AI changes the security field.
+idea: |
+  Security tools used to be lists of rules written by people. A rule catches exactly what it describes and nothing new. **Machine learning** lets a computer learn its own rules from examples, so it can catch things nobody wrote a rule for.
+
+  This module builds the words you need for the rest of the course. It also teaches the most useful skill in security AI. **Measure a detector with the right numbers**, not with one big accuracy score.
+
+  !eli5 A rule is a "wanted" poster with one face. Machine learning is a guard who has seen ten thousand thieves and learned what thieves tend to look like. The guard can spot a new thief, but can also be fooled, and can make mistakes.
+primer: |
+  ### Step 1. The family tree
+
+  **AI** is the big circle. Inside it is **machine learning**, programs that learn from data. Inside that is **deep learning**, machine learning with many-layer neural networks. Inside that are **large language models**. Every LLM is deep learning, but most AI in security is not an LLM.
+
+  ### Step 2. Three ways to learn
+
+  - **Supervised learning.** Examples come with answers, called labels, such as "malicious" or "benign". The model learns to predict the label. Most detectors work this way.
+  - **Unsupervised learning.** No labels. The model finds groups and outliers. Good for "this traffic is unusual".
+  - **Reinforcement learning.** The model acts, gets a reward or a penalty, and learns which actions pay off.
+
+  ### Step 3. Train, then use
+
+  **Training** adjusts the model's numbers, called weights or parameters, until its guesses match the labels. **Inference** is using the trained model on new data. A model must be tested on data it did not train on, or the score means nothing.
+
+  ### Step 4. Measure it honestly
+
+  Every prediction lands in one cell of the **confusion matrix**.
+
+  - **True positive (TP).** It said malicious, and it was.
+  - **False positive (FP).** It said malicious, but it was benign. This wastes analyst time.
+  - **False negative (FN).** It said benign, but it was malicious. This is a missed attack.
+  - **True negative (TN).** It said benign, and it was.
+
+  From these, **precision** = TP ÷ (TP + FP) answers "of what it flagged, how much was real?" **Recall** = TP ÷ (TP + FN) answers "of the real attacks, how many did it catch?" Security data is mostly benign, so plain accuracy flatters bad detectors.
+
+  !fact On a dataset that is 80 percent benign, a detector that says "benign" every time scores 80 percent accuracy and catches nothing. Module 4 uses this exact example with CIC-IDS2017.
+
+  ### Step 5. Language models and hallucination
+
+  An LLM predicts the next token. It has no built-in fact check. So **hallucination**, fluent but false output, is part of how it works, not a bug that one patch can remove.
+
+  ### Step 6. Why this matters now
+
+  AI lowers the skill and cost an attacker needs, speeds up attacks, and helps defenders too. This is **dual use**. Before you trust any "AI-powered" claim, ask what type of AI it is, what data it learned from, and how it was measured.
+diagrams:
+  - type: flow
+    title: Supervised learning for a phishing filter
+    nodes: [["Emails with labels", "box", "phish or not"], ["Training", "raised"], ["Model", "def"], ["New email", "box"], ["Prediction", "def", "phish 0.92"]]
+    edges: ["", "", "", ""]
+    caption: The model learns from labeled examples, then scores emails it has never seen.
+  - type: flow
+    title: The confusion matrix as two questions
+    lanes:
+      - label: precision asks
+        labelkind: def
+        nodes: [["Everything it flagged", "box"], ["How much was real?", "def", "TP ÷ (TP + FP)"]]
+        edges: [""]
+      - label: recall asks
+        labelkind: def
+        nodes: [["Every real attack", "box"], ["How many did it catch?", "def", "TP ÷ (TP + FN)"]]
+        edges: [""]
+    caption: A detector can be strong on one and weak on the other. Always ask for both.
+terms:
+  - [Model, "The learned rules, stored as numbers called weights."]
+  - [Feature, "A measurable input to a model, such as bytes sent or packet count."]
+  - [Label, "The right answer attached to a training example."]
+  - [Overfitting, "The model memorizes training data and fails on new data."]
+  - [Precision, "Of the alerts it raised, the share that were real."]
+  - [Recall, "Of the real attacks, the share it caught."]
+  - [F1, "One number that balances precision and recall. It is high only when both are high."]
+  - [Dual use, "The same capability helps both defenders and attackers."]
+sections:
+  01_what-is-machine-learning.html: "Why signature rules stop working against new attacks, how machine learning learns from data instead, and the three kinds of learning (supervised, unsupervised and reinforcement) with security examples."
+  02_how-machines-learn.html: "The family tree from AI to machine learning to deep learning to LLMs, what a model is, what happens in training and in inference, and how deep learning differs from classic machine learning."
+  03_ml-models-in-action.html: "Five detectors run on 2,000 real network flows from the UNSW-NB15 dataset, right in your browser. A rule, logistic regression, a decision tree, a random forest and gradient boosting, compared side by side."
+  04_language-models.html: "How an LLM writes text one token at a time, why hallucination comes from how it works, and what newer reasoning models change."
+  05_measuring-performance.html: "Why analysts drown in alerts, how to read a confusion matrix, and how precision and recall trade off, with an email security gateway worked example."
+  06_ai-on-the-cyber-battlefield.html: "Three big shifts AI brings to attacks, how the same tools help defenders and attackers, and five questions to ask about any AI security claim."
+  07_references-and-readings.html: "Every paper, standard, tool and dataset used in Module 1, sorted by type and by section."
+other_fw:
+  - [NIST AI RMF 1.0, "The base risk framework for AI. [Read it](@nistrmf)."]
+  - [NIST Cyber AI Profile, "A NIST Cybersecurity Framework profile for AI. It looks at securing AI systems, using AI for defense, and defending against AI-enabled attacks."]
+  - [MITRE ATLAS, "The attack matrix for AI systems used in later modules. [Open it](@atlas)."]
+slides:
+  summary: |
+    The first lecture covers the course setup and the core vocabulary. It walks through the AI family tree, rule-based versus learned detectors, how features are made, the words of training, the confusion matrix with precision, recall and F1, a live look at a machine learning dataset, the NIST profile for AI, the three structural shifts in the threat landscape, dual use, and five questions to ask of any "AI-powered" claim.
+  files: [M01_AHT.pdf]
+quiz:
+  - q: A detector flags 50 emails as phishing. 30 of them are phishing. It missed 20 other phishing emails. What is its recall?
+    type: num
+    a: 0.6
+    tol: 0.01
+    why: "TP = 30 and FN = 20, so recall = 30 ÷ (30 + 20) = 0.6. Precision is also 30 ÷ 50 = 0.6 here."
+  - q: Which kind of learning fits "find hosts whose traffic looks unlike all the others", with no labels?
+    opts: ["Supervised", "Unsupervised", "Reinforcement"]
+    a: 1
+    why: Without labels, the model looks for groups and outliers. That is unsupervised learning.
+  - q: A dataset is 80 percent benign. A model always answers benign. What is its recall on attacks?
+    opts: ["80 percent", "20 percent", "Zero"]
+    a: 2
+    why: It never flags anything, so it catches no attacks. Its accuracy of 80 percent hides this.
+  - q: Why is hallucination hard to remove from an LLM?
+    opts: ["It is a rare software bug", "The model predicts likely text and has no built-in fact check", "It only happens on small GPUs"]
+    a: 1
+    why: Fluent false text is a direct result of next-token prediction.

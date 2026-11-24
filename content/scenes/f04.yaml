@@ -1,0 +1,46 @@
+- title: Walking STRIDE across a RAG bot
+  stats: [Letter, Property broken, Example]
+  nodes:
+    user: {label: User, x: 0, y: 1, kind: box, tag: outside}
+    web: {label: Uploads and web pages, x: 0, y: 3, kind: atk, tag: outside}
+    api: {label: Chat API, x: 2, y: 1, kind: def, tag: trust boundary}
+    llm: {label: LLM, x: 4, y: 1, kind: def}
+    store: {label: Vector store, x: 2, y: 3, kind: raised}
+    tool: {label: Email tool, x: 6, y: 1, kind: raised}
+    log: {label: Audit log, x: 4, y: 3, kind: box}
+  links: [[user, api], [web, store], [api, llm], [store, llm], [llm, tool], [llm, log]]
+  steps:
+    - title: S, Spoofing
+      text: A user types a fake system block, and the model takes it as the developer.
+      on: [user, api]
+      flow: [[user, api, atk]]
+      mark: {api: warn}
+      stats: [S, Authentication, Fake system block]
+    - title: T, Tampering
+      text: An outsider uploads a document that changes what the store says.
+      on: [web, store]
+      flow: [[web, store, atk]]
+      mark: {store: warn}
+      stats: [T, Integrity, Poisoned document]
+    - title: R, Repudiation
+      text: The bot sends an email and nothing records which prompt caused it.
+      on: [llm, log]
+      flow: [[llm, log, ink]]
+      mark: {log: bad}
+      stats: [R, Non-repudiation, No action log]
+    - title: I, Information disclosure
+      text: The model repeats its system prompt or another user's chunk.
+      on: [llm, user]
+      flow: [[llm, api, atk], [api, user, atk]]
+      stats: [I, Confidentiality, Leaked prompt]
+    - title: D, Denial of service
+      text: Sponge prompts burn the token budget and slow everyone down.
+      on: [api, llm]
+      flow: [[user, api, atk], [api, llm, atk]]
+      stats: [D, Availability, Token flood]
+    - title: E, Elevation of privilege
+      text: An injected instruction makes the model use the email tool for something the user may not do.
+      on: [llm, tool]
+      flow: [[llm, tool, atk]]
+      mark: {tool: bad}
+      stats: [E, Authorization, Tool misuse]

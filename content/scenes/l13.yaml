@@ -1,0 +1,39 @@
+- title: Slopsquatting, a package the AI made up
+  stats: [Package exists, Who owns the name, Malware in build]
+  nodes:
+    dev: {label: Developer, x: 0, y: 2, kind: box}
+    ai: {label: Coding assistant, x: 2, y: 2, kind: def, tag: suggests a package}
+    atk: {label: Attacker, x: 4, y: 0, kind: atk, tag: asked the AI first}
+    reg: {label: Package registry, x: 4, y: 2, kind: raised}
+    build: {label: Build, x: 6, y: 2, kind: box}
+  links: [[dev, ai], [ai, dev], [atk, reg], [dev, reg], [reg, build]]
+  steps:
+    - title: The attacker asks the AI first
+      text: The attacker asks common coding questions and records package names the assistant invents. Many invented names repeat. Module 6 cites 43 percent that came back in all 10 of 10 tries.
+      on: [atk, ai]
+      stats: ["No", "Nobody", "No"]
+    - title: Register the invented name
+      text: The attacker publishes malware under that name on the public registry.
+      on: [atk, reg]
+      flow: [[atk, reg, atk]]
+      mark: {reg: warn}
+      stats: ["Yes", "Attacker", "No"]
+    - title: A developer asks the same question
+      text: The assistant gives the same invented name, in a confident tone. Nothing in the answer says it is a guess.
+      on: [dev, ai]
+      flow: [[dev, ai, ink], [ai, dev, atk]]
+      mark: {ai: warn}
+      stats: ["Yes", "Attacker", "No"]
+    - title: The install pulls the attacker's code
+      text: The developer installs it, and the lock file faithfully records it. The malware now runs in every build.
+      on: [reg, build]
+      flow: [[dev, reg, ink], [reg, build, atk]]
+      mark: {build: bad}
+      stats: ["Yes", "Attacker", "Yes"]
+    - title: Check before you install
+      text: Confirm the package is real, popular and the one you meant. Use an approved package list. A lock file protects against later changes, not against a bad first choice.
+      on: [dev]
+      show: [dev, ai, reg, build]
+      flow: [[dev, ai, ink], [dev, reg, def]]
+      mark: {dev: ok}
+      stats: ["-", "-", "No"]

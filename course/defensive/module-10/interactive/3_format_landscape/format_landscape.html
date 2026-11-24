@@ -1,0 +1,781 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model File Format Landscape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { color-scheme: light; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    background: #ffffff;
+    color: #15171C;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .card {
+    max-width: 960px;
+    margin: 0 auto;
+    border: 1px solid #e9eaee;
+    border-radius: 16px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid #e9eaee;
+    background: #f7f8fa;
+  }
+
+  .card-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #15171C;
+    margin-bottom: 4px;
+  }
+
+  .card-header p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #565a63;
+  }
+
+  /* ---- Pipeline area ---- */
+  .pipeline-area {
+    position: relative;
+    padding: 28px 24px 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .pipeline {
+    display: flex;
+    gap: 0;
+    min-width: 880px;
+    position: relative;
+  }
+
+  /* Stage columns */
+  .stage {
+    flex: 1;
+    min-width: 160px;
+    position: relative;
+    padding: 0 6px;
+  }
+
+  .stage-head {
+    text-align: center;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e9eaee;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .stage-head::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 7px solid #d0d1d5;
+  }
+
+  .stage:last-child .stage-head::after { display: none; }
+
+  .stage-num {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight: 500;
+    color: #5c6270;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .stage-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #15171C;
+    line-height: 1.3;
+  }
+
+  /* Format cards */
+  .format-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 2px;
+  }
+
+  .fmt {
+    border: 1.5px solid #e9eaee;
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    background: #ffffff;
+    position: relative;
+  }
+
+  .fmt:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  }
+
+  .fmt.selected {
+    box-shadow: 0 0 0 2px #57068C, 0 3px 10px rgba(87,6,140,0.12);
+    border-color: #57068C;
+  }
+
+  .fmt-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #15171C;
+    margin-bottom: 3px;
+  }
+
+  .fmt-ext {
+    font-family: 'JetBrains Mono', monospace;
+    font-size:12px;
+    color: #565a63;
+    margin-bottom: 6px;
+  }
+
+  /* Trust indicator dot + label */
+  .trust-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .trust-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .trust-dot.red    { background: #c02626; }
+  .trust-dot.yellow { background: #b58a00; }
+  .trust-dot.green  { background: #1a7f37; }
+
+  .trust-label {
+    font-size:12px;
+    font-weight: 500;
+    color: #565a63;
+  }
+
+  /* Legacy / deprecated indicator.
+       The opacity:0.72 that used to sit here was a resting state, not a
+       transition, so every label inside a legacy card rendered permanently at
+       3.3 to 3.5:1. Deprecation is already carried by the dashed border and
+       the LEGACY chip, so the fade was redundant as well as harmful. */
+  .fmt.legacy {
+    border-style: dashed;
+  }
+
+  .legacy-tag {
+    font-size:12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #fff;
+    background: #3A3A3A;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: auto;
+  }
+
+  /* ---- Detail panel ---- */
+  .detail-panel {
+    border-top: 1px solid #e9eaee;
+    background: #f7f8fa;
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+  }
+
+  .detail-panel.open {
+    padding: 20px 24px;
+    max-height: 600px;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .detail-grid { grid-template-columns: 1fr; }
+  }
+
+  .detail-left h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #15171C;
+    margin-bottom: 2px;
+  }
+
+  .detail-left .detail-origin {
+    font-size: 12px;
+    color: #565a63;
+    margin-bottom: 10px;
+  }
+
+  .detail-left p {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #2a2c31;
+  }
+
+  .detail-right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .detail-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .detail-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight: 500;
+    color: #5c6270;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    min-width: 90px;
+    padding-top: 2px;
+  }
+
+  .detail-val {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #15171C;
+  }
+
+  .detail-val a {
+    color: #57068C;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(87,6,140,0.3);
+  }
+
+  .detail-val a:hover {
+    border-bottom-color: #57068C;
+  }
+
+  .trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .trust-badge.red    { background: #fcecec; color: #15171C; }
+  .trust-badge.yellow { background: #fef6e0; color: #15171C; }
+  .trust-badge.green  { background: #e6f6ec; color: #15171C; }
+
+  .cve-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size:12px;
+    color: #15171C;
+    background: #fcecec;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #f0c4c4;
+    display: inline-block;
+    margin-right: 4px;
+    margin-bottom: 3px;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 18px;
+    padding: 12px 24px 14px;
+    border-top: 1px solid #e9eaee;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size:12px;
+    color: #565a63;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-dot.red    { background: #c02626; }
+  .legend-dot.yellow { background: #b58a00; }
+  .legend-dot.green  { background: #1a7f37; }
+
+  .legend-swatch {
+    width: 20px;
+    height: 10px;
+    border-radius: 3px;
+    border: 1.5px dashed #b0b2b8;
+    flex-shrink: 0;
+  }
+
+  /* Instruction hint */
+  .hint {
+    text-align: center;
+    font-size: 12px;
+    color: #5c6270;
+    padding: 8px 24px 14px;
+    border-top: 1px solid #e9eaee;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #f7f8fa; }
+  ::-webkit-scrollbar-thumb { background: #d0d1d5; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #b0b2b8; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <h2>Model File Format Landscape</h2>
+    <p>Where each format appears in the ML lifecycle, and what trust assumptions it carries. Click any format for details.</p>
+  </div>
+
+  <div class="pipeline-area">
+    <div class="pipeline">
+
+      <!-- Stage 1: Training -->
+      <div class="stage">
+        <div class="stage-head">
+          <span class="stage-num">Stage 1</span>
+          <span class="stage-title">Training</span>
+        </div>
+        <div class="format-cards">
+          <div class="fmt" data-format="pickle" tabindex="0">
+            <div class="fmt-name">Pickle / PyTorch</div>
+            <div class="fmt-ext">.pt &nbsp;.pth &nbsp;.bin</div>
+            <div class="trust-row">
+              <span class="trust-dot red"></span>
+              <span class="trust-label">Executes code on load</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 2: Hub / Distribution -->
+      <div class="stage">
+        <div class="stage-head">
+          <span class="stage-num">Stage 2</span>
+          <span class="stage-title">Hub Distribution</span>
+        </div>
+        <div class="format-cards">
+          <div class="fmt" data-format="safetensors" tabindex="0">
+            <div class="fmt-name">Safetensors</div>
+            <div class="fmt-ext">.safetensors</div>
+            <div class="trust-row">
+              <span class="trust-dot green"></span>
+              <span class="trust-label">Data only</span>
+            </div>
+          </div>
+          <div class="fmt legacy" data-format="pickle-legacy" tabindex="0">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span class="fmt-name">Pickle</span>
+              <span class="legacy-tag">legacy</span>
+            </div>
+            <div class="fmt-ext">.bin</div>
+            <div class="trust-row">
+              <span class="trust-dot red"></span>
+              <span class="trust-label">Executes code on load</span>
+            </div>
+          </div>
+          <div class="fmt" data-format="gguf" tabindex="0">
+            <div class="fmt-name">GGUF</div>
+            <div class="fmt-ext">.gguf</div>
+            <div class="trust-row">
+              <span class="trust-dot yellow"></span>
+              <span class="trust-label">Partial risk (Jinja2)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 3: Cross-framework Export -->
+      <div class="stage">
+        <div class="stage-head">
+          <span class="stage-num">Stage 3</span>
+          <span class="stage-title">Cross-framework Export</span>
+        </div>
+        <div class="format-cards">
+          <div class="fmt" data-format="onnx" tabindex="0">
+            <div class="fmt-name">ONNX</div>
+            <div class="fmt-ext">.onnx</div>
+            <div class="trust-row">
+              <span class="trust-dot green"></span>
+              <span class="trust-label">Data only (graph)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 4: Server Inference -->
+      <div class="stage">
+        <div class="stage-head">
+          <span class="stage-num">Stage 4</span>
+          <span class="stage-title">Server Inference</span>
+        </div>
+        <div class="format-cards">
+          <div class="fmt" data-format="onnx-runtime" tabindex="0">
+            <div class="fmt-name">ONNX Runtime</div>
+            <div class="fmt-ext">.onnx</div>
+            <div class="trust-row">
+              <span class="trust-dot green"></span>
+              <span class="trust-label">Data only (graph)</span>
+            </div>
+          </div>
+          <div class="fmt" data-format="safetensors-serve" tabindex="0">
+            <div class="fmt-name">Safetensors</div>
+            <div class="fmt-ext">.safetensors</div>
+            <div class="trust-row">
+              <span class="trust-dot green"></span>
+              <span class="trust-label">Data only</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 5: Local / Edge -->
+      <div class="stage">
+        <div class="stage-head">
+          <span class="stage-num">Stage 5</span>
+          <span class="stage-title">Local / Edge</span>
+        </div>
+        <div class="format-cards">
+          <div class="fmt" data-format="gguf-local" tabindex="0">
+            <div class="fmt-name">GGUF</div>
+            <div class="fmt-ext">.gguf</div>
+            <div class="trust-row">
+              <span class="trust-dot yellow"></span>
+              <span class="trust-label">Partial risk (Jinja2)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Detail panel (appears when a format card is clicked) -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-grid">
+      <div class="detail-left">
+        <h3 id="detailName"></h3>
+        <div class="detail-origin" id="detailOrigin"></div>
+        <p id="detailDesc"></p>
+      </div>
+      <div class="detail-right" id="detailRight"></div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot red"></span> Arbitrary code execution</div>
+    <div class="legend-item"><span class="legend-dot yellow"></span> Partial code execution</div>
+    <div class="legend-item"><span class="legend-dot green"></span> Data only (no code execution)</div>
+    <div class="legend-item"><span class="legend-swatch"></span> Legacy / being replaced</div>
+  </div>
+
+  <div class="hint">Click any format card to see details, security posture, and relevant CVEs.</div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ================================================================
+     FORMAT DATA
+     ================================================================ */
+  const formats = {
+    pickle: {
+      name: 'Pickle / PyTorch',
+      origin: 'Python standard library; PyTorch (Meta) uses it via torch.save()',
+      desc: 'Python\'s built-in serialization. A pickle file contains bytecode instructions that the interpreter executes during deserialization. The __reduce__ instruction can call any Python function with any arguments, giving an attacker arbitrary code execution the moment someone calls torch.load(). PyTorch uses pickle by default for .pt, .pth, and legacy .bin checkpoint files.',
+      trust: 'red',
+      trustText: 'Arbitrary code execution by design',
+      structure: 'Opcode stream (bytecode instructions for the Python VM)',
+      tools: 'torch.save() / torch.load(), pickle.dump() / pickle.load()',
+      link: 'https://docs.python.org/3/library/pickle.html',
+      linkLabel: 'Python pickle docs',
+      cves: []
+    },
+    'pickle-legacy': {
+      name: 'Pickle (legacy hub format)',
+      origin: 'Hugging Face Hub, pre-2023',
+      desc: 'Before safetensors became the default in late 2023, Hugging Face distributed model weights as pickle-serialized .bin files. Thousands of legacy models on the Hub still use this format. New uploads default to safetensors, but the pickle files remain downloadable for backward compatibility.',
+      trust: 'red',
+      trustText: 'Arbitrary code execution by design',
+      structure: 'Opcode stream (same as pickle above)',
+      tools: 'torch.load(), transformers.AutoModel.from_pretrained()',
+      link: 'https://huggingface.co/docs/safetensors/',
+      linkLabel: 'Safetensors migration docs',
+      cves: []
+    },
+    safetensors: {
+      name: 'Safetensors',
+      origin: 'Hugging Face, Sept 2022. Trail of Bits security audit: May 2023. Default in transformers v4.35.0 (Oct 2023).',
+      desc: 'A deliberately minimal format: a JSON header describing tensor names, shapes, and data types, followed by raw tensor bytes. No executable instructions, no opcode stream, no graph definition. The loader reads offsets from the header and memory-maps the tensor data. There is nothing to "execute" because the format cannot represent computation, only numbers.',
+      trust: 'green',
+      trustText: 'Data only; no code execution path',
+      structure: 'JSON header + raw tensor bytes (memory-mappable)',
+      tools: 'safetensors.torch.load_file(), transformers.AutoModel.from_pretrained()',
+      link: 'https://github.com/huggingface/safetensors',
+      linkLabel: 'GitHub: huggingface/safetensors',
+      cves: []
+    },
+    gguf: {
+      name: 'GGUF',
+      origin: 'llama.cpp project (Georgi Gerganov), Aug 2023. Replaced the earlier GGML/GGMF/GGJT chain.',
+      desc: 'A binary format designed for quantized inference on consumer hardware. Stores a structured header, key-value metadata (including chat templates), tensor descriptors, and quantized tensor data in a single file. The tensor data itself is inert. However, GGUF files can embed Jinja2 chat templates, and if the loading application renders those templates without sandboxing, an attacker gets server-side template injection (SSTI), which can escalate to code execution.',
+      trust: 'yellow',
+      trustText: 'Tensor data is inert; Jinja2 chat templates carry SSTI risk',
+      structure: 'Header + KV metadata + tensor info + tensor data',
+      tools: 'llama.cpp, Ollama, LM Studio, GPT4All',
+      link: 'https://github.com/ggml-org/llama.cpp',
+      linkLabel: 'GitHub: ggml-org/llama.cpp',
+      cves: ['CVE-2024-34359', 'CVE-2026-5760']
+    },
+    onnx: {
+      name: 'ONNX',
+      origin: 'Facebook + Microsoft, Sept 2017. Open Neural Network Exchange.',
+      desc: 'A cross-framework interchange format that represents a model as a directed computation graph serialized with Protocol Buffers. Nodes are standard operators (Conv, MatMul, Relu, etc.) drawn from a versioned operator set. The format itself does not embed arbitrary code, but ONNX models can reference custom operators implemented as shared libraries, and past vulnerabilities have included directory traversal when resolving external tensor data.',
+      trust: 'green',
+      trustText: 'Data only (computation graph); custom ops need separate review',
+      structure: 'Protocol Buffers (computation graph + tensor data)',
+      tools: 'onnxruntime, onnx Python package, TensorRT, OpenVINO',
+      link: 'https://onnx.ai',
+      linkLabel: 'onnx.ai',
+      cves: []
+    },
+    'onnx-runtime': {
+      name: 'ONNX Runtime',
+      origin: 'Microsoft, Dec 2018. High-performance inference engine for ONNX models.',
+      desc: 'The runtime counterpart of the ONNX format. It loads .onnx graph definitions and executes them with hardware-optimized backends (CPU, CUDA, TensorRT, DirectML). From a security perspective, the same considerations apply as to the ONNX format itself: the graph is data, but custom operator libraries and external data references should be reviewed.',
+      trust: 'green',
+      trustText: 'Inherits ONNX graph-only posture',
+      structure: 'ONNX graph executed by the runtime engine',
+      tools: 'onnxruntime (Python, C++, C#, Java, JS)',
+      link: 'https://onnxruntime.ai',
+      linkLabel: 'onnxruntime.ai',
+      cves: []
+    },
+    'safetensors-serve': {
+      name: 'Safetensors (serving)',
+      origin: 'Same format as hub distribution. Used by vLLM, TGI, and other serving frameworks.',
+      desc: 'The same safetensors format appears again at serving time. Inference servers like vLLM and Hugging Face TGI load safetensors directly, memory-mapping the tensor data for fast startup. The security posture is identical: no executable content, no deserialization attack surface.',
+      trust: 'green',
+      trustText: 'Data only; no code execution path',
+      structure: 'JSON header + raw tensor bytes',
+      tools: 'vLLM, TGI (Text Generation Inference), transformers',
+      link: 'https://github.com/huggingface/safetensors',
+      linkLabel: 'GitHub: huggingface/safetensors',
+      cves: []
+    },
+    'gguf-local': {
+      name: 'GGUF (local inference)',
+      origin: 'Same format as hub distribution. Primary format for Ollama, LM Studio, llama.cpp.',
+      desc: 'GGUF is the dominant format for running quantized LLMs on consumer hardware. Users download .gguf files (often from Hugging Face) and load them into Ollama, LM Studio, or llama.cpp directly. The Jinja2 template risk applies here too: if a downloaded GGUF file contains a malicious chat template and the local application renders it unsandboxed, the attacker gets code execution on the user\'s machine.',
+      trust: 'yellow',
+      trustText: 'Tensor data is inert; Jinja2 SSTI risk remains',
+      structure: 'Header + KV metadata + tensor info + quantized tensor data',
+      tools: 'Ollama, LM Studio, llama.cpp, GPT4All',
+      link: 'https://github.com/ggml-org/llama.cpp',
+      linkLabel: 'GitHub: ggml-org/llama.cpp',
+      cves: ['CVE-2024-34359', 'CVE-2026-5760']
+    }
+  };
+
+  /* ================================================================
+     DETAIL PANEL LOGIC
+     ================================================================ */
+  const panel = document.getElementById('detailPanel');
+  const dName = document.getElementById('detailName');
+  const dOrigin = document.getElementById('detailOrigin');
+  const dDesc = document.getElementById('detailDesc');
+  const dRight = document.getElementById('detailRight');
+  const allCards = document.querySelectorAll('.fmt');
+  let selectedKey = null;
+
+  function showDetail(key) {
+    const f = formats[key];
+    if (!f) return;
+
+    /* Update selection */
+    allCards.forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('[data-format="' + key + '"]').forEach(c => c.classList.add('selected'));
+    selectedKey = key;
+
+    /* Fill left */
+    dName.textContent = f.name;
+    dOrigin.textContent = f.origin;
+    dDesc.textContent = f.desc;
+
+    /* Fill right */
+    let html = '';
+
+    /* Trust badge */
+    html += '<div class="detail-row">';
+    html += '<span class="detail-key">Trust</span>';
+    html += '<span class="detail-val"><span class="trust-badge ' + f.trust + '">';
+    html += '<span class="trust-dot ' + f.trust + '"></span>' + f.trustText + '</span></span>';
+    html += '</div>';
+
+    /* Structure */
+    html += '<div class="detail-row">';
+    html += '<span class="detail-key">Structure</span>';
+    html += '<span class="detail-val">' + f.structure + '</span>';
+    html += '</div>';
+
+    /* Tools */
+    html += '<div class="detail-row">';
+    html += '<span class="detail-key">Loaded by</span>';
+    html += '<span class="detail-val">' + f.tools + '</span>';
+    html += '</div>';
+
+    /* Link */
+    html += '<div class="detail-row">';
+    html += '<span class="detail-key">Reference</span>';
+    html += '<span class="detail-val"><a href="' + f.link + '" target="_blank" rel="noopener">' + f.linkLabel + '</a></span>';
+    html += '</div>';
+
+    /* CVEs */
+    if (f.cves.length > 0) {
+      html += '<div class="detail-row">';
+      html += '<span class="detail-key">CVEs</span>';
+      html += '<span class="detail-val">';
+      f.cves.forEach(function(cve) {
+        html += '<span class="cve-tag">' + cve + '</span>';
+      });
+      html += '</span></div>';
+    }
+
+    dRight.innerHTML = html;
+
+    /* Open panel */
+    panel.classList.add('open');
+  }
+
+  function hideDetail() {
+    panel.classList.remove('open');
+    allCards.forEach(c => c.classList.remove('selected'));
+    selectedKey = null;
+  }
+
+  /* Click handlers */
+  allCards.forEach(function(card) {
+    card.addEventListener('click', function() {
+      const key = this.getAttribute('data-format');
+      if (key === selectedKey) {
+        hideDetail();
+      } else {
+        showDetail(key);
+      }
+    });
+
+    /* Keyboard support */
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.click();
+      }
+    });
+  });
+
+  /* ================================================================
+     AUTO-RESIZE: post height to parent iframe host
+     ================================================================ */
+  var cardEl = document.querySelector('.card');
+
+  function postHeight() {
+    try {
+      var h = cardEl.offsetHeight;
+      window.parent.postMessage({kind: 'nyu-embed-height', height: h, src: location.href}, '*');
+    } catch(e) {}
+  }
+
+  /* Fire on load */
+  postHeight();
+  window.addEventListener('load', postHeight);
+
+  /* Fire whenever card height changes (detail panel open/close transitions) */
+  new ResizeObserver(postHeight).observe(cardEl);
+
+  /* Also catch transition end for the detail panel animation */
+  panel.addEventListener('transitionend', postHeight);
+
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

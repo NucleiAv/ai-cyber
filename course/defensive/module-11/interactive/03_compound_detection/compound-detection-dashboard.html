@@ -1,0 +1,629 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Compound Detection Signal Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redsoft:#fdf5f5;--redline:#efc9c9;
+  --green:#0f7a43;--greensoft:#f0f9f3;--greenline:#c3e2d0;
+  --blue:#2563eb;--bluesoft:#eff6ff;--blueline:#bfdbfe;
+  --amber:#8a5d00;--amberbg:#FCF1DC;--amberline:#e5d3a8;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid rgba(87,6,140,.25);outline-offset:2px}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) var(--paper)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+
+.wrap{max-width:920px;margin:0 auto;padding:0}
+.hdr{padding:14px 24px 0}
+.eyebrow{font-family:var(--mono);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet);margin-bottom:6px}
+.title{font-size:1.15rem;font-weight:700;color:var(--ink);line-height:1.3}
+.subtitle{font-size:.8rem;color:var(--ink2);margin-top:6px;line-height:1.55}
+
+/* -- toolbar -- */
+.toolbar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  padding:10px 24px 0;
+}
+.toolbar-left{display:flex;gap:6px;flex-shrink:0}
+.ctrl-btn{
+  min-height:32px;padding:0 14px;border:1px solid var(--line2);
+  border-radius:8px;background:var(--bg);font-family:var(--mono);
+  font-size:.72rem;font-weight:600;color:var(--ink);
+  transition:.16s;letter-spacing:.01em;
+}
+.ctrl-btn:hover{background:var(--paper);border-color:var(--ink3)}
+.ctrl-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ctrl-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* -- threshold legend -- */
+.threshold-legend{
+  padding:8px 24px 0;display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:.62rem;font-weight:600;letter-spacing:.04em;color:var(--ink2)}
+.legend-swatch{width:12px;height:8px;border-radius:2px;flex-shrink:0}
+.legend-swatch.sw-green{background:var(--green)}
+.legend-swatch.sw-red{background:var(--red)}
+.legend-line{width:12px;height:0;border-top:2px dashed var(--ink3)}
+
+/* -- session cards area -- */
+.sessions{padding:10px 24px 0;display:flex;flex-direction:column;gap:10px}
+
+/* -- session card -- */
+.session-card{
+  border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  background:var(--bg);
+  opacity:0;transform:translateY(8px);
+  transition:opacity .4s,transform .4s,border-color .5s,background .5s,box-shadow .5s;
+}
+.session-card.visible{opacity:1;transform:translateY(0)}
+.session-card.verdict-benign{border-color:var(--greenline);background:var(--greensoft)}
+.session-card.verdict-monitor{border-color:var(--amberline);background:var(--amberbg)}
+.session-card.verdict-escalate{border-color:var(--redline);background:var(--redsoft)}
+.session-card.verdict-missed{border-color:var(--amberline);background:var(--amberbg)}
+
+/* card header row */
+.card-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.session-id{
+  font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--ink);
+  min-width:80px;
+}
+.session-stats{
+  display:flex;flex-wrap:wrap;gap:8px;flex:1;
+}
+.stat{
+  font-family:var(--mono);font-size:.6rem;font-weight:500;color:var(--ink2);
+  padding:2px 8px;border-radius:5px;background:var(--paper);border:1px solid var(--line);
+  white-space:nowrap;
+}
+
+.verdict-badge{
+  font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:3px 10px;border-radius:6px;
+  opacity:0;transition:opacity .4s;white-space:nowrap;
+}
+.verdict-badge.show{opacity:1}
+.verdict-badge.vb-benign{background:var(--greensoft);border:1px solid var(--greenline);color:var(--ink)}
+.verdict-badge.vb-monitor{background:var(--amberbg);border:1px solid var(--amberline);color:var(--ink)}
+.verdict-badge.vb-escalate{background:var(--redsoft);border:1px solid var(--redline);color:var(--ink)}
+.verdict-badge.vb-missed{background:var(--amberbg);border:1px solid var(--amberline);color:var(--ink)}
+
+/* meters area */
+.meters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.meter-group{display:flex;flex-direction:column;gap:3px}
+.meter-label{
+  font-family:var(--mono);font-size:.56rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink3);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.meter-detail{
+  font-family:var(--mono);font-size:.52rem;font-weight:500;color:var(--ink3);
+  opacity:0;transition:opacity .3s;margin-top:1px;
+}
+.meter-detail.show{opacity:1}
+.meter-track{
+  position:relative;height:10px;background:var(--line);border-radius:5px;overflow:visible;
+}
+.meter-fill{
+  height:100%;border-radius:5px;width:0;transition:width .8s cubic-bezier(.25,.8,.25,1);
+}
+.meter-fill.fill-green{background:var(--green)}
+.meter-fill.fill-red{background:var(--red)}
+.meter-threshold{
+  position:absolute;top:-2px;bottom:-2px;width:2px;
+  border-left:2px dashed var(--ink3);
+  pointer-events:none;opacity:.5;
+}
+.meter-status{
+  font-family:var(--mono);font-size:.52rem;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;opacity:0;transition:opacity .3s;
+}
+.meter-status.show{opacity:1}
+.meter-status.ms-ok{color:var(--ink3)}
+.meter-status.ms-fire{color:var(--ink)}
+
+/* -- narration -- */
+.narration{
+  margin:10px 24px 0;padding:10px 14px;
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  display:flex;align-items:flex-start;gap:10px;
+  min-height:44px;transition:border-color .4s;
+}
+.narration.phase-legit{border-color:var(--vline)}
+.narration.phase-attack{border-color:var(--redline)}
+.narration.phase-result{border-color:var(--amberline)}
+.narr-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;
+  background:var(--violet);transition:background .4s;
+}
+.narration.phase-legit .narr-dot{background:var(--violet)}
+.narration.phase-attack .narr-dot{background:var(--red)}
+.narration.phase-result .narr-dot{background:var(--amber)}
+.narr-text{
+  font-family:var(--mono);font-size:.72rem;font-weight:500;
+  color:var(--ink2);line-height:1.5;
+  transition:opacity .35s;
+}
+
+/* -- summary table (final state) -- */
+.summary-area{padding:10px 24px 0;opacity:0;max-height:0;overflow:hidden;transition:opacity .5s,max-height .5s}
+.summary-area.show{opacity:1;max-height:600px}
+.summary-table{
+  width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.62rem;
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;
+}
+.summary-table th{
+  text-align:left;font-weight:600;color:var(--ink3);font-size:.56rem;
+  letter-spacing:.04em;text-transform:uppercase;
+  padding:8px 10px;border-bottom:2px solid var(--line2);background:var(--paper);
+}
+.summary-table td{padding:6px 10px;border-bottom:1px solid var(--line);color:var(--ink2)}
+.summary-table tr:last-child td{border-bottom:none}
+.summary-table .sum-fire{font-weight:700;color:var(--ink)}
+.summary-table .sum-miss{font-weight:700;color:var(--ink)}
+
+/* -- spacing bottom -- */
+.bottom-pad{height:16px}
+
+@media(max-width:640px){
+  .hdr{padding:14px 16px 0}
+  .toolbar{padding:8px 16px 0}
+  .sessions{padding:10px 16px 0}
+  .narration{margin:8px 16px 0}
+  .threshold-legend{padding:8px 16px 0}
+  .summary-area{padding:10px 16px 0}
+  .meters{grid-template-columns:1fr}
+  .session-stats{gap:4px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- Header -->
+<div class="hdr">
+  <div class="eyebrow">Compound Detection</div>
+  <h1 class="title">Detection Signal Dashboard</h1>
+  <p class="subtitle">Step through six sessions arriving at an AI-powered application. Three independent signal detectors (content analysis, rate monitoring, behavioral profiling) evaluate each session. The compound rule requires at least 2-of-3 signals to fire before escalating. Watch which sessions slip through.</p>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <button class="ctrl-btn" id="btnStep">Analyze First Session</button>
+    <button class="ctrl-btn" id="btnReset">Reset</button>
+  </div>
+</div>
+
+<!-- Threshold legend -->
+<div class="threshold-legend">
+  <div class="legend-item"><div class="legend-swatch sw-green"></div>Below threshold</div>
+  <div class="legend-item"><div class="legend-swatch sw-red"></div>Signal fires</div>
+  <div class="legend-item"><div class="legend-line"></div>Threshold</div>
+</div>
+
+<!-- Session cards -->
+<div class="sessions" id="sessions"></div>
+
+<!-- Summary table (shown at end) -->
+<div class="summary-area" id="summaryArea">
+</div>
+
+<!-- Narration strip -->
+<div class="narration phase-legit" id="narration">
+  <div class="narr-dot"></div>
+  <div class="narr-text" id="narrText">Compound detection combines multiple independent signals to reduce false positives. No single detector is sufficient on its own. Click "Analyze First Session" to begin stepping through the incoming session stream.</div>
+</div>
+
+<div class="bottom-pad"></div>
+</div><!-- /wrap -->
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   Compound Detection Signal Dashboard
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Session data ── */
+const SESSIONS = [
+  {
+    id: 'A',
+    queries: '3 queries / 12 min',
+    avgTokens: '340 tok avg',
+    topic: 'return policy',
+    flags: '0 guardrail flags',
+    encoding: 'no encoding',
+    content: { pct: 8, fires: false, detail: '0 flags, normal topic' },
+    rate:    { pct: 6, fires: false, detail: '3 queries / 12 min' },
+    behav:   { pct: 10, fires: false, detail: '340 tok, routine topic' },
+    signalCount: 0,
+    verdict: 'benign',
+    verdictText: '0/3 signals -- benign',
+    narration: 'Session A is a normal customer asking about the return policy. Query volume is low, token lengths are average, and no content anomalies are present. All three signal meters stay well below threshold. This is the baseline for what legitimate traffic looks like.',
+    narrPhase: 'phase-legit'
+  },
+  {
+    id: 'B',
+    queries: '14 queries / 3 min',
+    avgTokens: '2,100 tok avg',
+    topic: 'system config',
+    flags: '0 guardrail flags',
+    encoding: 'Base64 x3',
+    content: { pct: 85, fires: true, detail: 'Base64 x3 detected' },
+    rate:    { pct: 92, fires: true, detail: '14 queries / 3 min' },
+    behav:   { pct: 88, fires: true, detail: '2,100 tok (5.5x avg)' },
+    signalCount: 3,
+    verdict: 'escalate',
+    verdictText: '3/3 signals -- ESCALATE',
+    narration: 'Session B lights up every detector. The rate is extreme (14 queries in 3 minutes), the content includes Base64-encoded payloads, and the behavioral profile shows responses 5.5x longer than average on system configuration topics. The compound rule fires immediately with 3 of 3 signals.',
+    narrPhase: 'phase-attack'
+  },
+  {
+    id: 'C',
+    queries: '5 queries / 8 min',
+    avgTokens: '410 tok avg',
+    topic: 'role override',
+    flags: '2 guardrail flags',
+    encoding: 'no encoding',
+    content: { pct: 72, fires: true, detail: '2 guardrail flags (role impersonation)' },
+    rate:    { pct: 18, fires: false, detail: '5 queries / 8 min' },
+    behav:   { pct: 15, fires: false, detail: '410 tok, normal length' },
+    signalCount: 1,
+    verdict: 'monitor',
+    verdictText: '1/3 signals -- monitor',
+    narration: 'Session C triggers the content detector: the guardrail flagged role-impersonation keywords twice. But the query rate and behavioral profile look normal. With only 1 of 3 signals, the compound rule logs this session for monitoring but does not escalate. Content-based detection catches known patterns, but a single signal alone is not enough to meet the compound threshold.',
+    narrPhase: 'phase-attack'
+  },
+  {
+    id: 'D',
+    queries: '7 queries / 15 min',
+    avgTokens: '1,020 tok avg',
+    topic: 'employee contacts',
+    flags: '0 guardrail flags',
+    encoding: 'no encoding',
+    content: { pct: 12, fires: false, detail: '0 flags, no encoding' },
+    rate:    { pct: 14, fires: false, detail: '7 queries / 15 min' },
+    behav:   { pct: 68, fires: true, detail: '1,020 tok (3x avg), internal data' },
+    signalCount: 1,
+    verdict: 'missed',
+    verdictText: '1/3 signals -- monitor (MISSED)',
+    narration: 'Session D is the most dangerous miss. The attacker used no encoding tricks, no role impersonation, no high query volume. The only signal is behavioral: the response length is 3x average and the topics are internal employee data. With a 2-of-3 compound threshold, this session is not escalated. It would operate undetected in a system that only has content-based and rate-based monitoring.',
+    narrPhase: 'phase-result'
+  },
+  {
+    id: 'E',
+    queries: '847 queries / 24 hr',
+    avgTokens: '1,842 tok avg',
+    topic: '72% internal procs',
+    flags: '38% flagged',
+    encoding: 'Base64 x14',
+    content: { pct: 95, fires: true, detail: '38% flagged, Base64 x14' },
+    rate:    { pct: 98, fires: true, detail: '847 queries / 24 hr' },
+    behav:   { pct: 93, fires: true, detail: '1,842 tok, 72% internal' },
+    signalCount: 3,
+    verdict: 'escalate',
+    verdictText: '3/3 signals -- ESCALATE',
+    narration: 'Session E is the easiest to detect -- every signal fires. The volume is massive, over a third of inputs trigger guardrails, and the behavioral profile is dominated by internal procedure lookups. But remember Session D: the compound rule that catches Session E also lets Session D through.',
+    narrPhase: 'phase-attack'
+  },
+  {
+    id: 'F',
+    queries: '22 queries / 45 min',
+    avgTokens: '580 tok avg',
+    topic: 'product comparison',
+    flags: '0 guardrail flags',
+    encoding: 'no encoding',
+    content: { pct: 5, fires: false, detail: '0 flags, normal topic' },
+    rate:    { pct: 32, fires: false, detail: '22 queries / 45 min' },
+    behav:   { pct: 22, fires: false, detail: '580 tok, product research' },
+    signalCount: 0,
+    verdict: 'benign',
+    verdictText: '0/3 signals -- benign',
+    narration: 'Session F is a power user doing product research. The query rate is slightly elevated and the token average is above baseline, but nothing fires. This is exactly the kind of session you do not want to false-positive on. A threshold set too low would flag legitimate users like this.',
+    narrPhase: 'phase-legit'
+  }
+];
+
+const ANALYSIS_NARRATION = 'The compound threshold is a tradeoff. Requiring 2-of-3 signals caught Sessions B and E while correctly passing A and F. But it missed Session D, where only behavioral signals were present. Session C was flagged for monitoring but not escalated. Where you set the threshold depends on what you can afford to miss.';
+
+/* ── State ── */
+let currentStep = 0; // 0 = idle, 1-6 = session A-F, 7 = analysis
+let animating = false;
+let animTimers = [];
+
+/* ── DOM refs ── */
+const btnStep = document.getElementById('btnStep');
+const btnReset = document.getElementById('btnReset');
+const sessionsEl = document.getElementById('sessions');
+const narrEl = document.getElementById('narration');
+const narrTextEl = document.getElementById('narrText');
+const summaryEl = document.getElementById('summaryArea');
+
+/* ── Helpers ── */
+function later(fn, ms) { animTimers.push(setTimeout(fn, ms)); }
+function clearTimers() { animTimers.forEach(clearTimeout); animTimers = []; }
+
+function setNarration(text, phase) {
+  narrTextEl.style.opacity = '0';
+  later(() => {
+    narrTextEl.textContent = text;
+    narrEl.className = 'narration ' + phase;
+    narrTextEl.style.opacity = '1';
+  }, 200);
+}
+
+/* ── Build a session card ── */
+function buildSessionCard(s) {
+  const card = document.createElement('div');
+  card.className = 'session-card';
+  card.id = 'card-' + s.id;
+
+  const thresholdPct = 60; // threshold line position
+
+  card.innerHTML =
+    '<div class="card-top">' +
+      '<div class="session-id">Session ' + s.id + '</div>' +
+      '<div class="session-stats">' +
+        '<span class="stat">' + s.queries + '</span>' +
+        '<span class="stat">' + s.avgTokens + '</span>' +
+        '<span class="stat">' + s.topic + '</span>' +
+        (s.encoding !== 'no encoding' ? '<span class="stat">' + s.encoding + '</span>' : '') +
+        (s.flags !== '0 guardrail flags' ? '<span class="stat">' + s.flags + '</span>' : '') +
+      '</div>' +
+      '<div class="verdict-badge" id="vbadge-' + s.id + '"></div>' +
+    '</div>' +
+    '<div class="meters">' +
+      buildMeter('content', s.id, 'Content', s.content, thresholdPct) +
+      buildMeter('rate', s.id, 'Rate', s.rate, thresholdPct) +
+      buildMeter('behav', s.id, 'Behavioral', s.behav, thresholdPct) +
+    '</div>';
+
+  return card;
+}
+
+function buildMeter(type, sid, label, data, thresholdPct) {
+  return '<div class="meter-group">' +
+    '<div class="meter-label">' +
+      '<span>' + label + '</span>' +
+      '<span class="meter-status" id="ms-' + type + '-' + sid + '"></span>' +
+    '</div>' +
+    '<div class="meter-track">' +
+      '<div class="meter-fill" id="mf-' + type + '-' + sid + '"></div>' +
+      '<div class="meter-threshold" style="left:' + thresholdPct + '%"></div>' +
+    '</div>' +
+    '<div class="meter-detail" id="md-' + type + '-' + sid + '">' + data.detail + '</div>' +
+  '</div>';
+}
+
+/* ── Animate a session ── */
+function animateSession(session) {
+  animating = true;
+  btnStep.disabled = true;
+
+  const card = buildSessionCard(session);
+  sessionsEl.appendChild(card);
+
+  // Trigger entrance animation
+  later(() => { card.classList.add('visible'); }, 50);
+
+  // Animate meters with stagger
+  const meterTypes = [
+    { key: 'content', data: session.content },
+    { key: 'rate', data: session.rate },
+    { key: 'behav', data: session.behav }
+  ];
+
+  meterTypes.forEach((m, i) => {
+    later(() => {
+      const fill = document.getElementById('mf-' + m.key + '-' + session.id);
+      const status = document.getElementById('ms-' + m.key + '-' + session.id);
+      const detail = document.getElementById('md-' + m.key + '-' + session.id);
+
+      fill.style.width = m.data.pct + '%';
+      fill.className = 'meter-fill ' + (m.data.fires ? 'fill-red' : 'fill-green');
+
+      later(() => {
+        status.textContent = m.data.fires ? 'FIRED' : 'OK';
+        status.className = 'meter-status show ' + (m.data.fires ? 'ms-fire' : 'ms-ok');
+        detail.classList.add('show');
+      }, 600);
+    }, 400 + i * 300);
+  });
+
+  // Show verdict badge
+  later(() => {
+    const badge = document.getElementById('vbadge-' + session.id);
+    badge.textContent = session.verdictText;
+
+    let badgeClass = 'vb-benign';
+    let cardClass = 'verdict-benign';
+    if (session.verdict === 'escalate') { badgeClass = 'vb-escalate'; cardClass = 'verdict-escalate'; }
+    else if (session.verdict === 'monitor') { badgeClass = 'vb-monitor'; cardClass = 'verdict-monitor'; }
+    else if (session.verdict === 'missed') { badgeClass = 'vb-missed'; cardClass = 'verdict-missed'; }
+
+    badge.className = 'verdict-badge show ' + badgeClass;
+    card.classList.add(cardClass);
+  }, 1600);
+
+  // Set narration
+  later(() => {
+    setNarration(session.narration, session.narrPhase);
+  }, 300);
+
+  // Re-enable step button
+  later(() => {
+    animating = false;
+    btnStep.disabled = false;
+    updateStepButton();
+    sh();
+  }, 2000);
+}
+
+/* ── Show analysis (final state) ── */
+function showAnalysis() {
+  animating = true;
+  btnStep.disabled = true;
+
+  setNarration(ANALYSIS_NARRATION, 'phase-result');
+
+  // Build summary table
+  summaryEl.innerHTML =
+    '<table class="summary-table">' +
+    '<thead><tr>' +
+      '<th>Session</th><th>Content</th><th>Rate</th><th>Behavioral</th><th>Signals</th><th>Verdict</th>' +
+    '</tr></thead>' +
+    '<tbody>' +
+    SESSIONS.map(s => {
+      const cClass = s.content.fires ? 'sum-fire' : '';
+      const rClass = s.rate.fires ? 'sum-fire' : '';
+      const bClass = s.behav.fires ? 'sum-fire' : '';
+      let verdictLabel = '';
+      let verdictClass = '';
+      if (s.verdict === 'benign') { verdictLabel = 'Benign'; }
+      else if (s.verdict === 'escalate') { verdictLabel = 'ESCALATE'; verdictClass = 'sum-fire'; }
+      else if (s.verdict === 'monitor') { verdictLabel = 'Monitor'; }
+      else if (s.verdict === 'missed') { verdictLabel = 'Monitor (missed)'; verdictClass = 'sum-miss'; }
+      return '<tr>' +
+        '<td style="font-weight:700;color:var(--ink)">Session ' + s.id + '</td>' +
+        '<td class="' + cClass + '">' + (s.content.fires ? 'FIRED' : 'ok') + '</td>' +
+        '<td class="' + rClass + '">' + (s.rate.fires ? 'FIRED' : 'ok') + '</td>' +
+        '<td class="' + bClass + '">' + (s.behav.fires ? 'FIRED' : 'ok') + '</td>' +
+        '<td style="font-weight:700">' + s.signalCount + '/3</td>' +
+        '<td class="' + verdictClass + '">' + verdictLabel + '</td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table>';
+
+  later(() => {
+    summaryEl.classList.add('show');
+  }, 300);
+
+  later(() => {
+    animating = false;
+    btnStep.disabled = false;
+    updateStepButton();
+    sh();
+  }, 800);
+}
+
+/* ── Step button label ── */
+function updateStepButton() {
+  if (currentStep === 0) {
+    btnStep.textContent = 'Analyze First Session';
+  } else if (currentStep < SESSIONS.length) {
+    btnStep.textContent = 'Analyze Session ' + SESSIONS[currentStep].id;
+  } else if (currentStep === SESSIONS.length) {
+    btnStep.textContent = 'Reveal Possible Analysis';
+  } else {
+    btnStep.textContent = 'Run Again';
+  }
+}
+
+/* ── Step handler ── */
+function handleStep() {
+  if (animating) return;
+
+  if (currentStep < SESSIONS.length) {
+    animateSession(SESSIONS[currentStep]);
+    currentStep++;
+  } else if (currentStep === SESSIONS.length) {
+    showAnalysis();
+    currentStep++;
+  } else {
+    resetDashboard();
+  }
+}
+
+/* ── Reset ── */
+function resetDashboard() {
+  clearTimers();
+  animating = false;
+  currentStep = 0;
+  sessionsEl.innerHTML = '';
+  summaryEl.innerHTML = '';
+  summaryEl.classList.remove('show');
+  narrEl.className = 'narration phase-legit';
+  narrTextEl.textContent = 'Compound detection combines multiple independent signals to reduce false positives. No single detector is sufficient on its own. Click "Analyze First Session" to begin stepping through the incoming session stream.';
+  narrTextEl.style.opacity = '1';
+  updateStepButton();
+  btnStep.disabled = false;
+  sh();
+}
+
+/* ── Init ── */
+btnStep.onclick = handleStep;
+btnReset.onclick = resetDashboard;
+updateStepButton();
+
+/* ── Iframe height reporting ── */
+function sh(){
+  const el=document.querySelector('.wrap');
+  if(!el)return;
+  const r=el.getBoundingClientRect();
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(r.top+r.height+2),src:location.href},'*');
+}
+const ro=new ResizeObserver(sh);
+ro.observe(document.querySelector('.wrap'));
+window.addEventListener('load',sh);
+document.addEventListener('transitionend',sh);
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

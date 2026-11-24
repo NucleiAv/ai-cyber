@@ -1,0 +1,791 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuzzing vs. Reasoning: The Discovery Race</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* same-hue: coloured text on its own tint; near-black instead */
+:root {
+  --violet: #57068C;
+  --violet-dark: #3D0461;
+  --violet-50: #F5EDFA;
+  --violet-100: #E8D8F2;
+  --violet-200: #D2B3E5;
+  --danger: #C42A2A;
+  --danger-bg: #FBE8E8;
+  --success: #166B3A;
+  --success-bg: #E6F4EC;
+  --warning: #8A5D00;
+  --warning-bg: #FCF1DC;
+  --blue: #1560AC;
+  --blue-bg: #E6F0FA;
+  --ink: #1A1A1A;
+  --ink-soft: #3A3A3A;
+  --ink-mute: #6B6B6B;
+  --rule: #E2E2E2;
+  --surface: #FFFFFF;
+  --sunken: #F6F4F8;
+  --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { overflow: visible; height: auto; }
+body { font-family: var(--sans); color: var(--ink); background: var(--sunken); padding: 10px 12px; }
+.wrap { max-width: 920px; margin: 0 auto; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 14px; box-shadow: 0 10px 30px rgba(18,22,33,.06);
+  overflow: hidden;
+}
+
+/* ===== Topbar ===== */
+.topbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 16px; border-bottom: 1px solid var(--rule);
+}
+.topbar-icon {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: var(--violet); color: #fff;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.topbar-icon svg { width: 14px; height: 14px; }
+.topbar h1 { font-size: 0.955rem; font-weight: 700; letter-spacing: -.02em; flex: 1; min-width: 0; }
+.phase-badge {
+  font-family: var(--mono); font-size: 0.85rem; font-weight: 600;
+  background: #4C1D95; color: #fff;
+  border: 1px solid var(--violet-200); border-radius: 5px;
+  padding: 2px 8px; flex-shrink: 0;
+}
+
+/* ===== Code block ===== */
+.code-panel { padding: 12px 16px; border-bottom: 1px solid var(--rule); }
+.code-panel-top {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.code-panel-top h2 {
+  font-size: 0.88rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--ink-mute); flex: 1;
+}
+.file-pill {
+  font-family: var(--mono); font-size: 0.8425rem; font-weight: 600;
+  background: var(--sunken); border: 1px solid var(--rule);
+  border-radius: 4px; padding: 2px 7px; color: var(--ink-soft);
+}
+.bug-note {
+  font-size: 0.85rem; color: #fff; font-weight: 600;
+  background: #854D0E; border: 1px solid #854D0E;
+  border-radius: 4px; padding: 2px 7px; display: none;
+}
+.bug-note.visible { display: inline; }
+
+.code-block {
+  font-family: var(--mono); font-size: 0.8725rem; line-height: 1.6;
+  background: #FAFBFD; border: 1px solid var(--rule); border-radius: 8px;
+  overflow: hidden;
+}
+.code-block-inner { padding: 8px 0; overflow-x: auto; }
+.code-line {
+  display: flex; align-items: baseline;
+  padding: 0 12px; min-height: 1.5em;
+  transition: background .3s, border-left-color .3s;
+  border-left: 3px solid transparent;
+}
+.code-line.ln-buggy { border-left-color: #E8D5AA; background: rgba(252,241,220,0.3); }
+.code-line.ln-hl    { background: #F0F0F3; border-left-color: var(--violet); }  /* an
+   achromatic band cannot collide with any syntax token hue; the violet rule
+   on the left carries the accent instead */  /* a violet
+   band under blue syntax tokens is the same-hue pairing the policy bans */
+.code-line.ln-crash { background: rgba(196,42,42,0.1) !important; border-left-color: var(--danger) !important; }
+.ln-num {
+  font-size: 0.835rem; color: var(--ink-mute); min-width: 22px;
+  text-align: right; margin-right: 10px; user-select: none; flex-shrink: 0;
+}
+.ln-code { white-space: pre; }
+
+.kw { color:var(--ink); font-weight: 600; }
+.ty { color: var(--blue); }
+.cm { color: var(--ink-mute); font-style: italic; }
+.st { color: var(--success); }
+.nm { color: var(--warning); }
+.op { color: var(--ink-soft); }
+.pp { color: var(--blue); }
+
+/* ===== Start footer ===== */
+.start-bar {
+  padding: 10px 16px; background: var(--violet-50);
+  border-bottom: 1px solid var(--violet-100);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.start-bar p { font-size: 0.9025rem; line-height: 1.45; color: var(--ink-soft); flex: 1; min-width: 180px; }
+.start-bar strong { color: var(--ink); }
+
+/* ===== Race panels ===== */
+.race-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--rule);
+}
+@media (max-width: 600px) { .race-row { grid-template-columns: 1fr; } }
+.race-panel + .race-panel { border-left: 1px solid var(--rule); }
+@media (max-width: 600px) { .race-panel + .race-panel { border-left: none; border-top: 1px solid var(--rule); } }
+
+.rp-head {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 8px 12px; border-bottom: 1px solid var(--rule); background: var(--sunken);
+}
+.rp-icon {
+  width: 20px; height: 20px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.rp-icon svg { width: 11px; height: 11px; }
+.rp-icon.fuzzer { background: #854D0E; color: #fff; border: 1px solid #854D0E; }
+.rp-icon.agent  { background: #4C1D95; color: #fff; border: 1px solid var(--violet-200); }
+.rp-title { font-size: 0.895rem; font-weight: 700; flex: 1; }
+.rp-status {
+  font-size: 0.835rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; padding: 2px 6px; border-radius: 4px;
+  font-family: var(--mono);
+}
+.rp-status.idle    { background: var(--sunken); color: var(--ink-mute); border: 1px solid var(--rule); }
+.rp-status.running { background: #854D0E; color: #fff; border: 1px solid #854D0E; }
+.rp-status.found   { background: #166534; color: #fff; border: 1px solid #166534; }
+.rp-status.miss    { background: #991B1B; color: #fff; border: 1px solid #991B1B; }
+
+/* Fuzzer feed */
+.fuzz-feed {
+  height: 130px; overflow: hidden; padding: 6px 12px;
+  font-family: var(--mono); font-size: 0.8425rem; line-height: 1.55;
+  background: #FAFBFD; position: relative;
+}
+.fuzz-feed-inner { position: absolute; bottom: 6px; left: 12px; right: 12px; }
+.fuzz-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Agent feed */
+.agent-feed {
+  height: 130px; overflow-y: auto; padding: 6px 10px;
+  font-size: 0.88rem; line-height: 1.5; background: var(--surface);
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--violet-200) transparent;
+}
+.agent-feed::-webkit-scrollbar { width: 5px; }
+.agent-feed::-webkit-scrollbar-track { background: transparent; }
+.agent-feed::-webkit-scrollbar-thumb {
+  background: var(--violet-200); border-radius: 4px;
+}
+.agent-feed::-webkit-scrollbar-thumb:hover { background: var(--violet); }
+.ag-step {
+  padding: 5px 8px; border-radius: 6px; margin-bottom: 4px;
+  border: 1px solid var(--rule); background: var(--sunken);
+  opacity: 0; transform: translateY(3px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+.ag-step.show { opacity: 1; transform: translateY(0); }
+.ag-step-head { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+.ag-num {
+  font-family: var(--mono); font-size: 0.8275rem; font-weight: 700;
+  background: var(--violet); color: #fff;
+  border-radius: 3px; padding: 0 4px; flex-shrink: 0;
+}
+.ag-label { font-size: 0.8575rem; font-weight: 700; color: var(--ink); }
+.ag-body {
+  font-size: 0.85rem; color: var(--ink-soft); line-height: 1.45;
+  font-family: var(--mono); white-space: pre-wrap;
+}
+.ag-body .cursor {
+  display: inline-block; width: 1px; height: .8em;
+  background: var(--violet); vertical-align: middle;
+  animation: blink .7s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.ag-step.crash { background: var(--danger-bg); border-color: #EABFBF; }
+.ag-step.crash .ag-num { background: var(--danger); }
+.ag-step.crash .ag-body { color: var(--ink); }
+
+/* Stats row */
+.stats-row {
+  padding: 6px 12px; border-top: 1px solid var(--rule);
+  display: flex; gap: 0;
+}
+.stat { text-align: center; flex: 1; }
+.stat-val {
+  font-family: var(--mono); font-size: 0.895rem; font-weight: 700;
+  color: var(--ink); line-height: 1.35;
+}
+.stat-val.bad  { color: var(--danger); }
+.stat-val.good { color: var(--success); }
+.stat-val.warn { color: var(--warning); }
+.stat-lbl {
+  font-size: 0.8125rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--ink-mute);
+}
+
+/* ===== Result bar ===== */
+.result-bar {
+  padding: 10px 16px; border-top: 1px solid var(--rule);
+  background: var(--sunken); display: none;
+}
+.result-bar.visible { display: block; }
+.result-bar.phase-agent { background: var(--violet-50); }
+
+.result-summary {
+  font-size: 0.895rem; line-height: 1.5; color: var(--ink-soft); margin-bottom: 8px;
+}
+.result-summary strong { color: var(--ink); }
+
+.result-verdict {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.verdict-chip {
+  font-size: 0.865rem; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  display: flex; align-items: center; gap: 4px;
+}
+.verdict-chip svg { width: 12px; height: 12px; flex-shrink: 0; }
+.verdict-chip.found { background: #166534; color: #fff; border: 1px solid #166534; }
+.verdict-chip.miss  { background: #991B1B; color: #fff; border: 1px solid #991B1B; }
+.verdict-chip.later { background: #854D0E; color: #fff; border: 1px solid #854D0E; }
+
+/* ===== Boundary callout ===== */
+.boundary {
+  margin: 12px 16px 10px; padding: 10px 12px;
+  border: 1px solid var(--violet-200); border-radius: 8px;
+  background: var(--violet-50); display: none;
+}
+.boundary.visible { display: block; }
+.boundary-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.boundary-head svg { width: 14px; height: 14px; color: var(--ink); flex-shrink: 0; }
+.boundary-head strong { font-size: 0.895rem; font-weight: 700; color: var(--ink); }
+.boundary p { font-size: 0.88rem; line-height: 1.5; color: var(--ink-soft); margin-bottom: 4px; }
+.boundary p:last-child { margin-bottom: 0; }
+.boundary strong { color: var(--ink); }
+
+/* ===== Buttons ===== */
+.btn-row {
+  padding: 10px 16px; border-top: 1px solid var(--rule);
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.btn {
+  appearance: none; border-radius: 7px; padding: 7px 18px;
+  font: inherit; font-size: 0.895rem; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.btn:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+.btn:disabled { opacity: .45; cursor: default; pointer-events: none; }
+.btn svg { width: 13px; height: 13px; }
+.btn-primary { background: var(--violet); color: #fff; border: none; }
+.btn-primary:hover:not(:disabled) { background: var(--violet-dark); }
+.btn-ghost {
+  background: var(--surface); color: var(--ink-soft);
+  border: 1.5px solid var(--rule);
+}
+.btn-ghost:hover:not(:disabled) { border-color: var(--violet); color: var(--violet); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .ag-step { opacity: 1 !important; transform: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card" id="mainCard">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    </div>
+    <h1>Fuzzing vs. Reasoning: The Discovery Race</h1>
+    <span class="phase-badge" id="phaseBadge" aria-live="polite">Setup</span>
+  </div>
+
+  <!-- Code panel -->
+  <div class="code-panel" id="codePanel">
+    <div class="code-panel-top">
+      <h2>Target function</h2>
+      <span class="file-pill">process_record.c</span>
+      <span class="bug-note" id="bugNote" aria-live="polite">Line 11: &gt; should be &gt;=</span>
+    </div>
+    <div class="code-block" role="region" aria-label="C source code under analysis">
+      <div class="code-block-inner" id="codeBlock"></div>
+    </div>
+  </div>
+
+  <!-- Start bar -->
+  <div class="start-bar" id="startBar">
+    <p><strong>Can you spot the bug?</strong> Both approaches will attack this code. The fuzzer fires random inputs. The agent uses statistical pattern-matching over the source.</p>
+    <button class="btn btn-primary" id="startBtn" aria-label="Start the race">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Start Race
+    </button>
+  </div>
+
+  <!-- Race panels -->
+  <div class="race-row" id="raceRow" style="display:none;">
+
+    <!-- Fuzzer -->
+    <div class="race-panel">
+      <div class="rp-head">
+        <div class="rp-icon fuzzer" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <span class="rp-title">Traditional Fuzzer</span>
+        <span class="rp-status idle" id="fzStatus" role="status">Idle</span>
+      </div>
+      <div class="fuzz-feed" aria-hidden="true" id="fzFeed"><div class="fuzz-feed-inner" id="fzInner"></div></div>
+      <div class="sr-only" aria-live="polite" id="fzSr"></div>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-val" id="sInputs">0</div><div class="stat-lbl">Inputs</div></div>
+        <div class="stat"><div class="stat-val" id="sCrashes">0</div><div class="stat-lbl">Minor crashes</div></div>
+        <div class="stat"><div class="stat-val bad" id="sTarget">No</div><div class="stat-lbl">Target bug</div></div>
+      </div>
+    </div>
+
+    <!-- Agent -->
+    <div class="race-panel">
+      <div class="rp-head">
+        <div class="rp-icon agent" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <span class="rp-title">AI Agent (Big Sleep)</span>
+        <span class="rp-status idle" id="agStatus" role="status">Idle</span>
+      </div>
+      <div class="agent-feed" id="agFeed" role="log" aria-label="AI agent reasoning" aria-live="polite"></div>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-val" id="aSteps">0</div><div class="stat-lbl">Steps</div></div>
+        <div class="stat"><div class="stat-val" id="aInputs">0</div><div class="stat-lbl">Targeted inputs</div></div>
+        <div class="stat"><div class="stat-val bad" id="aTarget">No</div><div class="stat-lbl">Target bug</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result bar: AI finds first -->
+  <div class="result-bar phase-agent" id="resultAgent">
+    <p class="result-summary"><strong>The AI agent found the bug in 6 steps.</strong> The fuzzer is still running. Coverage-guided mutation can steer it toward new paths, but reaching this exact boundary condition takes many more attempts.</p>
+    <div class="result-verdict">
+      <span class="verdict-chip found"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> AI: Found</span>
+      <span class="verdict-chip miss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Fuzzer: Still searching</span>
+    </div>
+  </div>
+
+  <!-- Result bar: Fuzzer finds later -->
+  <div class="result-bar" id="resultFuzzer">
+    <p class="result-summary" id="fzFoundMsg"></p>
+    <div class="result-verdict">
+      <span class="verdict-chip found"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> AI: Found first</span>
+      <span class="verdict-chip later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Fuzzer: Found eventually</span>
+    </div>
+  </div>
+
+  <!-- Boundary callout -->
+  <div class="boundary" id="boundary" role="note" aria-label="Capability boundary">
+    <div class="boundary-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <strong>Real capability, real boundary</strong>
+    </div>
+    <p>Google's Big Sleep found a genuine zero-day in SQLite that survived years of fuzzing. The agent's pattern-matching over source code surfaced a semantic edge case that random input mutation could not efficiently reach.</p>
+    <p>But the agent operated inside a <strong>purpose-built harness</strong> on a <strong>single codebase</strong>. It is not a general vulnerability scanner. Both attackers and defenders have access to the same technique.</p>
+  </div>
+
+  <!-- Button row -->
+  <div class="btn-row" id="btnRow" style="display:none;">
+    <button class="btn btn-ghost" id="restartBtn" aria-label="Restart the animation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.85"/></svg>
+      Restart
+    </button>
+  </div>
+
+</div>
+</div>
+
+<div class="sr-only" aria-live="assertive" id="srAnn"></div>
+
+<script>
+(function () {
+'use strict';
+
+var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function $(id) { return document.getElementById(id); }
+function announce(msg) { var el = $('srAnn'); el.textContent = ''; setTimeout(function(){ el.textContent = msg; }, 50); }
+
+function notifyHeight() {
+  var el = document.querySelector('.wrap');
+  if (!el) return;
+  var r = el.getBoundingClientRect();
+  var cs = getComputedStyle(document.body);
+  var h = Math.ceil(r.height + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + 20);
+  window.parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+  window.parent.postMessage({ type: 'iframeHeight', height: h, src: location.href }, '*');
+}
+
+/* ============================================================
+   CODE BLOCK -- compact version, 20 lines
+   ============================================================ */
+var CODE = [
+  { n:1,  h:'<span class="pp">#define</span> MAX_ENTRIES <span class="nm">64</span>' },
+  { n:2,  h:'' },
+  { n:3,  h:'<span class="kw">typedef struct</span> <span class="op">{</span>' },
+  { n:4,  h:'    <span class="ty">int32_t</span> type; <span class="ty">int32_t</span> size; <span class="ty">char</span> data[<span class="nm">256</span>];' },
+  { n:5,  h:'<span class="op">}</span> <span class="ty">Record</span>;' },
+  { n:6,  h:'' },
+  { n:7,  h:'<span class="kw">static</span> <span class="ty">Record</span> table[MAX_ENTRIES]; <span class="cm">// indices 0..63</span>' },
+  { n:8,  h:'<span class="kw">static</span> <span class="ty">int</span> count = <span class="nm">0</span>;' },
+  { n:9,  h:'' },
+  { n:10, h:'<span class="ty">int</span> <span class="op">process_record(</span><span class="ty">int32_t</span> type, <span class="ty">int32_t</span> size, <span class="kw">const</span> <span class="ty">char</span> *payload<span class="op">)</span> <span class="op">{</span>' },
+  { n:11, h:'    <span class="kw">if</span> (count <span class="op">&gt;</span> MAX_ENTRIES) <span class="op">{</span> <span class="kw">return</span> -<span class="nm">1</span>; <span class="op">}</span>  <span class="cm">// BUG: should be &gt;=</span>', bug:true },
+  { n:12, h:'' },
+  { n:13, h:'    <span class="ty">Record</span> *r = &amp;table[count]; <span class="cm">// count==64 is out of bounds</span>' },
+  { n:14, h:'    r->type = type;' },
+  { n:15, h:'    <span class="kw">if</span> (size &lt; <span class="nm">0</span> || size &gt; <span class="nm">256</span>) <span class="op">{</span> <span class="kw">return</span> -<span class="nm">2</span>; <span class="op">}</span>' },
+  { n:16, h:'    memcpy(r->data, payload, size);' },
+  { n:17, h:'    r->size = size;' },
+  { n:18, h:'    count++;' },
+  { n:19, h:'    <span class="kw">return</span> <span class="nm">0</span>;' },
+  { n:20, h:'<span class="op">}</span>' }
+];
+
+function buildCode() {
+  var b = $('codeBlock'); b.innerHTML = '';
+  CODE.forEach(function(line) {
+    var d = document.createElement('div');
+    d.className = 'code-line' + (line.bug ? ' ln-buggy' : '');
+    d.id = 'cl-' + line.n;
+    d.innerHTML = '<span class="ln-num">' + line.n + '</span><span class="ln-code">' + (line.h || '') + '</span>';
+    b.appendChild(d);
+  });
+}
+
+function hlLines(nums) {
+  document.querySelectorAll('.code-line.ln-hl').forEach(function(el){ el.classList.remove('ln-hl'); });
+  nums.forEach(function(n){ var el = $('cl-' + n); if (el) el.classList.add('ln-hl'); });
+}
+function markCrash() {
+  var el = $('cl-11');
+  if (el) { el.classList.remove('ln-hl','ln-buggy'); el.classList.add('ln-crash'); }
+}
+
+/* ============================================================
+   FUZZER
+   ============================================================ */
+var fzTimer = null, fzCount = 0, fzCrashes = 0, fzRunning = false;
+var fzLines = [], MAX_FL = 8;
+var TICK = 50, BATCH = 280;
+
+/* Each page load: fuzzer finds the bug after a random count (2M-9M).
+   This always comes well after the AI agent finishes. */
+var FUZZ_FIND_AT = 80000 + Math.floor(Math.random() * 120000);
+var fzFoundBug = false;
+var agentDone = false;
+
+var MINOR = ['null-ptr-deref @ size=-2147483648', 'stack-smash (size=257)'];
+
+function randHex(n) {
+  var h = '', c = '0123456789abcdef';
+  for (var i = 0; i < n; i++) { h += c[Math.floor(Math.random()*16)]; if (i%2===1 && i<n-1) h += ' '; }
+  return h;
+}
+
+function addFL(html) {
+  fzLines.push(html);
+  if (fzLines.length > MAX_FL) fzLines.shift();
+  var el = $('fzInner'); el.innerHTML = '';
+  fzLines.forEach(function(l){ var d = document.createElement('div'); d.className = 'fuzz-line'; d.innerHTML = l; el.appendChild(d); });
+}
+
+function fmtN(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0) + 'k';
+  return String(n);
+}
+
+function fzTick() {
+  if (!fzRunning) return;
+  fzCount += BATCH;
+
+  /* Check if fuzzer finds target bug */
+  if (!fzFoundBug && agentDone && fzCount >= FUZZ_FIND_AT) {
+    fzFoundBug = true;
+    fzRunning = false;
+    addFL('<span style="color:var(--success);font-weight:700">CRASH -- heap-buffer-overflow at table[64]</span>');
+    addFL('<span style="color:var(--success)">Input: 65x process_record(type=1, size=4, "AAAA")</span>');
+    $('sTarget').textContent = 'Yes';
+    $('sTarget').className = 'stat-val good';
+    $('fzStatus').textContent = 'Found';
+    $('fzStatus').className = 'rp-status found';
+    $('fzSr').textContent = 'Fuzzer found the target bug after ' + fmtN(fzCount) + ' inputs.';
+    onFuzzerFound();
+    return;
+  }
+
+  /* Minor crashes */
+  var isCrash = (Math.random() < 0.025 && fzCrashes < 2);
+  var res;
+  if (isCrash) {
+    fzCrashes++;
+    var m = MINOR[fzCrashes - 1];
+    res = '<span style="color:var(--warning)">CRASH</span> <span style="color:var(--warning)">' + m + '</span>';
+    $('sCrashes').textContent = fzCrashes;
+    $('fzSr').textContent = 'Minor crash: ' + m + '. Inputs: ' + fmtN(fzCount) + '.';
+  } else {
+    res = '<span style="color:var(--ink-mute)">no crash</span>';
+  }
+
+  var ts = [0,1,2,127,-1], szs = [0,1,4,256,257,-1];
+  var t = ts[Math.floor(Math.random()*ts.length)];
+  var sz = szs[Math.floor(Math.random()*szs.length)];
+  addFL(
+    '<span style="color:var(--ink-mute)">#' + fzCount + '</span>' +
+    ' t=<span style="color:var(--blue)">' + t + '</span>' +
+    ' sz=<span style="color:var(--warning)">' + sz + '</span>' +
+    ' [' + randHex(6) + '] ' + res
+  );
+  $('sInputs').textContent = fmtN(fzCount);
+  fzTimer = setTimeout(fzTick, REDUCED ? 0 : TICK);
+}
+
+function startFuzzer() {
+  fzRunning = true;
+  $('fzStatus').textContent = 'Running';
+  $('fzStatus').className = 'rp-status running';
+  addFL('<span style="color:var(--ink-mute)">AFL initialized. Seed corpus: 8 inputs.</span>');
+  fzTick();
+}
+function stopFuzzer() { fzRunning = false; if (fzTimer) clearTimeout(fzTimer); }
+
+/* ============================================================
+   AGENT
+   ============================================================ */
+var STEPS = [
+  { label:'Read code', cls:'', hl:[1,7,8,10],
+    text:'Scanning process_record()\ntable[MAX_ENTRIES] -- 64 slots (0..63)\ncount tracks fill level' },
+  { label:'Boundary analysis', cls:'', hl:[11],
+    text:'Line 11: if (count > MAX_ENTRIES)\nWhen count == 64: (64 > 64) = FALSE\nExecution passes the guard' },
+  { label:'Hypothesis', cls:'', hl:[11,13],
+    text:'Off-by-one: > should be >=\ncount==64 passes check\n&table[64] computed -- out of bounds' },
+  { label:'Craft input', cls:'', hl:[15,16,18],
+    text:'PoC: call process_record() 65 times\ntype=1, size=4, payload="AAAA"\nCall 65: count==64, guard fails' },
+  { label:'Execute', cls:'', hl:[11,13,16],
+    text:'Running in sandbox...\nCalls 1-64: OK\nCall 65: count=64, check passes\nr = &table[64] -- past end' },
+  { label:'CRASH', cls:'crash', hl:[11],
+    text:'Heap buffer overflow at table[64]\nFix: change > to >=\nif (count >= MAX_ENTRIES) { return -1; }' }
+];
+
+var agTimer = null, agTypeTimer = null;
+
+function escH(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function typewrite(el, text, done) {
+  if (REDUCED) { el.textContent = text; if (done) done(); return; }
+  var i = 0, ms = 14;
+  function tick() {
+    if (i > text.length) { el.textContent = text; if (done) done(); return; }
+    el.innerHTML = escH(text.slice(0, i)) + '<span class="cursor" aria-hidden="true"></span>';
+    i++;
+    agTypeTimer = setTimeout(tick, ms);
+  }
+  tick();
+}
+
+function runStep(idx) {
+  if (idx >= STEPS.length) { onAgentDone(); return; }
+  var s = STEPS[idx];
+  $('aSteps').textContent = idx + 1;
+  if (idx >= 3) $('aInputs').textContent = '1';
+  if (s.hl) hlLines(s.hl);
+
+  var feed = $('agFeed');
+  var el = document.createElement('div');
+  el.className = 'ag-step ' + (s.cls || '');
+  var bid = 'ab-' + idx;
+  el.innerHTML =
+    '<div class="ag-step-head"><span class="ag-num">' + (idx+1) + '</span><span class="ag-label">' + s.label + '</span></div>' +
+    '<div class="ag-body" id="' + bid + '"></div>';
+  feed.appendChild(el);
+
+  if (!REDUCED) { requestAnimationFrame(function(){ requestAnimationFrame(function(){ el.classList.add('show'); }); }); }
+  else { el.classList.add('show'); }
+  feed.scrollTop = feed.scrollHeight;
+
+  typewrite($(bid), s.text, function() {
+    feed.scrollTop = feed.scrollHeight;
+    agTimer = setTimeout(function(){ runStep(idx + 1); }, REDUCED ? 0 : 350);
+  });
+}
+
+function onAgentDone() {
+  agentDone = true;
+  $('agStatus').textContent = 'Found';
+  $('agStatus').className = 'rp-status found';
+  $('aTarget').textContent = 'Yes';
+  $('aTarget').className = 'stat-val good';
+  markCrash();
+  $('bugNote').classList.add('visible');
+  $('phaseBadge').textContent = 'AI agent finished';
+
+  /* Show the agent-found result bar */
+  $('resultAgent').classList.add('visible');
+  announce('AI agent found the bug in 6 reasoning steps. The fuzzer is still running.');
+  notifyHeight();
+}
+
+function onFuzzerFound() {
+  /* Update the agent result bar */
+  var agBar = $('resultAgent');
+  agBar.querySelector('.result-summary').innerHTML =
+    '<strong>The AI agent found the bug in 6 steps. The fuzzer found it too</strong> -- after ' + fmtN(fzCount) + ' inputs.';
+  /* Remove the "still searching" chip, replace with "found eventually" */
+  var chips = agBar.querySelectorAll('.verdict-chip');
+  if (chips.length > 1) {
+    chips[1].className = 'verdict-chip later';
+    chips[1].innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Fuzzer: Found after ' + fmtN(fzCount);
+  }
+
+  $('phaseBadge').textContent = 'Both finished';
+  $('boundary').classList.add('visible');
+  $('btnRow').style.display = 'flex';
+  announce('Fuzzer eventually found the bug after ' + fmtN(fzCount) + ' inputs. See the takeaway below.');
+  notifyHeight();
+}
+
+/* ============================================================
+   FLOW CONTROL
+   ============================================================ */
+function startRace() {
+  $('startBtn').disabled = true;
+  $('startBar').style.display = 'none';
+  $('raceRow').style.display = 'grid';
+  $('phaseBadge').textContent = 'Race running';
+  announce('Race started. Fuzzer and AI agent running simultaneously.');
+
+  startFuzzer();
+  setTimeout(function() {
+    $('agStatus').textContent = 'Reasoning';
+    $('agStatus').className = 'rp-status running';
+    runStep(0);
+  }, REDUCED ? 0 : 500);
+
+  notifyHeight();
+}
+
+function resetAll() {
+  stopFuzzer();
+  if (agTimer) clearTimeout(agTimer);
+  if (agTypeTimer) clearTimeout(agTypeTimer);
+
+  fzCount = 0; fzCrashes = 0; fzRunning = false; fzLines = [];
+  fzFoundBug = false; agentDone = false;
+  FUZZ_FIND_AT = 80000 + Math.floor(Math.random() * 120000);
+
+  $('phaseBadge').textContent = 'Setup';
+  $('raceRow').style.display = 'none';
+  $('startBar').style.display = 'flex';
+  $('startBtn').disabled = false;
+  $('resultAgent').classList.remove('visible');
+  $('resultFuzzer').classList.remove('visible');
+  $('boundary').classList.remove('visible');
+  $('btnRow').style.display = 'none';
+
+  /* Reset agent result bar to original state */
+  $('resultAgent').querySelector('.result-summary').innerHTML =
+    '<strong>The AI agent found the bug in 6 steps.</strong> The fuzzer is still running. Coverage-guided mutation can steer it toward new paths, but reaching this exact boundary condition takes many more attempts.';
+  var chips = $('resultAgent').querySelectorAll('.verdict-chip');
+  if (chips.length > 1) {
+    chips[1].className = 'verdict-chip miss';
+    chips[1].innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Fuzzer: Still searching';
+  }
+
+  $('fzInner').innerHTML = '';
+  $('sInputs').textContent = '0';
+  $('sCrashes').textContent = '0';
+  $('sTarget').textContent = 'No'; $('sTarget').className = 'stat-val bad';
+  $('fzStatus').textContent = 'Idle'; $('fzStatus').className = 'rp-status idle';
+  $('fzSr').textContent = '';
+
+  $('agFeed').innerHTML = '';
+  $('aSteps').textContent = '0';
+  $('aInputs').textContent = '0';
+  $('aTarget').textContent = 'No'; $('aTarget').className = 'stat-val bad';
+  $('agStatus').textContent = 'Idle'; $('agStatus').className = 'rp-status idle';
+
+  hlLines([]);
+  $('bugNote').classList.remove('visible');
+  var bugLine = $('cl-11');
+  if (bugLine) { bugLine.classList.remove('ln-crash','ln-hl'); bugLine.classList.add('ln-buggy'); }
+
+  $('startBtn').focus();
+  announce('Animation reset.');
+  notifyHeight();
+}
+
+$('startBtn').addEventListener('click', startRace);
+$('restartBtn').addEventListener('click', resetAll);
+
+buildCode();
+notifyHeight();
+
+/* Resize observer */
+(function() {
+  var root = document.documentElement, body = document.body;
+  root.style.height = 'auto'; body.style.height = 'auto';
+  root.style.overflow = 'visible'; body.style.overflow = 'visible';
+  var target = document.querySelector('.wrap') || body;
+  if (window.ResizeObserver) { new ResizeObserver(notifyHeight).observe(target); }
+  else { setInterval(notifyHeight, 500); }
+  window.addEventListener('load', function(){ setTimeout(notifyHeight, 200); });
+  setTimeout(notifyHeight, 50);
+})();
+
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

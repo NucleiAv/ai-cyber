@@ -1,0 +1,531 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quantization Curve Resolution Demo</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #171717;
+    --muted: #71717a;
+    --line: #e4e4e7;
+    --accent: #2563eb;
+    --accent-soft: rgba(37, 99, 235, 0.12);
+    --danger: #b91c1c;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  body {
+    overflow: hidden;
+  }
+
+  .demo {
+    width: min(900px, 100%);
+    margin: 0 auto;
+    padding: 6px;
+  }
+
+  .top {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 6px;
+  }
+
+  .badge {
+    min-width: 88px;
+    text-align: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: white;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    font-size: 0.9rem;
+    line-height: 1.1;
+  }
+
+  .stage {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background:
+      linear-gradient(to right, rgba(0,0,0,0.028) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,0,0,0.028) 1px, transparent 1px),
+      #fff;
+    background-size: 34px 34px;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 228px;
+  }
+
+  .axis {
+    stroke: #a1a1aa;
+    stroke-width: 1.2;
+  }
+
+  .ref {
+    fill: none;
+    stroke: #18181b;
+    stroke-width: 3;
+    opacity: 0.18;
+    stroke-linecap: round;
+  }
+
+  .quant {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 4px 7px rgba(37, 99, 235, 0.16));
+  }
+
+  .sample-dot {
+    fill: var(--accent);
+    stroke: white;
+    stroke-width: 1.8;
+  }
+
+  .error-stick {
+    stroke: var(--danger);
+    stroke-width: 1.2;
+    opacity: 0;
+  }
+
+  .level-line {
+    stroke: var(--accent);
+    stroke-width: 1;
+    opacity: 0.14;
+    shape-rendering: crispEdges;
+  }
+
+  .x-chunk-line {
+    stroke: var(--accent);
+    stroke-width: 1;
+    opacity: 0.10;
+    shape-rendering: crispEdges;
+  }
+
+  .x-chunk-band {
+    fill: var(--accent);
+    opacity: 0.035;
+  }
+
+  .axis-label {
+    fill: var(--muted);
+    font-size: 12px;
+  }
+
+  .panel {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 12px 9px;
+    border-top: 1px solid var(--line);
+    background: rgba(250, 250, 250, 0.8);
+  }
+
+  .meters {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr;
+    gap: 8px 10px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .meter-label {
+    color: var(--muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .bar {
+    position: relative;
+    height: 9px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #e4e4e7;
+    min-width: 0;
+  }
+
+  .bar-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #18181b, var(--accent));
+    transform-origin: left center;
+    transition: transform 650ms cubic-bezier(.2,.85,.18,1);
+  }
+
+  .readout {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .readout strong {
+    font-size: 0.98rem;
+    letter-spacing: -0.03em;
+  }
+
+  .readout span {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  button {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: white;
+    color: var(--muted);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: 180ms ease;
+    line-height: 1.15;
+  }
+
+  button:hover {
+    border-color: #c4c4cc;
+    color: var(--ink);
+  }
+
+  button.active {
+    background: #1E40AF;
+    border-color: #1E40AF;
+    color: #fff;
+  }
+
+  @media (max-width: 760px) {
+    .demo { padding: 4px; }
+    svg { height: 214px; }
+    .panel { grid-template-columns: 1fr; }
+    .meters { grid-template-columns: auto 1fr; }
+    .readout { justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+  <main class="demo" aria-label="Animated quantization curve demo">
+    <div class="top">
+      <div class="badge" id="modeBadge">FP32</div>
+    </div>
+
+    <section class="stage">
+      <svg viewBox="0 0 920 220" role="img" aria-label="A curve becomes less smooth as quantization precision decreases">
+        <defs>
+          <clipPath id="clip">
+            <rect x="72" y="8" width="790" height="166" rx="8"></rect>
+          </clipPath>
+        </defs>
+
+        <line class="axis" x1="72" y1="174" x2="862" y2="174"></line>
+        <line class="axis" x1="72" y1="8" x2="72" y2="174"></line>
+
+        <g id="xChunks" clip-path="url(#clip)"></g>
+        <g id="levels" clip-path="url(#clip)"></g>
+        <path id="referencePath" class="ref" clip-path="url(#clip)"></path>
+        <g id="errorSticks" clip-path="url(#clip)"></g>
+        <path id="quantPath" class="quant" clip-path="url(#clip)"></path>
+        <g id="dots" clip-path="url(#clip)"></g>
+
+        <text class="axis-label" x="33" y="92" transform="rotate(-90 33 92)">stored value (y)</text>
+        <text class="axis-label" x="72" y="194">input position (x)</text>
+      </svg>
+
+      <div class="panel">
+        <div class="meters">
+          <div class="meter-label">x density</div>
+          <div class="bar"><div class="bar-fill" id="xBarFill"></div></div>
+
+          <div class="meter-label">y density</div>
+          <div class="bar"><div class="bar-fill" id="yBarFill"></div></div>
+        </div>
+
+        <div class="readout">
+          <strong id="levelText">very dense</strong>
+          <span id="effectText">nearly continuous</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="steps" id="buttons"></div>
+  </main>
+
+<script>
+(() => {
+  const x0 = 72;
+  const y0 = 8;
+  const plotW = 790;
+  const plotH = 166;
+  const yBase = y0 + plotH;
+
+  const modes = [
+    { name: "FP32", yLevels: 4096, xBins: 240, visibleYLines: 18, visibleXLines: 24, pathStyle: "smooth", barX: 1.00, barY: 1.00, text: "very dense", effect: "nearly continuous" },
+    { name: "FP16", yLevels: 512,  xBins: 120, visibleYLines: 14, visibleXLines: 16, pathStyle: "smooth", barX: 0.72, barY: 0.74, text: "dense", effect: "tiny rounding" },
+    { name: "INT8", yLevels: 32,   xBins: 28,  visibleYLines: 32, visibleXLines: 14, pathStyle: "step",   barX: 0.34, barY: 0.38, text: "coarse", effect: "visible steps" },
+    { name: "INT4", yLevels: 8,    xBins: 10,  visibleYLines: 8,  visibleXLines: 10, pathStyle: "step",   barX: 0.12, barY: 0.12, text: "very coarse", effect: "blocky curve" }
+  ];
+
+  const referencePath = document.getElementById("referencePath");
+  const quantPath = document.getElementById("quantPath");
+  const levelsG = document.getElementById("levels");
+  const xChunksG = document.getElementById("xChunks");
+  const dotsG = document.getElementById("dots");
+  const sticksG = document.getElementById("errorSticks");
+  const modeBadge = document.getElementById("modeBadge");
+  const xBarFill = document.getElementById("xBarFill");
+  const yBarFill = document.getElementById("yBarFill");
+  const levelText = document.getElementById("levelText");
+  const effectText = document.getElementById("effectText");
+  const buttons = document.getElementById("buttons");
+
+  let modeIndex = 0;
+  let timerId = null;
+  let autoplayEnabled = true;
+
+  function signal(t) {
+    return 0.52
+      + 0.27 * Math.sin(t * Math.PI * 2.0 - 0.55)
+      + 0.10 * Math.sin(t * Math.PI * 6.2 + 0.70)
+      + 0.045 * Math.cos(t * Math.PI * 11.3);
+  }
+
+  function clamp01(v) {
+    return Math.max(0.04, Math.min(0.96, v));
+  }
+
+  function toXY(t, v) {
+    return {
+      x: x0 + t * plotW,
+      y: yBase - clamp01(v) * plotH
+    };
+  }
+
+  function quantizeY(v, levels) {
+    const clamped = clamp01(v);
+    return Math.round(clamped * (levels - 1)) / (levels - 1);
+  }
+
+  function makeSmoothReference(samples = 700) {
+    let d = "";
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples;
+      const p = toXY(t, signal(t));
+      d += i === 0 ? `M ${p.x.toFixed(2)} ${p.y.toFixed(2)}` : ` L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
+    }
+    return d;
+  }
+
+  function getQuantizedSamples(mode) {
+    const pts = [];
+    const bins = mode.xBins;
+    for (let i = 0; i < bins; i++) {
+      const t = bins === 1 ? 0 : i / (bins - 1);
+      const raw = signal(t);
+      const q = quantizeY(raw, mode.yLevels);
+      pts.push({
+        t,
+        raw,
+        q,
+        ...toXY(t, q),
+        rawXY: toXY(t, raw)
+      });
+    }
+    return pts;
+  }
+
+  function makeQuantPath(mode) {
+    const pts = getQuantizedSamples(mode);
+    let d = "";
+
+    if (mode.pathStyle === "smooth") {
+      pts.forEach((p, i) => {
+        d += i === 0 ? `M ${p.x.toFixed(2)} ${p.y.toFixed(2)}` : ` L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
+      });
+      return { d, pts };
+    }
+
+    pts.forEach((p, i) => {
+      if (i === 0) {
+        d += `M ${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
+      } else {
+        d += ` H ${p.x.toFixed(2)} V ${p.y.toFixed(2)}`;
+      }
+    });
+
+    return { d, pts };
+  }
+
+  function drawYLevels(mode) {
+    levelsG.innerHTML = "";
+    const lines = mode.visibleYLines;
+    for (let i = 1; i < lines; i++) {
+      const y = yBase - (i / lines) * plotH;
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("class", "level-line");
+      line.setAttribute("x1", x0);
+      line.setAttribute("x2", x0 + plotW);
+      line.setAttribute("y1", y);
+      line.setAttribute("y2", y);
+      levelsG.appendChild(line);
+    }
+  }
+
+  function drawXChunks(mode) {
+    xChunksG.innerHTML = "";
+    const lines = mode.visibleXLines;
+    const bandCount = Math.max(0, lines - 1);
+
+    for (let i = 0; i < bandCount; i++) {
+      if (mode.name === "FP32" || mode.name === "FP16") break;
+      const xA = x0 + (i / bandCount) * plotW;
+      const xB = x0 + ((i + 1) / bandCount) * plotW;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("class", "x-chunk-band");
+      rect.setAttribute("x", xA);
+      rect.setAttribute("y", y0);
+      rect.setAttribute("width", xB - xA);
+      rect.setAttribute("height", plotH);
+      if (i % 2 === 1) rect.style.opacity = "0.02";
+      xChunksG.appendChild(rect);
+    }
+
+    for (let i = 1; i < lines; i++) {
+      const x = x0 + (i / lines) * plotW;
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("class", "x-chunk-line");
+      line.setAttribute("x1", x);
+      line.setAttribute("x2", x);
+      line.setAttribute("y1", y0);
+      line.setAttribute("y2", yBase);
+      xChunksG.appendChild(line);
+    }
+  }
+
+  function drawDotsAndErrors(mode, pts) {
+    dotsG.innerHTML = "";
+    sticksG.innerHTML = "";
+
+    const showErrors = mode.name === "INT8" || mode.name === "INT4";
+
+    pts.forEach((p) => {
+      if (mode.name !== "FP32") {
+        const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute("class", "sample-dot");
+        dot.setAttribute("cx", p.x);
+        dot.setAttribute("cy", p.y);
+        dot.setAttribute("r", mode.name === "INT4" ? 4.4 : mode.name === "INT8" ? 3.8 : 2.4);
+        dotsG.appendChild(dot);
+      }
+
+      if (showErrors) {
+        const stick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        stick.setAttribute("class", "error-stick");
+        stick.setAttribute("x1", p.x);
+        stick.setAttribute("x2", p.x);
+        stick.setAttribute("y1", p.rawXY.y);
+        stick.setAttribute("y2", p.y);
+        stick.style.opacity = mode.name === "INT4" ? "0.36" : "0.18";
+        sticksG.appendChild(stick);
+      }
+    });
+  }
+
+  function updateButtons() {
+    [...buttons.children].forEach((button, i) => {
+      button.classList.toggle("active", i === modeIndex);
+    });
+  }
+
+  function stopAutoplay() {
+    autoplayEnabled = false;
+    if (timerId) {
+      clearTimeout(timerId);
+      timerId = null;
+    }
+  }
+
+  function scheduleNextAdvance() {
+    if (!autoplayEnabled) return;
+    if (timerId) clearTimeout(timerId);
+    timerId = setTimeout(() => {
+      setMode((modeIndex + 1) % modes.length, false);
+      scheduleNextAdvance();
+    }, 2200);
+  }
+
+  function setMode(i, allowAutoplaySchedule = true) {
+    modeIndex = i;
+    const mode = modes[modeIndex];
+    const { d, pts } = makeQuantPath(mode);
+
+    modeBadge.textContent = mode.name;
+    levelText.textContent = mode.text;
+    effectText.textContent = mode.effect;
+    xBarFill.style.transform = `scaleX(${mode.barX})`;
+    yBarFill.style.transform = `scaleX(${mode.barY})`;
+
+    drawXChunks(mode);
+    drawYLevels(mode);
+    drawDotsAndErrors(mode, pts);
+
+    quantPath.animate(
+      [
+        { opacity: 0.35, transform: "translateY(3px)" },
+        { opacity: 1, transform: "translateY(0)" }
+      ],
+      { duration: 520, easing: "cubic-bezier(.2,.85,.18,1)" }
+    );
+    quantPath.setAttribute("d", d);
+
+    updateButtons();
+
+    if (allowAutoplaySchedule) scheduleNextAdvance();
+  }
+
+  modes.forEach((mode, i) => {
+    const button = document.createElement("button");
+    button.textContent = mode.name;
+    button.type = "button";
+    button.addEventListener("click", () => {
+      stopAutoplay();
+      setMode(i, false);
+    });
+    buttons.appendChild(button);
+  });
+
+  referencePath.setAttribute("d", makeSmoothReference());
+  setMode(0, true);
+})();
+</script>
+</body>
+</html>

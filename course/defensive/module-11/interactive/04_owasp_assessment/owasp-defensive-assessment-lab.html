@@ -1,0 +1,1068 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>OWASP Defensive Assessment Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redbg:#fdf5f5;
+  --green:#0f7a43;--greenline:#c3e2d0;--greenbg:#f4faf6;
+  --amber:#8a5d00;--amberbg:#FCF1DC;--amberline:#e5d3a8;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid rgba(87,6,140,.25);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+
+/* scrollbar */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--vsoft)}
+::-webkit-scrollbar-thumb{background:var(--violet);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#3d0463}
+*{scrollbar-width:thin;scrollbar-color:var(--violet) var(--vsoft)}
+
+/* layout */
+.wrap{max-width:860px;margin:0 auto;padding:0 0 24px}
+.hdr{padding:28px 28px 0}
+.title{font-size:1.22rem;font-weight:700;color:var(--ink);line-height:1.3}
+.subtitle{font-size:.82rem;color:var(--ink2);margin-top:6px;line-height:1.55}
+
+/* progress bar */
+.progress-area{padding:20px 28px 0}
+.progress-track{display:flex;gap:4px;height:6px}
+.progress-seg{flex:1;border-radius:3px;background:var(--line);transition:background .3s}
+.progress-seg.done{background:var(--green)}
+.progress-seg.active{background:var(--violet)}
+.progress-label{font-family:var(--mono);font-size:.62rem;font-weight:600;letter-spacing:.06em;color:var(--ink3);margin-top:6px;text-align:right}
+
+/* scenario card */
+.scenario-card{margin:20px 28px 0;padding:14px 16px;border:1px solid var(--vline);border-radius:10px;background:var(--vsoft)}
+.scenario-label{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:6px}
+.scenario-title{font-size:.88rem;font-weight:700;color:var(--ink);margin-bottom:4px}
+.scenario-detail{font-size:.76rem;color:var(--ink2);line-height:1.5}
+.scenario-detail ul{margin:6px 0 0 18px;list-style:disc}
+.scenario-detail li{margin-bottom:2px}
+
+/* assessment card */
+.assessment{margin:16px 28px 0;border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:hidden}
+.assess-hdr{padding:16px 18px 0}
+.assess-cat-id{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--violet);margin-bottom:4px}
+.assess-cat-name{font-size:1.02rem;font-weight:700;color:var(--ink);line-height:1.3}
+.assess-cat-desc{font-size:.78rem;color:var(--ink2);margin-top:5px;line-height:1.5}
+
+/* phase areas */
+.phase{padding:16px 18px;display:none}
+.phase.visible{display:block}
+.phase-label{font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+
+/* applicability buttons */
+.applic-btns{display:flex;gap:10px;flex-wrap:wrap}
+.applic-btn{flex:1;min-width:160px;min-height:42px;padding:10px 16px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);font-size:.8rem;font-weight:600;color:var(--ink);transition:.2s;text-align:center}
+.applic-btn:hover{border-color:var(--violet2);background:var(--vsoft)}
+.applic-btn:disabled{cursor:not-allowed;opacity:.6}
+.applic-btn:disabled:hover{border-color:var(--line2);background:var(--bg)}
+
+/* feedback panel */
+.feedback{margin-top:12px;padding:10px 14px;border:1px solid var(--line);border-left-width:3px;border-radius:10px;background:var(--paper);display:none}
+.feedback.visible{display:block}
+.feedback.correct{border-left-color:var(--green);border-color:var(--greenline);background:var(--greenbg)}
+.feedback.incorrect{border-left-color:var(--red);border-color:var(--redline);background:var(--redbg)}
+.feedback-verdict{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);margin-bottom:4px}
+.feedback-text{font-size:.76rem;color:var(--ink2);line-height:1.5}
+.feedback-text strong{color:var(--ink);font-weight:600}
+
+/* continue button */
+.continue-btn{margin-top:12px;min-height:36px;padding:0 18px;border:1px solid var(--violet);border-radius:9px;background:var(--vsoft);font-size:.76rem;font-weight:600;color:var(--ink);transition:.16s;display:none}
+.continue-btn.visible{display:inline-block}
+.continue-btn:hover{background:var(--violet);color:#fff}
+
+/* controls & gaps 2-col */
+.cg-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.cg-grid{grid-template-columns:1fr}}
+.cg-col{}
+.cg-col-title{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin-bottom:8px}
+.cg-options{display:flex;flex-direction:column;gap:6px}
+
+/* option cards */
+.opt-card{padding:9px 12px;border:1px solid var(--line2);border-radius:9px;background:var(--bg);font-size:.74rem;color:var(--ink);line-height:1.4;cursor:pointer;transition:.18s;user-select:none;position:relative}
+.opt-card:hover{border-color:var(--violet2)}
+.opt-card.selected{border-color:var(--violet);box-shadow:inset 0 0 0 1px var(--violet)}
+.opt-card.checked-correct{border-color:var(--greenline);background:var(--greenbg);box-shadow:inset 0 0 0 1px var(--greenline);cursor:default}
+.opt-card.checked-wrong{border-color:var(--redline);background:var(--redbg);box-shadow:inset 0 0 0 1px var(--redline);cursor:default}
+.opt-card.checked-missed{border:2px dashed var(--green);background:var(--greenbg);cursor:default}
+.opt-card.locked{pointer-events:none}
+.opt-card .opt-icon{position:absolute;top:8px;right:10px;font-size:.72rem;font-weight:700;opacity:0;transition:opacity .2s}
+.opt-card .opt-icon.show{opacity:1}
+.opt-explain{font-size:.68rem;color:var(--ink2);margin-top:4px;display:none;line-height:1.4}
+.opt-explain.show{display:block}
+
+/* no-controls note */
+.no-controls-note{padding:10px 14px;border:1px solid var(--amberline);border-radius:9px;background:var(--amberbg);font-size:.74rem;color:var(--ink2);line-height:1.4}
+
+/* check button */
+.check-btn{margin-top:10px;min-height:34px;padding:0 16px;border:none;border-radius:9px;background:var(--violet);color:#fff;font-size:.74rem;font-weight:700;cursor:pointer;transition:.16s;letter-spacing:.01em}
+.check-btn:hover{background:var(--violet2)}
+.check-btn:disabled{opacity:.45;cursor:not-allowed}
+.retry-hint{font-size:.72rem;color:var(--amber);margin-top:8px;line-height:1.4;font-weight:500}
+
+/* priority buttons */
+.priority-btns{display:flex;gap:10px;flex-wrap:wrap}
+.priority-btn{flex:1;min-width:100px;min-height:40px;padding:10px 14px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);font-size:.8rem;font-weight:600;color:var(--ink);transition:.2s;text-align:center}
+.priority-btn:hover{border-color:var(--violet2);background:var(--vsoft)}
+.priority-btn:disabled{cursor:not-allowed;opacity:.6}
+.priority-btn:disabled:hover{border-color:var(--line2);background:var(--bg)}
+.priority-btn.selected-correct{border-color:var(--greenline);background:var(--greenbg);box-shadow:inset 0 0 0 1px var(--greenline)}
+.priority-btn.selected-wrong{border-color:var(--redline);background:var(--redbg);box-shadow:inset 0 0 0 1px var(--redline)}
+.priority-btn.actual-answer{border:2px dashed var(--green);background:var(--greenbg)}
+
+/* nav controls */
+.nav-area{padding:16px 28px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nav-left{display:flex;gap:10px;align-items:center}
+.nav-right{display:flex;gap:10px;align-items:center}
+.nav-step{font-family:var(--mono);font-size:.68rem;font-weight:600;color:var(--ink3);letter-spacing:.02em}
+.nav-btn-primary{min-height:40px;padding:0 22px;border:none;border-radius:10px;background:var(--violet);color:#fff;font-size:.79rem;font-weight:700;cursor:pointer;transition:.16s;letter-spacing:.01em}
+.nav-btn-primary:hover{background:var(--violet2)}
+.nav-btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.nav-btn-ghost{min-height:40px;padding:0 18px;border:1px solid var(--line2);border-radius:10px;background:var(--bg);font-size:.79rem;font-weight:600;color:var(--ink);cursor:pointer;transition:.16s}
+.nav-btn-ghost:hover{border-color:var(--ink3);background:var(--paper)}
+.nav-btn-ghost:disabled{opacity:.35;cursor:not-allowed}
+
+/* final scorecard */
+.scorecard{margin:20px 28px 0;display:none}
+.scorecard.visible{display:block}
+.score-header{font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:14px}
+.score-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+@media(max-width:480px){.score-summary{grid-template-columns:1fr}}
+.score-box{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--paper);text-align:center}
+.score-box-value{font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--ink)}
+.score-box-label{font-family:var(--mono);font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-top:3px}
+
+.score-table{width:100%;border-collapse:collapse;font-size:.74rem}
+.score-table th{font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);text-align:left;padding:6px 8px;border-bottom:2px solid var(--line2)}
+.score-table td{padding:7px 8px;border-bottom:1px solid var(--line);color:var(--ink);vertical-align:top}
+.score-table tr:last-child td{border-bottom:none}
+.score-mark{font-family:var(--mono);font-weight:700;font-size:.72rem}
+.score-mark.ok{color:var(--green)}
+.score-mark.no{color:var(--red)}
+.score-note{font-size:.68rem;color:var(--ink2)}
+
+.score-insight{margin-top:16px;padding:12px 14px;border:1px solid var(--vline);border-radius:10px;background:var(--vsoft)}
+.score-insight-label{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin-bottom:4px}
+.score-insight-text{font-size:.78rem;color:var(--ink2);line-height:1.5}
+
+/* responsive */
+@media(max-width:680px){
+  .hdr,.progress-area,.scenario-card,.assessment,.nav-area,.scorecard{margin-left:16px;margin-right:16px}
+  .assessment{margin-left:16px;margin-right:16px}
+  .scenario-card{margin-left:16px;margin-right:16px}
+}
+@media(max-width:440px){
+  .applic-btns{flex-direction:column}
+  .priority-btns{flex-direction:column}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- Header -->
+<div class="hdr">
+  <h1 class="title">OWASP Defensive Assessment Lab</h1>
+  <p class="subtitle">Walk through all ten OWASP LLM Top 10 (2025) categories and assess MedAssist's defenses. For each category, decide whether it applies, identify existing controls and gaps, and rate the risk priority.</p>
+</div>
+
+<!-- Progress -->
+<div class="progress-area">
+  <div class="progress-track" id="progressTrack"></div>
+  <div class="progress-label" id="progressLabel">Category 1 of 10</div>
+</div>
+
+<!-- Scenario Card -->
+<div class="scenario-card">
+  <div class="scenario-label">System Under Assessment</div>
+  <div class="scenario-title">MedAssist: Patient-Facing AI Assistant</div>
+  <div class="scenario-detail">
+    <ul>
+      <li>Uses RAG to answer patient questions about symptoms, medications, and procedures from a medical knowledge base</li>
+      <li>Integrates with a scheduling API to book and modify appointments</li>
+      <li>Uses application-level metadata filtering to restrict responses to patient-appropriate content</li>
+      <li>Handles ~2,000 patient interactions per day</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Assessment Card -->
+<div class="assessment" id="assessCard">
+  <div class="assess-hdr">
+    <div class="assess-cat-id" id="catId"></div>
+    <div class="assess-cat-name" id="catName"></div>
+    <div class="assess-cat-desc" id="catDesc"></div>
+  </div>
+
+  <!-- Phase 1: Applicability -->
+  <div class="phase visible" id="phase1">
+    <div class="phase-label">Phase 1: Applicability</div>
+    <p style="font-size:.78rem;color:var(--ink2);margin-bottom:10px;line-height:1.4">Does this OWASP category apply to MedAssist?</p>
+    <div class="applic-btns">
+      <button class="applic-btn" id="btnApplies" type="button">Applies to MedAssist</button>
+      <button class="applic-btn" id="btnNotApplies" type="button">Does Not Apply</button>
+    </div>
+    <div class="feedback" id="fb1"></div>
+    <button class="continue-btn" id="continueToPhase2" type="button">Continue to Assessment</button>
+  </div>
+
+  <!-- Phase 2: Controls & Gaps -->
+  <div class="phase" id="phase2">
+    <div class="phase-label">Phase 2: Controls &amp; Gaps</div>
+    <div class="cg-grid">
+      <div class="cg-col" id="controlsCol">
+        <div class="cg-col-title">What controls does MedAssist have?</div>
+        <div class="cg-options" id="controlsOpts"></div>
+        <button class="check-btn" id="checkControls" type="button">Check Controls</button>
+      </div>
+      <div class="cg-col" id="gapsCol">
+        <div class="cg-col-title">What gaps remain?</div>
+        <div class="cg-options" id="gapsOpts"></div>
+        <button class="check-btn" id="checkGaps" type="button" disabled>Check Gaps</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 3: Priority -->
+  <div class="phase" id="phase3">
+    <div class="phase-label">Phase 3: Priority Rating</div>
+    <p style="font-size:.78rem;color:var(--ink2);margin-bottom:10px;line-height:1.4">Given MedAssist's context and architecture, how would you rate the risk priority for this category?</p>
+    <div class="priority-btns" id="priorityBtns">
+      <button class="priority-btn" type="button" data-val="HIGH">High</button>
+      <button class="priority-btn" type="button" data-val="MEDIUM">Medium</button>
+      <button class="priority-btn" type="button" data-val="LOW">Low</button>
+    </div>
+    <div class="feedback" id="fb3"></div>
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="nav-area" id="navArea">
+  <div class="nav-left">
+    <button class="nav-btn-ghost" id="prevBtn" type="button" disabled>Previous</button>
+  </div>
+  <div class="nav-right">
+    <span class="nav-step" id="navStep">Category 1 of 10</span>
+    <button class="nav-btn-primary" id="nextBtn" type="button" disabled>Next Category</button>
+  </div>
+</div>
+
+<!-- Final Scorecard -->
+<div class="scorecard" id="scorecard">
+  <div class="score-header">Assessment Complete</div>
+  <div class="score-summary" id="scoreSummary"></div>
+  <table class="score-table">
+    <thead><tr><th>Category</th><th>Applies</th><th>Priority</th><th>Note</th></tr></thead>
+    <tbody id="scoreBody"></tbody>
+  </table>
+  <div class="score-insight">
+    <div class="score-insight-label">Methodology Insight</div>
+    <div class="score-insight-text">Systematic OWASP LLM Top 10 assessment helps security teams move beyond ad hoc reviews. Every category applied to MedAssist because it is a patient-facing, RAG-powered system with API integrations and external model dependencies. In practice, the categories where you identified the most gaps are where your remediation budget should focus first. Priority ratings should reflect both the likelihood of exploitation and the severity of impact in your specific deployment context.</div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+/* ── DATA ── */
+const DATA=[
+{id:'LLM01',name:'Prompt Injection',
+ desc:'Adversarial input manipulates the LLM\'s behavior, bypassing safety measures or causing unintended actions.',
+ applies:true,priority:'HIGH',
+ applicFeedbackYes:'Correct. Patients interact with MedAssist directly via natural language, which is the primary vector for prompt injection attacks. The system must process arbitrary user input, making it inherently vulnerable.',
+ applicFeedbackNo:'Actually, this does apply. Patients interact with MedAssist directly via natural language. Any system that accepts free-form text input from users is a target for prompt injection, and MedAssist processes thousands of such interactions daily.',
+ controls:[
+  {text:'Input keyword filtering for known injection patterns',correct:true},
+  {text:'Output filtering for medical safety (contraindicated advice detection)',correct:true},
+  {text:'ML-powered input classifier (Prompt Guard or equivalent)',correct:false,explain:'This is actually a gap. MedAssist does not have an ML-powered classifier; it only has keyword-based filtering.'},
+  {text:'Database-level namespace isolation',correct:false,explain:'Namespace isolation is an access control measure, not a prompt injection control.'}
+ ],
+ gaps:[
+  {text:'No ML-powered input classifier for injection detection',correct:true},
+  {text:'No fuzzy matching for encoding-based bypass',correct:true},
+  {text:'Keyword filter has not been tested against adaptive attacks',correct:true},
+  {text:'No rate limiting on user queries',correct:false,explain:'Rate limiting addresses consumption/availability, not prompt injection.'},
+  {text:'No encryption on stored conversations',correct:false,explain:'Encryption at rest is a data protection measure, not an injection defense.'}
+ ],
+ priorityFeedback:'HIGH is correct. Prompt injection in a healthcare context can cause the system to produce harmful medical advice, bypass safety filters, or expose patient data. The direct patient interaction and medical consequences make this the highest priority.'
+},
+{id:'LLM02',name:'Sensitive Information Disclosure',
+ desc:'The LLM reveals confidential data, PII, proprietary information, or other sensitive content through its responses.',
+ applies:true,priority:'HIGH',
+ applicFeedbackYes:'Correct. MedAssist handles patient health data and PII by design. Any system that processes protected health information has significant disclosure risk.',
+ applicFeedbackNo:'Actually, this does apply. MedAssist handles patient health data and PII as a core function. A healthcare AI assistant that accesses medical knowledge bases and patient scheduling inherently processes sensitive information.',
+ controls:[
+  {text:'Output filtering for medical safety',correct:true},
+  {text:'Application-level metadata filtering on knowledge base',correct:true},
+  {text:'End-to-end encryption for API calls',correct:false,explain:'Transport encryption (TLS) is network security, not an LLM-level disclosure control.'},
+  {text:'Differential privacy in model training',correct:false,explain:'MedAssist uses an external third-party LLM and does not train its own model.'}
+ ],
+ gaps:[
+  {text:'No PII detection/redaction on model outputs',correct:true},
+  {text:'No data loss prevention (DLP) scanning',correct:true},
+  {text:'Training data may contain patient information from knowledge base',correct:true},
+  {text:'No HIPAA compliance',correct:false,explain:'HIPAA is a regulatory framework, not a specific technical control gap.'},
+  {text:'No firewall rules',correct:false,explain:'Firewalls are network security controls, not information disclosure defenses at the LLM layer.'}
+ ],
+ priorityFeedback:'HIGH is correct. Healthcare data is among the most sensitive categories of personal information. Unauthorized disclosure of patient health data carries severe regulatory (HIPAA), legal, and reputational consequences.'
+},
+{id:'LLM03',name:'Supply Chain Vulnerabilities',
+ desc:'Compromised components, training data, or third-party plugins introduce security risks into the LLM application.',
+ applies:true,priority:'MEDIUM',
+ applicFeedbackYes:'Correct. MedAssist depends on a third-party LLM, external RAG components, and a scheduling API. Each external dependency is a potential supply chain risk.',
+ applicFeedbackNo:'Actually, this does apply. MedAssist uses a third-party LLM (not trained in-house), RAG pipeline components, and integrates with an external scheduling API. Each of these is a supply chain dependency that could be compromised.',
+ controls:[
+  {text:'Scheduling API restricted to specific endpoints',correct:true},
+  {text:'Regular model fine-tuning',correct:false,explain:'Fine-tuning is a model customization process, not a supply chain security control.'},
+  {text:'Input keyword filtering',correct:false,explain:'Input filtering addresses prompt injection, not supply chain integrity.'}
+ ],
+ gaps:[
+  {text:'No model provenance verification (no check that model weights haven\'t been tampered with)',correct:true},
+  {text:'No dependency scanning for RAG pipeline components',correct:true},
+  {text:'No vendor security assessment for the LLM provider',correct:true},
+  {text:'No in-house model training capability',correct:false,explain:'Using an external model is an architecture choice, not a security gap.'},
+  {text:'No backup LLM provider',correct:false,explain:'Provider redundancy is an availability concern, not a supply chain security gap.'}
+ ],
+ priorityFeedback:'MEDIUM is correct. While supply chain attacks can be severe, the attack surface requires compromising upstream vendors rather than direct exploitation. The scheduling API endpoint restriction provides some mitigation.'
+},
+{id:'LLM04',name:'Data and Model Poisoning',
+ desc:'Manipulated training data, fine-tuning procedures, or embedding processes degrade the model\'s safety, accuracy, or reliability.',
+ applies:true,priority:'HIGH',
+ applicFeedbackYes:'Correct. MedAssist\'s RAG knowledge base can be modified with new medical documents, creating a vector for data poisoning even though the underlying LLM is externally provided.',
+ applicFeedbackNo:'Actually, this does apply. Although MedAssist uses an external LLM, its RAG knowledge base accepts new medical documents. Poisoning the knowledge base is equivalent to poisoning the model\'s context, which can lead to dangerous medical misinformation.',
+ controls:[
+  {text:'Application-level metadata filtering on knowledge base',correct:true},
+  {text:'Regular model retraining',correct:false,explain:'MedAssist uses an external LLM and does not retrain models.'},
+  {text:'Output safety filtering',correct:false,explain:'Output filtering is a response-level control, not an ingestion/poisoning control.'}
+ ],
+ gaps:[
+  {text:'No corpus integrity monitoring to detect unauthorized document additions',correct:true},
+  {text:'No medical staff approval required before new documents enter knowledge base',correct:true},
+  {text:'No retrieval-behavior anomaly detection for disproportionate retrieval of new docs',correct:true},
+  {text:'No adversarial training on poisoned examples',correct:false,explain:'MedAssist does not train its own model, so adversarial training is not applicable.'},
+  {text:'No model watermarking',correct:false,explain:'Model watermarking addresses IP protection, not data poisoning.'}
+ ],
+ priorityFeedback:'HIGH is correct. In a healthcare context, poisoned knowledge base content could lead to dangerous medical advice being served to patients. The lack of corpus integrity controls makes this a critical risk.'
+},
+{id:'LLM05',name:'Improper Output Handling',
+ desc:'LLM-generated output is used without validation or sanitization, potentially leading to code execution, data corruption, or unsafe downstream actions.',
+ applies:true,priority:'HIGH',
+ applicFeedbackYes:'Correct. MedAssist\'s outputs are shown to patients and may influence medical decisions. Additionally, outputs may interact with downstream systems like the scheduling API.',
+ applicFeedbackNo:'Actually, this does apply. MedAssist displays AI-generated content directly to patients that may influence their health decisions. Its outputs also feed into the scheduling API, creating potential for downstream system manipulation.',
+ controls:[
+  {text:'Output filtering for contraindicated advice detection',correct:true},
+  {text:'Application presents responses as informational, not medical advice',correct:true},
+  {text:'Input sanitization',correct:false,explain:'Input sanitization is an input-side control, not an output handling measure.'},
+  {text:'Scheduling API endpoint restriction',correct:false,explain:'API endpoint restriction is an agency control that limits which APIs can be called, not output handling.'}
+ ],
+ gaps:[
+  {text:'No output encoding/sanitization for downstream rendering',correct:true},
+  {text:'No structured format validation (JSON schema enforcement) on API responses',correct:true},
+  {text:'Output not treated as untrusted for downstream system interactions',correct:true},
+  {text:'No grammar checking on outputs',correct:false,explain:'Grammar is a quality concern, not a security control.'},
+  {text:'No output length limiting',correct:false,explain:'Length limits are a consumption control, not a security output handling measure.'}
+ ],
+ priorityFeedback:'HIGH is correct. Medical misinformation reaching patients has direct patient safety implications. Additionally, unsanitized outputs flowing to the scheduling API could lead to unintended appointment changes or injection into downstream systems.'
+},
+{id:'LLM06',name:'Excessive Agency',
+ desc:'The LLM is granted capabilities or permissions beyond what is needed, enabling unintended or harmful autonomous actions.',
+ applies:true,priority:'HIGH',
+ applicFeedbackYes:'Correct. MedAssist has scheduling API access that allows it to book, modify, and cancel patient appointments. These are real-world actions with direct impact on patient care.',
+ applicFeedbackNo:'Actually, this does apply. MedAssist can book, modify, and cancel patient appointments through the scheduling API. These are consequential real-world actions that affect patient care and require careful agency controls.',
+ controls:[
+  {text:'API access restricted to scheduling endpoints only (no billing, no medical records)',correct:true},
+  {text:'Input keyword filtering',correct:false,explain:'Input filtering is an input validation control, not an agency control.'},
+  {text:'Output content filtering',correct:false,explain:'Output filtering controls what the model says, not what actions it can take.'}
+ ],
+ gaps:[
+  {text:'No human-in-the-loop for appointment cancellation',correct:true},
+  {text:'No confirmation step for schedule modifications',correct:true},
+  {text:'Scheduling API accepts any patient ID without verifying the requesting user is that patient',correct:true},
+  {text:'No ability to prescribe medications',correct:false,explain:'This is a correct design choice, not a gap. MedAssist should not have prescription capabilities.'},
+  {text:'No integration with billing system',correct:false,explain:'This is also a correct design choice that limits the blast radius of the system.'}
+ ],
+ priorityFeedback:'HIGH is correct. The ability to cancel or modify medical appointments without confirmation or identity verification could disrupt patient care. A prompt injection attack could potentially cancel appointments for arbitrary patients.'
+},
+{id:'LLM07',name:'System Prompt Leakage',
+ desc:'The LLM inadvertently exposes its system prompt, revealing internal instructions, safety guidelines, or operational boundaries.',
+ applies:true,priority:'MEDIUM',
+ applicFeedbackYes:'Correct. MedAssist\'s system prompt likely contains behavioral rules, safety instructions, and operational parameters that should remain confidential.',
+ applicFeedbackNo:'Actually, this does apply. MedAssist\'s system prompt contains behavioral rules and medical safety instructions. Leaking these would reveal the system\'s safety boundaries, which an attacker could then methodically circumvent.',
+ controls:[
+  {text:'Input keyword filtering may catch some "reveal your instructions" patterns',correct:true},
+  {text:'Output content filtering',correct:false,explain:'Output content filtering is designed for medical safety, not specifically for protecting the system prompt from extraction.'},
+  {text:'Database access controls',correct:false,explain:'Database access controls protect stored data, not the in-context system prompt.'}
+ ],
+ gaps:[
+  {text:'No dedicated system prompt protection mechanism',correct:true},
+  {text:'No monitoring for successful prompt extraction attempts',correct:true},
+  {text:'System prompt is not encrypted',correct:false,explain:'Encryption does not prevent the model from outputting its own prompt. The prompt must be in plaintext for the model to follow it.'},
+  {text:'No obfuscation of system prompt text',correct:false,explain:'Obfuscation is not an effective defense; models can still output obfuscated instructions in readable form.'}
+ ],
+ priorityFeedback:'MEDIUM is correct. While system prompt leakage reveals attack surface information, the direct impact is lower than categories that affect patient safety or data confidentiality. It is primarily a reconnaissance enabler for other attacks.'
+},
+{id:'LLM08',name:'Vector and Embedding Weaknesses',
+ desc:'Vulnerabilities in the RAG pipeline, vector store, or embedding process allow unauthorized access, data poisoning, or retrieval manipulation.',
+ applies:true,priority:'HIGH',
+ applicFeedbackYes:'Correct. MedAssist relies on RAG with a medical knowledge base and vector store for its core functionality. Weaknesses in this pipeline directly affect response quality and safety.',
+ applicFeedbackNo:'Actually, this does apply. MedAssist\'s RAG pipeline is the primary mechanism for grounding responses in medical knowledge. Vulnerabilities in the vector store or embedding process could cause retrieval of inappropriate or dangerous content.',
+ controls:[
+  {text:'Application-level metadata filtering to restrict responses to patient-appropriate content',correct:true},
+  {text:'Input keyword filtering',correct:false,explain:'Keyword filtering is an input control, not a RAG/vector security measure.'},
+  {text:'Scheduling API endpoint restrictions',correct:false,explain:'API restrictions control agency, not vector store security.'}
+ ],
+ gaps:[
+  {text:'Metadata filtering is probabilistic, not database-level namespace isolation',correct:true},
+  {text:'No corpus integrity monitoring for unauthorized document additions',correct:true},
+  {text:'No retrieval-behavior anomaly detection',correct:true},
+  {text:'No encryption of vector embeddings',correct:false,explain:'Embedding encryption does not address access control or retrieval manipulation.'},
+  {text:'No embedding model fine-tuning',correct:false,explain:'Fine-tuning the embedding model is a performance optimization, not a security gap.'}
+ ],
+ priorityFeedback:'HIGH is correct. The RAG pipeline is MedAssist\'s core architecture. Probabilistic metadata filtering instead of hard namespace isolation means an attacker could potentially retrieve provider-only content through crafted queries, exposing restricted medical information to patients.'
+},
+{id:'LLM09',name:'Misinformation',
+ desc:'The LLM generates false or misleading information (hallucinations) that appears authoritative and credible.',
+ applies:true,priority:'HIGH',
+ applicFeedbackYes:'Correct. In a healthcare context, misinformation is especially dangerous. Patients may act on incorrect medical advice, leading to direct harm.',
+ applicFeedbackNo:'Actually, this does apply. MedAssist provides medical information to patients. Hallucinated or inaccurate medical advice could lead patients to take dangerous actions, miss critical symptoms, or interact harmfully with medications.',
+ controls:[
+  {text:'RAG grounds responses in hospital\'s medical knowledge base',correct:true},
+  {text:'Output filtering for contraindicated advice',correct:true},
+  {text:'Input sanitization',correct:false,explain:'Input sanitization is an input-side control that does not address output accuracy or hallucination.'},
+  {text:'Scheduling API restrictions',correct:false,explain:'API restrictions control system agency, not misinformation.'}
+ ],
+ gaps:[
+  {text:'No confidence scoring or uncertainty indicators on medical responses',correct:true},
+  {text:'No citation/source attribution to verify RAG retrieval accuracy',correct:true},
+  {text:'No human medical review for high-stakes responses (medication interactions, symptoms)',correct:true},
+  {text:'No disclaimer that the system is not a doctor',correct:false,explain:'The application already presents responses as informational, not medical advice.'},
+  {text:'No limitation on question topics',correct:false,explain:'Topic limitations do not prevent misinformation within allowed topics.'}
+ ],
+ priorityFeedback:'HIGH is correct. Medical misinformation can directly endanger patient safety. While RAG grounding helps, the absence of confidence scoring, citations, and human review for high-stakes queries leaves significant risk of harmful hallucinations.'
+},
+{id:'LLM10',name:'Unbounded Consumption',
+ desc:'The LLM application consumes excessive resources (compute, tokens, API calls) through uncontrolled usage, leading to denial of service or financial damage.',
+ applies:true,priority:'MEDIUM',
+ applicFeedbackYes:'Correct. MedAssist handles 2,000 patient interactions per day with healthcare budget constraints. Uncontrolled consumption could lead to service disruption or unexpected costs.',
+ applicFeedbackNo:'Actually, this does apply. With 2,000 daily patient interactions, MedAssist has significant resource consumption. Without usage controls, an attacker could trigger denial-of-wallet attacks or exhaust the system\'s capacity, preventing legitimate patient access.',
+ controls:[],
+ noControlsMsg:'MedAssist has no identified controls for this category. The scenario description does not mention any rate limiting, usage caps, or consumption monitoring.',
+ gaps:[
+  {text:'No token-based rate limiting (request-count alone would be insufficient)',correct:true},
+  {text:'No per-user usage caps or budget controls',correct:true},
+  {text:'No monitoring for denial-of-wallet attack patterns',correct:true},
+  {text:'No auto-scaling infrastructure',correct:false,explain:'Auto-scaling is an operational/availability measure, not a security control for unbounded consumption.'},
+  {text:'No model compression',correct:false,explain:'Model compression is a performance optimization, not a security control.'}
+ ],
+ priorityFeedback:'MEDIUM is correct. While unbounded consumption can cause service disruption and financial damage, the primary impact is availability and cost rather than direct patient safety. However, denial of service in a healthcare context still warrants attention.'
+}
+];
+
+/* ── STATE ── */
+let step=0;
+let phase=1;
+let answers=DATA.map(()=>({applic:null,controlsChecked:false,gapsChecked:false,priority:null,
+  controlsSelected:[],gapsSelected:[],controlsScore:0,gapsScore:0,
+  controlsAttempt:0,gapsAttempt:0,priorityAttempt:0,
+  controlsLocked:[],gapsLocked:[],priorityWrongPicks:[]}));
+
+/* ── DOM REFS ── */
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+
+function renderProgress(){
+  const track=$('#progressTrack');
+  track.innerHTML='';
+  for(let i=0;i<10;i++){
+    const seg=document.createElement('div');
+    seg.className='progress-seg'+(i<step?' done':'')+(i===step?' active':'');
+    track.appendChild(seg);
+  }
+  $('#progressLabel').textContent=`Category ${step+1} of 10`;
+  $('#navStep').textContent=`Category ${step+1} of 10`;
+}
+
+function resetPriorityButtons(){
+  const a=answers[step];
+  const btns=$$('#priorityBtns .priority-btn');
+  btns.forEach(b=>{
+    b.disabled=false;
+    b.classList.remove('selected-correct','selected-wrong','actual-answer');
+    if(a.priorityWrongPicks.includes(b.dataset.val)){
+      b.classList.add('selected-wrong');
+      b.disabled=true;
+    }
+  });
+  const fb=$('#fb3');
+  if(a.priorityWrongPicks.length>0 && a.priority===null){
+    fb.style.display='';
+    fb.classList.remove('correct');
+    fb.classList.add('visible','incorrect');
+    fb.innerHTML='<div class="feedback-verdict">Not quite</div><div class="feedback-text">That is not the best priority rating. Try the remaining options.</div>';
+  } else if(a.priority===null){
+    fb.classList.remove('visible','correct','incorrect');
+    fb.style.display='none';
+    fb.innerHTML='';
+  }
+}
+
+function renderCategory(){
+  const d=DATA[step];
+  const a=answers[step];
+  $('#catId').textContent=d.id;
+  $('#catName').textContent=d.name;
+  $('#catDesc').textContent=d.desc;
+
+  // Reset all phases and reusable elements
+  $('#phase1').classList.add('visible');
+  $('#phase2').classList.remove('visible');
+  $('#phase3').classList.remove('visible');
+  resetPriorityButtons();
+
+  // If reviewing a completed category
+  if(a.priority!==null){
+    renderCompletedCategory();
+    return;
+  }
+  if(a.gapsChecked){
+    // Applicability done, controls done, gaps done, need priority
+    renderApplicabilityDone();
+    $('#continueToPhase2').style.display='none';
+    showPhase(3);
+    updateNav();
+    return;
+  }
+  if(a.controlsChecked){
+    // Applicability done, controls done, gaps not yet
+    renderApplicabilityDone();
+    $('#continueToPhase2').style.display='none';
+    renderPhase2();
+    $('#phase2').classList.add('visible');
+    applyCheckedState('controls');
+    $('#checkGaps').disabled=false;
+    updateNav();
+    return;
+  }
+  if(a.applic!==null){
+    renderApplicabilityDone();
+    updateNav();
+    return;
+  }
+
+  // Fresh state
+  renderPhase1Fresh();
+  renderPhase2();
+  updateNav();
+}
+
+function renderPhase1Fresh(){
+  const btns=$('#btnApplies');
+  const btnn=$('#btnNotApplies');
+  btns.disabled=false;btnn.disabled=false;
+  btns.style.borderColor='';btns.style.background='';btns.style.boxShadow='';
+  btnn.style.borderColor='';btnn.style.background='';btnn.style.boxShadow='';
+  $('#fb1').classList.remove('visible','correct','incorrect');
+  $('#fb1').style.display='none';
+  $('#continueToPhase2').classList.remove('visible');
+  $('#continueToPhase2').style.display='none';
+}
+
+function handleApplicability(userSaysApplies){
+  const d=DATA[step];
+  const a=answers[step];
+  a.applic=userSaysApplies;
+
+  const correct=(userSaysApplies===d.applies);
+  const fb=$('#fb1');
+  fb.style.display='';
+  fb.classList.add('visible',correct?'correct':'incorrect');
+  fb.innerHTML=`<div class="feedback-verdict">${correct?'Correct':'Incorrect'}</div><div class="feedback-text">${correct?d.applicFeedbackYes:d.applicFeedbackNo}</div>`;
+
+  // Style buttons
+  const btns=$('#btnApplies');
+  const btnn=$('#btnNotApplies');
+  btns.disabled=true;btnn.disabled=true;
+
+  if(userSaysApplies){
+    btns.style.borderColor=correct?'var(--greenline)':'var(--redline)';
+    btns.style.background=correct?'var(--greenbg)':'var(--redbg)';
+    btns.style.boxShadow=correct?'inset 0 0 0 1px var(--greenline)':'inset 0 0 0 1px var(--redline)';
+  } else {
+    btnn.style.borderColor=correct?'var(--greenline)':'var(--redline)';
+    btnn.style.background=correct?'var(--greenbg)':'var(--redbg)';
+    btnn.style.boxShadow=correct?'inset 0 0 0 1px var(--greenline)':'inset 0 0 0 1px var(--redline)';
+  }
+
+  // Show continue button
+  const cont=$('#continueToPhase2');
+  cont.style.display='';
+  cont.classList.add('visible');
+}
+
+function renderApplicabilityDone(){
+  const d=DATA[step];
+  const a=answers[step];
+  const correct=(a.applic===d.applies);
+  const btns=$('#btnApplies');
+  const btnn=$('#btnNotApplies');
+  btns.disabled=true;btnn.disabled=true;
+  if(a.applic){
+    btns.style.borderColor=correct?'var(--greenline)':'var(--redline)';
+    btns.style.background=correct?'var(--greenbg)':'var(--redbg)';
+    btns.style.boxShadow=correct?'inset 0 0 0 1px var(--greenline)':'inset 0 0 0 1px var(--redline)';
+  } else {
+    btnn.style.borderColor=correct?'var(--greenline)':'var(--redline)';
+    btnn.style.background=correct?'var(--greenbg)':'var(--redbg)';
+    btnn.style.boxShadow=correct?'inset 0 0 0 1px var(--greenline)':'inset 0 0 0 1px var(--redline)';
+  }
+  const fb=$('#fb1');
+  fb.style.display='';
+  fb.classList.add('visible',correct?'correct':'incorrect');
+  fb.innerHTML=`<div class="feedback-verdict">${correct?'Correct':'Incorrect'}</div><div class="feedback-text">${correct?d.applicFeedbackYes:d.applicFeedbackNo}</div>`;
+  const cont=$('#continueToPhase2');
+  cont.style.display='';
+  cont.classList.add('visible');
+}
+
+function showPhase(n){
+  if(n>=2){
+    $('#phase2').classList.add('visible');
+    renderPhase2();
+    if(answers[step].controlsChecked) applyCheckedState('controls');
+    if(answers[step].gapsChecked) applyCheckedState('gaps');
+  }
+  if(n>=3){
+    $('#phase3').classList.add('visible');
+  }
+  updateNav();
+}
+
+function renderPhase2(){
+  const d=DATA[step];
+  const a=answers[step];
+
+  // Controls column
+  const cOpts=$('#controlsOpts');
+  cOpts.innerHTML='';
+
+  if(d.controls.length===0){
+    cOpts.innerHTML=`<div class="no-controls-note">${d.noControlsMsg}</div>`;
+    $('#checkControls').style.display='none';
+    // Auto-mark controls as checked so gaps can be checked
+    a.controlsChecked=true;
+    $('#checkGaps').disabled=false;
+  } else {
+    $('#checkControls').style.display='';
+    $('#checkControls').disabled=a.controlsChecked;
+    if(a.controlsAttempt>0 && !a.controlsChecked){
+      $('#checkControls').textContent='Check Controls Again';
+    } else {
+      $('#checkControls').textContent='Check Controls';
+    }
+    d.controls.forEach((c,i)=>{
+      const card=document.createElement('div');
+      card.className='opt-card';
+      card.dataset.idx=i;
+      card.dataset.type='control';
+      card.innerHTML=`<span>${c.text}</span><span class="opt-icon"></span><div class="opt-explain"></div>`;
+      if(a.controlsLocked.includes(i)){
+        // Already confirmed correct from prior attempt
+        const icon=card.querySelector('.opt-icon');
+        card.classList.add('locked','checked-correct');
+        card.style.pointerEvents='none';
+        icon.textContent='✓';icon.classList.add('show');
+      } else if(!a.controlsChecked){
+        card.addEventListener('click',()=>toggleOpt(card,i,'controls'));
+        if(a.controlsSelected.includes(i)) card.classList.add('selected');
+      }
+      cOpts.appendChild(card);
+    });
+  }
+
+  // Gaps column
+  const gOpts=$('#gapsOpts');
+  gOpts.innerHTML='';
+  $('#checkGaps').disabled=!a.controlsChecked||a.gapsChecked;
+  if(a.gapsAttempt>0 && !a.gapsChecked){
+    $('#checkGaps').textContent='Check Gaps Again';
+  } else {
+    $('#checkGaps').textContent='Check Gaps';
+  }
+  d.gaps.forEach((g,i)=>{
+    const card=document.createElement('div');
+    card.className='opt-card';
+    card.dataset.idx=i;
+    card.dataset.type='gap';
+    card.innerHTML=`<span>${g.text}</span><span class="opt-icon"></span><div class="opt-explain"></div>`;
+    if(a.gapsLocked.includes(i)){
+      // Already confirmed correct from prior attempt
+      const icon=card.querySelector('.opt-icon');
+      card.classList.add('locked','checked-correct');
+      card.style.pointerEvents='none';
+      icon.textContent='✓';icon.classList.add('show');
+    } else if(!a.gapsChecked){
+      card.addEventListener('click',()=>toggleOpt(card,i,'gaps'));
+      if(a.gapsSelected.includes(i)) card.classList.add('selected');
+    }
+    gOpts.appendChild(card);
+  });
+}
+
+function toggleOpt(card,idx,type){
+  const a=answers[step];
+  const locked=type==='controls'?a.controlsLocked:a.gapsLocked;
+  if(locked.includes(idx)) return; // already confirmed correct
+  const arr=type==='controls'?a.controlsSelected:a.gapsSelected;
+  const pos=arr.indexOf(idx);
+  if(pos>-1){arr.splice(pos,1);card.classList.remove('selected')}
+  else{arr.push(idx);card.classList.add('selected')}
+}
+
+function checkAnswers(type){
+  const d=DATA[step];
+  const a=answers[step];
+  const items=type==='controls'?d.controls:d.gaps;
+  const selected=type==='controls'?a.controlsSelected:a.gapsSelected;
+  const locked=type==='controls'?a.controlsLocked:a.gapsLocked;
+  const container=type==='controls'?$('#controlsOpts'):$('#gapsOpts');
+  const cards=container.querySelectorAll('.opt-card');
+
+  let correctCount=locked.length;
+  let totalCorrect=items.filter(x=>x.correct).length;
+  let hasErrors=false;
+
+  cards.forEach((card,i)=>{
+    const item=items[i];
+    const icon=card.querySelector('.opt-icon');
+    const explain=card.querySelector('.opt-explain');
+    if(locked.includes(i)) return;
+    const wasSelected=selected.includes(i);
+
+    if(wasSelected && item.correct){
+      card.classList.remove('selected');
+      card.classList.add('locked','checked-correct');
+      card.style.pointerEvents='none';
+      icon.textContent='✓';icon.classList.add('show');
+      correctCount++;
+      locked.push(i);
+    } else if(wasSelected && !item.correct){
+      card.classList.remove('selected');
+      card.classList.add('checked-wrong');
+      icon.textContent='✗';icon.classList.add('show');
+      if(item.explain){explain.textContent=item.explain;explain.classList.add('show')}
+      hasErrors=true;
+      const pos=selected.indexOf(i);
+      if(pos>-1) selected.splice(pos,1);
+    } else if(!wasSelected && item.correct){
+      hasErrors=true;
+      // Never reveal, student must find it
+    }
+  });
+
+  if(!hasErrors){
+    // Perfect, all correct items found
+    const hint=container.parentElement.querySelector('.retry-hint');
+    if(hint) hint.remove();
+    if(type==='controls'){
+      a.controlsChecked=true;
+      a.controlsScore=correctCount;
+      $('#checkControls').disabled=true;
+      $('#checkControls').textContent='Check Controls';
+      $('#checkGaps').disabled=false;
+    } else {
+      a.gapsChecked=true;
+      a.gapsScore=correctCount;
+      $('#checkGaps').disabled=true;
+      $('#checkGaps').textContent='Check Gaps';
+      showPhase(3);
+    }
+  } else {
+    // Has errors: unlock wrong cards for retry, never reveal correct ones
+    setTimeout(()=>{
+      cards.forEach((card,i)=>{
+        if(locked.includes(i)) return;
+        if(card.classList.contains('checked-wrong')){
+          card.classList.remove('checked-wrong','locked');
+          card.style.pointerEvents='';
+        }
+      });
+      const btn=type==='controls'?$('#checkControls'):$('#checkGaps');
+      btn.disabled=false;
+      btn.textContent=type==='controls'?'Check Controls Again':'Check Gaps Again';
+      let hint=container.parentElement.querySelector('.retry-hint');
+      if(!hint){
+        hint=document.createElement('div');
+        hint.className='retry-hint';
+        container.parentElement.insertBefore(hint,btn);
+      }
+      const remaining=totalCorrect-locked.length;
+      hint.textContent=`${remaining} correct answer${remaining!==1?'s':''} still to find. Try again.`;
+    },800);
+  }
+  updateNav();
+}
+
+function handlePriority(val){
+  const d=DATA[step];
+  const a=answers[step];
+  const correct=(val===d.priority);
+
+  // Disable the button they just clicked
+  const btns=$$('#priorityBtns .priority-btn');
+  btns.forEach(b=>{
+    if(b.dataset.val===val){
+      b.classList.add(correct?'selected-correct':'selected-wrong');
+      b.disabled=true;
+    }
+  });
+
+  if(correct){
+    a.priority=val;
+    a.priorityWrongPicks.forEach(wp=>{
+      // keep wrong picks visually marked
+    });
+    // Disable remaining buttons
+    btns.forEach(b=>{ b.disabled=true; });
+    const fb=$('#fb3');
+    fb.style.display='';
+    fb.classList.remove('incorrect');
+    fb.classList.add('visible','correct');
+    fb.innerHTML=`<div class="feedback-verdict">Correct</div><div class="feedback-text">${d.priorityFeedback}</div>`;
+    updateNav();
+  } else {
+    a.priorityWrongPicks.push(val);
+    // Check if only one option remains, that must be correct, so auto-select it
+    const remaining=Array.from(btns).filter(b=>!b.disabled);
+    if(remaining.length===1){
+      // Last option standing, select it automatically
+      setTimeout(()=>handlePriority(remaining[0].dataset.val),400);
+    } else {
+      const fb=$('#fb3');
+      fb.style.display='';
+      fb.classList.remove('correct');
+      fb.classList.add('visible','incorrect');
+      fb.innerHTML=`<div class="feedback-verdict">Not quite</div><div class="feedback-text">That is not the best priority rating. Try the remaining options.</div>`;
+    }
+  }
+}
+
+function renderCompletedCategory(){
+  // Show all phases in read-only
+  const d=DATA[step];
+  const a=answers[step];
+
+  // Phase 1
+  renderApplicabilityDone();
+  $('#continueToPhase2').style.display='none';
+
+  // Phase 2
+  $('#phase2').classList.add('visible');
+  renderPhase2();
+  applyCheckedState('controls');
+  applyCheckedState('gaps');
+
+  // Phase 3
+  $('#phase3').classList.add('visible');
+  renderPriorityDone();
+
+  updateNav();
+}
+
+function applyCheckedState(type){
+  const d=DATA[step];
+  const a=answers[step];
+  const items=type==='controls'?d.controls:d.gaps;
+  const locked=type==='controls'?a.controlsLocked:a.gapsLocked;
+  const container=type==='controls'?$('#controlsOpts'):$('#gapsOpts');
+  const cards=container.querySelectorAll('.opt-card');
+
+  if(type==='controls' && d.controls.length===0) return;
+
+  cards.forEach((card,i)=>{
+    const icon=card.querySelector('.opt-icon');
+    card.classList.remove('selected');
+    card.classList.add('locked');
+    card.style.pointerEvents='none';
+
+    if(locked.includes(i)){
+      card.classList.add('checked-correct');
+      icon.textContent='✓';icon.classList.add('show');
+    }
+    // Never reveal items the student didn't find
+  });
+
+  if(type==='controls') $('#checkControls').disabled=true;
+  if(type==='gaps') $('#checkGaps').disabled=true;
+}
+
+function renderPriorityDone(){
+  const d=DATA[step];
+  const a=answers[step];
+  const btns=$$('#priorityBtns .priority-btn');
+  btns.forEach(b=>{
+    b.disabled=true;
+    const bv=b.dataset.val;
+    b.classList.remove('selected-correct','selected-wrong','actual-answer');
+    if(a.priorityWrongPicks.includes(bv)){
+      b.classList.add('selected-wrong');
+    }
+    if(bv===d.priority){
+      b.classList.add('selected-correct');
+    }
+  });
+  const fb=$('#fb3');
+  fb.style.display='';
+  fb.classList.add('visible','correct');
+  fb.innerHTML=`<div class="feedback-verdict">Correct</div><div class="feedback-text">${d.priorityFeedback}</div>`;
+}
+
+function updateNav(){
+  const a=answers[step];
+  const isComplete=a.priority!==null;
+  const isLast=step===9;
+
+  $('#nextBtn').disabled=!isComplete;
+  $('#nextBtn').textContent=isLast&&isComplete?'View Results':'Next Category';
+  $('#prevBtn').disabled=step===0;
+}
+
+function goNext(){
+  if(step===9 && answers[9].priority!==null){
+    showScorecard();
+    return;
+  }
+  if(step<9){
+    step++;
+    phase=1;
+    renderProgress();
+    renderCategory();
+  }
+}
+
+function goPrev(){
+  if(step>0){
+    step--;
+    renderProgress();
+    renderCategory();
+  }
+}
+
+function showScorecard(){
+  $('#assessCard').style.display='none';
+  $('#navArea').style.display='none';
+  const sc=$('#scorecard');
+  sc.classList.add('visible');
+
+  // Calculate scores
+  let applicCorrect=0;
+  let priorityCorrect=0;
+  let totalControlsCorrect=0;
+  let totalControlsPossible=0;
+  let totalGapsCorrect=0;
+  let totalGapsPossible=0;
+
+  DATA.forEach((d,i)=>{
+    const a=answers[i];
+    if(a.applic===d.applies) applicCorrect++;
+    if(a.priority===d.priority) priorityCorrect++;
+
+    const cCorrect=d.controls.filter(x=>x.correct).length;
+    totalControlsPossible+=cCorrect;
+    totalControlsCorrect+=a.controlsScore;
+
+    const gCorrect=d.gaps.filter(x=>x.correct).length;
+    totalGapsPossible+=gCorrect;
+    totalGapsCorrect+=a.gapsScore;
+  });
+
+  const controlsPct=totalControlsPossible>0?Math.round(totalControlsCorrect/totalControlsPossible*100):0;
+  const gapsPct=totalGapsPossible>0?Math.round(totalGapsCorrect/totalGapsPossible*100):0;
+
+  $('#scoreSummary').innerHTML=`
+    <div class="score-box"><div class="score-box-value">${applicCorrect}/10</div><div class="score-box-label">Applicability</div></div>
+    <div class="score-box"><div class="score-box-value">${controlsPct}%</div><div class="score-box-label">Controls Identified</div></div>
+    <div class="score-box"><div class="score-box-value">${gapsPct}%</div><div class="score-box-label">Gaps Identified</div></div>
+    <div class="score-box"><div class="score-box-value">${priorityCorrect}/10</div><div class="score-box-label">Priority Ratings</div></div>
+  `;
+
+  const tbody=$('#scoreBody');
+  tbody.innerHTML='';
+  DATA.forEach((d,i)=>{
+    const a=answers[i];
+    const aOk=a.applic===d.applies;
+    const pOk=a.priority===d.priority;
+    let note='';
+    if(!aOk) note='Applicability missed';
+    else if(!pOk) note=`Rated ${a.priority}, correct is ${d.priority}`;
+    else note='Fully correct';
+
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><strong>${d.id}:</strong> ${d.name}</td>
+      <td><span class="score-mark ${aOk?'ok':'no'}">${aOk?'✓':'✗'}</span></td>
+      <td><span class="score-mark ${pOk?'ok':'no'}">${pOk?'✓':'✗'}</span></td>
+      <td><span class="score-note">${note}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Update progress to all done
+  const track=$('#progressTrack');
+  track.innerHTML='';
+  for(let i=0;i<10;i++){
+    const seg=document.createElement('div');
+    seg.className='progress-seg done';
+    track.appendChild(seg);
+  }
+  $('#progressLabel').textContent='Assessment Complete';
+}
+
+/* ── EVENT LISTENERS ── */
+$('#btnApplies').addEventListener('click',()=>handleApplicability(true));
+$('#btnNotApplies').addEventListener('click',()=>handleApplicability(false));
+
+$('#continueToPhase2').addEventListener('click',()=>{
+  showPhase(2);
+  $('#continueToPhase2').style.display='none';
+});
+
+$('#checkControls').addEventListener('click',()=>checkAnswers('controls'));
+$('#checkGaps').addEventListener('click',()=>checkAnswers('gaps'));
+
+$$('#priorityBtns .priority-btn').forEach(b=>{
+  b.addEventListener('click',()=>handlePriority(b.dataset.val));
+});
+
+$('#nextBtn').addEventListener('click',goNext);
+$('#prevBtn').addEventListener('click',goPrev);
+
+/* ── INIT ── */
+renderProgress();
+renderCategory();
+
+/* ── iframe height, fixed, no dynamic reporting ──
+   This interactive swaps between short (Phase 1) and tall (all phases) states.
+   Dynamic height reporting causes the parent page to jump when the iframe shrinks.
+   Instead, the iframe keeps a fixed height set in the parent embed tag. */
+</script>
+</body>
+</html>

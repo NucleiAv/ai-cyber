@@ -1,0 +1,455 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 5 · Section 4 · IoC Extraction and STIX · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 5 · Section 4 of 7</div>
+      <h1 class="nyu-hero__title">From Raw Report to Structured Intelligence: IoC Extraction and STIX</h1>
+      <p class="nyu-hero__subtitle">
+        Intelligence that only humans can read does not scale. This section turns
+        the prose of a threat report into machine consumable indicators, scores
+        the conversion with the precision and recall vocabulary from Module 4,
+        and shows what STIX interoperability concretely looks like, including
+        the trap that catches careless extraction pipelines.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~20 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 5 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          2 knowledge checks + 1 prediction activity
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Why Structure Matters</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Extraction Pipeline, Scored Like a Detector</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Worked Example: Seven Indicators, One Trap</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> STIX and TAXII at Reading Level</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Classify</strong> IoC types by operational use, lifespan, and the consequences of blocking them wrongly</span></li>
+          <li><span><strong>Apply</strong> a schema-first LLM extraction workflow and evaluate it with precision and recall against a manual key</span></li>
+          <li><span><strong>Detect</strong> the characteristic extraction failures: missed defanged forms, victim infrastructure false positives, type confusion</span></li>
+          <li><span><strong>Interpret</strong> a STIX 2.1 indicator object and explain what a consuming system does with it</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>How do we turn the prose of a threat report into machine consumable intelligence, how well do language models do that conversion, and how would we know?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Why Structure Matters</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+
+        <p>
+          A SOC's defensive systems (<button type="button" class="nyu-define" data-term="siem">SIEM</button> rules, <button type="button" class="nyu-define" data-term="blocklist">blocklists</button>, EDR watchlists) consume <button type="button" class="nyu-define" data-term="structured-intelligence">structured intelligence</button>: typed, normalized, machine readable artifacts. A forty page APT report is unstructured intelligence: rich for the human analyst, invisible to the firewall. Module 3 introduced this gap between human-readable and machine-consumable output; IoC extraction is how <button type="button" class="nyu-define" data-term="cti">CTI</button> bridges it. The conversion between them, historically a tedious manual task, is precisely the kind of text transformation language models are suited to, which makes it both a real productivity win and a place where silent errors flow directly into enforcement systems.
+        </p>
+
+        <p>The raw material comes first. We defined the <button type="button" class="nyu-define" data-term="ioc">IoC</button> earlier; here is the full working taxonomy. Each type has different operational use, different lifespan, and different false positive consequences when blocked.</p>
+
+        <div class="nyu-cards nyu-cards--3">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <h3 class="nyu-card__title">File hashes</h3>
+            <p>MD5, SHA-1, SHA-256. Identify specific files with high precision while they last; trivially changed by the adversary. Blocking cost: near zero <button type="button" class="nyu-define" data-term="false-positive">false positives</button>.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--cyan" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <h3 class="nyu-card__title">IPs and domains</h3>
+            <p>Identify adversary infrastructure. Domains cost more to rotate than IPs. Blocking cost: real, since shared hosting and abused legitimate services mean collateral damage is possible.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Host artifacts</h3>
+            <p>File paths, registry keys, mutexes, and URLs. Identify particular malware behavior on hosts. Weaker individually, valuable in combination for hunting.</p>
+          </div>
+        </div>
+
+        <p>
+          Published reports usually <button type="button" class="nyu-define" data-term="defanging">defang</button> their indicators: rendering them inert so a document cannot be accidentally clicked or auto linked. Convention: hxxp for http, bracketed dots like 203.0.113[.]47 or evil[.]example. Extraction must recognize defanged forms and refang them correctly for machine use. And a careless pipeline that refangs into a live clickable link inside a shared document recreates the hazard defanging exists to prevent.
+        </p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="why-matters-4">
+          <h3 class="nyu-callout__title" id="why-matters-4">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Why this matters
+          </h3>
+          <p>
+            Extraction sits on the path between reading and enforcement. Whatever lands in the structured output is what the SIEM matches and the firewall blocks; an error here is not a wrong sentence in a document but a wrong rule in production. <button type="button" class="nyu-define" data-term="false-positive">False positives</button> block legitimate services, including, in the classic blunder, the victim organization's own domain lifted from the report's narrative. <button type="button" class="nyu-define" data-term="false-negative">False negatives</button> are silent coverage gaps. And interoperability is an organizational reality: sharing communities, government feeds, and commercial platforms speak STIX, so an analyst who cannot read an indicator object cannot evaluate what their own feeds are telling their systems to do.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Extraction Pipeline, Scored Like a Detector</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The LLM extraction workflow applies <span class="nyu-ref" data-ref="prompt-library">our Module 3 structured output skills</span>, end to end:</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Schema first</h3>
+              <p class="nyu-process__detail">Decide fields before prompting: type, value, defanged original, context sentence, confidence. The Module 3 lesson: models conform to schemas far better than they infer them.</p>
+              <code class="nyu-process__sample">{"type": "...", "value": "...", "defanged_original": "...", "context": "..."}</code>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Prompt with few-shot examples</h3>
+              <p class="nyu-process__detail">Include a defanged example so the model learns the convention is in scope. Instruct: extract only indicators the text presents as attacker controlled or malicious.</p>
+              <code class="nyu-process__sample">Example in: "hxxps://bad[.]example/x" → {"type": "url", "value": "https://bad.example/x", ...}</code>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Generate and parse</h3>
+              <p class="nyu-process__detail">Validate the JSON syntactically first. A malformed field is also an extraction failure.</p>
+              <code class="nyu-process__sample">json.loads(output) before anything else</code>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Score against the key</h3>
+              <p class="nyu-process__detail">Manual extraction by a human is the ground truth. Apply <span class="nyu-ref" data-ref="confusion-matrix">the precision and recall framework from Module 1</span>: the formulas and intuitions carry over unchanged. Inspect every error: misses and false positives have causes, and the causes tell us how to improve the prompt or whether the task needs a human pass.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">5</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Structure for sharing</h3>
+              <p class="nyu-process__detail">Render accepted indicators into the target format (a STIX indicator template in this course), preserving the link back to the source report. An indicator divorced from its context is data again, not intelligence.</p>
+              <code class="nyu-process__sample">indicator object + relationship back to the report</code>
+            </div>
+          </li>
+        </ol>
+
+        <p>
+          The evaluation step deserves emphasis. We evaluate an extractor exactly the way we evaluated a detector in Module 4: the <button type="button" class="nyu-define" data-term="precision">precision</button> and <button type="button" class="nyu-define" data-term="recall">recall</button> vocabulary transfers unchanged; only the artifact differs. What is new here is where the errors go: into an enforcement system that acts on them silently.
+        </p>
+
+        <aside class="nyu-callout nyu-callout--danger" role="note" aria-labelledby="silent-danger">
+          <h3 class="nyu-callout__title" id="silent-danger">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+            Why the answer key matters: extraction failures are silent
+          </h3>
+          <p>
+            The failure taxonomy in CTI extraction: <strong>missed defanged forms</strong> (recall failure), <strong>false positives from context</strong> (the report mentions the victim's own domain, or a legitimate service the actor abused, and the extractor sweeps it into the blocklist), <strong>type confusion</strong> (a SHA-1 labeled as MD5, an internal IP extracted as infrastructure), and <strong>silent normalization errors</strong> (refanging mistakes, truncated hashes). Module 4's error-analysis lesson applies directly here: a blocklist from an extractor with 100 percent precision and 60 percent recall is dangerous not because it is wrong, but because it earns trust while 40 percent of the indicators silently never arrived. Coverage you believe you have but do not is worse than coverage you know you lack.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Worked Example: Seven Indicators, One Trap</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          <em>Fictional scenario modeled on public APT reporting patterns, labeled as such. All indicators use documentation reserved ranges and example domains.</em>
+        </p>
+
+        <h3 class="nyu-subsection-title">Step 1 · Read the report excerpt and predict</h3>
+
+        <pre class="nyu-code" aria-label="Fictional threat report excerpt for extraction"><code><span class="c-comment">// FICTIONAL REPORT EXCERPT (extraction source)</span>
+"The actor's phishing emails delivered an archive from
+hxxps://update-portal[.]example-cdn[.]net/pkg.zip. The contained
+loader (SHA-256: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b82
+2cd15d6c15b0f00a08) beacons to 203.0.113[.]47 over TCP 443.
+Persistence is established via the registry key
+HKCU\Software\Microsoft\Windows\CurrentVersion\Run\UpdaterSvc.
+Victims in this campaign included megacorp.example, whose stolen
+credentials were later offered for sale. A second stage was
+retrieved from filestore[.]example-cdn[.]net."</code></pre>
+
+        <p>
+          <strong>Your prediction task, before scrolling further:</strong> a manual analyst extracted seven items from this excerpt as the answer key. Predict which two indicators a language model is most likely to miss or mishandle, and state why in one sentence each. Write your predictions down. The reveal in the scenario box below discusses the 'chosen' answers, and a justified case for other choices earns credit in the lab version of this exercise.
+        </p>
+
+        <h3 class="nyu-subsection-title">Step 2 · The manual key and the model's first pass</h3>
+
+        <p>
+          The manual key (ground truth): the defanged URL, the SHA-256, the IP 203.0.113.47, the registry key, the domain update-portal.example-cdn.net, the domain filestore.example-cdn.net, and the file name pkg.zip as a weak host artifact. Seven items. Explicitly excluded: megacorp.example, which is the victim, not infrastructure.
+        </p>
+
+        <p>
+          The model's first pass extraction <em>(illustrative reconstruction, labeled as such)</em> returned six items. It correctly extracted the URL (and refanged it), the hash, the IP, the registry key, and both domains. It missed pkg.zip. And it included megacorp.example as a malicious domain.
+        </p>
+
+        <pre class="nyu-code" aria-label="Extraction scoring arithmetic"><code><span class="c-comment">// Score it like a detector (Module 4 vocabulary)</span>
+Extracted items:        7   (6 correct + 1 false positive)
+Key items:              7   (6 found + 1 missed)
+
+<span class="c-meta">Precision</span> = 6 / 7 = <span class="c-ok">0.86</span>   
+<span class="c-meta">Recall</span>    = 6 / 7 = <span class="c-ok">0.86</span>   </code></pre>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario: compare your predictions
+          </h3>
+          <p class="nyu-scenario__prompt">
+            You predicted which two indicators the model would mishandle. Open the discussion and compare against what happened, and against why the aggregate numbers above are misleading.
+          </p>
+          <button class="nyu-scenario__btn">Show discussion</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>The 'chosen' answers:</strong></p>
+            <ul>
+              <li><strong>The victim domain (context judgment).</strong> The model swept megacorp.example into the malicious list. Extraction requires reading comprehension of the indicator's role in the narrative, not regex shaped pattern spotting. An automated pipeline would have blocked the victim's own domain.</li>
+              <li><strong>The weak host artifact (pkg.zip).</strong> The lowest value indicator was the miss. Generic file names sit at the boundary of "indicator the text presents as malicious," and models handle boundary judgments inconsistently.</li>
+            </ul>
+            <p><strong>Defensible alternative predictions:</strong> the defanged URL (convention handling is a classic miss, though this run caught it) and the line broken hash (<span class="nyu-ref" data-ref="token-cost">token level fragmentation, Module 2</span>, makes split strings genuinely risky). If you predicted either, your reasoning was sound; bring it to the lab and test it against your own model's live output.</p>
+            <p><strong>The metrics lesson:</strong> 0.86 precision and 0.86 recall look strong, and the error analysis is what matters: the single false positive is the one that blocks the victim's domain, and the single miss is the least valuable item. Same arithmetic as Module 4, same conclusion: aggregate scores hide exactly the errors that hurt.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Reading STIX and TAXII</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          The sharing layer. <button type="button" class="nyu-define" data-term="stix">STIX 2.1</button> (Structured Threat Information Expression), an OASIS standard, is the field's common JSON format for representing intelligence. <button type="button" class="nyu-define" data-term="sdo">SDOs</button> (STIX Domain Objects) represent things: indicator, malware, <button type="button" class="nyu-define" data-term="threat-actor">threat actor</button>, vulnerability, report, and others. <button type="button" class="nyu-define" data-term="sro">SROs</button> (STIX Relationship Objects) connect them: this indicator <em>indicates</em> that malware. Indicators carry a pattern in STIX's pattern language. <button type="button" class="nyu-define" data-term="taxii">TAXII 2.1</button> is the companion transport protocol: an HTTPS API for publishing and subscribing to STIX collections. The one sentence version: STIX is the envelope format, TAXII is the courier.
+        </p>
+
+        <p>
+          You'll read, critique, and complete STIX indicator templates, not build full bundles from scratch. The point is to see what "machine-readable and shareable" actually looks like, so interoperability means something concrete. Below is one of the accepted indicators from the extraction example, rendered as a STIX 2.1 indicator object. Hover or focus each annotated line:
+        </p>
+
+        <div class="nyu-annot-code" aria-label="Annotated STIX 2.1 indicator object">
+          <div class="nyu-annot-code__line" data-note="<strong>Typed object.</strong> Every STIX object declares its type. Consuming systems dispatch on this field: an indicator is matchable, a report is readable context.">
+            <span class="nyu-annot-code__num">1</span>
+            <span class="nyu-annot-code__code">{ <span class="c-string">"type"</span>: <span class="c-string">"indicator"</span>,</span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__line">
+            <span class="nyu-annot-code__num">2</span>
+            <span class="nyu-annot-code__code">  <span class="c-string">"spec_version"</span>: <span class="c-string">"2.1"</span>,</span>
+          </div>
+          <div class="nyu-annot-code__line" data-note="<strong>Globally unique ID.</strong> The type prefix plus a UUID. Any system on earth can reference this exact object without a naming collision. (This sample uses a placeholder UUID.)">
+            <span class="nyu-annot-code__num">3</span>
+            <span class="nyu-annot-code__code">  <span class="c-string">"id"</span>: <span class="c-string">"indicator--c4f1e2a8-0000-4000-8000-000000000001"</span>,</span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__line" data-note="<strong>Timestamps.</strong> Created and modified times support versioning: a consumer can tell whether its copy of the object is current. Currency, again.">
+            <span class="nyu-annot-code__num">4</span>
+            <span class="nyu-annot-code__code">  <span class="c-string">"created"</span>: <span class="c-string">"2026-06-10T00:00:00.000Z"</span>,</span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__line">
+            <span class="nyu-annot-code__num">5</span>
+            <span class="nyu-annot-code__code">  <span class="c-string">"modified"</span>: <span class="c-string">"2026-06-10T00:00:00.000Z"</span>,</span>
+          </div>
+          <div class="nyu-annot-code__line">
+            <span class="nyu-annot-code__num">6</span>
+            <span class="nyu-annot-code__code">  <span class="c-string">"name"</span>: <span class="c-string">"Loader SHA-256"</span>,</span>
+          </div>
+          <div class="nyu-annot-code__line" data-note="<strong>The pattern is the payload.</strong> A machine matchable expression in the STIX pattern language: match files whose SHA-256 equals this value. A SIEM or EDR can act on this with no human reading the report.">
+            <span class="nyu-annot-code__num">7</span>
+            <span class="nyu-annot-code__code">  <span class="c-string">"pattern"</span>: <span class="c-string">"[file:hashes.'SHA-256' = '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08']"</span>,</span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__line">
+            <span class="nyu-annot-code__num">8</span>
+            <span class="nyu-annot-code__code">  <span class="c-string">"pattern_type"</span>: <span class="c-string">"stix"</span>,</span>
+          </div>
+          <div class="nyu-annot-code__line" data-note="<strong>Validity window.</strong> Indicators expire. valid_from (and optionally valid_until) tell consumers when matching this pattern stops being meaningful. Hashes rot fast; recall the indicator lifespan discussion earlier in this module.">
+            <span class="nyu-annot-code__num">9</span>
+            <span class="nyu-annot-code__code">  <span class="c-string">"valid_from"</span>: <span class="c-string">"2026-06-10T00:00:00.000Z"</span> }</span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__notes" aria-live="polite">Hover or tap an annotated line to unpack it.</div>
+        </div>
+
+        <p>
+          A relationship object would then link this indicator to a malware SDO with relationship type "indicates." Read the anatomy: a typed object, a globally unique ID, timestamps, and a pattern a machine can match against file telemetry. That is what interoperability means: any STIX consuming system can ingest and act on this object without a human reading the report.
+        </p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="miscon-4">
+          <h3 class="nyu-callout__title" id="miscon-4">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Watch out: four common misconceptions
+          </h3>
+          <p><strong>"Extraction is mechanical, so the model can't really get it wrong."</strong> The victim domain trap shows otherwise: extraction requires comprehension of the indicator's role in the narrative.</p>
+          <p><strong>"High precision means the pipeline is safe."</strong> Precision says nothing about misses. The blocklist question is always asked of both numbers.</p>
+          <p><strong>"STIX is just JSON bureaucracy."</strong> The typed object and pattern are what let intelligence cross organizational boundaries without a phone call. The bureaucracy is the interoperability.</p>
+          <p><strong>"Defanging is cosmetic."</strong> It is a safety control, and it is also the single most common cause of extraction misses. Treat it as a first class part of the task.</p>
+        </aside>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Tradeoffs and limitations: LLM vs regex vs both
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>
+              LLM extraction competes with <button type="button" class="nyu-define" data-term="regex">regex</button> and dedicated extraction tools. For rigidly formatted indicators (hashes, IPs), regex is faster, cheaper, deterministic, and auditable. The model earns its cost on context judgment (malicious vs victim vs merely mentioned) and on messy formats. Many production pipelines sensibly use both: regex proposes candidates, judgment filters them. Know what each layer contributes before trusting either. Extraction quality claims for any specific model are time bound; the evaluation method is what transfers. STIX coverage here is deliberately awareness level: real bundles involve identity objects, markings (including <button type="button" class="nyu-define" data-term="tlp">TLP</button>, which we cover in the verification methodology), versioning, and sighting flows that belong to a dedicated CTI course.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 1</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc-1-prompt">
+            A STIX indicator object contains the pattern <code>[domain-name:value = 'update-portal.example-cdn.net']</code>. What does a consuming system do with this object?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="STIX carries the matchable artifact; it does not mandate a response. Whether to block, alert, or hunt is the consumer's policy decision, and automatic permanent blocking is exactly how victim domain false positives become outages.">Blocks the domain immediately and permanently in all cases</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Gains a typed, matchable artifact it can compare against DNS and proxy telemetry, with the response decision left to the consumer's policy</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="STIX objects are precisely designed for machine consumption. The pattern language exists so that systems, not just humans, can act on shared intelligence.">Nothing; STIX objects are documentation for humans</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="TAXII is the transport for distributing objects, not a verification service. Verification of the intelligence itself is the analyst's job, using the methodology this module teaches.">Sends the object back over TAXII for verification</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. The pattern gives consuming systems a machine matchable expression for DNS and proxy telemetry. What to do on a match (block, alert, hunt) is policy, decided by the consumer, not dictated by the object."
+               data-incorrect-msg="Reread the indicator anatomy in Section 4. STIX delivers a typed, matchable artifact; the response decision belongs to the consuming organization's policy."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="kc-2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 2</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc-2-prompt">
+            An extractor achieves 100 percent precision and 60 percent recall feeding a blocklist. The specific danger is:
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Blocking legitimate traffic is a precision failure, and precision here is perfect. The danger lives on the other axis.">Legitimate traffic will be blocked</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The list contains no errors at all; that is what 100 percent precision means. The problem is what never arrived, and absences are not noticed quickly. They are not noticed at all without a key.">The blocklist contains errors that will be noticed quickly</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Forty percent of known indicators silently never arrive, while the list's cleanliness builds unearned confidence in coverage</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Perfect precision means a clean pipeline, not a complete one. A pipeline that silently drops 40 percent of indicators while looking flawless is the textbook case of dangerous, not perfect.">There is no danger; perfect precision means a perfect pipeline</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Misses are silent: nothing in the clean list signals what is absent. Coverage you believe you have but do not is worse than coverage you know you lack, because it suppresses the search for the gap."
+               data-incorrect-msg="Think about which axis each failure lives on. Precision failures are visible (wrong blocks get noticed). Recall failures are silent, and a clean list earns trust that makes the silence worse."></div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </span>
+            Going deeper: Full STIX bundles and sharing platforms
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>
+              <strong>A full STIX bundle.</strong> Read a complete bundle with identity objects, markings, and sightings in the STIX 2.1 examples appendix to see how the single indicator you read here fits a larger graph.
+            </p>
+            <p>
+              <strong>Sharing platforms.</strong> MISP and OpenCTI are open source platforms in this ecosystem, named here as examples rather than endorsements. Exploring either shows what STIX over TAXII looks like operationally.
+            </p>
+            <p>
+              <strong>Feed economics.</strong> Threat intelligence feeds are a commercial product with the incentive caveats the course source canon describes. Asking "what is this feed's false positive rate, and who measured it?" is the extraction mindset applied to procurement.
+            </p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 5: The Verification Methodology and the Analyst&#x27;s Boundary.</strong> Everything converges. The five-step methodology that turns "double-check the AI" into professional practice, the grading vocabularies analysts actually use, the TLP rules that govern what may leave your organization, and a principled answer to where the analyst's non-delegable work begins.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../reference_tip/reference-tips.js"></script>
+</body>
+</html>

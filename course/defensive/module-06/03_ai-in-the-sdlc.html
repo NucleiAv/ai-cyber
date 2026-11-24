@@ -1,0 +1,438 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 6 · Section 3 · AI Review in the Secure Development Lifecycle · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 6 · Section 3 of 6</div>
+      <h1 class="nyu-hero__title">AI Review in the Secure Development Lifecycle</h1>
+      <p class="nyu-hero__subtitle">Where does AI-assisted code review add the most value in a development process, and how do you design a review strategy that accounts for its limitations?</p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~26 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 5 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The SSDF Framework and Defense-in-Depth</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Same Vulnerability, Four Perspectives</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Designing Your Review Strategy</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> From Flagged to Confirmed</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Test Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Explain</strong> the NIST SSDF (SP 800-218) framework and identify where AI code review fits within its practice groups.</span></li>
+          <li><span><strong>Design</strong> a defense-in-depth code review workflow that combines human review, pattern-based SAST, semantic-query SAST, LLM review, and dynamic testing.</span></li>
+          <li><span><strong>Evaluate</strong> the tradeoffs of deploying AI review at different SDLC insertion points (pre-commit, CI pipeline, post-deployment).</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>Where in the software development lifecycle (SDLC, the sequence of phases from requirements through design, implementation, testing, deployment, and maintenance) does AI-assisted code review add the most value, and where does it introduce the most risk?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The SSDF Framework and Defense-in-Depth</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+
+        <h3 class="nyu-subsection-title">The NIST Secure Software Development Framework</h3>
+
+        <p>To reason about where AI review belongs in a development process, you need a framework for what that process looks like. The <button type="button" class="nyu-define" data-term="ssdf">NIST Secure Software Development Framework (SSDF)</button>, published as SP 800-218 v1.1 in 2022, organizes secure development activities into four practice groups:</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Prepare the Organization (PO)</h3>
+              <p class="nyu-process__detail">Define security requirements, roles, and tooling before development begins. This is where AI code review tools are selected and their limitations documented.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Protect the Software (PS)</h3>
+              <p class="nyu-process__detail">Secure the development environment, source code, and build pipelines. Supply chain controls (covered in Section 4) belong here.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Produce Well-Secured Software (PW)</h3>
+              <p class="nyu-process__detail">Design, implement, and test software with security integrated throughout. AI-assisted code review is one PW control, but never the only one.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Respond to Vulnerabilities (RV)</h3>
+              <p class="nyu-process__detail">Monitor, triage, and remediate vulnerabilities post-release. AI tools can accelerate triage but cannot replace the judgment of whether a finding is exploitable in context.</p>
+            </div>
+          </li>
+        </ol>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Single-Method Risk
+          </h3>
+          <p>The critical point: SSDF's PW practice group calls for multiple verification activities. A development process that relies on a single verification method, whether human review, static analysis, or AI review, does not satisfy the framework. AI review is one activity within PW, not a replacement for PW.</p>
+        </aside>
+
+        <p>NIST extended the SSDF in 2024 (SP 800-218A) to address AI in the development lifecycle. It covers considerations for AI-generated code, AI-assisted review, and governance of AI tool integration. This means official federal guidance now recognizes AI as both a tool within the SDLC and a category of software requiring its own security considerations.</p>
+
+        <h3 class="nyu-subsection-title">Defense-in-Depth for Code Review</h3>
+
+        <p>Defense-in-depth applies multiple independent security layers so that no single point of failure compromises the system. In code review, this means combining tools with different detection mechanisms so that weaknesses in one layer are covered by strengths in another.</p>
+
+        <div class="nyu-tabs">
+          <div class="nyu-tabs__tablist" role="tablist">
+            <button class="nyu-tabs__tab" role="tab" id="tab-did-1" aria-controls="panel-did-1" aria-selected="true">Human Expert Review</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-did-2" aria-controls="panel-did-2">Pattern-Based SAST</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-did-3" aria-controls="panel-did-3">Semantic-Query SAST</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-did-4" aria-controls="panel-did-4">LLM-Assisted Review</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-did-5" aria-controls="panel-did-5">Dynamic Analysis</button>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-did-1" aria-labelledby="tab-did-1">
+            <p>Excels at logic-level analysis, design flaws, and business-logic vulnerabilities that require understanding the application's purpose and threat model. Humans reason about whether code behavior is intentional or accidental and bring domain knowledge no automated tool possesses.</p>
+            <p><strong>Limitation:</strong> Slow, expensive, does not scale well, subject to reviewer fatigue and inconsistency.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-did-2" aria-labelledby="tab-did-2">
+            <p>Provides deterministic, reproducible detection of known vulnerability patterns. If a rule exists for a pattern, the tool always catches it (zero false negatives for covered patterns). Runs fast enough for pre-commit hooks or CI pipelines.</p>
+            <p><strong>Limitation:</strong> Cannot reason beyond its rules, no inter-procedural analysis, coverage is exactly as good as the rules someone wrote.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-did-3" aria-labelledby="tab-did-3">
+            <p>Provides deep inter-procedural <button type="button" class="nyu-define" data-term="taint-tracking">taint tracking</button> and data-flow analysis. Can answer questions like "does any path exist from user input to this SQL call without passing through a sanitization function?" These are questions that neither pattern-based tools nor LLMs can reliably answer.</p>
+            <p><strong>Limitation:</strong> Requires a buildable codebase, a specialized query language, and more analysis time.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-did-4" aria-labelledby="tab-did-4">
+            <p>Provides broad pattern coverage across languages, natural-language explanations non-specialist developers can understand, and the ability to identify patterns no explicit rule covers. Most useful as a first-pass screening tool that surfaces candidates for verification.</p>
+            <p><strong>Limitation:</strong> Non-deterministic, prone to false positives and false negatives, susceptible to confirmation bias, reliability varies unpredictably by vulnerability type.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-did-5" aria-labelledby="tab-did-5">
+            <p>Catches runtime vulnerabilities that cannot be detected from source code alone: race conditions, configuration-dependent behavior, and vulnerabilities that emerge only under specific execution conditions. Complementary to all static approaches including LLMs.</p>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">When Each Layer Acts</h3>
+
+        <ol class="nyu-timeline">
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">1</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Pre-Commit Hooks</h3>
+              <div class="nyu-timeline__detail">IDE plugins and pre-commit SAST catch simple patterns before code enters version control.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">2</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Pull Request Review</h3>
+              <div class="nyu-timeline__detail">LLM-assisted review + peer review at the PR stage. The PR is where AI explanations add the most value.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">3</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">CI Pipeline Gates</h3>
+              <div class="nyu-timeline__detail">Automated semantic-query SAST (CodeQL) runs on every merge. Build breaks on high-severity findings.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">4</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Production Monitoring</h3>
+              <div class="nyu-timeline__detail">Runtime application self-protection (RASP) and vulnerability scanning catch what escaped earlier layers.</div>
+            </div>
+          </li>
+        </ol>
+
+        <p>Recent research has documented that combining LLM review with traditional static analysis yields F1 improvements of 17-60% compared to either approach used alone. The reason is straightforward: each catches what the other misses. The LLM identifies patterns that rigid rules overlook; the static analyzer catches cases where the LLM hallucinated or missed deterministic patterns. Disagreements between tools (cases where one flags a vulnerability and the other does not) get escalated for human review, focusing expensive human attention exactly where it is most needed.</p>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Same Vulnerability, Four Perspectives</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>A web application contains a <button type="button" class="nyu-define" data-term="xss">Cross-Site Scripting (XSS)</button> vulnerability. User-submitted profile data is rendered in a page without output encoding. The vulnerability appears in two locations: once in the profile display function (straightforward), and once in the admin dashboard (embedded in a more complex template rendering chain).</p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Human Reviewer</h3>
+            <p>Identifies both instances and explains the business context: "Profile data is user-controlled and displayed to other users, so both output points need encoding. The admin dashboard instance is higher risk because admin sessions have elevated privileges."</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Pattern-Based SAST</h3>
+            <p>Catches the profile display instance (the output call pattern matches a known-bad rule) but misses the admin dashboard instance (the template rendering chain does not match any existing rule).</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Semantic-Query SAST</h3>
+            <p>Traces the data-flow path for both instances: user input to profile data to template rendering to HTML output. Catches both, including the admin dashboard chain where the taint path passes through three function calls.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">LLM Review</h3>
+            <p>Identifies the profile display instance with a clear explanation ("User-supplied data is rendered without encoding, creating a reflected XSS vulnerability, CWE-79") but maps the admin dashboard instance to the overly broad CWE-20 (Improper Input Validation) rather than CWE-79, and does not explain the privilege escalation risk.</p>
+          </div>
+        </div>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/03_review_layer_gauntlet/review_layer_gauntlet.html" title="Interactive demo: Review Layer Gauntlet" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Defense-in-Depth in Action
+          </h3>
+          <p>In a defense-in-depth setup, all four reviews run. The profile instance is caught by everyone, yielding high confidence and clear remediation. The admin dashboard instance is caught by the human reviewer and the semantic-query tool but missed by the pattern-based tool and under-classified by the LLM. Without the human and semantic-query layers, this higher-risk instance might have been missed or inadequately classified.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Designing Your Review Strategy</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">SDLC Insertion Points</h3>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/03_sdlc_insertion_simulator/sdlc_insertion_simulator.html" title="Interactive demo: SDLC Insertion Point Simulator" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <p>The SDLC insertion point question connects directly to the broader <strong>Shift Left</strong> security philosophy: moving security activities earlier in the development lifecycle rather than treating them as a gate before release. Whether the reviewer is an AI tool or a human expert, earlier review produces three compounding advantages. First, <button type="button" class="nyu-define" data-term="feedback-speed">feedback speed</button> increases because developers receive findings while the code is still fresh in working memory, reducing the cognitive cost of context-switching. Second, <button type="button" class="nyu-define" data-term="remediation-cost">remediation cost</button> drops because fixing a vulnerability in a local branch is far cheaper than patching a deployed service under change-management controls. Third, <button type="button" class="nyu-define" data-term="triage-burden">triage burden</button> decreases because earlier findings involve smaller changesets, making it faster for a security engineer to determine whether a finding is a true positive. AI review amplifies these Shift Left benefits by providing instantaneous feedback at stages where human review would be too slow or expensive to apply consistently.</p>
+
+        <h3 class="nyu-subsection-title">The Human-in-the-Loop Requirement</h3>
+
+        <p>AI code review must not serve as the sole decision-maker for security-critical code changes. This is not a philosophical position; it follows directly from the evidence in Section 2. False negative rates vary unpredictably by vulnerability type and code structure. Confirmation bias means AI reviewers can be systematically misled through adversarial framing. And risk tolerance judgments require human accountability. Deciding whether a particular code risk is acceptable, given the application's threat model, the organization's risk appetite, and the cost of remediation, is a judgment call that requires understanding the business context.</p>
+
+        <h3 class="nyu-subsection-title">Responsible Communication</h3>
+
+        <p>Given the overconfidence and measurement-quality findings from Section 2, organizational communications about AI code review need to qualify capability claims with known limitations. Section 5 covers this in more detail.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/03_trust_calibration_meter/trust_calibration_meter.html" title="Interactive demo: Trust Calibration Meter" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            Ethics: Communication Obligations
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>The overconfidence finding from Section 2 has a direct implication for anyone deploying or recommending AI code review tools. If developers already tend toward overconfidence when AI tools are available, organizational communications that overclaim AI capability make the problem worse. Stating that an AI tool "catches security vulnerabilities" without qualifying that statement with known false-negative rates and the types of vulnerabilities it misses is misleading and can degrade security outcomes.</p>
+            <p>The UK National Cyber Security Centre (NCSC) put it plainly in May 2026, in “10 Questions to Ask When Using AI Models to Find Vulnerabilities”: just finding vulnerabilities does nothing to improve your security, and can even make it worse. An organization that detects more vulnerabilities with AI but lacks the process, personnel, and prioritization framework to remediate them has increased its detection count without improving its security posture. Detection is valuable only when it connects to a remediation pipeline.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Common Misconceptions
+          </h3>
+          <ol>
+            <li><strong>"AI code review can replace human review."</strong> The evidence does not support this claim for security-critical code. LLMs miss vulnerability classes that require semantic reasoning, domain knowledge, or architectural understanding.</li>
+            <li><strong>"We have static analysis already, so we do not need AI review."</strong> Static analysis and LLM review catch different things. The 17-60% F1 improvement from combining them demonstrates they are complementary, not redundant.</li>
+            <li><strong>"AI review is only useful if it is more accurate than human review."</strong> AI review is useful even at lower accuracy if it operates at higher speed and lower cost, enabling review of code that would not otherwise receive human attention.</li>
+          </ol>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/03_triage_capacity_simulator/triage_capacity_simulator.html" title="Interactive demo: Triage Capacity Simulator" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            SDLC Insertion Decision
+          </h3>
+          <p class="nyu-scenario__prompt">A 50-developer software company ships weekly releases for a SaaS platform handling financial data. They have one senior security engineer and no dedicated AppSec team. They currently rely on code review by senior developers (who focus on functionality, not security) and a basic pattern-based SAST tool in their CI pipeline. They are considering adding AI-assisted code review.</p>
+          <p class="nyu-scenario__prompt">Try to Answer: 
+		  <br>(1) Where in their development workflow should they insert AI review? Justify citing at least two tradeoffs.
+		  <br>(2) Given the single security engineer, should the AI review prioritize high recall or high precision? Justify in context of this team's capacity. 
+		  <br>(3) Name two vulnerability types AI review is most likely to miss, and explain who or what should cover those gaps.</p>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>(1) Insertion point: CI pipeline.</strong> It is the most practical insertion point. It provides more context than pre-commit (the full changeset is available), and findings can be triaged by the security engineer before reaching developers. This is important because 50 developers cannot each evaluate AI findings independently. Pre-commit would generate too many developer interruptions with uncertain reliability.</p>
+            <p><strong>(2) High precision.</strong> The single security engineer cannot triage a high volume of false positives. If the AI generates 20 false positives per day, the engineer's entire capacity is consumed on triage rather than reviewing security-critical paths. High precision with lower recall is the correct tradeoff when human triage capacity is the binding constraint.</p>
+            <p><strong>(3) Two likely gaps:</strong> Logic-level flaws (business logic vulnerabilities that require understanding the application's purpose) and design-level vulnerabilities (architectural weaknesses in authentication, authorization, or data-flow design) are most likely missed. The senior security engineer should perform manual review of security-critical code paths to cover these gaps.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">From Flagged to Confirmed</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Everything so far has treated an AI finding as a signal to be counted: precision, recall, triage burden. That is the manager's view. The reviewer's view is narrower. In front of you is one finding, on one function, and the only question is whether it is real. "The model is unreliable" does not answer it, and neither does "the model is usually right." Both are statements about the tool. You need a statement about this code.</p>
+
+        <p>The move that settles it is the same one that settles a bug report: stop reading and try to make it happen. A finding you can trigger is a vulnerability. A finding you cannot trigger, after a real attempt, is a hypothesis you have failed to confirm, which is a different and more honest thing than a false positive.</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Restate the claim as a condition</h3>
+              <p class="nyu-process__detail">"SQL injection in the search endpoint" is not yet checkable. "If <code>q</code> contains a single quote, it reaches the query string unescaped" is. Rewrite the model's prose into one condition that is either true or false about the code in front of you. Findings that resist this step usually resist it because they are vague, which is itself a result.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Write the failing test</h3>
+              <p class="nyu-process__detail">Add a test that passes only if the vulnerability is absent, then watch it fail. This is the step that converts an opinion into evidence, and the artefact outlives the review: the test stays in the suite and fails again if someone reintroduces the flaw. If you cannot construct an input that trips the condition, say so in the finding rather than closing it silently.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Check reachability</h3>
+              <p class="nyu-process__detail">A confirmed flaw in dead code is not the same as a confirmed flaw behind an unauthenticated route. Trace who can reach the function, with what privileges, and whether anything upstream already constrains the input. This is where a model is weakest, because reachability is a property of the whole system and the model saw a fragment of it.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Fix, then re-run the same test</h3>
+              <p class="nyu-process__detail">The test that failed in step 2 must now pass, and the rest of the suite must still pass with it. A fix that silences the finding without flipping the test has changed the model's opinion, not the code's behavior. This matters most when the model also proposed the patch, since a model that misread the flaw will write a patch that matches its misreading.</p>
+            </div>
+          </li>
+        </ol>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="unconfirmed-title">
+          <h3 class="nyu-callout__title" id="unconfirmed-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+            </span>
+            "Could not confirm" is a finding, not a dismissal
+          </h3>
+          <p>Two failures look identical in a tracker and are not the same. A finding you disproved is closed. A finding you could not trigger in the time you had is open with a note saying what you tried. Recording the difference is what stops the same claim being re-raised and re-abandoned every release, and it is the record a reviewer will want the next time that function changes.</p>
+        </aside>
+
+        <p>This is also where the failure modes from Section 2 stop being abstract. A finding that survives a genuine attempt to trigger it does not care whether the benchmark was mislabeled or whether the model sounded confident. Verification is what converts a probabilistic reviewer into evidence you can act on, and it is the reason a model with mediocre precision can still be worth running: a cheap generator of hypotheses is useful when confirming one is cheap too.</p>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Test Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="quiz-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+          <p class="nyu-quiz__prompt" id="quiz-1">A startup says: "We integrated AI code review into our CI pipeline, so we no longer need human security review." From an SSDF perspective, this position is problematic because:</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Speed is not the issue. AI review integrates well into CI pipelines. The problem is relying on it as the sole verification method.">AI review is too slow for CI pipelines.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">SSDF requires multiple verification activities within the Produce Well-Secured Software (PW) practice group, and AI review alone leaves gaps in logic flaws, design vulnerabilities, and types outside the model's training distribution.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="NIST extended the SSDF in 2024 (SP 800-218A) to explicitly address AI in the SDLC.">SSDF does not mention AI tools.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Accuracy is not the issue. The issue is that human review covers vulnerability classes that AI review cannot, not that it is uniformly more accurate.">Human review is always more accurate than AI review.</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct. SSDF calls for multiple independent verification methods. No single approach, including AI, covers all vulnerability classes." data-incorrect-msg="The core issue is defense-in-depth: SSDF requires multiple verification activities, and AI review has documented blind spots that human review addresses."></div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Open Question
+          </h3>
+          <p class="nyu-scenario__prompt">Your organization is writing internal guidance for developers on how to use AI code review tools. Given the overconfidence finding and the measurement-quality problem from Section 2, what two things must this guidance explicitly state to avoid making the overconfidence problem worse?</p>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p>First, the guidance must state that AI review does not guarantee the absence of vulnerabilities. A clean AI review result means the code did not match the model's learned patterns, not that the code is secure. False negative rates vary unpredictably by vulnerability type.</p>
+            <p>Second, the guidance must state that published benchmark numbers for AI vulnerability detection may overestimate real-world capability due to the dataset quality issues we examined. Developers should not calibrate their trust in the tool based on vendor-reported accuracy figures.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 4: Software Supply Chain Attacks and Defenses.</strong> It shifts focus from reviewing code you wrote to protecting code you depend on: the software supply chain, where attackers target the packages, build systems, and trust relationships your application relies on.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script>
+  /* Auto-resize iframes to match their content height */
+  window.addEventListener('message', function(e){
+    if(!e.data || e.data.type !== 'iframeHeight') return;
+    var iframes = document.querySelectorAll('.nyu-embed-frame iframe');
+    for(var i = 0; i < iframes.length; i++){
+      try {
+        if(iframes[i].contentWindow === e.source){
+          iframes[i].style.height = (e.data.height + 4) + 'px';
+          break;
+        }
+      } catch(ex){}
+    }
+  });
+  </script>
+</body>
+</html>

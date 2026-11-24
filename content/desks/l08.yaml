@@ -1,0 +1,30 @@
+title: Make model output safe to use
+lede: A support tool shows AI answers in an agent console and writes ticket fields to a database. Fix each destination.
+blurb: Match each output destination to the deterministic control it needs, and choose between encoding and sanitizing.
+situation: |
+  **Quill Support** uses an LLM to draft replies. Drafts render as Markdown in a staff console. The model also fills a "priority" field that goes into a SQL query, and a "next step" that a script can run.
+rounds:
+  - title: Round 1. One control per destination
+    items:
+      - type: sort
+        q: Match each destination to its control.
+        rows:
+          - ["Markdown draft in the staff console", "Render with a sanitizer and block outside images"]
+          - ["Priority field in a SQL query", "Parameterized query plus an allow list of values"]
+          - ["Next step that a script can run", "Never run it. Map to a fixed list of actions"]
+          - ["A link the model adds to the reply", "Allow only trusted domains"]
+        opts: ["Render with a sanitizer and block outside images", "Parameterized query plus an allow list of values", "Never run it. Map to a fixed list of actions", "Allow only trusted domains"]
+        why: "Each place needs the control that fits it. All four work in code, whatever the model writes."
+      - q: Why is a second model that reviews output not enough on its own?
+        opts: ["It is too slow", "It is probabilistic and reads the same attacker text, so it can be fooled too", "It costs nothing"]
+        a: 1
+        why: "Deterministic encoding and validation do not read meaning, so injection cannot talk them out of their job."
+  - title: Round 2. Encoding or sanitizing?
+    items:
+      - q: Staff need bold text and lists in drafts. What is the right approach?
+        opts: ["HTML encode everything", "Convert Markdown without raw HTML, then sanitize with a strict allow list", "Render raw HTML from the model"]
+        a: 1
+        why: "Encoding everything breaks formatting. A sanitizer such as DOMPurify keeps safe tags and removes scripts and event handlers."
+      - type: open
+        q: A draft contains an image link with chat data in the URL. Which control stops the leak, and why does the sanitizer alone not?
+        a: "Blocking images from outside domains, or not auto-loading images, stops it. An image tag is allowed formatting, so a sanitizer keeps it, and loading it sends the URL, data included, to the attacker."

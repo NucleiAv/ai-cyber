@@ -1,0 +1,34 @@
+title: Review a model download
+lede: A data scientist wants to load three models from a public hub. Decide which are safe to load and how.
+blurb: Judge model files by format, loader setting and source, then fix an unsafe pipeline.
+situation: |
+  **Cobalt Analytics** pulls models in its CI pipeline by name. A data scientist proposes three new ones. A uses safetensors from a verified organization. B is a .pth file from a new account, shared on a forum. C is a .bin pickle from an organization that was renamed last month.
+rounds:
+  - title: Round 1. Judge each file
+    items:
+      - type: sort
+        q: What is the main risk of each model?
+        rows:
+          - ["A. safetensors, verified organization", "Low, the format cannot run code"]
+          - ["B. .pth from a new account", "Pickle code may run on load"]
+          - ["C. .bin pickle from a renamed organization", "Pickle risk and the name may now belong to someone else"]
+        opts: ["Low, the format cannot run code", "Pickle code may run on load", "Pickle risk and the name may now belong to someone else"]
+        why: "safetensors holds only numbers. Pickle files can call functions during loading. A renamed organization can leave its old name free for anyone to register, which is namespace reuse."
+      - q: "The pipeline loads with torch.load(path, weights_only=False). What should change?"
+        opts: ["Nothing", "Keep weights_only=True, the default since PyTorch 2.6, and prefer safetensors", "Add a try and except"]
+        a: 1
+        why: "weights_only=True refuses non-tensor objects, which blocks __reduce__ payloads. Turning it off re-opens the risk."
+  - title: Round 2. Fix the pipeline
+    items:
+      - type: sort
+        q: Put the safe loading steps in order.
+        rows:
+          - ["Pin the exact revision or file hash", "1"]
+          - ["Scan the file with ModelScan", "2"]
+          - ["Load in a sandbox with no secrets or network", "3"]
+          - ["Mirror the approved file to the company registry", "4"]
+        opts: ["1", "2", "3", "4"]
+        why: "Fix what you will load, check it, try it where it cannot hurt, then keep your own copy so the name cannot change under you."
+      - type: open
+        q: ModelScan reports no issues on model B. Is it safe?
+        a: "Not necessarily. Scanners look for known dangerous calls, so a payload that uses an unlisted function can pass. A clean scan is one signal. Still prefer safetensors, keep weights_only on, and load unknown files in a sandbox."

@@ -1,0 +1,432 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage 4: Projection to Logits</title>
+<style>
+  :root {
+    --violet: #57068C;
+    --violet-dark: #3D0461;
+    --violet-50: #F5EDFA;
+    --violet-100: #E9D7F4;
+    --violet-200: #D2B3E5;
+    --ink: #1A1A1A;
+    --ink-soft: #3A3A3A;
+    --ink-mute: #6B6B6B;
+    --rule: #E2E2E2;
+    --rule-soft: #F0F0F0;
+    --surface: #FAFAFC;
+    --warn: #C42A2A;
+    --font-body: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #fff; color: var(--ink);
+    font-family: var(--font-body); line-height: 1.4; padding: 16px;
+  }
+  .stage {
+    max-width: 760px; margin: 0 auto; background: #fff;
+    border: 1px solid var(--rule); border-radius: 12px;
+    padding: 22px 22px 18px; box-shadow: 0 1px 2px rgba(20, 0, 40, 0.05);
+  }
+  .stage-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .stage-num {
+    font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+    color: #fff; background: #4C1D95;
+    padding: 3px 8px; border-radius: 4px; letter-spacing: 0.04em;
+  }
+  .stage-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink); }
+  .stage-input {
+    margin: 10px 0 14px; font-family: var(--font-mono); font-size: 0.78rem;
+    color: var(--ink-mute); background: var(--surface); padding: 7px 10px;
+    border-radius: 6px; border: 1px solid var(--rule-soft);
+  }
+  .stage-input b { color: var(--ink-soft); font-weight: 600; margin-right: 6px; }
+
+  .row {
+    display: flex; gap: 5px; justify-content: center;
+    flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .tok {
+    font-family: var(--font-mono); font-size: 0.74rem;
+    padding: 4px 8px; border-radius: 4px;
+    background: #4C1D95; color: #fff;
+    border: 1px solid var(--violet-100); white-space: pre;
+    transition: all 0.3s ease;
+  }
+  .tok.last {
+    background: var(--violet); color: #fff; border-color: var(--violet);
+    box-shadow: 0 4px 12px rgba(87, 6, 140, 0.25);
+    transform: translateY(-2px);
+  }
+  .tok.dim { opacity: 0.8; }
+
+  /* Hidden vector → projection → logits */
+  .proj {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 16px;
+    align-items: center;
+    margin: 16px 0 8px;
+    padding-top: 14px;
+  }
+  .hidden-card {
+    background: #fff; border: 2px solid var(--violet);
+    border-radius: 8px; padding: 12px 10px;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(87, 6, 140, 0.12);
+    text-align: center;
+  }
+  .hidden-label {
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+    background: #fff; padding: 0 6px;
+    font-size: 0.6rem; line-height: 1; letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 700;
+    color: var(--violet-dark); white-space: nowrap;
+  }
+  .hidden-grid {
+    display: grid; grid-template-columns: repeat(4, 18px); gap: 3px;
+    margin-bottom: 6px;
+  }
+  .hidden-cell {
+    width: 18px; aspect-ratio: 1.4 / 1; border-radius: 2px;
+    background: var(--violet-50);
+  }
+  .hidden-note {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    color: var(--ink-mute);
+  }
+
+  .proj-arrow {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-family: var(--font-mono); font-size: 0.6rem;
+    color: var(--ink-mute); letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .proj-arrow svg { width: 70px; height: 14px; }
+  .proj-arrow .matrix {
+    font-size: 0.62rem; color: var(--violet-dark);
+    font-weight: 700;
+  }
+
+  .logits {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 10px 12px;
+    position: relative;
+    min-height: 220px;
+  }
+  .logits-label {
+    position: absolute; top: -8px; left: 12px;
+    background: #fff; padding: 0 6px;
+    font-size: 0.6rem; letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 700;
+    color: var(--ink-mute);
+  }
+  .vocab-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 44px;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+  }
+  .vocab-name { color: var(--ink-soft); text-align: right; white-space: pre; }
+  .vocab-bar-track {
+    height: 12px; background: #fff; border: 1px solid var(--rule);
+    border-radius: 3px; position: relative; overflow: hidden;
+  }
+  .vocab-bar-fill {
+    display: block;
+    height: 100%; background: var(--violet);
+    width: 0%; transition: width 0.7s cubic-bezier(0.2, 0.7, 0.3, 1);
+    border-radius: 3px;
+  }
+  .vocab-bar-fill.neg { background: var(--rule); }
+  .vocab-bar-fill.low { background: var(--violet-200); }
+  .vocab-bar-fill.med { background: var(--violet); }
+  .vocab-bar-fill.top { background: var(--violet-dark); }
+  .vocab-val { color: var(--ink-mute); text-align: right; }
+  .vocab-row.top .vocab-name { color: var(--violet-dark); font-weight: 700; }
+  .vocab-row.top .vocab-val { color: var(--violet-dark); font-weight: 700; }
+
+  .vocab-count {
+    margin-top: 8px; font-family: var(--font-mono);
+    font-size: 0.62rem; color: var(--ink-mute);
+    text-align: right; letter-spacing: 0.05em;
+  }
+
+  .caption {
+    margin: 14px 0 0; font-size: 0.82rem;
+    color: var(--ink-soft); text-align: center; line-height: 1.45;
+  }
+  .caption b { color: var(--violet-dark); font-weight: 700; }
+
+  @media (max-width: 640px) {
+    .proj { grid-template-columns: 1fr; }
+    .proj-arrow svg { transform: rotate(90deg); }
+  }
+
+
+  /* Embedded in the course page: remove the outer demo frame and page padding.
+     Keep the demo itself responsive; the parent iframe measures this .stage box. */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden;
+  }
+  body {
+    display: block;
+  }
+  .stage {
+    margin: 0 auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    padding-top: 0 !important;
+  }
+  .stage-input {
+    margin-top: 0 !important;
+  }
+
+  /* WCAG 2.2.2 (Pause, Stop, Hide): this stage animates on a loop for more
+     than five seconds, so it must offer a way to stop the motion. */
+  .anim-controls {
+    display: flex; justify-content: flex-end; gap: 4px;
+    margin: 6px 0 0;
+  }
+  .anim-controls button {
+    border: 1px solid var(--rule, #E2E2E2);
+    border-radius: 999px;
+    background: var(--surface, #fff);
+    color: var(--ink-soft, #3A3A3A);
+    cursor: pointer;
+    font: 800 0.66rem/1 var(--font-mono, monospace);
+    padding: 5px 10px;
+  }
+  .anim-controls button:hover { border-color: var(--violet-100, #E8D8F2); color: var(--violet-dark, #3D0461); }
+  @media (prefers-reduced-motion: reduce) { .anim-controls { display: flex; } }
+</style>
+</head>
+<body>
+<section class="stage" aria-label="Stage 4: Projection to logits">
+  <div class="stage-input">
+    <b>Input:</b><span style="font-family:var(--font-mono);">Analyze this log: 192.168.1.105 port 443 SYN</span>
+  </div>
+
+  <div class="row" id="tokRow"></div>
+
+  <div class="proj">
+    <div class="hidden-card">
+      <span class="hidden-label">Last-token vector</span>
+      <div class="hidden-grid" id="hiddenGrid"></div>
+      <div class="hidden-note">~4096 dims</div>
+    </div>
+
+    <div class="proj-arrow" aria-hidden="true">
+      <span>project</span>
+      <svg viewBox="0 0 70 14">
+        <path d="M2,7 L60,7" stroke="var(--violet)" stroke-width="2" fill="none"/>
+        <path d="M60,2 L68,7 L60,12 Z" fill="var(--violet)"/>
+      </svg>
+      <span class="matrix">× W<sub>unembed</sub></span>
+    </div>
+
+    <div class="logits">
+      <span class="logits-label">Logits (one per vocab token)</span>
+      <div id="vocabList"></div>
+      <div class="vocab-count">… + 127,990 more</div>
+    </div>
+  </div>
+
+  <p class="caption">
+    The last token's hidden vector is projected against the vocabulary to produce a
+    <b>raw score</b> (a logit) for every possible next token. Some score high; many score
+    near zero or negative.
+  </p>
+  <div class="anim-controls" role="group" aria-label="Animation controls">
+    <button type="button" class="anim-toggle" aria-pressed="true">Pause</button>
+  </div>
+</section>
+
+<script>
+  const TOKENS = ['Analyze', ' this', ' log', ':', ' 192', ' port', ' 443', ' SYN'];
+  const VOCAB = [
+    { name: ' The',       logit: 7.2,  cls: 'top' },
+    { name: ' This',      logit: 6.8,  cls: 'top' },
+    { name: ' A',         logit: 5.1,  cls: 'med' },
+    { name: ' It',        logit: 4.4,  cls: 'med' },
+    { name: ' Based',     logit: 3.7,  cls: 'med' },
+    { name: ' Looking',   logit: 2.9,  cls: 'low' },
+    { name: ' To',        logit: 2.1,  cls: 'low' },
+    { name: ' banana',    logit: -3.4, cls: 'neg' },
+    { name: ' purple',    logit: -4.1, cls: 'neg' },
+  ];
+
+  // Build token row
+  const tokRow = document.getElementById('tokRow');
+  TOKENS.forEach((t, i) => {
+    const span = document.createElement('span');
+    span.className = 'tok' + (i === TOKENS.length - 1 ? ' last' : ' dim');
+    span.textContent = t.replace(/ /g, '·');
+    tokRow.appendChild(span);
+  });
+
+  // Hidden vector grid (4x6 = 24 cells)
+  const grid = document.getElementById('hiddenGrid');
+  const PALETTE = ['#F5EDFA', '#D2B3E5', '#9D5BC4', '#57068C', '#3D0461'];
+  for (let i = 0; i < 24; i++) {
+    const c = document.createElement('div');
+    c.className = 'hidden-cell';
+    grid.appendChild(c);
+  }
+
+  // Vocab list
+  const vocabList = document.getElementById('vocabList');
+  const minL = Math.min(...VOCAB.map(v => v.logit));
+  const maxL = Math.max(...VOCAB.map(v => v.logit));
+  const span = maxL - minL;
+
+  VOCAB.forEach(v => {
+    const row = document.createElement('div');
+    row.className = 'vocab-row' + (v.cls === 'top' ? ' top' : '');
+    const pct = ((v.logit - minL) / span) * 100;
+    row.innerHTML = `
+      <span class="vocab-name">${v.name.replace(/ /g, '·')}</span>
+      <span class="vocab-bar-track"><span class="vocab-bar-fill ${v.cls}" data-pct="${pct.toFixed(1)}"></span></span>
+      <span class="vocab-val">${v.logit > 0 ? '+' : ''}${v.logit.toFixed(1)}</span>`;
+    vocabList.appendChild(row);
+  });
+
+  // Animation loop: pulse the hidden vector, then fill bars
+  function randomizeHidden() {
+    document.querySelectorAll('.hidden-cell').forEach((c, i) => {
+      setTimeout(() => {
+        const shade = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+        c.style.background = shade;
+      }, i * 14);
+    });
+  }
+  function fillBars() {
+    document.querySelectorAll('.vocab-bar-fill').forEach((f, i) => {
+      setTimeout(() => {
+        f.style.width = '0%';
+        requestAnimationFrame(() => {
+          f.style.width = f.dataset.pct + '%';
+        });
+      }, i * 60);
+    });
+  }
+  function resetBars() {
+    document.querySelectorAll('.vocab-bar-fill').forEach(f => f.style.width = '0%');
+  }
+
+  function tick() {
+    resetBars();
+    randomizeHidden();
+    setTimeout(fillBars, 400);
+  }
+  tick();
+  /* Pausable loop: WCAG 2.2.2. Honours prefers-reduced-motion by
+     starting paused for users who have asked for less motion. */
+  var _animTimer = null;
+  var _animBtn = document.querySelector('.anim-toggle');
+  var _reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function _animStart() { clearInterval(_animTimer); _animTimer = setInterval(tick, 2600); }
+  function _animStop()  { clearInterval(_animTimer); _animTimer = null; }
+  function _animSet(on) {
+    if (on) _animStart(); else _animStop();
+    if (_animBtn) {
+      _animBtn.textContent = on ? 'Pause' : 'Play';
+      _animBtn.setAttribute('aria-pressed', String(on));
+    }
+  }
+  if (_animBtn) _animBtn.addEventListener('click', function () { _animSet(_animTimer === null); });
+  _animSet(!_reduce);
+</script>
+
+<script>
+  /* Cross-origin-safe iframe sizing for Brightspace/local LMS embeds.
+     The child measures only its own .stage box and sends that number upward.
+     The parent never reads contentDocument, so this works even when the LMS
+     serves the iframe from a different origin or sandboxed content URL. */
+  (function() {
+    var MIN_HEIGHT = 120;
+    var MAX_HEIGHT = 1400;
+    var EXTRA_PIXELS = 10;
+    var lastSent = 0;
+    var raf = 0;
+
+    function getEmbedId() {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        return params.get('embedId') || window.name || document.title || window.location.pathname;
+      } catch (err) {
+        return window.name || document.title || 'pipeline-stage';
+      }
+    }
+
+    function measureHeight() {
+      var stage = document.querySelector('.stage') || document.body;
+      var rect = stage.getBoundingClientRect();
+      var styles = window.getComputedStyle(stage);
+      var mt = parseFloat(styles.marginTop) || 0;
+      var mb = parseFloat(styles.marginBottom) || 0;
+      var height = Math.ceil(rect.height + mt + mb + EXTRA_PIXELS);
+      if (!Number.isFinite(height)) height = MIN_HEIGHT;
+      return Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, height));
+    }
+
+    function postHeight() {
+      raf = 0;
+      var height = measureHeight();
+      if (Math.abs(height - lastSent) < 2) return;
+      lastSent = height;
+      try {
+        window.parent.postMessage({
+          kind: 'nyu-pipeline-stage-height',
+          embedId: getEmbedId(),
+          height: height
+        }, '*');
+      } catch (err) {}
+    }
+
+    function schedulePost() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(postHeight);
+    }
+
+    window.addEventListener('load', schedulePost);
+    window.addEventListener('resize', schedulePost);
+    window.addEventListener('orientationchange', schedulePost);
+    document.addEventListener('DOMContentLoaded', schedulePost);
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(schedulePost).catch(function() {});
+    }
+
+    try {
+      var stage = document.querySelector('.stage') || document.body;
+      if (window.ResizeObserver && stage) {
+        var ro = new ResizeObserver(schedulePost);
+        ro.observe(stage);
+      }
+    } catch (err) {}
+
+    // Bounded follow-up measurements catch animations, font swaps, and JS-populated rows.
+    [0, 50, 150, 300, 700, 1200, 2200, 4000].forEach(function(delay) {
+      setTimeout(schedulePost, delay);
+    });
+  })();
+</script>
+
+</body>
+</html>

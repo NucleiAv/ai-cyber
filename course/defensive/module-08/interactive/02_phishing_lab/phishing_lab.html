@@ -1,0 +1,768 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phishing Characterization Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --violet: #57068C;
+  --violet-dark: #3D0461;
+  --violet-50: #F5EDFA;
+  --violet-100: #E8D8F2;
+  --violet-200: #D2B3E5;
+  --danger: #C42A2A;
+  --danger-bg: #FBE8E8;
+  --success: #166B3A;
+  --success-bg: #E6F4EC;
+  --warning: #8A5D00;
+  --warning-bg: #FCF1DC;
+  --blue: #1560AC;
+  --blue-bg: #E6F0FA;
+  --ink: #1A1A1A;
+  --ink-soft: #3A3A3A;
+  --ink-mute: #6B6B6B;
+  --rule: #E2E2E2;
+  --surface: #FFFFFF;
+  --sunken: #F6F4F8;
+  --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { overflow: visible; height: auto; }
+body { font-family: var(--sans); color: var(--ink); background: var(--sunken); padding: 10px 12px; }
+.wrap { max-width: 880px; margin: 0 auto; }
+
+/* ===== Card shell ===== */
+.card {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 14px; box-shadow: 0 10px 30px rgba(18,22,33,.06);
+}
+
+/* ===== Top bar ===== */
+.topbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 14px 18px; border-bottom: 1px solid var(--rule);
+}
+.topbar h1 { font-size: 0.97rem; font-weight: 700; letter-spacing: -.02em; flex: 1; }
+.counter {
+  font-family: var(--mono); font-size: 0.8875rem; font-weight: 600;
+  color: var(--violet); letter-spacing: -.01em;
+}
+.progress { height: 3px; background: var(--rule); }
+.progress-fill { height: 100%; width: 0; background: var(--violet); transition: width .4s ease; }
+
+/* ===== Inbox list ===== */
+.inbox-strip {
+  border-bottom: 1px solid var(--rule); background: var(--sunken);
+}
+.inbox-heading {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 18px 0; font-size: 0.8575rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--ink-mute);
+}
+.inbox-heading svg { width: 13px; height: 13px; flex-shrink: 0; }
+.inbox-list { padding: 6px 10px 8px; }
+.inbox-row {
+  appearance: none; border: none; background: var(--surface);
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; text-align: left; padding: 5px 8px;
+  border-radius: 5px; margin-bottom: 2px;
+  font: inherit; font-size: 0.88rem; cursor: pointer;
+  transition: background .12s; color: var(--ink-soft);
+  border-left: 3px solid transparent;
+}
+.inbox-row:last-child { margin-bottom: 0; }
+.inbox-row:hover:not(:disabled):not(.active) { background: #F0EDF4; }
+.inbox-row.active { background: var(--violet-50); border-left-color: var(--violet); }
+.inbox-row.done { opacity: 0.7; }
+.inbox-row.done-wrong { opacity: 0.7; }
+.inbox-row:disabled { cursor: default; }
+.inbox-row .ir-num {
+  font-family: var(--mono); font-size: 0.8425rem; font-weight: 600;
+  color: var(--ink-mute); min-width: 16px; text-align: right; flex-shrink: 0;
+}
+.inbox-row .ir-from {
+  font-weight: 600; min-width: 90px; max-width: 110px; flex-shrink: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.inbox-row .ir-subj {
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--ink-mute); font-weight: 400;
+}
+.inbox-row .ir-status {
+  flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%;
+}
+.inbox-row .ir-status.pending { background: var(--violet-200); }
+.inbox-row.active .ir-status.pending { background: var(--violet); }
+.inbox-row .ir-status.ok { background: var(--success); }
+.inbox-row .ir-status.wrong { background: var(--danger); }
+
+/* ===== Email display ===== */
+.email-area { padding: 0; }
+
+/* Email chrome: looks like a mail client header */
+.mail-header {
+  padding: 14px 18px 10px; border-bottom: 1px solid var(--rule);
+}
+.mail-subject {
+  font-size: 0.955rem; font-weight: 700; color: var(--ink);
+  margin-bottom: 8px; line-height: 1.35;
+}
+.mail-meta { font-size: 0.895rem; line-height: 1.7; color: var(--ink-soft); }
+.mail-meta-row { display: flex; gap: 6px; }
+.mail-label { color: var(--ink-mute); min-width: 40px; flex-shrink: 0; }
+.mail-addr { font-family: var(--mono); font-size: 0.8725rem; color: var(--ink-soft); }
+
+/* Auth results: inline, technical, not decorative */
+.auth-row {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 6px 18px; border-bottom: 1px solid var(--rule);
+  font-family: var(--mono); font-size: 0.8575rem; color: var(--ink-mute);
+  background: #FAFBFD;
+}
+.auth-tag {
+  padding: 1px 6px; border-radius: 3px; font-weight: 600;
+  letter-spacing: .02em; position: relative; cursor: help;
+}
+.auth-tag.pass { background: #166534; color: #fff; }
+.auth-tag.fail { background: #991B1B; color: #fff; }
+.auth-tag.none { background: #854D0E; color: #fff; }
+.auth-tag .tip {
+  display: none; position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%); width: max-content; max-width: 240px;
+  background: var(--ink); color: #fff; font-family: var(--sans);
+  font-size: 0.8575rem; font-weight: 400; line-height: 1.45;
+  padding: 6px 9px; border-radius: 5px; z-index: 10;
+  pointer-events: none; letter-spacing: 0;
+}
+.auth-tag .tip::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%); border: 4px solid transparent;
+  border-top-color: var(--ink);
+}
+.auth-tag:hover .tip { display: block; }
+.auth-domain { margin-left: auto; color: var(--ink-mute); }
+
+/* Email body */
+.mail-body {
+  padding: 16px 18px; font-size: 0.9175rem; line-height: 1.7;
+  color: var(--ink-soft); min-height: 100px;
+}
+.mail-body p { margin-bottom: 10px; }
+.mail-body .defanged {
+  font-family: var(--mono); font-size: 0.8725rem;
+  color: #fff; background: #991B1B;
+  padding: 1px 4px; border-radius: 2px; word-break: break-all;
+}
+.mail-body .sig {
+  color: var(--ink-mute); border-top: 1px solid var(--rule);
+  padding-top: 10px; margin-top: 10px; font-size: 0.895rem;
+}
+.mail-body .codeblock {
+  font-family: var(--mono); font-size: 0.8725rem;
+  background: var(--sunken); padding: 10px 12px;
+  border-radius: 6px; margin: 8px 0; line-height: 1.6;
+  border: 1px solid var(--rule);
+}
+
+/* ===== Action area ===== */
+.action-area {
+  padding: 14px 18px; border-top: 1px solid var(--rule);
+  background: var(--sunken); border-radius: 0 0 14px 14px;
+}
+.action-label {
+  font-size: 0.88rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--ink-mute); margin-bottom: 8px;
+}
+.choices { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.choice-btn {
+  appearance: none; border: 1.5px solid var(--rule); background: var(--surface);
+  border-radius: 8px; padding: 8px 16px; font: inherit; font-size: 0.9025rem;
+  font-weight: 600; cursor: pointer; transition: all .15s; color: var(--ink);
+}
+.choice-btn:hover:not(:disabled) { border-color: var(--violet); color: var(--violet); }
+.choice-btn:disabled { cursor: default; opacity: .5; }
+.choice-btn.right { border-color: #166534; background: #166534; color: #fff; }
+.choice-btn.wrong { border-color: #991B1B; background: #991B1B; color: #fff; }
+
+/* Signal buttons */
+.signal-area { margin-top: 10px; display: none; }
+.signal-choices { display: flex; gap: 5px; flex-wrap: wrap; }
+.sig-btn {
+  appearance: none; border: 1px solid var(--rule); background: var(--surface);
+  border-radius: 5px; padding: 5px 10px; font: inherit; font-size: 0.8725rem;
+  font-weight: 500; cursor: pointer; transition: all .15s; color: var(--ink-mute);
+}
+.sig-btn:hover:not(:disabled) { border-color: var(--violet); color: var(--violet); }
+.sig-btn:disabled { cursor: default; }
+.sig-btn.best { border-color: #166534; background: #166534; color: #fff; font-weight: 600; }
+.sig-btn.ok { border-color: #1E40AF; background: #1E40AF; color: #fff; }
+.sig-btn.picked { font-weight: 700; }
+
+/* Feedback */
+.fb-box {
+  margin-top: 10px; padding: 10px 12px; border-radius: 6px;
+  font-size: 0.895rem; line-height: 1.55; display: none;
+}
+.fb-box.correct { display: block; background: #166534; border: 1px solid #B8E0CA; color: #fff; }
+.fb-box.incorrect { display: block; background: #991B1B; border: 1px solid #EABFBF; color: #fff; }
+.fb-box b { font-weight: 700; }
+
+.advance-btn {
+  display: none; margin-top: 10px; appearance: none;
+  background: var(--violet); color: #fff; border: none;
+  border-radius: 7px; padding: 9px 22px; font: inherit;
+  font-size: 0.9025rem; font-weight: 600; cursor: pointer;
+  transition: background .15s;
+}
+.advance-btn:hover { background: var(--violet-dark); }
+
+/* ===== Start / empty state ===== */
+.start-state {
+  padding: 48px 18px; text-align: center; color: var(--ink-mute);
+  font-size: 0.9175rem; line-height: 1.6;
+}
+.start-state p { max-width: 440px; margin: 0 auto; }
+
+/* ===== Results view ===== */
+.results-area { display: none; padding: 18px; }
+.results-area h2 {
+  font-size: 0.955rem; font-weight: 700; letter-spacing: -.01em;
+  margin-bottom: 14px;
+}
+.results-area h3 {
+  font-size: 0.91rem; font-weight: 700; margin: 16px 0 8px;
+}
+
+/* Confusion matrix */
+.cm { border-collapse: collapse; font-size: 0.8875rem; margin-bottom: 16px; }
+.cm th, .cm td { border: 1.5px solid var(--rule); padding: 7px 14px; text-align: center; }
+.cm th {
+  background: var(--sunken); font-weight: 700; font-size: 0.8575rem;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--ink-mute);
+}
+.cm .corner { background: transparent; border-color: transparent; }
+.cm .tp { background: #166534; color: #fff; font-weight: 700; }
+.cm .fp { background: #991B1B; color: #fff; font-weight: 700; }
+.cm .fn { background: #854D0E; color: #fff; font-weight: 700; }
+.cm .tn { background: #1E40AF; color: #fff; font-weight: 700; }
+
+/* Metric cards */
+.metric-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.metric {
+  flex: 1; min-width: 140px; padding: 12px 14px;
+  border: 1px solid var(--rule); border-radius: 8px;
+  opacity: 0; transform: translateY(4px); transition: all .5s ease;
+}
+.metric.show { opacity: 1; transform: translateY(0); }
+.metric-label {
+  font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--ink-mute); margin-bottom: 2px;
+}
+.metric-value {
+  font-family: var(--mono); font-size: 1.15rem; font-weight: 700;
+  color: var(--violet); line-height: 1.35;
+}
+.metric-detail { font-size: 0.8575rem; color: var(--ink-mute); margin-top: 1px; }
+.metric-bar { height: 4px; border-radius: 2px; background: var(--rule); margin-top: 6px; overflow: hidden; }
+.metric-bar-fill { height: 100%; border-radius: 2px; background: var(--violet); transition: width .9s ease; width: 0; }
+
+/* Breakdown */
+.breakdown { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.bk {
+  font-size: 0.8725rem; font-weight: 600; padding: 3px 10px;
+  border-radius: 4px; border: 1px solid;
+}
+.bk.ai { background: #57068C; border-color: #57068C; color: #fff; }
+.bk.hu { background: #854D0E; border-color: #854D0E; color: #fff; }
+.bk.lg { background: #166534; border-color: #166534; color: #fff; }
+
+/* Heuristic table */
+.htbl { width: 100%; border-collapse: collapse; font-size: 0.8875rem; margin-bottom: 16px; }
+.htbl th {
+  text-align: left; font-weight: 700; font-size: 0.85rem;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--ink-mute);
+  padding: 6px 0 8px; border-bottom: 2px solid var(--rule);
+}
+.htbl th:last-child { text-align: right; }
+.htbl td { padding: 7px 0; border-bottom: 1px solid #F0F0F0; vertical-align: middle; }
+.htbl td:last-child { text-align: right; }
+.htbl .bar-w {
+  width: 80px; height: 5px; border-radius: 3px; background: var(--rule);
+  overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px;
+}
+.htbl .bar-f { height: 100%; border-radius: 3px; transition: width .8s ease; width: 0; }
+.htbl .bar-f.g { background: var(--success); }
+.htbl .bar-f.r { background: var(--danger); }
+.htbl .verd { font-family: var(--mono); font-size: 0.865rem; font-weight: 700; }
+.htbl .verd.g { color: var(--success); }
+.htbl .verd.r { color: var(--danger); }
+
+/* Takeaway */
+.takeaway {
+  padding: 14px 16px; border-radius: 8px; border: 1px solid var(--rule);
+  background: var(--sunken); font-size: 0.9025rem; line-height: 1.6;
+  color: var(--ink-soft); margin-bottom: 10px;
+}
+.takeaway strong { font-weight: 700; color: var(--ink); }
+
+.restart {
+  appearance: none; border: 1px solid var(--rule); background: var(--surface);
+  border-radius: 6px; padding: 6px 14px; font: inherit; font-size: 0.8875rem;
+  font-weight: 600; cursor: pointer; color: var(--ink-mute); transition: all .15s;
+}
+.restart:hover { border-color: var(--violet); color: var(--violet); }
+
+@media (max-width: 520px) { .choices { flex-direction: column; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+
+  <div class="topbar">
+    <h1>Phishing Characterization Lab</h1>
+    <span class="counter" id="counter">0 / 12</span>
+  </div>
+  <div class="progress"><div class="progress-fill" id="progFill"></div></div>
+
+  <!-- Inbox -->
+  <div class="inbox-strip" id="inbox"></div>
+
+  <!-- Email display -->
+  <div id="emailArea">
+    <div class="start-state" id="startState">
+      <p>Your inbox contains twelve messages: a mix of AI-generated phishing, human-written phishing, and legitimate emails. All links are defanged. Select a message above to begin your analysis.</p>
+    </div>
+  </div>
+
+  <!-- Results (hidden until all 12 done) -->
+  <div class="results-area" id="resultsArea"></div>
+
+</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+var EMAILS = [
+  {
+    id:1, from:'David Chen, CFO', addr:'d.chen@acm3-corp.com',
+    to:'you@company.com', subj:'Urgent: Q3 Wire Transfer Approval Needed',
+    date:'Mon, Jun 15, 8:02 AM',
+    spf:'fail', dkim:'fail', dmarc:'fail', dom:'acm3-corp.com',
+    body:'<p>Hi,</p><p>I need you to process an urgent wire transfer of $47,200 to our new consulting partner before end of business today. The board approved this engagement last Thursday and the vendor is waiting on payment to begin the Phase 2 deliverables.</p><p>Please use the following details:</p><p class="codeblock">Account: First National Bank<br>Routing: 021000089<br>Account #: 8827-4419-0032<br>Reference: ACME-Q3-CONSULT-2026</p><p>This is time-sensitive. Please confirm once completed.</p><p class="sig">David Chen<br>Chief Financial Officer<br>Acme Corporation</p>',
+    type:'ai-phish', pill:'D. Chen',
+    explain:'AI-generated phishing. Flawless prose, plausible project detail, but the sending domain (acm3-corp.com) is a lookalike. All authentication fails. Urgency pressure bypasses normal payment approval.',
+    bestSig:1, okSigs:[1,3,4]
+  },
+  {
+    id:2, from:'IT Helpdesk', addr:'helpdesk@company.com',
+    to:'you@company.com', subj:'Password Expiry Notice - Action Required',
+    date:'Mon, Jun 15, 9:15 AM',
+    spf:'pass', dkim:'pass', dmarc:'pass', dom:'company.com',
+    body:'<p>Hello,</p><p>Your network password will expire in 3 days. To avoid disruption, please update your password using the link below:</p><p><span class="defanged">hxxps://company.com/password-reset</span></p><p>If you have questions, contact the IT Help Desk at ext. 4500.</p><p class="sig">IT Help Desk<br>Company IT Services</p>',
+    type:'legit', pill:'IT Help',
+    explain:'Legitimate IT notification. All authentication passes, sending domain matches, the link points to the real company domain. Standard password rotation.',
+    bestSig:0, okSigs:[0,1]
+  },
+  {
+    id:3, from:'Sarah Miller', addr:'s.miller.procurement@gmail.com',
+    to:'you@company.com', subj:'RE: Invoice #8847 - Past Due',
+    date:'Mon, Jun 15, 10:33 AM',
+    spf:'pass', dkim:'pass', dmarc:'none', dom:'gmail.com',
+    body:'<p>hey there,</p><p>just following up on invoice #8847 from last month. we haven\'t recieved payment yet and its now 15 days overdue. can you check on this? the amount is $3,400.</p><p>i\'ve attached the invoice again incase you need it.</p><p><span class="defanged">hxxps://drive.google.com/file/d/1xK9mZ/view</span></p><p class="sig">sarah<br>sent from my iphone</p>',
+    type:'human-phish', pill:'S. Miller',
+    explain:'Human-written phishing. Spelling errors ("recieved", "incase"), Gmail address instead of a vendor domain, Google Drive link for payload delivery.',
+    bestSig:2, okSigs:[0,2,3]
+  },
+  {
+    id:4, from:'LinkedIn', addr:'notifications@linkedin.com',
+    to:'you@company.com', subj:'Alex Rodriguez has endorsed you for Cloud Security',
+    date:'Tue, Jun 16, 7:45 AM',
+    spf:'pass', dkim:'pass', dmarc:'pass', dom:'linkedin.com',
+    body:'<p>Hi,</p><p>Alex Rodriguez, Senior Security Engineer at CrowdStrike, has endorsed you for <strong>Cloud Security</strong>.</p><p>You now have 14 endorsements for this skill. View your profile to see your updated skills.</p><p><span class="defanged">hxxps://linkedin.com/in/your-profile/skills</span></p><p class="sig">This is an automated notification from LinkedIn.<br>LinkedIn Corporation, 1000 W Maude Ave, Sunnyvale, CA 94085</p>',
+    type:'legit', pill:'LinkedIn',
+    explain:'Legitimate LinkedIn notification. Authentication passes, domain is correct, format matches LinkedIn\'s standard templates.',
+    bestSig:0, okSigs:[0,1]
+  },
+  {
+    id:5, from:'Michael Torres, Legal', addr:'m.torres@company-legal.net',
+    to:'you@company.com', subj:'Confidential: Compliance Review - Immediate Response',
+    date:'Tue, Jun 16, 11:20 AM',
+    spf:'fail', dkim:'fail', dmarc:'fail', dom:'company-legal.net',
+    body:'<p>Dear Colleague,</p><p>Our annual compliance review has identified a discrepancy in your department\'s data handling procedures that requires immediate attention. Under our updated Data Protection Framework (DPF-2026), all employees in your division must complete a verification process within 24 hours.</p><p>Please access the secure compliance portal to complete your verification:</p><p><span class="defanged">hxxps://company-legal.net/compliance/verify</span></p><p>This review is mandated by our General Counsel and failure to respond within the deadline may result in temporary access suspension as a precautionary measure.</p><p class="sig">Michael Torres<br>Associate General Counsel<br>Corporate Legal &amp; Compliance</p>',
+    type:'ai-phish', pill:'M. Torres',
+    explain:'AI-generated phishing. Polished language, plausible compliance framework, but the sending domain (company-legal.net) is external. All auth fails. 24-hour deadline creates urgency.',
+    bestSig:1, okSigs:[1,3,4]
+  },
+  {
+    id:6, from:'Amazon Web Services', addr:'no-reply@amazonaws.com',
+    to:'you@company.com', subj:'CloudTrail: Unusual API Activity Detected',
+    date:'Wed, Jun 17, 3:12 AM',
+    spf:'pass', dkim:'pass', dmarc:'pass', dom:'amazonaws.com',
+    body:'<p>Hello,</p><p>AWS CloudTrail has detected unusual API activity in your account (ID: ****-7842) in the us-east-1 region:</p><p class="codeblock">Event: DeleteTrail<br>Source IP: 185.220.101.xx<br>Time: 2026-06-17 02:47:33 UTC<br>User Agent: aws-cli/2.15.10</p><p>If you did not perform this action, we recommend reviewing your IAM credentials and enabling MFA on all root and admin accounts.</p><p><span class="defanged">hxxps://console.aws.amazon.com/cloudtrail</span></p><p class="sig">Amazon Web Services<br>410 Terry Ave. North, Seattle, WA 98109-5210</p>',
+    type:'legit', pill:'AWS',
+    explain:'Legitimate AWS notification. All authentication passes, domain is correct (amazonaws.com), alert format matches CloudTrail\'s standard structure.',
+    bestSig:0, okSigs:[0,1]
+  },
+  {
+    id:7, from:'Jessica Park, HR', addr:'jpark@humancapital-solutions.co',
+    to:'you@company.com', subj:'Updated Benefits Enrollment - Open Until Friday',
+    date:'Wed, Jun 17, 10:05 AM',
+    spf:'fail', dkim:'fail', dmarc:'fail', dom:'humancapital-solutions.co',
+    body:'<p>Dear Team Member,</p><p>As part of our mid-year benefits adjustment, all employees are eligible for an enhanced dental and vision plan at no additional cost. This window closes Friday at 5 PM EST.</p><p>To review your options and confirm your selections, please visit our benefits portal:</p><p><span class="defanged">hxxps://humancapital-solutions.co/benefits/enroll</span></p><p>You will need to verify your identity with your employee ID and date of birth.</p><p class="sig">Jessica Park<br>Director of Human Resources<br>People &amp; Culture Division</p>',
+    type:'ai-phish', pill:'J. Park',
+    explain:'AI-generated phishing. Realistic HR language, plausible scenario, but the external domain is not the company\'s. All auth fails. Requests PII through an external link.',
+    bestSig:1, okSigs:[1,3,4]
+  },
+  {
+    id:8, from:'FedEx', addr:'tracking-updates@fedx-delivery.com',
+    to:'you@company.com', subj:'Your package could not be delivired - Action Required',
+    date:'Thu, Jun 18, 8:30 AM',
+    spf:'fail', dkim:'fail', dmarc:'fail', dom:'fedx-delivery.com',
+    body:'<p>Dear Customer,</p><p>We attempted to deliver your package (Tracking #: 7749 2810 3344) but were unable to complete delivery due to an incomplete address.</p><p>Please update your shipping information within 48 hours or your package will be returned to sender.</p><p><span class="defanged">hxxps://fedx-delivery.com/redelivery?id=7749</span></p><p class="sig">FedEx Customer Service<br>FedEx Corporation</p>',
+    type:'human-phish', pill:'FedEx',
+    explain:'Human-written phishing. Typo in subject ("delivired"), lookalike domain (fedx-delivery.com vs fedex.com), generic greeting. All auth fails.',
+    bestSig:2, okSigs:[0,1,2]
+  },
+  {
+    id:9, from:'Jira', addr:'jira@company-atlassian.com',
+    to:'you@company.com', subj:'[JIRA] SEC-1247 assigned to you',
+    date:'Thu, Jun 18, 2:15 PM',
+    spf:'pass', dkim:'pass', dmarc:'pass', dom:'company-atlassian.com',
+    body:'<p>SEC-1247 has been assigned to you by Priya Sharma.</p><p class="codeblock"><strong>Summary:</strong> Review IAM Policy Changes for Prod Environment<br><strong>Priority:</strong> High<br><strong>Sprint:</strong> Security-Q3-Sprint-4<br><strong>Due:</strong> Jun 22, 2026</p><p>View this issue: <span class="defanged">hxxps://company-atlassian.com/browse/SEC-1247</span></p><p class="sig">This message was sent by Atlassian Jira (v9.12.1#912001)</p>',
+    type:'legit', pill:'Jira',
+    explain:'Legitimate Jira notification. All authentication passes, domain matches the company\'s Atlassian instance, standard notification format.',
+    bestSig:0, okSigs:[0,1]
+  },
+  {
+    id:10, from:'Mark Sullivan, CISO', addr:'msullivan@company.com',
+    to:'you@company.com', subj:'IR Tabletop Exercise Materials',
+    date:'Fri, Jun 19, 9:00 AM',
+    spf:'pass', dkim:'pass', dmarc:'pass', dom:'company.com',
+    body:'<p>Team,</p><p>As discussed in last week\'s security leadership meeting, we\'re conducting our quarterly IR tabletop exercise next Tuesday at 2 PM in Conference Room B (or via Zoom for remote participants).</p><p>I\'ve uploaded the scenario materials and participant guide to the SharePoint security folder:</p><p><span class="defanged">hxxps://company.sharepoint.com/sites/security/tabletop-q3</span></p><p>Please review the materials before the session. The scenario this quarter focuses on a ransomware incident with data exfiltration.</p><p>Let me know if you have any scheduling conflicts.</p><p class="sig">Mark Sullivan<br>Chief Information Security Officer</p>',
+    type:'legit', pill:'CISO',
+    explain:'Legitimate internal email. All authentication passes, real company domain. References a prior meeting, names a specific room and time, uses SharePoint. No urgency pressure.',
+    bestSig:0, okSigs:[0,1]
+  },
+  {
+    id:11, from:'DocuSign', addr:'dse@docusign-notifications.net',
+    to:'you@company.com', subj:'Complete Your Document: NDA - Vertex Partners',
+    date:'Fri, Jun 19, 11:45 AM',
+    spf:'fail', dkim:'fail', dmarc:'fail', dom:'docusign-notifications.net',
+    body:'<p>Hello,</p><p>Vertex Partners LLC has sent you a document to review and sign through DocuSign.</p><p><strong>Document:</strong> Mutual Non-Disclosure Agreement<br><strong>Sent by:</strong> Karen Webb, General Counsel, Vertex Partners LLC<br><strong>Message:</strong> "Please review and sign the attached NDA at your earliest convenience so we can proceed with the partnership discussions."</p><p><span class="defanged">hxxps://docusign-notifications.net/sign/d8f2a91c</span></p><p>This document expires on June 26, 2026.</p><p class="sig">Powered by DocuSign</p>',
+    type:'ai-phish', pill:'DocuSign',
+    explain:'AI-generated phishing. Perfectly mimics DocuSign\'s notification format, but the sending domain (docusign-notifications.net) is not DocuSign\'s real domain. All auth fails.',
+    bestSig:1, okSigs:[1,3]
+  },
+  {
+    id:12, from:'Prince Mukambo', addr:'p_mukambo@minister-finance.org',
+    to:'you@company.com', subj:'URGENT BUISNESS PROPOSAL - $4.5M USD',
+    date:'Fri, Jun 19, 4:58 PM',
+    spf:'fail', dkim:'fail', dmarc:'fail', dom:'minister-finance.org',
+    body:'<p>Dearest Friend,</p><p>I am Prince Mukambo, the son of the late Minister of Finance of the Republic of Zambara. Due to the political situation in my country, I have the sum of $4,500,000 USD that I need to transfer to a secure account abroad.</p><p>I am proposing that you assist me in receiving this fund. In return, you will recieve 25% of the total sum. All I require is your bank account details and a small processing fee of $500 to initiate the transfer.</p><p>Please respond urgently as time is of the essence.</p><p class="sig">His Royal Highness Prince Mukambo<br>Heir to the Zambaran Treasury</p>',
+    type:'human-phish', pill:'Mukambo',
+    explain:'Classic human-written advance-fee (419) phishing. Spelling errors ("BUISNESS", "recieve"), outlandish pretext, request for bank details. This is what "spot the typo" advice was designed for.',
+    bestSig:0, okSigs:[0,2,3]
+  }
+];
+
+var SIGS = [
+  'Content / surface heuristics',
+  'Authentication failure (SPF/DKIM/DMARC)',
+  'Sender domain mismatch',
+  'Behavioral anomaly (urgency, unusual request)',
+  'Process control violation'
+];
+
+var cur = -1;
+var results = {};
+var locked = false;
+
+function count(){ return Object.keys(results).length; }
+
+function buildInbox(){
+  var h = '<div class="inbox-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 7 12 13 2 7"/></svg> Inbox: 12 messages</div><div class="inbox-list">';
+  EMAILS.forEach(function(e, i){
+    var cls = '';
+    var statusCls = 'pending';
+    if(i === cur) cls = ' active';
+    if(results[i]){
+      cls = results[i].ok ? ' done' : ' done-wrong';
+      statusCls = results[i].ok ? 'ok' : 'wrong';
+    }
+    h += '<button class="inbox-row'+cls+'"'+(results[i]?' disabled':'')+' data-i="'+i+'">'
+      +'<span class="ir-num">'+(i+1)+'</span>'
+      +'<span class="ir-from">'+e.pill+'</span>'
+      +'<span class="ir-subj">'+e.subj+'</span>'
+      +'<span class="ir-status '+statusCls+'"></span>'
+      +'</button>';
+  });
+  h += '</div>';
+  document.getElementById('inbox').innerHTML = h;
+  document.getElementById('counter').textContent = count()+' / 12';
+  document.getElementById('progFill').style.width = (count()/12*100)+'%';
+
+  document.querySelectorAll('.inbox-row').forEach(function(row){
+    row.addEventListener('click', function(){
+      var i = parseInt(this.getAttribute('data-i'));
+      if(results[i]) return;
+      cur = i; locked = false;
+      buildInbox();
+      showEmail();
+    });
+  });
+}
+
+function showEmail(){
+  if(cur < 0) return;
+  var e = EMAILS[cur];
+  document.getElementById('startState').style.display = 'none';
+
+  var area = document.getElementById('emailArea');
+  // Remove old content
+  var old = area.querySelectorAll('.mail-header,.auth-row,.mail-body,.action-area');
+  old.forEach(function(el){ el.remove(); });
+
+  var html = '';
+
+  html += '<div class="mail-header">'
+    +'<div class="mail-subject">'+e.subj+'</div>'
+    +'<div class="mail-meta">'
+    +'<div class="mail-meta-row"><span class="mail-label">From</span><span>'+e.from+' <span class="mail-addr">&lt;'+e.addr+'&gt;</span></span></div>'
+    +'<div class="mail-meta-row"><span class="mail-label">To</span><span class="mail-addr">&lt;'+e.to+'&gt;</span></div>'
+    +'<div class="mail-meta-row"><span class="mail-label">Date</span><span>'+e.date+'</span></div>'
+    +'</div></div>';
+
+  html += '<div class="auth-row">'
+    +'<span class="auth-tag '+e.spf+'">SPF '+e.spf.toUpperCase()+'<span class="tip">Sender Policy Framework: checks whether the sending mail server is authorized to send on behalf of the claimed domain.</span></span>'
+    +'<span class="auth-tag '+e.dkim+'">DKIM '+e.dkim.toUpperCase()+'<span class="tip">DomainKeys Identified Mail: verifies a cryptographic signature that a forger cannot reproduce without the domain’s private signing key.</span></span>'
+    +'<span class="auth-tag '+(e.dmarc==="none"?"none":e.dmarc)+'">DMARC '+e.dmarc.toUpperCase()+'<span class="tip">Domain-based Message Authentication, Reporting &amp; Conformance: ties SPF and DKIM together and tells the receiving server what to do when they fail.</span></span>'
+    +'<span class="auth-domain">'+e.dom+'</span>'
+    +'</div>';
+
+  html += '<div class="mail-body">'+e.body+'</div>';
+
+  html += '<div class="action-area">'
+    +'<div class="action-label">Classify this message</div>'
+    +'<div class="choices" id="choices">'
+    +'<button class="choice-btn" data-c="ai-phish">AI-generated phishing</button>'
+    +'<button class="choice-btn" data-c="human-phish">Human-written phishing</button>'
+    +'<button class="choice-btn" data-c="legit">Legitimate</button>'
+    +'</div>'
+    +'<div class="signal-area" id="sigArea">'
+    +'<div class="action-label">What signal drove your call?</div>'
+    +'<div class="signal-choices" id="sigChoices">';
+  SIGS.forEach(function(s, i){
+    html += '<button class="sig-btn" data-s="'+i+'">'+s+'</button>';
+  });
+  html += '</div></div>'
+    +'<div class="fb-box" id="fb"></div>'
+    +'<button class="advance-btn" id="advLink">Continue to next message &#8594;</button>'
+    +'</div>';
+
+  area.insertAdjacentHTML('beforeend', html);
+
+  var userCls = '';
+
+  document.querySelectorAll('#choices .choice-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if(locked) return;
+      userCls = this.getAttribute('data-c');
+      var ok = (userCls === e.type);
+      document.querySelectorAll('#choices .choice-btn').forEach(function(b){
+        b.disabled = true;
+        if(b.getAttribute('data-c') === e.type) b.classList.add('right');
+        if(b.getAttribute('data-c') === userCls && !ok) b.classList.add('wrong');
+      });
+      document.getElementById('sigArea').style.display = 'block';
+      sh();
+    });
+  });
+
+  document.getElementById('sigChoices').addEventListener('click', function(ev){
+    var btn = ev.target.closest('.sig-btn');
+    if(!btn || locked) return;
+    locked = true;
+    var si = parseInt(btn.getAttribute('data-s'));
+    document.querySelectorAll('#sigChoices .sig-btn').forEach(function(b){
+      b.disabled = true;
+      var bi = parseInt(b.getAttribute('data-s'));
+      if(bi === e.bestSig) b.classList.add('best');
+      else if(e.okSigs.indexOf(bi) >= 0 && bi === si) b.classList.add('ok');
+      if(bi === si) b.classList.add('picked');
+    });
+
+    var ok = (userCls === e.type);
+    var fb = document.getElementById('fb');
+    fb.className = ok ? 'fb-box correct' : 'fb-box incorrect';
+    fb.innerHTML = (ok ? '<b>Correct.</b> ' : '<b>Not quite.</b> ') + e.explain;
+
+    results[cur] = {cls: userCls, ok: ok, sig: si};
+    var c = count();
+    var adv = document.getElementById('advLink');
+    adv.style.display = 'block';
+    adv.textContent = c >= 12 ? 'View your results →' : 'Continue to next message →';
+    buildInbox();
+    sh();
+  });
+
+  document.getElementById('advLink').addEventListener('click', function(){
+    if(count() >= 12){ showResults(); return; }
+    for(var i = 1; i <= 12; i++){
+      var idx = (cur + i) % 12;
+      if(!results[idx]){ cur = idx; break; }
+    }
+    locked = false;
+    buildInbox();
+    showEmail();
+  });
+
+  sh();
+}
+
+function showResults(){
+  document.getElementById('emailArea').style.display = 'none';
+  document.querySelector('.inbox-strip').style.display = 'none';
+  var ra = document.getElementById('resultsArea');
+  ra.style.display = 'block';
+
+  var tp=0,fp=0,fn=0,tn=0;
+  var aiOk=0,aiN=0,huOk=0,huN=0,lgOk=0,lgN=0;
+
+  Object.keys(results).forEach(function(k){
+    var d = results[k], e = EMAILS[k];
+    var rp = (e.type !== 'legit'), cp = (d.cls !== 'legit');
+    if(rp&&cp) tp++; else if(!rp&&cp) fp++; else if(rp&&!cp) fn++; else tn++;
+    if(e.type==='ai-phish'){aiN++;if(d.ok)aiOk++;}
+    if(e.type==='human-phish'){huN++;if(d.ok)huOk++;}
+    if(e.type==='legit'){lgN++;if(d.ok)lgOk++;}
+  });
+
+  var prec=tp+fp>0?tp/(tp+fp):0, rec=tp+fn>0?tp/(tp+fn):0, acc=(tp+tn)/12;
+
+  var h = '<h2>Your Results</h2>';
+
+  h += '<table class="cm"><tr><td class="corner"></td><th colspan="2">Actual</th></tr>'
+    +'<tr><th>Your call</th><th>Phishing</th><th>Legitimate</th></tr>'
+    +'<tr><th>Called phishing</th><td class="tp">'+tp+' TP</td><td class="fp">'+fp+' FP</td></tr>'
+    +'<tr><th>Called legitimate</th><td class="fn">'+fn+' FN</td><td class="tn">'+tn+' TN</td></tr></table>';
+
+  h += '<div class="metric-row">'
+    +'<div class="metric" id="m0"><div class="metric-label">Precision</div><div class="metric-value">'+(prec*100).toFixed(0)+'%</div><div class="metric-detail">'+tp+' / '+(tp+fp)+'</div><div class="metric-bar"><div class="metric-bar-fill" id="mf0"></div></div></div>'
+    +'<div class="metric" id="m1"><div class="metric-label">Recall</div><div class="metric-value">'+(rec*100).toFixed(0)+'%</div><div class="metric-detail">'+tp+' / '+(tp+fn)+'</div><div class="metric-bar"><div class="metric-bar-fill" id="mf1"></div></div></div>'
+    +'<div class="metric" id="m2"><div class="metric-label">Accuracy</div><div class="metric-value">'+(acc*100).toFixed(0)+'%</div><div class="metric-detail">'+(tp+tn)+' / 12</div><div class="metric-bar"><div class="metric-bar-fill" id="mf2"></div></div></div>'
+    +'</div>';
+
+  h += '<div class="breakdown">'
+    +'<span class="bk ai">AI phishing: '+aiOk+'/'+aiN+'</span>'
+    +'<span class="bk hu">Human phishing: '+huOk+'/'+huN+'</span>'
+    +'<span class="bk lg">Legitimate: '+lgOk+'/'+lgN+'</span></div>';
+
+  h += '<h3>Which heuristics held up?</h3>'
+    +'<table class="htbl"><thead><tr><th>Heuristic</th><th>Against</th><th>Reliability</th></tr></thead><tbody>'
+    +'<tr><td>Surface clues (grammar, spelling)</td><td>AI phishing</td><td><span class="bar-w"><span class="bar-f r" data-w="0"></span></span><span class="verd r">0%</span></td></tr>'
+    +'<tr><td>Surface clues (grammar, spelling)</td><td>Human phishing</td><td><span class="bar-w"><span class="bar-f g" data-w="100"></span></span><span class="verd g">100%</span></td></tr>'
+    +'<tr><td>Email authentication (SPF/DKIM/DMARC)</td><td>All phishing</td><td><span class="bar-w"><span class="bar-f g" data-w="100"></span></span><span class="verd g">100%</span></td></tr>'
+    +'<tr><td>Sender domain verification</td><td>All phishing</td><td><span class="bar-w"><span class="bar-f g" data-w="100"></span></span><span class="verd g">100%</span></td></tr>'
+    +'<tr><td>Process / behavioral analysis</td><td>All phishing</td><td><span class="bar-w"><span class="bar-f g" data-w="100"></span></span><span class="verd g">100%</span></td></tr>'
+    +'</tbody></table>';
+
+  h += '<div class="takeaway">'
+    +'<strong>The two durable detection signals:</strong>'
+    +'<p style="margin-top:6px"><strong>1. Email authentication (SPF/DKIM/DMARC)</strong>: every phishing email in this inbox failed authentication. These cryptographic checks are independent of message quality. The attacker cannot satisfy them without the real domain’s signing key.</p>'
+    +'<p style="margin-top:4px"><strong>2. Process controls</strong>: out-of-band verification and dual authorization catch anomalous requests regardless of how convincing the message is. This is the lesson of the Arup deepfake case: $25.6M was lost because the organization relied on visual recognition instead of process controls.</p>'
+    +'<p style="margin-top:6px">Surface heuristics (“look for typos”) have <strong>0% reliability</strong> against AI-generated phishing. The durable defense is authentication + process, not better reading.</p>'
+    +'</div>';
+
+  h += '<button class="restart" id="rstBtn">Restart lab</button>';
+  ra.innerHTML = h;
+
+  setTimeout(function(){ document.getElementById('m0').classList.add('show'); document.getElementById('mf0').style.width=(prec*100)+'%'; },100);
+  setTimeout(function(){ document.getElementById('m1').classList.add('show'); document.getElementById('mf1').style.width=(rec*100)+'%'; },350);
+  setTimeout(function(){ document.getElementById('m2').classList.add('show'); document.getElementById('mf2').style.width=(acc*100)+'%'; },600);
+  setTimeout(function(){ document.querySelectorAll('.bar-f').forEach(function(b){ b.style.width=b.getAttribute('data-w')+'%'; }); },850);
+
+  document.getElementById('rstBtn').addEventListener('click', restart);
+  sh(); setTimeout(sh, 1000);
+}
+
+function restart(){
+  cur = -1; results = {}; locked = false;
+  document.getElementById('emailArea').style.display = '';
+  document.getElementById('startState').style.display = '';
+  document.querySelector('.inbox-strip').style.display = '';
+  document.getElementById('resultsArea').style.display = 'none';
+  document.getElementById('resultsArea').innerHTML = '';
+  var area = document.getElementById('emailArea');
+  var old = area.querySelectorAll('.mail-header,.auth-row,.mail-body,.action-area');
+  old.forEach(function(el){ el.remove(); });
+  buildInbox(); sh();
+}
+
+function sh(){
+  var el=document.querySelector('.wrap');if(!el)return;
+  var r=el.getBoundingClientRect();
+  var pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  var h=Math.ceil(r.height+pad+20);
+  window.parent.postMessage({kind:'nyu-embed-height',height:h,src:location.href},'*');
+  window.parent.postMessage({type:'iframeHeight',height:h,src:location.href},'*');
+}
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  if(window.ResizeObserver){new ResizeObserver(sh).observe(document.querySelector('.wrap')||body);}else{setInterval(sh,500);}
+  window.addEventListener('load',function(){setTimeout(sh,200);});setTimeout(sh,50);
+})();
+
+buildInbox();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

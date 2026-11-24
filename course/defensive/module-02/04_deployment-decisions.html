@@ -1,0 +1,767 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 2 · Deployment as a Security Architecture Decision · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+
+  <style>
+    /* Interactive embeds. The child pages stay responsive inside fluid iframes.
+       Height can come from child postMessage events when available; otherwise
+       the inline fallback height keeps the embed visible without iframe scrollbars. */
+    .nyu-pipeline-stage-frame {
+      width: 100%;
+      max-width: 760px;
+      margin: 0.75rem auto 1.25rem;
+      line-height: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+    .nyu-pipeline-stage-frame iframe {
+      display: block;
+      width: 100%;
+      height: var(--pipeline-fallback-height, 520px);
+      border: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 2 · Section 4 of 6</div>
+      <h1 class="nyu-hero__title">Deployment as a Security Architecture Decision</h1>
+      <p class="nyu-hero__subtitle">
+        Section 3 mapped LLM risks to lifecycle stages and matched each
+        stage to appropriate controls. This section examines the deployment
+        question: where should the model actually run? The answer reshapes
+        trust boundaries, data flows, accountability, and your ability to
+        audit and reproduce every inference decision.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          ~20 min read
+        </span>
+        <span aria-label="Number of parts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          7 parts
+        </span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          2 knowledge checks + 1 scenario + 1 sort
+        </span>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+
+      <nav class="nyu-toc" aria-label="In this section">
+        <p class="nyu-toc__title">In this section</p>
+        <ol class="nyu-toc__list">
+          <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Cloud API Deployment</a></li>
+          <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Local Deployment: Data Residency Is Not Security</a></li>
+          <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Hybrid Models and the Evaluation Checklist</a></li>
+          <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Quantization as a Security Variable</a></li>
+          <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Deployment Decision Scenario</a></li>
+          <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Auditability and Reproducibility Controls</a></li>
+          <li><a href="#sec-7"><span class="nyu-toc__num">7</span> Section Summary and Next Steps</a></li>
+        </ol>
+      </nav>
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Compare</strong> cloud, local, and hybrid LLM deployment models by evaluating each against a structured security checklist covering network exposure, authentication, data residency, retention, model integrity, logging, and capability.</span></li>
+          <li><span><strong>Justify</strong> a deployment recommendation for a given organizational context by identifying which trust boundaries shift under each model and what controls must be in place at each boundary.</span></li>
+          <li><span><strong>Explain</strong> why quantization is a security relevant decision, not only a performance optimization, and what testing obligations it creates.</span></li>
+          <li><span><strong>Specify</strong> the audit fields required to reproduce any inference decision and explain why reproducibility is a deployment governance requirement, not an inference time afterthought.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Cloud API Deployment</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          In a cloud API deployment, every prompt your organization sends crosses a
+          network boundary to a third party server. The vendor's infrastructure
+          processes the input, generates the response, and returns it. Three security
+          considerations follow directly from that architecture:
+        </p>
+
+        <div class="nyu-pillars">
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">1</span>
+            <h3 class="nyu-pillar__title">Data Exposure</h3>
+            <p class="nyu-pillar__body">Every prompt, including any sensitive data it contains, travels to and is processed on infrastructure you do not control.</p>
+            <span class="nyu-pillar__tag">Confidentiality</span>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">2</span>
+            <h3 class="nyu-pillar__title">Vendor Data Retention</h3>
+            <p class="nyu-pillar__body">Policies vary by provider. Some retain prompts for model improvement unless you opt out. Some offer enterprise agreements with no retention guarantees. You must verify.</p>
+            <span class="nyu-pillar__tag">Governance</span>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">3</span>
+            <h3 class="nyu-pillar__title">Compliance Risk</h3>
+            <p class="nyu-pillar__body">Sending regulated data (PII, PHI, financial records) to a third party API may violate data residency requirements, sector specific regulations, or organizational policy.</p>
+            <span class="nyu-pillar__tag">Regulatory</span>
+          </article>
+        </div>
+
+        <p>
+          Cloud APIs also offer significant advantages: access to the most capable
+          models, managed infrastructure, service level agreements, and continuous
+          model updates. The security question is not whether cloud is inherently bad.
+          It is: what data am I sending, what does the provider do with it, and does
+          that align with my risk tolerance?
+        </p>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <h3 class="nyu-callout__title">Case Study: Samsung Data Leak (2023)</h3>
+          <p>
+            Samsung engineers used a cloud based LLM for routine work tasks. Within
+            20 days, three separate data exposure incidents occurred: proprietary
+            source code was pasted into prompts, semiconductor equipment measurement
+            data was shared for analysis, and a meeting transcript was submitted for
+            summarization. Each prompt transmitted proprietary data across the network
+            boundary to the LLM provider's servers.
+          </p>
+          <p>
+            Samsung subsequently banned employee use of external AI tools. The
+            incident illustrates a systemic risk category: <strong>any data
+            submitted to a cloud LLM during inference may enter the provider's
+            data pipeline</strong>. This applies to any cloud API deployment
+            where prompts contain sensitive content.
+          </p>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Local Deployment: Data Residency Is Not Security</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          In a local deployment, the model runs on infrastructure your organization
+          owns and controls. Data never leaves your network boundary. This eliminates
+          the cloud data exposure risk, but it introduces a different set of risks
+          that are easy to underestimate.
+        </p>
+
+        <p>
+          The core lesson: "local" means data stays within your boundary. It does
+          <em>not</em> mean the deployment is secure. Local deployment shifts
+          responsibility for security entirely to your organization. If you
+          misconfigure the deployment, you own the consequences.
+        </p>
+
+        <h3 class="nyu-subsection-title">Insecure Defaults in Local Inference Tools</h3>
+
+        <p>
+          Local inference tools often ship with default configurations optimized for
+          convenience, not security. Three common issues create risk:
+        </p>
+
+        <div class="nyu-cards nyu-cards--3">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            </div>
+            <h4 class="nyu-card__title">No Authentication</h4>
+            <p>Some tools bind their API to all network interfaces by default, meaning any device on the network can access the model without credentials.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <h4 class="nyu-card__title">No Access Logging</h4>
+            <p>Usage is not audited by default, making it impossible to detect misuse or unauthorized access after the fact.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--cyan" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <h4 class="nyu-card__title">Model File Vulnerabilities</h4>
+            <p>Model weight files are a potential attack surface. Maliciously crafted model files can exploit parsing vulnerabilities to access memory contents.</p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-callout--tip">
+          <h3 class="nyu-callout__title">Example: Ollama Exposed Instances</h3>
+          <p>
+            Ollama, a widely used open source local inference tool, binds its API
+            to all network interfaces by default. In 2025, security researchers
+            discovered thousands of Ollama instances exposed to the public internet
+            without authentication. This is the same class of misconfiguration
+            risk that affects any networked service with permissive defaults, from
+            databases to container registries. Always audit the network exposure of
+            any local inference tool before deployment.
+          </p>
+        </div>
+
+        <!-- Knowledge Check 1 -->
+        <div class="nyu-quiz" aria-labelledby="quiz-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-1-prompt">
+            A security team deploys a model locally for incident response
+            assistance. They reason that because data never leaves the network,
+            the deployment is secure. What is the most important risk they are
+            overlooking?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Hallucination is real but unrelated to deployment location. A cloud-hosted model fabricates at the same rate as a local one, so this identifies no risk that local deployment specifically introduces.">The model may hallucinate, which makes local deployment unsafe.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Capability is a procurement question, not a security flaw, and the premise is shaky: local models are often adequate for triage and summarization. It also does not address the team&#x27;s reasoning about why they believe they are secure.">Local models are always less capable than cloud models.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The local inference tool may expose an unauthenticated API to the network by default, allowing anyone on the network to query the model or extract data from prompts.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Local models can be updated; it is a maintenance burden rather than a blocker. Stale weights are an operational concern, not the exposure created by moving inference inside the network perimeter.">Local deployment prevents the model from receiving updates.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+            data-correct-msg="Correct. 'Local' addresses data residency but not access control. If the inference tool exposes an unauthenticated API, the model is accessible to anyone who can reach it on the network. The team must audit the default configuration, restrict network binding, add authentication, and enable access logging."
+            data-incorrect-msg="Not quite. Hallucination and model capability are real considerations, but the most critical overlooked risk is the network exposure of the inference tool itself. Insecure default configurations are a well documented problem class in local LLM deployments.">
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Hybrid Models and the Evaluation Checklist</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Most organizations will not choose purely cloud or purely local. Hybrid
+          approaches route different tasks to different deployment models based on
+          data sensitivity: tasks involving non sensitive data go to a cloud API for
+          maximum capability, while tasks involving regulated or proprietary data use a
+          local model.
+        </p>
+
+        <p>
+          Regardless of the deployment model, evaluate every option against the same
+          structured checklist:
+        </p>
+
+        <table class="nyu-table">
+          <thead>
+            <tr>
+              <th>Evaluation Factor</th>
+              <th>Cloud API</th>
+              <th>Local</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Network exposure</strong></td>
+              <td>All prompts cross the network boundary</td>
+              <td>Data stays within boundary, but the API itself may be exposed</td>
+            </tr>
+            <tr>
+              <td><strong>Authentication</strong></td>
+              <td>API key or OAuth managed by vendor</td>
+              <td>Often no authentication by default; you must add it</td>
+            </tr>
+            <tr>
+              <td><strong>Data residency</strong></td>
+              <td>Data processed in vendor's jurisdiction</td>
+              <td>Data stays in your jurisdiction</td>
+            </tr>
+            <tr>
+              <td><strong>Data retention</strong></td>
+              <td>Varies by vendor and agreement tier</td>
+              <td>Under your control</td>
+            </tr>
+            <tr>
+              <td><strong>Model file integrity</strong></td>
+              <td>Vendor managed</td>
+              <td>You must verify provenance and integrity of downloaded weights</td>
+            </tr>
+            <tr>
+              <td><strong>Access logging</strong></td>
+              <td>Typically available via vendor dashboard</td>
+              <td>Must be configured by your team</td>
+            </tr>
+            <tr>
+              <td><strong>Capability</strong></td>
+              <td>Access to largest, most capable models</td>
+              <td>Constrained by local hardware</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="nyu-callout nyu-callout--tip">
+          <p>
+            <strong>This checklist is tool agnostic.</strong> It applies whether you
+            are evaluating a specific cloud provider, a specific local inference
+            tool, or a managed on premises solution. The names and versions change;
+            the evaluation criteria do not.
+          </p>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Quantization as a Security Variable</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          <button type="button" class="nyu-define" data-term="quantization">Quantization</button>
+          is essential for running models on consumer hardware. It makes local
+          deployment practical. But it is not purely a performance optimization;
+          it has security implications that matter for operational use.
+        </p>
+
+        <p>
+          Mild quantization (16 bit to 8 bit) generally produces minimal quality
+          degradation. More aggressive quantization introduces effects that matter
+          for security operations:
+        </p>
+
+        <div class="nyu-cards nyu-cards--3">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <h4 class="nyu-card__title">Safety Alignment Degradation</h4>
+            <p>Research shows aggressive quantization can weaken guardrails that prevent the model from generating harmful content.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h4 class="nyu-card__title">Increased Bias</h4>
+            <p>Quantized models show disproportionate quality degradation on non English text and underrepresented topics.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h4 class="nyu-card__title">Reduced Truthfulness</h4>
+            <p>Studies report decreasing truthfulness scores at lower quantization levels, which directly affects reliability in security operations.</p>
+          </div>
+        </div>
+
+        <div class="nyu-pipeline-stage-frame" style="--pipeline-fallback-height: 392px;">
+          <iframe src="interactive/quantization/quantization_curve_animation.html" name="quantization-curve-animation" title="Interactive demo: Quantization curve animation" loading="lazy"></iframe>
+        </div>
+
+        <div class="nyu-callout nyu-callout--warning">
+          <h3 class="nyu-callout__title">Testing Obligation</h3>
+          <p>
+            If you deploy an aggressively quantized model for security operations,
+            its behavior may differ from the full precision version in ways that
+            affect safety and reliability. Always test the specific quantized
+            variant you intend to deploy against your specific tasks. Do not
+            assume that evaluation results from the full precision model transfer
+            to the quantized version.
+          </p>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5: Branching Scenario ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Deployment Decision Scenario</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Apply the evaluation checklist to a realistic deployment decision.
+          Work through the scenario below, then reflect on what shaped your reasoning.
+        </p>
+
+        <h3 class="nyu-subsection-title">Decide: Deploy the Clinical LLM</h3>
+        <div class="nyu-branch nyu-branch--light" aria-label="Branching scenario">
+          <div class="nyu-branch__header">
+            <span class="nyu-branch__badge">Scenario</span>
+          </div>
+          <div class="nyu-branch__path" aria-label="Decisions so far"></div>
+
+          <div class="nyu-branch__step" data-id="start">
+            <p class="nyu-branch__prompt" tabindex="-1" aria-live="polite">
+              You are the security lead at a mid size healthcare company. The IT
+              team wants to deploy an LLM to help clinicians summarize patient
+              notes and flag potential drug interactions. Patient data includes
+              protected health information (PHI) subject to HIPAA. Your team has
+              16 GB RAM workstations and a budget for one cloud API subscription.
+              What deployment model do you recommend?
+            </p>
+            <div class="nyu-branch__choices">
+              <button class="nyu-branch__choice" data-next="cloud" data-label="Cloud API">Recommend cloud API deployment</button>
+              <button class="nyu-branch__choice" data-next="local" data-label="Local deployment">Recommend local deployment</button>
+              <button class="nyu-branch__choice" data-next="hybrid" data-label="Hybrid approach">Recommend hybrid deployment</button>
+            </div>
+          </div>
+
+          <div class="nyu-branch__step" data-id="cloud">
+            <div class="nyu-branch__outcome" data-tone="bad">
+              <strong>Risk: PHI crosses the network boundary.</strong>
+              You have access to the most capable models, but every patient note
+              crosses the network boundary to a third party server. This creates
+              HIPAA compliance risk regardless of the vendor's assurances. Even with
+              a Business Associate Agreement (BAA), you are transmitting PHI to
+              infrastructure you do not control.
+            </div>
+            <p class="nyu-branch__prompt" tabindex="-1" aria-live="polite">Is there a way to get cloud capability for some tasks while keeping PHI local?</p>
+            <div class="nyu-branch__choices">
+              <button class="nyu-branch__choice" data-next="hybrid" data-label="Try hybrid">Reconsider: try hybrid</button>
+              <button class="nyu-branch__choice" data-next="cloud-accept" data-label="Accept with BAA">Accept the cloud risk with a BAA</button>
+            </div>
+          </div>
+
+          <div class="nyu-branch__step" data-id="cloud-accept">
+            <div class="nyu-branch__outcome">
+              <strong>Cloud with BAA: legally defensible, technically risky.</strong>
+              A BAA provides contractual protection, but it does not eliminate the
+              technical risk: PHI still leaves your network. If the vendor
+              experiences a breach, or if data retention policies change, your
+              patients' data is exposed. Many healthcare organizations take this
+              route, but a security lead should document the residual risk explicitly.
+            </div>
+            <p class="nyu-branch__prompt" tabindex="-1" aria-live="polite">Consider what you would document in your risk register.</p>
+            <div class="nyu-branch__choices">
+              <button class="nyu-branch__choice" data-next="summary" data-label="See summary">See summary</button>
+            </div>
+          </div>
+
+          <div class="nyu-branch__step" data-id="local">
+            <div class="nyu-branch__outcome">
+              <strong>PHI stays within your boundary.</strong>
+              Good for compliance. But 16 GB workstations limit you to smaller,
+              quantized models. You must also ensure the inference tool's API is not
+              exposed on the hospital network, add authentication, and verify model
+              file integrity.
+            </div>
+            <p class="nyu-branch__prompt" tabindex="-1" aria-live="polite">An aggressively quantized model may have degraded safety alignment. For clinical use, have you tested the quantized variant against your drug interaction tasks?</p>
+            <div class="nyu-branch__choices">
+              <button class="nyu-branch__choice" data-next="hybrid" data-label="Try hybrid">Reconsider: try hybrid</button>
+              <button class="nyu-branch__choice" data-next="local-accept" data-label="Accept with hardening">Accept local with hardening</button>
+            </div>
+          </div>
+
+          <div class="nyu-branch__step" data-id="local-accept">
+            <div class="nyu-branch__outcome" data-tone="good">
+              <strong>Most compliance friendly option.</strong>
+              You keep PHI within your boundary, but you accept reduced model
+              capability and take full responsibility for securing the deployment.
+              Your hardening checklist: restrict API to localhost, add authentication
+              if network access is needed, enable logging, verify model file
+              integrity, and test the quantized model's accuracy on your clinical tasks.
+            </div>
+            <p class="nyu-branch__prompt" tabindex="-1" aria-live="polite">Good. You accepted the tradeoff and defined your controls.</p>
+            <div class="nyu-branch__choices">
+              <button class="nyu-branch__choice" data-next="summary" data-label="See summary">See summary</button>
+            </div>
+          </div>
+
+          <div class="nyu-branch__step" data-id="hybrid">
+            <div class="nyu-branch__outcome" data-tone="good">
+              <strong>Route tasks by data sensitivity.</strong>
+              Non PHI tasks (general medical knowledge queries, documentation
+              formatting, policy lookups) go to the cloud API for maximum capability.
+              Tasks involving actual patient data (note summarization, drug interaction
+              checks) run on the local model, keeping PHI within your boundary.
+            </div>
+            <p class="nyu-branch__prompt" tabindex="-1" aria-live="polite">This requires clear data classification policies and technical enforcement. The risk of a clinician accidentally pasting PHI into the cloud routed interface must be addressed through workflow design, not just policy.</p>
+            <div class="nyu-branch__choices">
+              <button class="nyu-branch__choice" data-next="summary" data-label="See summary">See summary</button>
+            </div>
+          </div>
+
+          <div class="nyu-branch__step" data-id="summary">
+            <div class="nyu-branch__outcome">
+              <strong>Key takeaway.</strong>
+              There is no universally correct answer. The right deployment model
+              depends on regulatory requirements, risk tolerance, hardware
+              constraints, and the sensitivity of the data involved. What matters
+              is that you evaluated each option against the same checklist (network
+              exposure, authentication, data residency, retention, model integrity,
+              logging, and capability) and made a documented, justified decision.
+            </div>
+            <p class="nyu-branch__prompt" tabindex="-1" aria-live="polite">Scenario complete.</p>
+            <div class="nyu-branch__choices">
+              <button class="nyu-branch__choice" data-next="start" data-label="Restart">Try a different path</button>
+            </div>
+          </div>
+
+          <button class="nyu-branch__restart">Start over</button>
+        </div>
+
+        <!-- Knowledge Check 2 -->
+        <div class="nyu-quiz" aria-labelledby="quiz-2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-2-prompt">
+            Which of the following statements best captures the relationship
+            between deployment location and security?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This treats the organizational boundary as the only thing that matters. A reputable provider with contractual controls, encryption, and audit logging can be more defensible than an unmonitored internal server.">Cloud deployment is inherently insecure because data leaves the organization.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This is the assumption the previous question dismantled. Keeping data inside the network does nothing about unauthenticated local APIs, unpatched inference servers, or absent audit logging.">Local deployment is inherently secure because data stays within the organization.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Deployment location determines where trust boundaries fall and who is responsible for security controls. Neither cloud nor local is inherently secure; each shifts risks rather than eliminating them.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Hybrid deployment inherits both sets of risks and adds the complexity of a larger attack surface and two control regimes to keep in sync. It redistributes risk rather than eliminating it.">Hybrid deployment eliminates the risks of both cloud and local approaches.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+            data-correct-msg="Correct. Cloud shifts data exposure risk to the vendor. Local shifts infrastructure security responsibility to your team. Hybrid introduces the complexity of managing both. The deployment decision is about understanding where trust boundaries move and ensuring appropriate controls exist at each boundary."
+            data-incorrect-msg="Not quite. Neither deployment model is inherently secure or insecure. Cloud introduces data exposure risks; local introduces infrastructure security risks. The question is always: where do trust boundaries fall, and are the right controls in place?">
+          </div>
+        </div>
+
+        <!-- Sort Activity: Who Owns the Control? -->
+        <h3 class="nyu-subsection-title">Sort: Who Owns the Security Control?</h3>
+        <div class="nyu-sort">
+          <p>Drag each security responsibility into the correct bin. Use <kbd>Tab</kbd> then <kbd>Enter</kbd> to cycle a chip through the bins with the keyboard.</p>
+          <div class="nyu-sort__pool" aria-label="Security responsibilities to sort">
+            <span class="nyu-sort__chip" data-bin="vendor">API authentication management<span class="nyu-sort__chip-hint">The vendor issues and rotates API keys or OAuth tokens for their service.</span></span>
+            <span class="nyu-sort__chip" data-bin="you">Network binding configuration<span class="nyu-sort__chip-hint">You control which interfaces a local model listens on. Misconfigured binding exposes the API.</span></span>
+            <span class="nyu-sort__chip" data-bin="vendor">Model update and patching<span class="nyu-sort__chip-hint">Cloud providers push model updates to their infrastructure. You do not manage their model versions.</span></span>
+            <span class="nyu-sort__chip" data-bin="you">Access logging setup<span class="nyu-sort__chip-hint">Local tools rarely log by default. You must configure auditing to detect misuse.</span></span>
+            <span class="nyu-sort__chip" data-bin="you">Model file integrity verification<span class="nyu-sort__chip-hint">When you download model weights, you must verify their source and checksum. No vendor does this for your local files.</span></span>
+            <span class="nyu-sort__chip" data-bin="vendor">Infrastructure uptime (SLA)<span class="nyu-sort__chip-hint">Uptime guarantees are part of the vendor's service level agreement, not something you control.</span></span>
+            <span class="nyu-sort__chip" data-bin="you">Data classification enforcement<span class="nyu-sort__chip-hint">Deciding what data can go to cloud versus what stays local is an organizational policy you enforce.</span></span>
+            <span class="nyu-sort__chip" data-bin="vendor">Data retention policy disclosure<span class="nyu-sort__chip-hint">Vendors must disclose what they retain and for how long. You hold them accountable to their stated policy.</span></span>
+          </div>
+          <div class="nyu-sort__bins">
+            <div class="nyu-sort__bin" data-bin="vendor">
+              <h4>Cloud Vendor Responsibility</h4>
+              <div class="nyu-sort__bin-list"></div>
+            </div>
+            <div class="nyu-sort__bin" data-bin="you">
+              <h4>Your Organization's Responsibility</h4>
+              <div class="nyu-sort__bin-list"></div>
+            </div>
+          </div>
+          <div class="nyu-sort__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check sorting</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+            <span class="nyu-sort__score" aria-live="polite"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 6 ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Auditability and Reproducibility Controls</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Section 5 covers reproducibility settings: fixed seeds, low
+          temperature, constrained sampling: as inference time controls for
+          reducing output variability. But the ability to <em>reproduce</em> a
+          past inference decision depends on more than sampling parameters. It
+          requires capturing the full context that produced the output. That
+          makes reproducibility a <strong>deployment governance
+          requirement</strong>: the logging infrastructure, retention policies,
+          and audit fields must be designed into the deployment architecture
+          before the model serves its first request.
+        </p>
+
+        <p>
+          Without these controls, incident response becomes guesswork. If a
+          model produces a harmful or incorrect output, your team needs to
+          answer: <em>What prompt was sent? Which model version processed it?
+          What retrieval documents were injected? What sampling settings were
+          active?</em> If any of these are missing, you cannot reproduce the
+          failure, attribute it to a root cause, or verify that a fix actually
+          resolves it.
+        </p>
+
+        <h3 class="nyu-subsection-title">Required Audit Fields</h3>
+        <p>
+          Every inference request in a security relevant deployment should log
+          the following fields. Together, they form the minimum information
+          needed to reconstruct any model interaction after the fact.
+        </p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">1. Prompt Text or Template Version</h4>
+            <p>The exact input sent to the model, or a versioned template ID if prompts are generated programmatically. Without this, you cannot reproduce what the model saw.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">2. System Instruction Version</h4>
+            <p>The system prompt or instruction set active at the time of the request. System prompts change over time; the version must be pinned to the log entry.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">3. Model Name and Version</h4>
+            <p>The specific model identifier (e.g., <code>gpt-4-0613</code>, <code>claude-3-sonnet-20240229</code>). Cloud providers update models silently; the version string is the only anchor.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">4. Deployment Mode</h4>
+            <p>Cloud API, local, or hybrid, and which routing path was taken for this specific request. In hybrid deployments, you need to know which model handled which query.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">5. Sampling Parameters</h4>
+            <p>Temperature, top p, top k, and any other decoding settings active for this request. As Section 5 explains, these directly determine output variability.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">6. Random Seed</h4>
+            <p>If the API supports deterministic mode, the seed value used. Without it, identical inputs can produce different outputs and the interaction is not reproducible.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">7. Retrieval Corpus Version and Document IDs</h4>
+            <p>If retrieval augmented generation (RAG) was used, which corpus version was active and which specific documents were retrieved and injected into the prompt.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">8. Tool Versions and Outputs</h4>
+            <p>If the model called external tools (APIs, databases, code interpreters), which versions were active and what they returned. Tool outputs are part of the model's effective input.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">9. Timestamp</h4>
+            <p>UTC timestamp for the request. Essential for correlating model behavior with external events, model updates, or corpus changes.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">10. User or Session Identifier</h4>
+            <p>A pseudonymized identifier linking the request to a user or session, enabling pattern analysis across interactions without exposing PII.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">11. Final Model Output</h4>
+            <p>The complete response returned to the user, including any content that was subsequently filtered. You need both the raw output and the post filter version.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">12. Human Reviewer Decision</h4>
+            <p>If a human reviewed the output before it reached the end user, what was their decision (approved, edited, rejected) and who made it. This closes the accountability loop.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <p>
+            <strong>Why this belongs in deployment architecture.</strong>
+            These fields cannot be added retroactively. If the logging
+            infrastructure is not part of the deployment design, the data is
+            simply not captured. After an incident, there is no way to go back
+            and reconstruct what the model saw, what settings were active, or
+            what the full output was. Auditability is a deployment decision,
+            not an inference time afterthought.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 7 ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">Section Summary and Next Steps</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">Activity Checklist</h3>
+        <p>Before moving on, confirm you have completed the following in this section:</p>
+        <ul class="nyu-objectives__list">
+          <li><span>Compared cloud, local, and hybrid deployment models against a structured security checklist.</span></li>
+          <li><span>Evaluated quantization as a security variable, not only a performance optimization.</span></li>
+          <li><span>Specified the audit fields required to reproduce any inference decision.</span></li>
+          <li><span>Completed all knowledge checks, scenarios, and interactive exercises.</span></li>
+        </ul>
+
+        <h3 class="nyu-subsection-title">What Comes Next</h3>
+        <p>
+          You now have a deployment framework that covers where the model runs,
+          who is responsible for security controls at each boundary, and what
+          audit fields are required for reproducibility. The final section of
+          this module examines the two reliability consequences that cut across
+          every deployment model: fabrication and output variability.
+        </p>
+      </section>
+
+          <!-- ====================== UP NEXT ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 5: Why Models Fabricate and Why Outputs Vary.</strong> We close the module on reliability. Models fabricate plausible claims and return different answers to identical prompts, and both behaviors are structural rather than defects awaiting a patch. Understanding why is what lets you design a security workflow that tolerates them.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+
+  <script src="../js/nyu-tandon-course.js"></script>
+
+  <script>
+    /* Receive responsive heights from embedded interactive iframes when child
+       pages provide them. Safe no-op for static embeds that use fallback height. */
+    (function() {
+      var framesById = Object.create(null);
+
+      function registerFrames() {
+        var frames = document.querySelectorAll('.nyu-pipeline-stage-frame iframe[name]');
+        for (var i = 0; i < frames.length; i += 1) {
+          framesById[frames[i].name] = frames[i];
+        }
+      }
+
+      function setFrameHeight(iframe, height) {
+        if (!iframe || !Number.isFinite(height)) return;
+        if (height < 120 || height > 1400) return;
+        var current = parseFloat(iframe.style.height || iframe.getAttribute('height') || 0) || 0;
+        if (Math.abs(current - height) < 2) return;
+        iframe.style.height = Math.ceil(height) + 'px';
+      }
+
+      window.addEventListener('message', function(event) {
+        var data = event.data;
+        if (!data || data.kind !== 'nyu-pipeline-stage-height') return;
+        var iframe = framesById[data.embedId];
+        if (!iframe) {
+          registerFrames();
+          iframe = framesById[data.embedId];
+        }
+        setFrameHeight(iframe, Number(data.height));
+      });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', registerFrames);
+      } else {
+        registerFrames();
+      }
+    })();
+  </script>
+</body>
+</html>

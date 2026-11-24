@@ -1,0 +1,39 @@
+title: Price and stop a denial of wallet
+lede: A startup's API key leaked. Work out the bill, then design limits that count what actually costs money.
+blurb: Calculate token costs and choose limits that cap them.
+situation: |
+  **Brook AI** exposes a summarization endpoint. Each key may send 30 requests per minute. Each request may carry up to 100,000 input tokens. The provider charges 5 dollars per million input tokens. There is no spending cap. A key leaked in a public repository.
+rounds:
+  - title: Round 1. Do the math
+    items:
+      - type: num
+        q: Tokens per minute at the key's limits?
+        a: 3000000
+        tol: 0
+        why: "30 requests × 100,000 tokens = 3,000,000 tokens per minute."
+      - type: num
+        q: Cost per minute, in dollars?
+        a: 15
+        tol: 0.01
+        unit: "$"
+        why: "3 million tokens × 5 dollars per million = 15 dollars per minute."
+      - type: num
+        q: Cost per day, in dollars?
+        a: 21600
+        tol: 1
+        unit: "$"
+        why: "15 × 60 × 24 = 21,600 dollars a day, without breaking the rate limit once."
+  - title: Round 2. Pick the limits
+    items:
+      - type: sort
+        q: Does each control cap the cost of this attack?
+        rows:
+          - ["Requests per minute limit", "Does not cap cost"]
+          - ["Maximum input tokens per request", "Helps"]
+          - ["Token bucket per key", "Caps cost"]
+          - ["Daily spend cap that alerts and stops", "Caps cost"]
+        opts: ["Does not cap cost", "Helps", "Caps cost"]
+        why: "Cost grows with tokens, so limits must count tokens or dollars. Per-request limits help but do not stop many large requests."
+      - type: open
+        q: What should Brook do first about the leaked key?
+        a: "Revoke and rotate it at once, add a spend cap and alerts to every key, and scan repositories for secrets so it does not happen again."

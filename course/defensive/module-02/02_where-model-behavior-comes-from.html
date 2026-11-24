@@ -1,0 +1,702 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 2 · Where Model Behavior Comes From · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 2 · Section 2 of 6</div>
+      <h1 class="nyu-hero__title">Where Model Behavior Comes From</h1>
+      <p class="nyu-hero__subtitle">
+        An LLM's behavior is not determined by a single factor. It emerges from
+        layered causes: training data, post training alignment, system instructions,
+        user context, retrieval, tools, and decoding settings. Each layer introduces
+        distinct capabilities and distinct security risks.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~28 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 6 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks + 1 scenario</span>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+
+      <nav class="nyu-toc" aria-label="In this section">
+        <p class="nyu-toc__title">In this section</p>
+        <ol class="nyu-toc__list">
+          <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Model Behavior Comes from a Stack, Not One Source</a></li>
+          <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Pretraining and Parametric Memory</a></li>
+          <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Post Training, Fine Tuning, and Alignment</a></li>
+          <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Inference Time Behavior: Context, Retrieval, Tools, and Decoding</a></li>
+          <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Memorization, Contamination, and Evaluation Skepticism</a></li>
+          <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Check Your Understanding</a></li>
+        </ol>
+      </nav>
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">Learning Objectives</h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Explain</strong> the main sources of model behavior (pretraining, post training alignment, fine tuning, inference time context, retrieval/tools, and decoding) and how they layer on top of each other.</span></li>
+          <li><span><strong>Distinguish</strong> parametric knowledge (baked into weights) from inference time influences (prompts, retrieval, tools, sampling settings) and identify the security implications of each.</span></li>
+          <li><span><strong>Evaluate</strong> cybersecurity risks created by these behavior sources, including training data memorization, knowledge cutoff limitations, fine tuning amplification, and benchmark contamination.</span></li>
+          <li><span><strong>Identify</strong> conditions under which behavior sources produce unreliable output, including uneven parametric coverage, post cutoff knowledge gaps, and decoding induced variability, as a foundation for the failure mode analysis in Section 5.</span></li>
+        </ul>
+      </section>
+
+      <!-- Section 1: The Behavior Stack -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Model Behavior Comes from a Stack, Not One Source</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Section 1 covered the mechanics of how text enters the model and how the model
+          processes it. This section addresses a deeper question: <em>where does the
+          model's observable behavior come from?</em>
+        </p>
+
+        <p>
+          A common simplification is that "the model's behavior comes from its training
+          data." Training data is foundational, but it is not the whole story. What
+          an LLM actually does when it produces output is shaped by multiple layers,
+          each applied at a different stage of the model's development or use. Think
+          of these layers as a
+          <button type="button" class="nyu-define" data-term="behavior-stack">behavior stack</button>.
+          Lower layers establish broad capabilities, and upper layers shape, constrain,
+          and direct those capabilities toward specific outputs.
+        </p>
+
+        <div class="nyu-callout">
+          <h3>The Behavior Stack</h3>
+          <p>
+            From deepest (hardest to change) to shallowest (easiest to change at runtime):
+          </p>
+          <ol>
+            <li><strong>Pretraining data and model weights:</strong> the statistical patterns learned from a massive corpus. Determines what the model <em>can</em> do.</li>
+            <li><strong>Post training alignment:</strong> instruction tuning, preference tuning (RLHF, DPO), and safety training. Shapes <em>how</em> the model responds: helpfulness, refusal behavior, style.</li>
+            <li><strong>Fine tuning on specialized data:</strong> further training on domain specific datasets. Specializes capabilities but can amplify memorization and weaken safety behaviors.</li>
+            <li><strong>System/developer instructions:</strong> hidden instructions that define the model's role, constraints, and persona for a deployment.</li>
+            <li><strong>User prompt and conversation context:</strong> the immediate input that steers generation. Module 3 covers prompt engineering in depth.</li>
+            <li><strong>Retrieval and tools:</strong> external documents fetched at inference time (RAG), tool calls, API access. Grounds output in current information.</li>
+            <li><strong>Decoding and sampling settings:</strong> temperature, top p, frequency penalties. Controls randomness and repetition in output.</li>
+            <li><strong>Deployment safety layers:</strong> output classifiers, content filters, rate limiters applied by the provider or deployer after generation.</li>
+          </ol>
+        </div>
+
+        <p>
+          Each layer can override, constrain, or amplify the effects of the layers
+          below it. A model pretrained on billions of web pages (layer 1) may have
+          learned how to produce harmful content, but preference tuning (layer 2) trains
+          it to refuse such requests. A system instruction (layer 4) can further restrict
+          the topics it will address. A deployment filter (layer 8) can block outputs
+          that slip past all other layers.
+        </p>
+
+        <div class="nyu-callout nyu-callout--warning">
+          <h3>Why This Matters for Security</h3>
+          <p>
+            Different security risks originate at different layers of the stack, and
+            the appropriate mitigation depends on correctly identifying the layer.
+            A memorization risk lives in the weights (layer 1). A jailbreak exploits
+            the alignment layer (layer 2). A prompt injection targets the
+            system/user prompt boundary (layers 4 and 5). Misdiagnosing the layer leads
+            to misapplied controls.
+          </p>
+        </div>
+
+        <p>
+          The rest of this section examines each major layer group (pretraining, post training,
+          and inference time factors) with a focus on the security risks each introduces.
+        </p>
+      </section>
+
+      <!-- Section 2: Pretraining and Parametric Memory -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Pretraining and Parametric Memory</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          During pretraining, the model processes a massive corpus (web pages, books,
+          code repositories, academic papers, forum posts) and adjusts its
+          <button type="button" class="nyu-define" data-term="parameters-m02">parameters</button>
+          to become better at predicting the next token in a sequence. After processing
+          billions of examples, the model develops internal representations that capture
+          statistical regularities in language, facts, reasoning patterns, and code
+          structure.
+        </p>
+
+        <p>
+          The result is
+          <button type="button" class="nyu-define" data-term="parametric-memory">parametric memory</button>.
+          To understand how this differs from a conventional knowledge store, consider
+          what you <em>cannot</em> do with parametric memory:
+        </p>
+
+        <ul>
+          <li>You cannot ask the model where it learned a given fact.</li>
+          <li>You cannot selectively update a single piece of information without retraining.</li>
+          <li>You cannot verify whether a recall is factual or confabulated, because the model generates the most statistically likely continuation regardless of truth value.</li>
+        </ul>
+
+        <h3>Uneven Coverage Across Domains</h3>
+
+        <p>
+          Parametric memory is not uniformly reliable. The model's statistical
+          coverage reflects the composition of its training corpus: topics that
+          appeared frequently and consistently produce strong internal
+          representations, while topics that were rare, specialized, or poorly
+          represented produce weaker ones. For security practitioners, this
+          creates a systematic reliability gap.
+        </p>
+
+        <p>
+          Common web frameworks, popular programming languages, and widely
+          discussed vulnerabilities are densely represented in training data.
+          Niche industrial control system protocols, proprietary security tools,
+          organization specific configurations, and specialized compliance
+          frameworks may have minimal representation. The less training data
+          available for a domain, the more the model fills gaps with
+          statistically plausible but factually unreliable completions. It does
+          not signal this shift: the same confident tone accompanies both
+          well grounded and poorly grounded output.
+        </p>
+
+        <div class="nyu-callout nyu-callout--warning">
+          <h3>Sparse Signal Means Higher Fabrication Risk</h3>
+          <p>
+            When you ask the model about a topic where its training signal is
+            sparse, contradictory, or absent, it does not stop and say "I don't
+            know." It continues predicting the next most probable token,
+            constructing plausible sounding answers from whatever statistical
+            fragments are available. The result can be entirely fabricated while
+            appearing entirely authoritative. Section 5 examines the types of
+            fabrication that result and the strategies for detecting them; the
+            point here is that uneven parametric coverage is the <em>source</em>
+            of that risk.
+          </p>
+        </div>
+
+        <h3>Knowledge Cutoffs and Parametric Limits</h3>
+
+        <p>
+          Every model has a
+          <button type="button" class="nyu-define" data-term="knowledge-cutoff-m02">knowledge cutoff</button>.
+          For security practitioners, this creates an operational gap: the model has no
+          parametric information about vulnerabilities, threat actors, or developments
+          disclosed after that date.
+        </p>
+
+        <p>
+          The critical danger: <strong>the model will not reliably indicate when it
+          lacks knowledge</strong>. If you ask about a CVE disclosed after the cutoff,
+          the model does not say "I have no information about that." Instead, it
+          generates a plausible sounding description by assembling statistical patterns
+          from the thousands of CVE descriptions it saw during training. The fabricated
+          output may include:
+        </p>
+
+        <ul>
+          <li>A realistic CVE identifier that follows the correct format (CVE-2025-XXXXX) but refers to no real vulnerability.</li>
+          <li>A plausible CVSS score with a severity rating that matches the described attack vector.</li>
+          <li>Fabricated affected software versions and configuration details.</li>
+          <li>A coherent exploit narrative describing an attack path that never existed.</li>
+          <li>Remediation steps that sound authoritative but address a nonexistent problem.</li>
+        </ul>
+
+        <p>
+          All of this is presented with the same surface confidence as factual answers.
+          This is a structural consequence of next token prediction: the model produces
+          what is statistically probable given the prompt, not what is verified. The same
+          pattern applies to any post cutoff content: new threat campaigns, recently
+          published patches, vendor advisories, and regulatory changes are all outside
+          the model's parametric memory.
+        </p>
+
+        <p>
+          A related risk applies even within the model's training window: asking for
+          highly specific details (exact version numbers, precise configuration
+          parameters, specific command syntax, named sources with page numbers)
+          increases the chance of fabrication. The model's statistical patterns capture
+          general relationships more reliably than exact values. When pressed for
+          specifics it lacks, it generates plausible looking details rather than
+          qualifying its uncertainty.
+        </p>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <h3>Parametric Recall Cannot Be Trusted for Recency or Precision</h3>
+          <p>
+            For any recency sensitive claim (recent CVEs, current threat intelligence,
+            active campaigns, newly disclosed vulnerabilities) or any claim requiring
+            exact specifics (precise version numbers, configuration values, command
+            syntax), parametric memory alone is insufficient. Reliable answers require
+            grounding in current authoritative sources, whether through
+            retrieval augmented generation, tool calls to live databases, or manual
+            verification. Always check a model's documentation for its cutoff date
+            before relying on it for time sensitive security tasks. Section 5 covers how
+            to detect and verify unreliable outputs in operational workflows.
+          </p>
+        </div>
+
+        <!-- Knowledge Check 1 -->
+        <div class="nyu-quiz" aria-labelledby="quiz-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <h3 class="nyu-quiz__prompt" id="quiz-1-prompt">
+            A security analyst asks an LLM (with no retrieval augmentation) about a
+            vulnerability disclosed three months after the model's training cutoff.
+            The model returns a detailed description including a CVSS score, affected
+            versions, and remediation steps. What should the analyst conclude?
+          </h3>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="A detailed answer is evidence of fluency, not recency. Models generate confident, well-formed text about things they have never seen, so richness of detail says nothing about whether the knowledge cutoff has moved.">The model must have been updated recently if it has this level of detail.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The response is likely fabricated from parametric memory. The model has no factual basis for post cutoff events and generates statistically plausible output that resembles CVE descriptions it trained on. Every detail must be verified against authoritative sources like the NVD.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Both are equally unfounded. The model is not partially informed here: with no post-cutoff knowledge, the affected-version list is generated from the same statistical patterns as the score. Neither part is more trustworthy.">The CVSS score is probably wrong, but the description of affected versions is likely accurate.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Retrieval improves grounding but does not remove the need to verify. RAG can retrieve nothing relevant, retrieve the wrong document, or be ignored by the model in favour of parametric memory. It changes the odds, not the obligation to check.">If the model had retrieval augmented generation enabled, this answer would be safe to trust without verification.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+            data-correct-msg="Correct. Without retrieval grounding, the model relies entirely on parametric memory, which contains nothing about post cutoff events. The confident, detailed response is generated from statistical patterns. It produces output that looks like a CVE description because it has seen thousands of CVE descriptions in training, not because it knows anything about this specific vulnerability."
+            data-incorrect-msg="Not quite. Without retrieval augmentation or tool access to live databases, the model relies solely on parametric memory. For post cutoff events, parametric memory provides zero factual basis. The model generates what is statistically probable, not what is true. Even with RAG, verification against authoritative sources remains best practice.">
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Post Training, Fine Tuning, and Alignment -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Post Training, Fine Tuning, and Alignment</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          A pretrained model is a powerful but undirected pattern completion engine. It
+          can continue any text in a statistically plausible way, but it does not
+          reliably follow instructions, refuse harmful requests, or produce helpful
+          structured answers. These behaviors are introduced through
+          <button type="button" class="nyu-define" data-term="post-training">post training</button>,
+          which transforms the raw pattern completion engine into something that behaves
+          like an assistant.
+        </p>
+
+        <h3>Instruction Tuning and Supervised Fine Tuning</h3>
+        <p>
+          <button type="button" class="nyu-define" data-term="instruction-tuning">Instruction tuning</button>
+          teaches the model to follow user requests: answering questions, following
+          formatting requirements, producing structured outputs. Without this step, a
+          pretrained model responds to "Summarize this log" by generating text that
+          looks like a continuation of a web page, not a direct answer to the instruction.
+        </p>
+
+        <h3>Preference Tuning and Safety Alignment</h3>
+        <p>
+          <button type="button" class="nyu-define" data-term="preference-tuning">Preference tuning</button>
+          methods such as RLHF and DPO are the primary mechanism that teaches models to
+          refuse dangerous requests, avoid generating certain content categories, and
+          adopt a helpful conversational tone. This is what turns a raw autocomplete engine
+          into a system that declines to provide instructions for creating malware.
+        </p>
+
+        <div class="nyu-callout">
+          <h3>What Post Training Does and Does Not Do</h3>
+          <p>
+            Post training shapes which behaviors are <em>expressed</em>; it does not
+            erase knowledge from the model's weights. A safety aligned model still
+            <em>has</em> the parametric patterns for producing harmful content; alignment
+            training teaches it to decline rather than comply. This is why alignment can
+            be bypassed through adversarial techniques (jailbreaks) and why it can be
+            weakened through further fine tuning.
+          </p>
+        </div>
+
+        <h3>Domain Fine Tuning: Specialization and Its Risks</h3>
+        <p>
+          Organizations often fine tune a base or aligned model on domain specific data
+          (incident reports, internal documentation, proprietary code) to create a
+          specialized assistant. Fine tuning reshapes behavior toward the target domain,
+          but it introduces two well documented risks:
+        </p>
+        <ul>
+          <li><strong>Memorization amplification:</strong> Fine tuning datasets are small relative to the pretraining corpus. Each example has disproportionate influence on the model, making fine tuning data significantly more extractable than pretraining data.</li>
+          <li><strong>Safety alignment degradation:</strong> Research demonstrates that safety behaviors can be weakened with as few as a handful of adversarially crafted fine tuning examples. Even benign fine tuning on domain data can inadvertently reduce the model's refusal rate for harmful queries.</li>
+        </ul>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <h3>Fine Tuning Security Implication</h3>
+          <p>
+            If your organization fine tunes a model on internal data, that data becomes
+            embedded in the model's weights and potentially extractable. If the fine tuned
+            model is then exposed to users (internal or external), sensitive training
+            content (credentials, PII, proprietary logic) may be recoverable through
+            targeted prompting or extraction attacks.
+          </p>
+        </div>
+      </section>
+
+      <!-- Section 4: Inference Time Behavior -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Inference Time Behavior: Context, Retrieval, Tools, and Decoding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Everything discussed so far (pretraining, post training, fine tuning) is
+          baked into the model's weights before a user ever sends a prompt. But a
+          significant portion of observable behavior is determined at
+          <button type="button" class="nyu-define" data-term="inference-time">inference time</button>,
+          the moment the model actually generates a response.
+        </p>
+
+        <h3>System Instructions and User Prompts</h3>
+        <p>
+          Most deployed LLM applications include a
+          <button type="button" class="nyu-define" data-term="system-prompt-m02">system prompt</button>.
+          The user's prompt then provides the specific task or question. Together, the
+          system prompt, conversation history, and user input form the
+          <strong>context window</strong>: the complete text the model conditions on
+          when generating its response.
+        </p>
+        <p>
+          Prompt engineering (the craft of structuring these inputs to elicit desired
+          behavior) is covered in Module 3. For this section, the key insight is
+          structural: <em>the same model with the same weights can exhibit dramatically
+          different behavior depending on what appears in its context window.</em> This
+          is why prompt injection is an attack surface; it manipulates behavior by
+          manipulating context.
+        </p>
+
+        <h3>Retrieval Augmented Generation and Tool Use</h3>
+        <p>
+          <button type="button" class="nyu-define" data-term="rag-m02">Retrieval augmented generation (RAG)</button>
+          addresses the knowledge cutoff and uneven coverage problems by injecting
+          retrieved documents into the context at query time. Tool use and function
+          calling extend this further, allowing the model to invoke external APIs
+          (querying databases, running code, or accessing live systems) and incorporate
+          the results into its response.
+        </p>
+        <p>
+          These mechanisms are critical for cybersecurity applications: a RAG enabled
+          system can retrieve current CVE data, while a tool enabled system can query
+          the NVD API directly. When the model's context contains authoritative source
+          material, the statistically probable next tokens tend to align with the
+          supplied data rather than with whatever fragments the model's parametric
+          memory happens to contain. This is why retrieval is the single most effective
+          way to reduce fabrication risk for recency sensitive or domain specific
+          queries: it shifts the model from generating from memory to generating from
+          evidence.
+        </p>
+        <p>
+          However, retrieval and tools also introduce new attack surfaces, including
+          poisoned retrieval sources, manipulated tool outputs, and indirect prompt
+          injection through retrieved content. The presence of retrieval does not
+          eliminate the need for verification; it changes the verification target from
+          "is the model's memory accurate?" to "is the retrieved content accurate and
+          unmanipulated?" Section 5 covers the operational verification strategies that
+          apply in both cases.
+        </p>
+
+        <h3>Decoding and Sampling Settings</h3>
+        <p>
+          The final layer of behavior control is how the model selects tokens from its
+          predicted probability distribution. As Section 1 described, the model's last
+          computational step produces a set of logits (one raw score per vocabulary
+          entry), which are converted into probabilities via softmax. The model then
+          <em>samples</em> from this distribution, and the sampling process is governed
+          by parameters that determine how much randomness enters the selection.
+        </p>
+        <p>
+          <button type="button" class="nyu-define" data-term="temperature-m02">Temperature</button>
+          scales the logit values before they enter softmax. A temperature near zero
+          amplifies differences between logits, making the model almost always select
+          the highest probability token (approaching greedy decoding). A high
+          temperature compresses differences, giving many tokens a comparable chance
+          of selection and producing more varied but less predictable output.
+        </p>
+        <p>
+          <button type="button" class="nyu-define" data-term="top-p-m02">Top p</button>
+          and
+          <button type="button" class="nyu-define" data-term="top-k-sampling">top k</button>
+          further constrain which portion of the distribution the model may sample from.
+          Top k limits selection to a fixed number of candidates; top p limits it to
+          the smallest set of tokens whose cumulative probability exceeds a threshold.
+          In practice, these parameters are often combined, and the effective sampling
+          pool is the intersection of all active constraints.
+        </p>
+        <p>
+          The security implication is direct: <strong>decoding settings are a source of
+          output variability</strong>. The same prompt submitted twice with a nonzero
+          temperature can produce materially different responses, because the model
+          samples different tokens from the same probability distribution on each run.
+          For security critical applications (log analysis, policy enforcement, alert
+          classification) lower temperatures reduce variability and improve
+          reproducibility. Section 5 examines when variability matters operationally and
+          how to design for consistency.
+        </p>
+
+        <div class="nyu-callout">
+          <h3>Model Behavior vs. LLM System Behavior</h3>
+          <p>
+            It is useful to distinguish between <strong>model behavior</strong> (what
+            the neural network itself produces given weights + context) and
+            <strong>system behavior</strong> (what the end user observes after system
+            prompts, retrieval, tools, filters, and deployment controls are applied).
+            A security assessment must consider the entire system, not just the model
+            in isolation. A model might generate harmful output that a deployment filter
+            catches: the model behavior is unsafe, but the system behavior is safe.
+            Conversely, a model might be safe but a poisoned retrieval source might
+            cause harmful system behavior.
+          </p>
+        </div>
+      </section>
+
+      <!-- Section 5: Memorization, Contamination, and Evaluation Skepticism -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Memorization, Contamination, and Evaluation Skepticism</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Two risks rooted in the pretraining and fine tuning layers deserve focused
+          attention because they are well documented, difficult to detect, and directly
+          relevant to security decision making:
+          <button type="button" class="nyu-define" data-term="training-data-memorization">training data memorization</button>
+          and
+          <button type="button" class="nyu-define" data-term="data-contamination">data contamination</button>.
+        </p>
+
+        <h3>The Memorization Evidence Chain</h3>
+        <p>
+          LLMs do not merely learn general patterns from training data. Under certain
+          conditions they memorize and reproduce verbatim sequences, including PII,
+          credentials, proprietary code, and other sensitive content. This is not
+          theoretical. A series of peer reviewed studies establishes an escalating
+          evidence chain. The studies used specific models available at the time of
+          publication, but the underlying mechanism (memorization as a structural
+          property of next token prediction on large corpora) applies broadly.
+        </p>
+
+        <div class="nyu-timeline">
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">1</div>
+            <div class="nyu-timeline__content">
+              <h3>Verbatim extraction from pretrained models (Carlini et al., USENIX Security 2021)</h3>
+              <p>
+                Extracted hundreds of verbatim sequences from a production language model,
+                including real names, phone numbers, email addresses, and 128 bit UUIDs.
+                First large scale demonstration that next token prediction training leads
+                to memorization of training data.
+              </p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">2</div>
+            <div class="nyu-timeline__content">
+              <h3>Extraction survives safety alignment (Nasr, Carlini et al., ICLR 2025)</h3>
+              <p>
+                A divergence attack against a production safety aligned model recovered
+                over 10,000 verbatim training examples for approximately $200 in API
+                costs. Demonstrated that preference tuning and safety alignment
+                do not prevent training data extraction. They suppress it under normal
+                use but do not remove memorized content from the weights.
+              </p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">3</div>
+            <div class="nyu-timeline__content">
+              <h3>PII leakage is widespread (PII Scope, 2024)</h3>
+              <p>
+                Found that 16.9% of model generations contained memorized PII in
+                targeted testing scenarios. Demonstrated that PII memorization is
+                not limited to adversarial extraction; it occurs in normal use.
+              </p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">4</div>
+            <div class="nyu-timeline__content">
+              <h3>Fine tuning amplifies memorization</h3>
+              <p>
+                A model fine tuned on the Enron email dataset yielded 256 unique pieces
+                of PII from just 1,800 generations. Fine tuning on a specific dataset
+                makes that data <em>more</em> extractable, not less, because
+                fine tuning examples have disproportionate influence on the model's
+                behavior.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <h3>Security Implication</h3>
+          <p>
+            Any data that enters a model's training pipeline (pretraining or
+            fine tuning) may later be reproducible. If your organization sends
+            proprietary data to a cloud LLM provider whose terms allow training on
+            user inputs, that data may become extractable by other users. If your
+            organization fine tunes a model on internal data, that internal data
+            becomes embedded in the model's weights and potentially extractable by
+            anyone with access to the fine tuned model.
+          </p>
+        </div>
+
+        <h3>Benchmark Contamination and Evaluation Skepticism</h3>
+        <p>
+          When benchmark or evaluation data appears in the model's training corpus,
+          the model has effectively "seen the test answers" during training. Its
+          published benchmark scores then overstate its actual capability on novel,
+          real world inputs.
+        </p>
+        <p>
+          This matters for security practitioners because model selection decisions
+          are often based on benchmark comparisons. If a model scores highly on a
+          contaminated benchmark, deploying it for security tasks based on that
+          score creates a gap between expected and actual performance, potentially
+          a dangerous gap for tasks like threat classification or vulnerability triage.
+        </p>
+
+        <div class="nyu-callout nyu-callout--warning">
+          <h3>The Practitioner's Rule</h3>
+          <p>
+            Never select a model for security operations based solely on published
+            benchmark scores. Evaluate the model on your own data, with your own test
+            cases, measuring metrics relevant to your operational context. Dynamic
+            benchmarks (where test questions change regularly) and private evaluations
+            (held out from public datasets) are more reliable than static public
+            benchmarks, but the most trustworthy assessment is always your own.
+          </p>
+        </div>
+
+        <!-- Knowledge Check 2 -->
+        <div class="nyu-quiz" aria-labelledby="quiz-2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <h3 class="nyu-quiz__prompt" id="quiz-2-prompt">
+            Your organization fine tuned an LLM on internal incident reports and
+            deployed it as an internal security assistant. A red team exercise
+            discovers that carefully crafted prompts can cause the model to reproduce
+            verbatim excerpts from those incident reports, including internal IP
+            addresses and employee names. Which layer of the behavior stack is the
+            primary source of this risk, and what is the most appropriate mitigation?
+          </h3>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Restricting user input does not remove information the model has already absorbed. The internal addresses are in the weights, so they can surface in response to innocuous prompts that no input filter would flag.">The inference layer (prompts): restrict what users can type into the system.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The internal IP addresses were never in the pretraining corpus. They entered through the organization&#x27;s own fine tuning data, so changing the base model leaves the problem completely untouched.">The pretraining layer: choose a model pretrained on less sensitive data.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The fine tuning layer: the model memorized sensitive fine tuning data. Mitigate by sanitizing training data before fine tuning (removing PII, credentials, internal identifiers) and testing fine tuned models for memorization before deployment.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Output filtering is a reasonable additional control but not the primary fix. It treats a symptom at inference, is defeated by reformatting or paraphrase, and leaves the memorized data in the weights.">The deployment safety layer: add an output filter to block any text matching internal IP patterns.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+            data-correct-msg="Correct. The root cause is at the fine tuning layer: the model memorized sensitive content from its fine tuning dataset, which is structurally more extractable than pretraining data due to the smaller dataset size and higher per-example influence. The primary mitigation is data sanitization before fine tuning. Output filtering (deployment layer) is a useful defense-in-depth measure but does not address the root cause. The data is still in the weights."
+            data-incorrect-msg="Not quite. While prompt restrictions and output filters can help as defense-in-depth measures, the root cause is at the fine tuning layer. Fine tuning data has disproportionate influence on the model and is structurally more extractable. The primary mitigation is sanitizing sensitive content from training data before fine tuning, and testing for memorization after.">
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 6: Check Your Understanding -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario
+          </h3>
+          <p class="nyu-scenario__prompt">
+            A cybersecurity vendor deploys an LLM based threat intelligence assistant.
+            The system uses RAG to retrieve recent threat reports, a system prompt
+            that restricts the model to cybersecurity topics, and a low temperature
+            setting for consistency. During testing, the team observes three problems:
+            (A) The model sometimes fabricates threat actor names that don't exist in
+            any retrieved document. (B) The model occasionally provides generic advice
+            that contradicts the specific guidance in retrieved reports. (C) The model
+            refuses to discuss certain legitimate offensive security techniques.
+            For each problem, identify which layer of the behavior stack is most likely
+            responsible, and what mitigation would address that layer.
+          </p>
+          <button class="nyu-scenario__btn" aria-expanded="false">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p>
+              <strong>(A) Fabricated threat actor names:</strong> This is a parametric
+              memory / pretraining issue (layer 1). The model generates plausible sounding
+              names from statistical patterns in its weights when the retrieved context
+              does not provide a definitive answer. <em>Mitigation:</em> Improve retrieval
+              quality so the model has grounding for its claims; add instructions to cite
+              sources and decline when evidence is insufficient; consider output
+              verification against known threat actor databases.
+            </p>
+            <p>
+              <strong>(B) Generic advice contradicting retrieved reports:</strong> This
+              is likely a context/retrieval integration issue (layers 5 and 6). The model
+              may be relying on parametric patterns when retrieved content should take
+              precedence, or the retrieval is injecting irrelevant documents that dilute
+              the signal. <em>Mitigation:</em> Improve retrieval relevance and ranking;
+              adjust system prompt to instruct the model to prioritize retrieved content
+              over general knowledge; test with varied retrieval scenarios.
+            </p>
+            <p>
+              <strong>(C) Refusing legitimate offensive security topics:</strong> This
+              is a post training alignment issue (layer 2). Preference tuning trained the
+              model to refuse content that resembles harmful instructions, and its safety
+              boundaries are overly broad for this security professional context.
+              <em>Mitigation:</em> Adjust system prompt to clarify the model's authorized
+              scope for security professionals; if the system prompt is insufficient,
+              consider a domain fine tuned model with appropriately calibrated safety
+              boundaries; add deployment layer overrides for verified professional users.
+            </p>
+          </div>
+        </div>
+      </section>
+
+          <!-- ====================== UP NEXT ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 3: The Model Lifecycle as a Risk Map.</strong> We turn those layered causes into a decision framework. Given a security risk in front of you, which lifecycle stage produced it, and which controls actually apply at that stage? This is where the OWASP LLM Top 10 stops being a list to memorise and becomes a diagnostic tool.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

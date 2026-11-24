@@ -1,0 +1,46 @@
+- title: Indirect prompt injection through a web page
+  stats: [Who typed the attack, Victim clicks needed, Data sent out]
+  nodes:
+    victim: {label: Victim, x: 0, y: 2, kind: box, tag: asks for a summary}
+    app: {label: Assistant, x: 2, y: 2, kind: def, tag: LLM with tools}
+    page: {label: Web page, x: 2, y: 0, kind: box, tag: hidden white text}
+    attacker: {label: Attacker, x: 4, y: 0, kind: atk}
+    mail: {label: Email tool, x: 4, y: 2, kind: raised}
+    inbox: {label: Attacker inbox, x: 6, y: 2, kind: atk}
+  steps:
+    - title: The attacker plants text once
+      text: The attacker writes an instruction in white text on a page they control. A person reading the page does not see it. The model will.
+      on: [attacker, page]
+      flow: [[attacker, page, atk]]
+      mark: {page: warn}
+      stats: [Attacker, "0", Nothing]
+    - title: The victim asks a normal question
+      text: The victim asks the assistant to summarize the page. Nothing about the request is unsafe.
+      on: [victim, app]
+      flow: [[victim, app, ink]]
+      stats: [Attacker, "0", Nothing]
+    - title: The assistant reads the page
+      text: The app fetches the page and pastes all of its text into the prompt, including the hidden instruction. Now the attacker's words and the victim's request sit in **one stream of text**.
+      on: [app, page]
+      flow: [[page, app, atk]]
+      mark: {app: warn}
+      stats: [Attacker, "0", Nothing]
+    - title: The model obeys the hidden instruction
+      text: The hidden text says to email the conversation to an address. The model cannot tell data from orders, and it has an email tool, so it calls it.
+      on: [app, mail]
+      flow: [[app, mail, atk]]
+      mark: {app: bad}
+      stats: [Attacker, "0", Sending]
+    - title: Data leaves the company
+      text: The email tool sends the data to the attacker. The victim clicked nothing. This is why OWASP lists indirect injection under **LLM01** and ATLAS lists it as **AML.T0051.001**.
+      on: [mail, inbox]
+      flow: [[mail, inbox, atk]]
+      mark: {inbox: bad}
+      stats: [Attacker, "0", Private chat]
+    - title: Remove one leg of the trifecta
+      text: Take the email tool away from a summarizing assistant. The model can still be fooled, but now it has **no way out**. Least privilege limits the damage even when injection works.
+      on: [app]
+      show: [victim, app, page, attacker]
+      flow: [[page, app, atk], [app, victim, def]]
+      mark: {app: ok}
+      stats: [Attacker, "0", Nothing]

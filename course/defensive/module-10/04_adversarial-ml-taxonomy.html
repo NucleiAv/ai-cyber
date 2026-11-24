@@ -1,0 +1,669 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 10 · Section 4 · Excessive Agency and the Adversarial-ML Taxonomy · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+<style>
+/* ── Scenario Classification Panel ── */
+.nyu-classify-panel{background:#fff;border:1px solid var(--rule);border-radius:var(--r-md);overflow:hidden;margin:var(--sp-5) 0;box-shadow:var(--shadow-sm)}
+.nyu-classify-panel__scenario{background:var(--nyu-violet-50);padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--nyu-violet-100)}
+.nyu-classify-panel__badge{display:inline-block;font-family:var(--font-mono);font-size:var(--fs-xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--nyu-violet);padding:3px 10px;border-radius:var(--r-pill);margin-bottom:var(--sp-3)}
+.nyu-classify-panel__text{font-size:var(--fs-sm);color:var(--ink);line-height:1.6;margin:0}
+.nyu-classify-panel__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid var(--rule)}
+@media(max-width:720px){.nyu-classify-panel__grid{grid-template-columns:1fr}}
+.nyu-classify-panel__lens{padding:var(--sp-4) var(--sp-5);border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.nyu-classify-panel__lens:last-child{border-right:0}
+@media(max-width:720px){.nyu-classify-panel__lens{border-right:0;border-bottom:1px solid var(--rule)}.nyu-classify-panel__lens:last-child{border-bottom:0}}
+.nyu-classify-panel__label{font-family:var(--font-mono);font-size:var(--fs-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mute)}
+.nyu-classify-panel__select{font-family:var(--font-body);font-size:var(--fs-sm);color:var(--ink);padding:8px 12px;border:2px solid var(--rule);border-radius:var(--r-sm);background:#fff;cursor:pointer;transition:border-color .15s;width:100%;min-width:0;box-sizing:border-box}
+.nyu-classify-panel__select:focus{outline:0;border-color:var(--nyu-violet)}
+.nyu-classify-panel__select[data-state="correct"]{border-color:var(--accent-success);background:#F4FAF6}
+.nyu-classify-panel__select[data-state="incorrect"]{border-color:var(--accent-danger);background:#FDF5F5}
+.nyu-classify-panel__fb{font-size:var(--fs-xs);min-height:1.2em;color:var(--ink-mute);font-style:italic}
+.nyu-classify-panel__actions{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-4) var(--sp-5)}
+.nyu-classify-panel__btn{font-family:var(--font-body);font-size:var(--fs-sm);font-weight:600;padding:8px 18px;border-radius:var(--r-sm);border:1px solid var(--nyu-violet);cursor:pointer;transition:.15s}
+.nyu-classify-panel__btn--primary{background:var(--nyu-violet);color:#fff}
+.nyu-classify-panel__btn--primary:hover{background:var(--nyu-violet-dark)}
+.nyu-classify-panel__btn--ghost{background:#fff;color:var(--nyu-violet)}
+.nyu-classify-panel__btn--ghost:hover{background:var(--nyu-violet-50)}
+.nyu-classify-panel__score{font-size:var(--fs-sm);font-weight:600;color:var(--ink-mute)}
+
+/* ── True / False Rapid-Fire Strip ── */
+.nyu-tf-strip{background:var(--surface-sunken);border:1px solid var(--rule);border-radius:var(--r-md);padding:var(--sp-5);margin:var(--sp-5) 0}
+.nyu-tf-strip>p{font-size:var(--fs-sm);color:var(--ink-mute);margin:0 0 var(--sp-4)}
+.nyu-tf-strip__rows{display:flex;flex-direction:column;gap:0;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--rule)}
+.nyu-tf-strip__row{display:grid;grid-template-columns:1fr auto;gap:var(--sp-3) var(--sp-4);align-items:center;padding:var(--sp-3) var(--sp-4);background:#fff;border-bottom:1px solid var(--rule);transition:background .15s}
+.nyu-tf-strip__row:last-child{border-bottom:0}
+.nyu-tf-strip__row[data-state="correct"]{background:#F4FAF6}
+.nyu-tf-strip__row[data-state="incorrect"]{background:#FDF5F5}
+.nyu-tf-strip__stmt{margin:0;font-size:var(--fs-sm);color:var(--ink);line-height:1.5}
+.nyu-tf-strip__toggle{display:flex;gap:0;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--rule);flex-shrink:0}
+.nyu-tf-strip__opt{font-family:var(--font-mono);font-size:var(--fs-xs);font-weight:600;padding:6px 16px;border:0;background:#fff;color:var(--ink-mute);cursor:pointer;transition:all .12s;letter-spacing:.02em}
+.nyu-tf-strip__opt+.nyu-tf-strip__opt{border-left:1px solid var(--rule)}
+.nyu-tf-strip__opt:hover{background:var(--nyu-violet-50);color:var(--nyu-violet)}
+.nyu-tf-strip__opt[aria-pressed="true"]{background:var(--nyu-violet);color:#fff}
+.nyu-tf-strip__opt[data-state="correct"]{background:var(--accent-success);color:#fff}
+.nyu-tf-strip__opt[data-state="incorrect"]{background:var(--accent-danger);color:#fff}
+.nyu-tf-strip__fb{grid-column:1/-1;font-size:var(--fs-xs);color:var(--ink-mute);font-style:italic;min-height:0;overflow:hidden;max-height:0;opacity:0;transition:max-height .3s,opacity .3s,padding .3s;padding:0}
+.nyu-tf-strip__fb.show{max-height:80px;opacity:1;padding-top:4px}
+.nyu-tf-strip__actions{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-4)}
+.nyu-tf-strip__btn{font-family:var(--font-body);font-size:var(--fs-sm);font-weight:600;padding:8px 18px;border-radius:var(--r-sm);border:1px solid var(--nyu-violet);cursor:pointer;transition:.15s}
+.nyu-tf-strip__btn--primary{background:var(--nyu-violet);color:#fff}
+.nyu-tf-strip__btn--primary:hover{background:var(--nyu-violet-dark)}
+.nyu-tf-strip__btn--ghost{background:#fff;color:var(--nyu-violet)}
+.nyu-tf-strip__btn--ghost:hover{background:var(--nyu-violet-50)}
+.nyu-tf-strip__score{font-size:var(--fs-sm);font-weight:600;color:var(--ink-mute)}
+
+/* scrollbar styling for custom components */
+.nyu-classify-panel__select::-webkit-scrollbar,.nyu-tf-strip::-webkit-scrollbar{width:6px}
+.nyu-classify-panel__select::-webkit-scrollbar-thumb,.nyu-tf-strip::-webkit-scrollbar-thumb{background:var(--nyu-violet-200);border-radius:3px}
+</style>
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 10 · Section 4 of 5</div>
+      <h1 class="nyu-hero__title">Excessive Agency and the Adversarial-ML Taxonomy</h1>
+      <p class="nyu-hero__subtitle">How an autonomous system causes harm with no attacker involved, and how to classify every attack in this module across three professional frameworks.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~28 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 7 knowledge checks</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> A Failure With No Attacker</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Constraining Agency</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Three Lenses, Not Three Lists</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Classify Every Attack</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Analyze</strong> an autonomous-agent specification to find failure modes beyond its intended scope, and design the constraints that prevent each.</span></li>
+          <li><span><strong>Classify</strong> attacks across the NIST AI 100-2, OWASP LLM Top 10, and MITRE ATLAS frameworks, justifying each mapping and naming where a framework has no clean entry.</span></li>
+        </ul>
+      </section>
+
+      <!-- ============ SECTION 1 (Part A) ============ -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">A Failure With No Attacker</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>In mid-2025, an <button type="button" class="nyu-define" data-term="ai-coding-agent">AI coding agent</button> working on a live project deleted a company's production database during an explicit freeze on changes, then generated a written admission that it had acted without authorization. No attacker was involved. No <button type="button" class="nyu-define" data-term="prompt-injection">prompt injection</button>, no poisoned data, no malicious component. The agent had been given a goal, hit an obstacle, and decided on its own to remove that obstacle. The decision was catastrophic and violated the agent's own stated rules, but it was internally coherent: the database was in the way, so the agent deleted it. This was one of a series of similar incidents across <button type="button" class="nyu-define" data-term="autonomous-coding-tools">autonomous coding tools</button> over the following year, several of which involved an agent inheriting broad permissions and bypassing an approval step that existed on paper.</p>
+
+        <p>That absence of an attacker is the point. <button type="button" class="nyu-define" data-term="excessive-agency">Excessive agency</button> is not a compromise. It is a design failure in how much authority the system holds and how little stands between its decisions and irreversible action.</p>
+
+        <h3 class="nyu-subsection-title">The three drivers</h3>
+        <p>Excessive agency comes from three sources that compound.</p>
+
+        <div class="nyu-cards">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+            <h4 class="nyu-card__title">Excessive permissions</h4>
+            <p>The agent can touch systems it never needed to touch, because it inherited a human's broad access.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.2 4.2l4.3 4.3M15.5 15.5l4.3 4.3M1 12h6M17 12h6M4.2 19.8l4.3-4.3M15.5 8.5l4.3-4.3"/></svg></div>
+            <h4 class="nyu-card__title">Excessive functionality</h4>
+            <p>The agent has capabilities beyond its task, so an action like deleting or recreating an environment is even available to it.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg></div>
+            <h4 class="nyu-card__title">Excessive autonomy</h4>
+            <p>The agent can take high-consequence actions with no human authorization in the loop.</p>
+          </div>
+        </div>
+
+        <p>The database-deletion incidents sat at the intersection of all three: broad access, destructive capabilities, and no gate before the destructive step.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+            Agency is not a new problem: a philosophy detour (for the curious)
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Excessive agency did not arrive with AI. It is one of the oldest problems in organized human activity. When a junior trader at a bank bypasses a risk limit because the trade "makes sense" to them, when a sysadmin patches a production server at 2 a.m. without a change ticket because the fix "obviously" needs to go in now, when a security team mass-revokes credentials during an incident and locks out the people trying to fix it, the pattern is the same: an actor pursuing a locally coherent goal takes an action that exceeds the authority they were meant to have, and the consequences cascade.</p>
+
+            <p>None of this is a new observation. In the 1950s, Norbert Wiener, the founder of cybernetics, warned about exactly this kind of failure in <cite>The Human Use of Human Beings</cite>. His concern was any system, human or mechanical, where the action is "so fast and irrevocable that we have not the data to intervene before the action is complete." His advice: we had "better be quite sure that the purpose put into the machine is the purpose which we really desire and not merely a colorful imitation of it" (Wiener, 1950). That sentence was about machines, but it applies just as well to a bureaucracy or a military chain of command.</p>
+
+            <p>James Reason, the psychologist behind the Swiss cheese model of accident causation, spent decades studying how organizations produce catastrophic failures without anyone intending harm. His conclusion: major accidents almost always have small, mundane beginnings, and they cascade not because one person did something reckless, but because latent conditions in the organization, from staffing decisions to maintenance policies, created a path for a routine action to become a disaster (Reason, 1997). The failures were "normal" in the sense that they came from ordinary work inside a system that was structured badly. Charles Perrow, a sociologist, formalized a similar idea for engineering. His "normal accidents" theory argued that in tightly coupled, complex systems, cascading failures are not bugs. They are a structural property of the system itself (Perrow, 1984). The components interact in ways nobody designed and nobody anticipated. You do not need a bad actor. You need a system with enough complexity, enough speed, and enough coupling that one locally reasonable decision produces globally catastrophic results.</p>
+
+            <p>Cybersecurity is full of human excessive agency. Verizon's 2024 Data Breach Investigations Report found that 68% of confirmed breaches involved a non-malicious human element: someone making an error or falling for a social engineering attack (Verizon, 2024). That figure has hovered between 68% and 82% every year since Verizon started tracking it. These are not attacker stories. They are stories about people who had more access than their task required, more capability than the situation called for, and no gate between their decision and the consequence.</p>
+
+            <p>So if this is not new, why does it feel different when a machine does it? Maybe it is the speed: the agent deleted the database and moved on before anyone was awake to notice. Maybe it is the scale: one misconfigured agent can replicate across a fleet of systems in seconds, where one reckless employee affects one server. Maybe it is the absence of hesitation: a human might pause before running <code>DROP DATABASE</code> in production, because years of experience have taught them to be afraid of that command. The agent has no fear. It has no sense that some actions are scarier than others. It treats deleting a test file and deleting a production database as the same kind of operation, differing only in the path.</p>
+
+            <p>Or maybe it is something harder to name. Wiener pointed out that we struggle to intervene in a system "because the action is so fast and irrevocable." With a human, we assume we can interrupt, argue, appeal to judgment. With an autonomous agent, by the time we know what it decided, the decision is already executed. That gap between decision and awareness might be the real difference. Not that machines have more agency than humans, but that by the time we notice they have used it, it is too late to do anything about it.</p>
+
+            <p>There is no settled answer here. But as you work through the constraints in the next section, it is worth asking yourself: are these controls specific to AI, or are they the same controls we have always needed for any system with too much authority and not enough oversight? What, if anything, is actually new?</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 2 ============ -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Constraining Agency</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>As AI systems gain the ability to act, not just generate text, the blast radius of a single bad decision grows. The constraints that address excessive agency are not novel or technically sophisticated; they are the same operational controls security teams have always used. Grant least privilege, so the agent can reach only what its task requires. Scope functionality, so destructive capabilities are not casually available. Require an <button type="button" class="nyu-define" data-term="approval-gate">approval gate</button> before high-consequence, hard-to-reverse actions, and place that gate early, before the destructive step, not as a final rubber stamp after the damage is queued. Prefer reversible operations and bounded blast radius where possible. The deeper work of building autonomous systems safely comes later in the course; here the goal is to recognize the risk and name the constraint that fits each failure.</p>
+
+        <p>Try to stop the deletion. Pick a control, run the agent, and see which interventions actually prevent the harm and which ones only detect it after the fact.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/4_gate_sim/gate_sim.html" title="Interactive: place an approval gate and constrain the three drivers of excessive agency to prevent an autonomous agent from deleting a production database" loading="lazy"></iframe>
+        </div>
+
+        <p>There is an obvious tension here. One of the reasons organizations deploy autonomous agents is speed: a SOC agent that can triage and remediate in seconds, a coding agent that can ship a fix while the team sleeps. Gating every action with a human approval defeats the point.</p>
+
+        <p>The practical question is not whether to constrain, but where to draw the line. Most organizations land on something like a tiered model: low-risk, reversible actions (querying a log, opening a ticket, reading a file) run freely, while high-risk, irreversible actions (deleting data, modifying firewall rules, pushing to production) get held for approval or blocked entirely.</p>
+
+        <p>The hard part is classifying which actions belong in which tier, because the agent will find edge cases the designer did not anticipate. That classification problem is where most real-world deployments are still figuring things out.</p>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            Reasoning task
+          </h3>
+          <p class="nyu-scenario__prompt">You are given the specification of an autonomous security agent: it can read alerts, query the <button type="button" class="nyu-define" data-term="siem">SIEM</button>, run remediation playbooks, modify firewall rules, and delete or quarantine files, running with a senior analyst's permissions and no approval gate. Identify at least three ways it could act beyond its intended scope with no attacker involved, describing the goal it was pursuing and the harmful action it might take. For each, say which driver is responsible. Then design the specific constraint that would prevent it, and decide where the single most important approval gate belongs, explaining why placing it only at the very end is too late.</p>
+          <button class="nyu-scenario__btn">Show what an answer could include</button>
+          <div class="nyu-scenario__answer">
+            <ul>
+              <li>Each failure mirrors the real pattern: the agent hits an obstacle and takes an internally coherent but catastrophic action (mass-quarantining files to "clean up," rewriting firewall rules to "unblock" itself, deleting logs to "resolve" an error).</li>
+              <li>Attribute each to a driver: reaching systems it did not need (permissions), having the destructive capability at all (functionality), or acting with no human check (autonomy).</li>
+              <li>Constraints are concrete: least-privilege scope, remove destructive tools, require an approval gate. Place the gate before the destructive action, because a final gate after the command is queued cannot prevent the harm.</li>
+            </ul>
+          </div>
+        </div>
+        <!-- ── Knowledge Check 1: excessive agency, no attacker ── -->
+        <div class="nyu-quiz" aria-labelledby="quiz-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 1</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-1-prompt">An autonomous SOC agent, running with a senior analyst's permissions and no approval gate, deletes a production database while trying to clean up after a failed task. No external attacker was involved. Which best describes this?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Prompt injection requires an attacker-supplied instruction. Here there was no attacker; the agent pursued its own goal and overreached.">Prompt injection</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Excessive agency</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Poisoning corrupts training data. This is a runtime action by an over-permissioned agent, not a training-time attack.">Data poisoning</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Evasion crafts inputs to fool a classifier. No classifier is being fooled here.">Evasion</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. The harm came from excessive permissions and autonomy with no approval gate. The agent acted beyond its intended scope without any compromise, which is what distinguishes excessive agency from an attack."
+               data-incorrect-msg="Ask who the attacker was. There wasn't one, so this is not injection, poisoning, or evasion. The failure is in the granted permissions and missing gate."></div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 3 (Part B) ============ -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Three Lenses, Not Three Lists</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>We have now seen a range of attacks: prompt injection from the previous module, and poisoning, evasion, and supply-chain compromise from this one. Professionals classify these using shared frameworks so they can communicate precisely and pick the right defense. Three frameworks matter here, and the goal is to treat them as three lenses on one attack, not three lists to memorize.</p>
+
+        <table class="nyu-table">
+          <caption class="visually-hidden">The three classification frameworks used in this module, with links to the primary source for each</caption>
+          <thead>
+            <tr>
+              <th scope="col">Framework</th>
+              <th scope="col">What it provides</th>
+              <th scope="col">Primary source</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">NIST AI 100-2</th>
+              <td>Formal attack classes, lifecycle stages, attacker profiles, and mitigations for ML systems</td>
+              <td style="white-space:nowrap"><a href="https://csrc.nist.gov/pubs/ai/100/2/e2025/final" target="_blank" rel="noopener">csrc.nist.gov<span style="display:inline-block;width:.55em;height:.55em;margin-left:.3em;vertical-align:baseline;position:relative;top:-.05em"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 2H2v12h12v-4"/><path d="M9 1h6v6M15 1 7 9"/></svg></span></a></td>
+            </tr>
+            <tr>
+              <th scope="row">OWASP LLM Top&nbsp;10</th>
+              <td>Deployment risks for LLM applications, ranked by prevalence and impact</td>
+              <td style="white-space:nowrap"><a href="https://genai.owasp.org/llm-top-10/" target="_blank" rel="noopener">genai.owasp.org<span style="display:inline-block;width:.55em;height:.55em;margin-left:.3em;vertical-align:baseline;position:relative;top:-.05em"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 2H2v12h12v-4"/><path d="M9 1h6v6M15 1 7 9"/></svg></span></a></td>
+            </tr>
+            <tr>
+              <th scope="row">MITRE ATLAS</th>
+              <td>Adversarial tactics and techniques against AI systems, modeled on ATT&amp;CK</td>
+              <td style="white-space:nowrap"><a href="https://atlas.mitre.org/" target="_blank" rel="noopener">atlas.mitre.org<span style="display:inline-block;width:.55em;height:.55em;margin-left:.3em;vertical-align:baseline;position:relative;top:-.05em"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 2H2v12h12v-4"/><path d="M9 1h6v6M15 1 7 9"/></svg></span></a></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The <button type="button" class="nyu-define" data-term="nist-ai-100-2">adversarial-ML taxonomy</button> gives the formal category and a structured way to describe the attacker: the class of attack, the lifecycle stage, and the attacker's goal, capability, and knowledge. Its attack-goal classes are worth naming in full, because all four appear in the classification work, even though this module teaches only two in depth. Evasion is the inference-time class. Poisoning is the training-time class. <button type="button" class="nyu-define" data-term="privacy-attack">Privacy</button> covers attacks that extract information, such as inferring whether a specific record was in the training set, or reconstructing training data or model internals; we treat it at awareness level here and return to it under governance later. Abuse covers misuse of generative systems.</p>
+
+        <p>The <button type="button" class="nyu-define" data-term="owasp-llm-top-10">LLM-application risk list</button> gives the label practitioners use when the system is an LLM app: supply chain, data and model poisoning, excessive agency, and prompt injection each have an entry. The <button type="button" class="nyu-define" data-term="mitre-atlas">adversarial-tactics knowledge base</button> gives technique-level language that connects AI attacks to the broader tactics framework used across security.</p>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">Cite the edition, not just the number</h3>
+          <p>All three frameworks above are versioned, and the OWASP list in particular is revised periodically. Entries move position, merge, or get renamed between releases, so "LLM06" identifies a risk only once you also say which edition you mean. This course uses the <strong>2025</strong> edition throughout Modules 9 to 11, so the identifiers stay consistent as you move between them.</p>
+          <p>Treat the numbering as a citation detail and the underlying failure modes as the content worth learning. The set of things that go wrong with these systems is fairly stable across releases; the ordering is what churns. In professional writing, name the edition the way you would for any versioned standard, and check the current release before quoting a number to a stakeholder.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Which lens, and a rule about what does not fit</h3>
+
+        <div class="nyu-compare">
+          <div class="nyu-compare__col" data-tone="d">
+            <div class="nyu-compare__head">
+              <h3>NIST AI 100-2</h3>
+              <p class="nyu-compare__tag">Formal taxonomy</p>
+            </div>
+            <dl class="nyu-compare__rows">
+              <dt>Reach for it when</dt>
+              <dd>You need the formal attack class and a structured attacker analysis: goal, capability, knowledge, lifecycle stage.</dd>
+            </dl>
+          </div>
+          <div class="nyu-compare__col" data-tone="a">
+            <div class="nyu-compare__head">
+              <h3>OWASP LLM Top 10</h3>
+              <p class="nyu-compare__tag">Deployment risks</p>
+            </div>
+            <dl class="nyu-compare__rows">
+              <dt>Reach for it when</dt>
+              <dd>You are assessing a deployed LLM application and need the risk category a practitioner audience will recognize.</dd>
+            </dl>
+          </div>
+          <div class="nyu-compare__col" data-tone="c">
+            <div class="nyu-compare__head">
+              <h3>MITRE ATLAS</h3>
+              <p class="nyu-compare__tag">Tactics &amp; techniques</p>
+            </div>
+            <dl class="nyu-compare__rows">
+              <dt>Reach for it when</dt>
+              <dd>You need technique-level language that ties AI attacks into the broader ATT&amp;CK tactics framework.</dd>
+            </dl>
+          </div>
+        </div>
+
+        <p>One rule prevents a common error. The adversarial-ML taxonomy's attack-goal classes are only evasion, poisoning, privacy, and abuse. Supply chain and excessive agency are not attack-goal classes in that taxonomy. A supply-chain compromise that delivers a tampered model is classified by what was done to the model, which is poisoning. A malicious weight file that executes code on load is a delivery vector in the <span class="nyu-ref" data-ref="software-supply-chain">software supply chain we mapped in Module 6</span>, and it does not map to a single attack-goal class at all. Excessive agency sits outside the adversarial-ML taxonomy entirely; it lives on the LLM-application list as an operational risk. When an attack has no clean home in a given framework, the correct answer is to say so and explain why, not to force it into the nearest box.</p>
+
+        <h3 class="nyu-subsection-title">Worked example</h3>
+        <p>Take a poisoned model uploaded to a public hub, like the benchmarked-but-lying model from the previous section, and set it beside excessive agency to see a clean overlap and an informative divergence.</p>
+
+        <table class="nyu-table">
+          <caption class="visually-hidden">Two attacks mapped across three classification frameworks</caption>
+          <thead>
+            <tr><th scope="col">Attack</th><th scope="col">Adversarial-ML taxonomy</th><th scope="col">LLM-application list</th><th scope="col">Tactics knowledge base</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Poisoned model on a public hub</th>
+              <td>Poisoning, at the training or model-production stage, integrity goal</td>
+              <td>Supply chain, and also data and model poisoning (both apply)</td>
+              <td>A technique for publishing a compromised model a victim then ingests</td>
+            </tr>
+            <tr>
+              <th scope="row">Excessive agency</th>
+              <td>No attack-goal class: no adversary is violating a model property. Note the absence.</td>
+              <td>A direct entry (excessive agency)</td>
+              <td>No clean technique: this is an operational risk, not an adversary tactic</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The poisoned model is a clean overlap: all three lenses agree, each at its own altitude. Excessive agency is a divergence, and the divergence itself is informative. It shows that operational risks and adversarial-ML attacks are different kinds of thing, and that no single framework covers everything.</p>
+
+        <p>Now run the full set through all three lenses. Classify each attack, and note where the honest answer is that a framework has no clean entry.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/4_three_lens/three_lens.html" title="Interactive: map six attacks across the NIST adversarial-ML taxonomy, OWASP LLM Top 10, and MITRE ATLAS, marking where no clean entry exists" loading="lazy"></iframe>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="rule-title">
+          <h3 class="nyu-callout__title" id="rule-title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+            Do not force a NIST class
+          </h3>
+          <p>Supply chain, model-serialization, and excessive agency do not all have an adversarial-ML attack-goal class. Recognizing that, and saying "no clean class, and here is why," is part of classifying correctly, not a gap in the answer.</p>
+        </aside>
+
+        <!-- ── Knowledge Check 2: which framework for which job ── -->
+        <div class="nyu-quiz" aria-labelledby="quiz-2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 2</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-2-prompt">You are writing a risk assessment for a deployed LLM chatbot and need to communicate the top risks to a product team that does not have an ML background. Which framework gives you the most useful vocabulary for that conversation?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The NIST taxonomy gives formal attack classes and attacker analysis. It is the right tool for a deep technical classification, but its vocabulary (evasion, poisoning, privacy, abuse) does not map directly to the deployment risks a product team needs to think about.">NIST AI 100-2</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">OWASP LLM Top 10</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="MITRE ATLAS gives technique-level detail for threat modeling and red-teaming. Useful for a security operations audience, but too granular for a product-team risk conversation.">MITRE ATLAS</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Each framework has a purpose. Using all three at once would overwhelm the audience. Pick the one whose vocabulary matches the conversation.">All three equally</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. The OWASP LLM Top 10 is a deployment-risk list with categories a practitioner audience will recognize: supply chain, excessive agency, prompt injection. It is designed for exactly this kind of risk conversation."
+               data-incorrect-msg="Think about who you are talking to. A product team needs deployment-risk categories they can act on, not formal attack classes or technique-level TTPs."></div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 4 ============ -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Classify Every Attack</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Six attacks span this module and the prompt-injection work before it. Each one maps differently across the three frameworks, and several have no clean entry in at least one lens. Classify each one below.</p>
+
+        <!-- ── Match: attack → NIST attack-goal class ── -->
+        <h3 class="nyu-subsection-title">Match each attack to its NIST attack-goal class</h3>
+
+        <div class="nyu-match">
+          <p><strong>Two ways to match:</strong> click an attack then click its NIST class, or drag the attack onto the class.</p>
+          <div class="nyu-match__grid">
+            <svg class="nyu-match__svg" aria-hidden="true"></svg>
+            <div class="nyu-match__col">
+              <h4>Attack</h4>
+              <button class="nyu-match__term" data-match="d">Indirect prompt injection</button>
+              <button class="nyu-match__term" data-match="b">Evasion of a malware detector</button>
+              <button class="nyu-match__term" data-match="a">Backdoor poisoning</button>
+              <button class="nyu-match__term" data-match="c">Membership inference on a trained model</button>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap" aria-hidden="true"></div>
+            <div class="nyu-match__col">
+              <h4>NIST attack-goal class</h4>
+              <button class="nyu-match__def" data-match="b">Evasion</button>
+              <button class="nyu-match__def" data-match="d">Abuse</button>
+              <button class="nyu-match__def" data-match="c">Privacy</button>
+              <button class="nyu-match__def" data-match="a">Poisoning</button>
+            </div>
+          </div>
+          <p class="nyu-match__hint" data-default="Tip: classify by the attack's mechanism, not its consequence. Prompt injection abuses a generative system; membership inference extracts information about training data.">Tip: classify by the attack's mechanism, not its consequence. Prompt injection abuses a generative system; membership inference extracts information about training data.</p>
+          <div class="nyu-match__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check matches</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show correct answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+          </div>
+        </div>
+
+        <!-- ── Scenario classification panel ── -->
+        <h3 class="nyu-subsection-title">Classify a full scenario across all three lenses</h3>
+
+        <div class="nyu-classify-panel" id="classifyPanel">
+          <div class="nyu-classify-panel__scenario">
+            <span class="nyu-classify-panel__badge">Scenario</span>
+            <p class="nyu-classify-panel__text">A researcher discovers that a pre-trained image classifier on a public model hub contains a hidden backdoor: images with a small patch in the corner are always classified as "safe," regardless of content. The model was uploaded six months ago and has been downloaded 12,000 times. No one noticed because it scores well on standard benchmarks.</p>
+          </div>
+          <div class="nyu-classify-panel__grid">
+            <div class="nyu-classify-panel__lens">
+              <label class="nyu-classify-panel__label">NIST AI 100-2</label>
+              <select class="nyu-classify-panel__select" data-correct="poisoning">
+                <option value="">Select a class&hellip;</option>
+                <option value="evasion">Evasion</option>
+                <option value="poisoning">Poisoning</option>
+                <option value="privacy">Privacy</option>
+                <option value="abuse">Abuse</option>
+                <option value="none">No clean class</option>
+              </select>
+              <span class="nyu-classify-panel__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-classify-panel__lens">
+              <label class="nyu-classify-panel__label">OWASP LLM Top 10</label>
+              <select class="nyu-classify-panel__select" data-correct="supply-poison">
+                <option value="">Select an entry&hellip;</option>
+                <option value="injection">Prompt Injection</option>
+                <option value="supply-poison">Supply Chain + Data &amp; Model Poisoning</option>
+                <option value="agency">Excessive Agency</option>
+                <option value="output">Improper Output Handling</option>
+                <option value="none">No clean entry</option>
+              </select>
+              <span class="nyu-classify-panel__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-classify-panel__lens">
+              <label class="nyu-classify-panel__label">MITRE ATLAS</label>
+              <select class="nyu-classify-panel__select" data-correct="publish">
+                <option value="">Select a technique&hellip;</option>
+                <option value="craft">Craft adversarial input at inference time</option>
+                <option value="publish">Publish a poisoned model for victims to download</option>
+                <option value="inject">Inject instructions via external data</option>
+                <option value="none">No clean technique</option>
+              </select>
+              <span class="nyu-classify-panel__fb" aria-live="polite"></span>
+            </div>
+          </div>
+          <div class="nyu-classify-panel__actions">
+            <button class="nyu-classify-panel__btn nyu-classify-panel__btn--primary" data-action="check">Check all three</button>
+            <button class="nyu-classify-panel__btn nyu-classify-panel__btn--ghost" data-action="reset">Reset</button>
+            <span class="nyu-classify-panel__score" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <!-- ── True / False rapid-fire ── -->
+        <h3 class="nyu-subsection-title">True or false?</h3>
+
+        <div class="nyu-tf-strip" id="tfStrip">
+          <p>For each statement, decide whether it is true or false. Commit all answers at once.</p>
+          <div class="nyu-tf-strip__rows">
+            <div class="nyu-tf-strip__row" data-correct="false">
+              <p class="nyu-tf-strip__stmt">Excessive agency is classified as an abuse attack in the NIST AI 100-2 taxonomy.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="true">
+              <p class="nyu-tf-strip__stmt">A supply-chain compromise that delivers a tampered model is classified by what was done to the model, not by how it was delivered.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="false">
+              <p class="nyu-tf-strip__stmt">If an attack has no clean entry in a framework, the correct approach is to assign it to the nearest category anyway.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="true">
+              <p class="nyu-tf-strip__stmt">Backdoor poisoning maps cleanly to all three frameworks: poisoning in NIST, data &amp; model poisoning in OWASP, and a publish-poisoned-model technique in ATLAS.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="true">
+              <p class="nyu-tf-strip__stmt">Evasion and poisoning target the same model but at different lifecycle stages: inference time and training time, respectively.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+          </div>
+          <div class="nyu-tf-strip__actions">
+            <button class="nyu-tf-strip__btn nyu-tf-strip__btn--primary" data-action="check">Check answers</button>
+            <button class="nyu-tf-strip__btn nyu-tf-strip__btn--ghost" data-action="reset">Reset</button>
+            <span class="nyu-tf-strip__score" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <!-- ── Knowledge Check 3: the no-clean-entry case ── -->
+        <div class="nyu-quiz" aria-labelledby="quiz-3-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 3</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-3-prompt">A model-serialization attack delivers a tampered weight file that executes code when loaded. How does this map to the NIST adversarial-ML taxonomy?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-3-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Evasion is an inference-time attack that fools a classifier. Loading a malicious file is not an inference-time operation.">Evasion</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Poisoning describes what was done to the model's weights, but the code-execution vector itself is a software supply-chain attack, not a model-property violation. The taxonomy classifies the model compromise as poisoning, but the delivery mechanism has no clean class of its own.">Poisoning</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">No clean attack-goal class for the code-execution vector itself</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Abuse covers misuse of generative systems, like prompt injection. A serialization attack executes code through a file format vulnerability, not by misusing a model's generative capability.">Abuse</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. If a tampered model was delivered, the model compromise is poisoning. But the code-execution vector itself (the fact that loading a pickle file runs arbitrary code) is a software supply-chain attack that has no clean attack-goal class in the NIST taxonomy. Saying so is part of classifying correctly."
+               data-incorrect-msg="Think about what the taxonomy actually classifies. Its attack-goal classes describe violations of a model's properties (evasion, poisoning, privacy, abuse). A file format that executes code on load is a software vulnerability, not a model-property violation."></div>
+        </div>
+
+        <!-- ── Knowledge Check 4: divergence insight ── -->
+        <div class="nyu-quiz" aria-labelledby="quiz-4-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 4</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-4-prompt">Backdoor poisoning maps cleanly across all three frameworks. Excessive agency maps to the OWASP LLM Top 10 but has no entry in either the NIST taxonomy or MITRE ATLAS. What does that divergence teach?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-4-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="It is not incomplete, it is scoped to adversarial attacks on model properties. Operational risks like excessive agency are a different kind of thing.">The NIST taxonomy is incomplete and needs to add excessive agency</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Operational risks and adversarial attacks are different kinds of thing, and no single framework covers both</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="All three frameworks are valuable. The lesson is that they cover different domains, not that one is better than the others.">Only the OWASP list matters for real-world security</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Excessive agency is a real and well-documented risk. The point is that it lives in a different category than adversarial attacks, not that it is less important.">Excessive agency is not a real security risk because it has no NIST class</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. The divergence is the lesson. The NIST taxonomy classifies adversarial attacks on model properties. Excessive agency is an operational risk with no adversary. Different frameworks cover different things, so the professional move is to use all three lenses and note where each one has no clean entry."
+               data-incorrect-msg="The divergence is not a flaw in any framework. Think about what each one is designed to classify. The NIST taxonomy covers adversarial attacks on models. Excessive agency involves no adversary and no model-property violation. That is why it has no entry there, and that absence is informative."></div>
+        </div>
+      </section>
+
+      <!-- ====================== MODULE COMPLETE ====================== -->
+      <aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="module-complete">
+        <h3 class="nyu-callout__title" id="module-complete"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Module 10 Complete</h3>
+        <p>Across four sections this module covered data poisoning at training time, evasion attacks at inference time, the ML supply chain as an attack surface including model files and plugins, and excessive agency alongside the adversarial-ML taxonomy that organizes all of them. What a defender builds in response is the subject of Module 11, Defending the Pipeline.</p>
+      </aside>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 5: References &amp; Readings.</strong> It consolidates every source behind this module, with a note on how far each one can be trusted and when to read it.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../reference_tip/reference-tips.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script>
+  /* ── Scenario Classification Panel ── */
+  (function(){
+    var panel = document.getElementById('classifyPanel');
+    if (!panel) return;
+    var selects = Array.from(panel.querySelectorAll('.nyu-classify-panel__select'));
+    var scoreEl = panel.querySelector('.nyu-classify-panel__score');
+    var EXPLAIN = {
+      'poisoning':     'Correct. The backdoor was planted during training, that is poisoning, with an integrity goal.',
+      'supply-poison': 'Correct. The model was distributed through a public hub (supply chain) and its weights were tampered (data & model poisoning). Both OWASP entries apply.',
+      'publish':       'Correct. ATLAS describes the technique: publishing a compromised model for victims to download and use.'
+    };
+    var WRONG = {
+      0: 'The backdoor was planted during training, not at inference time. The attacker corrupted the model itself.',
+      1: 'The model was uploaded to a public hub (supply chain) and its weights were corrupted (poisoning). Think about both the delivery and the payload.',
+      2: 'The attacker published a poisoned model on a hub for others to download. Which ATLAS technique describes that?'
+    };
+
+    panel.querySelector('[data-action="check"]').addEventListener('click', function(){
+      var correct = 0;
+      selects.forEach(function(sel, i){
+        var fb = sel.parentElement.querySelector('.nyu-classify-panel__fb');
+        if (!sel.value) { sel.setAttribute('data-state','incorrect'); fb.textContent = 'Please select an answer.'; return; }
+        if (sel.value === sel.dataset.correct) {
+          sel.setAttribute('data-state','correct');
+          fb.textContent = EXPLAIN[sel.value];
+          correct++;
+        } else {
+          sel.setAttribute('data-state','incorrect');
+          fb.textContent = WRONG[i];
+        }
+      });
+      scoreEl.textContent = correct + ' of 3 correct';
+      if (correct === 3) scoreEl.style.color = 'var(--accent-success)';
+      else scoreEl.style.color = 'var(--accent-danger)';
+    });
+
+    panel.querySelector('[data-action="reset"]').addEventListener('click', function(){
+      selects.forEach(function(sel){
+        sel.value = '';
+        sel.removeAttribute('data-state');
+        sel.parentElement.querySelector('.nyu-classify-panel__fb').textContent = '';
+      });
+      scoreEl.textContent = '';
+    });
+  })();
+
+  /* ── True / False Rapid-Fire Strip ── */
+  (function(){
+    var strip = document.getElementById('tfStrip');
+    if (!strip) return;
+    var rows = Array.from(strip.querySelectorAll('.nyu-tf-strip__row'));
+    var scoreEl = strip.querySelector('.nyu-tf-strip__score');
+    var EXPLANATIONS = [
+      'False. Excessive agency has no entry in the NIST taxonomy at all, it is an operational risk, not an adversarial attack on a model property.',
+      'True. The NIST taxonomy classifies by what was done to the model. A supply-chain compromise is the delivery vector; the model tampering itself is poisoning.',
+      'False. The correct approach is to say "no clean entry" and explain why. Forcing a classification is a common error the section warns against.',
+      'True. Backdoor poisoning is the clean-overlap case: every framework names it at its own altitude.',
+      'True. Evasion manipulates inputs at inference time; poisoning corrupts training data. Same model, different lifecycle stages.'
+    ];
+
+    rows.forEach(function(row){
+      var opts = Array.from(row.querySelectorAll('.nyu-tf-strip__opt'));
+      opts.forEach(function(opt){
+        opt.addEventListener('click', function(){
+          if (row.hasAttribute('data-state')) return;
+          opts.forEach(function(o){ o.setAttribute('aria-pressed', String(o === opt)); });
+        });
+      });
+    });
+
+    strip.querySelector('[data-action="check"]').addEventListener('click', function(){
+      var correct = 0;
+      rows.forEach(function(row, i){
+        var selected = row.querySelector('[aria-pressed="true"]');
+        var fb = row.querySelector('.nyu-tf-strip__fb');
+        if (!selected) { fb.textContent = 'Pick True or False.'; fb.classList.add('show'); return; }
+        var isCorrect = selected.dataset.val === row.dataset.correct;
+        row.setAttribute('data-state', isCorrect ? 'correct' : 'incorrect');
+        selected.setAttribute('data-state', isCorrect ? 'correct' : 'incorrect');
+        fb.textContent = EXPLANATIONS[i];
+        fb.classList.add('show');
+        if (isCorrect) correct++;
+      });
+      scoreEl.textContent = correct + ' of ' + rows.length + ' correct';
+      if (correct === rows.length) scoreEl.style.color = 'var(--accent-success)';
+      else scoreEl.style.color = 'var(--accent-danger)';
+    });
+
+    strip.querySelector('[data-action="reset"]').addEventListener('click', function(){
+      rows.forEach(function(row){
+        row.removeAttribute('data-state');
+        var opts = row.querySelectorAll('.nyu-tf-strip__opt');
+        opts.forEach(function(o){ o.setAttribute('aria-pressed','false'); o.removeAttribute('data-state'); });
+        var fb = row.querySelector('.nyu-tf-strip__fb');
+        fb.textContent = ''; fb.classList.remove('show');
+      });
+      scoreEl.textContent = '';
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Variant Lab: False Positives and False Negatives</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--v:#57068C;--v50:#F5EDFA;--v100:#E8D8F2;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--blu:#1E73BE;--blu-bg:#E7F0FA;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:920px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+
+    .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em}
+    .truth{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;font-size:.74rem;font-weight:600;transition:all .4s}
+    .truth.vuln{background:#991B1B;color:#fff;border:1.5px solid var(--red)}
+    .truth.safe{background:#166534;color:#fff;border:1.5px solid var(--grn)}
+    .truth.none{background:var(--sk);color:var(--ink2);border:1.5px solid var(--rule)}
+
+    .content{padding:14px 18px 10px}
+
+    /* Variant tabs */
+    .vtabs{display:flex;gap:3px;margin-bottom:14px;background:var(--sk);border-radius:10px;padding:3px}
+    .vt{appearance:none;border:none;background:transparent;border-radius:8px;padding:8px 12px;font:inherit;font-size:.74rem;font-weight:600;cursor:pointer;transition:all .16s;color:var(--ink2);flex:1;text-align:center}
+    .vt:hover{color:var(--v)}
+    .vt.on{background:var(--v);color:#fff;box-shadow:0 2px 8px rgba(87,6,140,.2)}
+
+    /* Code + explanation side by side */
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+    @media(max-width:600px){.split{grid-template-columns:1fr}}
+
+    .code-box{background:#1E2127;border-radius:10px;padding:12px 14px;overflow-x:auto}
+    .code-box pre{font-family:var(--mono);font-size:.64rem;line-height:1.75;color:#C8C8CC;margin:0;white-space:pre-wrap}
+    .hl-danger{background:rgba(196,42,42,.25);color:#ffffff;border-radius:3px;padding:1px 3px}
+    .hl-safe{background:rgba(22,107,58,.2);color:#ffffff;border-radius:3px;padding:1px 3px}
+    .hl-unk{background:rgba(138,93,0,.2);color:#ffffff;border-radius:3px;padding:1px 3px}
+
+    .why-box{border:1.5px solid var(--rule);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+    .why-box h3{font-size:.78rem;font-weight:700;margin:0}
+    .why-box .why-text{font-size:.72rem;line-height:1.55;color:var(--ink2)}
+    .why-box .why-text b{color:var(--ink)}
+    .why-box.is-vuln{border-color:var(--red)}
+    .why-box.is-vuln h3{color:var(--red)}
+    .why-box.is-safe{border-color:var(--grn)}
+    .why-box.is-safe h3{color:var(--grn)}
+
+    /* Tool results grid */
+    .tools{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px}
+    @media(max-width:600px){.tools{grid-template-columns:1fr}}
+    .tool{border:1.5px solid var(--rule);border-radius:10px;padding:12px;transition:all .4s}
+    .tool h4{font-size:.72rem;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .tool h4 .tdot{width:8px;height:8px;border-radius:50%}
+    .tool .tres{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+    .badge{padding:4px 10px;border-radius:7px;font-size:.68rem;font-weight:600;border:1.5px solid var(--rule)}
+    .badge.tp{background:#166534;color:#fff;border-color:#166534}
+    .badge.tn{background:#166534;color:#fff;border-color:#166534}
+    .badge.fp{background:#854D0E;color:#fff;border-color:#854D0E}
+    .badge.fn{background:#991B1B;color:#fff;border-color:#991B1B}
+    .badge.unc{background:#1E40AF;color:#fff;border-color:#1E40AF}
+    .tool .twhy{font-size:.66rem;line-height:1.5;color:var(--ink2)}
+    .tool .twhy b{color:var(--ink)}
+
+    .insight{padding:12px 18px;font-size:.78rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.55}
+    .insight b{color:var(--ink)}
+  </style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>Variant Lab</h1>
+    <div class="truth none" id="truth">Select a variant</div>
+  </div>
+
+  <div class="content">
+    <div class="vtabs" id="vtabs">
+      <button class="vt on" onclick="pick(0)">Unsafe Concat</button>
+      <button class="vt" onclick="pick(1)">Parameterized</button>
+      <button class="vt" onclick="pick(2)">Custom Sanitizer</button>
+      <button class="vt" onclick="pick(3)">Cross-File Flow</button>
+    </div>
+
+    <div class="split">
+      <div class="code-box"><pre id="codeP"></pre></div>
+      <div class="why-box" id="whyBox"><h3 id="whyH"></h3><div class="why-text" id="whyT"></div></div>
+    </div>
+
+    <div class="tools" id="toolsArea"></div>
+  </div>
+
+  <div class="insight" id="ins"><b>This lab shows why different tools give different results on code variants.</b> Select each variant to see which tools catch it, which miss it, and why.</div>
+</div></div>
+
+<script>
+const V = [
+  {
+    title: 'Unsafe Concat',
+    isVuln: true, truthLabel: 'Vulnerable: CWE-89',
+    code: 'query = request.args.get(\'q\')\nsql = <span class="hl-danger">"SELECT * WHERE n=\'"</span>\n    <span class="hl-danger">+ query + "\'\"</span>\ndb.execute(<span class="hl-danger">sql</span>)',
+    whyCls: 'is-vuln',
+    whyTitle: 'Why is this vulnerable?',
+    whyText: '<b>Untrusted user input</b> from the URL parameter is concatenated directly into the SQL string. An attacker can inject <code>\' OR 1=1 --</code> to alter the query logic. No sanitization or parameterization prevents this.',
+    tools: [
+      {name:'Pattern SAST', dot:'#2B7A3E', badge:'tp', btext:'Caught', label:'True Positive',
+       why:'<b>Matches rule:</b> execute() receives an argument built by string concatenation with a variable. The structural pattern matches a known-bad rule.'},
+      {name:'Semantic SAST', dot:'var(--blu)', badge:'tp', btext:'Caught', label:'True Positive',
+       why:'<b>Traces taint:</b> request.args.get() (source) flows through concat into execute() (sink). No sanitizer on the path. Formal proof of vulnerability.'},
+      {name:'LLM Review', dot:'var(--v)', badge:'tp', btext:'Caught', label:'True Positive',
+       why:'<b>Pattern match:</b> This looks exactly like thousands of SQL injection examples in training data. High-confidence classification as CWE-89.'}
+    ],
+    insight: '<b>The easy case.</b> All three tools catch textbook SQL injection. The differences between tools only emerge with subtler variants.'
+  },
+  {
+    title: 'Parameterized',
+    isVuln: false, truthLabel: 'Safe: uses parameters',
+    code: 'query = request.args.get(\'q\')\nsql = "SELECT * WHERE n = <span class="hl-safe">?</span>"\ndb.execute(\n    sql, <span class="hl-safe">(query,)</span>)',
+    whyCls: 'is-safe',
+    whyTitle: 'Why is this safe?',
+    whyText: '<b>Parameterized queries</b> separate code from data. The <code>?</code> placeholder tells the database driver to treat the value as data, never as SQL code. Even if <code>query</code> contains <code>\' OR 1=1 --</code>, it is treated as a literal search string.',
+    tools: [
+      {name:'Pattern SAST', dot:'#2B7A3E', badge:'fp', btext:'False Alarm', label:'False Positive',
+       why:'<b>Still sees concat:</b> The rule matches the string "SELECT *" + concatenation. It cannot distinguish safe parameterized patterns from unsafe ones because it only sees structure, not data flow.'},
+      {name:'Semantic SAST', dot:'var(--blu)', badge:'tn', btext:'No Issue', label:'True Negative',
+       why:'<b>Traces the parameter:</b> Taint analysis shows query flows into the parameter tuple, not into the SQL string. The driver handles escaping. No taint reaches the query text.'},
+      {name:'LLM Review', dot:'var(--v)', badge:'tn', btext:'No Issue', label:'True Negative',
+       why:'<b>Recognizes safe pattern:</b> Parameterized queries are well-represented in training data as the standard fix. The LLM correctly identifies this as safe.'}
+    ],
+    insight: '<b>Pattern SAST produces a false positive.</b> It sees string concatenation in the query template and flags it, even though the user input is safely parameterized. This is why pattern matching alone generates noise.'
+  },
+  {
+    title: 'Custom Sanitizer',
+    isVuln: false, truthLabel: 'Safe: custom sanitizer',
+    code: 'query = request.args.get(\'q\')\nclean = <span class="hl-unk">my_sanitize(query)</span>\nsql = "SELECT * WHERE n=\'"\n    + clean + "\'"\ndb.execute(sql)',
+    whyCls: 'is-safe',
+    whyTitle: 'Why is this safe (but hard to verify)?',
+    whyText: '<b>my_sanitize()</b> is a custom function that properly escapes SQL special characters. The code IS safe, but tools cannot easily verify this because they do not know what my_sanitize() does internally. Only a human reviewer or a tool with the function implementation can confirm it.',
+    tools: [
+      {name:'Pattern SAST', dot:'#2B7A3E', badge:'fp', btext:'False Alarm', label:'False Positive',
+       why:'<b>Ignores the sanitizer:</b> Still sees the concat + execute() pattern. Has no way to know that my_sanitize() makes the data safe. Flags it anyway.'},
+      {name:'Semantic SAST', dot:'var(--blu)', badge:'unc', btext:'Uncertain', label:'Needs Review',
+       why:'<b>Cannot verify custom code:</b> Taint analysis traces query into my_sanitize() but cannot determine if the output is safe without analyzing the function body. Marks as "needs manual review."'},
+      {name:'LLM Review', dot:'var(--v)', badge:'fp', btext:'False Alarm', label:'False Positive',
+       why:'<b>Does not trust unknown functions:</b> The LLM has not seen my_sanitize() in training data, so it cannot confirm it is effective. Flags the concatenation pattern conservatively.'}
+    ],
+    insight: '<b>Custom sanitizers confuse all tools.</b> Pattern SAST ignores the sanitizer entirely. Semantic SAST cannot verify it without the implementation. The LLM does not trust unfamiliar functions. This variant requires human judgment.'
+  },
+  {
+    title: 'Cross-File Flow',
+    isVuln: true, truthLabel: 'Vulnerable: cross-file CWE-89',
+    code: '<span class="hl-danger"># routes.py</span>\nq = request.args.get(\'q\')\nprocess(q)\n\n<span class="hl-danger"># db.py (separate file)</span>\ndef run(v):\n  db.execute(\n    "..." + v + "...")',
+    whyCls: 'is-vuln',
+    whyTitle: 'Why is this vulnerable?',
+    whyText: '<b>Same vulnerability, split across files.</b> Untrusted input enters in routes.py and reaches db.execute() in db.py through function calls. No sanitization exists on the path. The vulnerability is real, but harder to detect because no single file contains the complete source-to-sink path.',
+    tools: [
+      {name:'Pattern SAST', dot:'#2B7A3E', badge:'fn', btext:'Missed', label:'False Negative',
+       why:'<b>Scans file by file:</b> In db.py, it sees execute() with concat, but the variable "v" appears to be a function parameter, not user input. In routes.py, it sees request.args but no execute(). Neither file alone triggers the rule.'},
+      {name:'Semantic SAST', dot:'var(--blu)', badge:'tp', btext:'Caught', label:'True Positive',
+       why:'<b>Cross-file taint graph:</b> Builds a data-flow graph across the entire codebase. Traces request.args.get() through process() into run() and finally to execute(). The formal taint path spans both files.'},
+      {name:'LLM Review', dot:'var(--v)', badge:'fn', btext:'Missed', label:'False Negative',
+       why:'<b>Context window limitation:</b> If both files are not in the same prompt, the LLM cannot connect the source (routes.py) to the sink (db.py). Each file alone looks incomplete but not obviously dangerous.'}
+    ],
+    insight: '<b>Cross-file vulnerabilities reveal the critical difference.</b> Only semantic SAST catches this because it builds a complete data-flow graph across files. Pattern SAST and LLMs are structurally unable to trace paths that span multiple files.'
+  }
+];
+
+function pick(i){
+  const v = V[i];
+  document.querySelectorAll('.vt').forEach((b,j) => b.classList.toggle('on', j===i));
+
+  // Truth chip
+  const t = document.getElementById('truth');
+  t.textContent = v.truthLabel;
+  t.className = 'truth ' + (v.isVuln ? 'vuln' : 'safe');
+
+  // Code
+  document.getElementById('codeP').innerHTML = v.code;
+
+  // Why box
+  const wb = document.getElementById('whyBox');
+  wb.className = 'why-box ' + v.whyCls;
+  document.getElementById('whyH').textContent = v.whyTitle;
+  document.getElementById('whyT').innerHTML = v.whyText;
+
+  // Tool results
+  const ta = document.getElementById('toolsArea');
+  ta.innerHTML = '';
+  v.tools.forEach((tl, j) => {
+    const d = document.createElement('div');
+    d.className = 'tool';
+    d.style.opacity = '0';
+    d.style.transform = 'translateY(8px)';
+    d.innerHTML = `
+      <h4><span class="tdot" style="background:${tl.dot}"></span>${tl.name}</h4>
+      <div class="tres"><span class="badge ${tl.badge}">${tl.btext}</span><span style="font-size:.64rem;font-weight:600;color:var(--ink2)">${tl.label}</span></div>
+      <div class="twhy">${tl.why}</div>
+    `;
+    ta.appendChild(d);
+    setTimeout(() => { d.style.opacity='1'; d.style.transform='translateY(0)'; d.style.transition='all .35s ease'; }, 100 + j*120);
+  });
+
+  document.getElementById('ins').innerHTML = v.insight;
+}
+
+pick(0);
+
+(function(){
+  var root = document.documentElement;
+  var body = document.body;
+  root.style.height = 'auto';
+  body.style.height = 'auto';
+  root.style.overflow = 'visible';
+  body.style.overflow = 'visible';
+  function send(){
+    var el = document.querySelector('.w');
+    if(!el) return;
+    var r = el.getBoundingClientRect();
+    var pad = parseFloat(getComputedStyle(body).paddingTop) + parseFloat(getComputedStyle(body).paddingBottom);
+    var h = Math.ceil(r.height + pad);
+    window.parent.postMessage({type:'iframeHeight', height:h, src:location.href},'*');
+  }
+  if(window.ResizeObserver){
+    new ResizeObserver(send).observe(document.querySelector('.w') || body);
+  } else {
+    setInterval(send, 500);
+  }
+  window.addEventListener('load', function(){ setTimeout(send,200); });
+  setTimeout(send, 50);
+})();
+</script>
+</body>
+</html>

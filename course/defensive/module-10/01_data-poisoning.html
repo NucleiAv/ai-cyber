@@ -1,0 +1,254 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 10 · Section 1 · Data Poisoning · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 10 · Section 1 of 5</div>
+      <h1 class="nyu-hero__title">Data Poisoning: Compromising the Model at Training Time</h1>
+      <p class="nyu-hero__subtitle">How an attacker corrupts a model by tampering with its training data, and why the result is so hard to catch.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~25 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 1 knowledge check</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Where Poisoning Sits in the Lifecycle</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Three Ways to Poison</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Poisoning at Web Scale</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Classify the Attack</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Explain</strong> backdoor, label-flipping, and clean-label poisoning, and identify the pipeline stage each one compromises.</span></li>
+          <li><span><strong>Analyze</strong> why a poisoned model can pass standard evaluation, and which technique survives a label audit.</span></li>
+        </ul>
+      </section>
+
+      <aside class="nyu-callout" role="note" aria-labelledby="frame-title">
+        <h3 class="nyu-callout__title" id="frame-title">
+          <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+          A note before we start
+        </h3>
+        <p>You will learn how data poisoning works, how evasion fools a classifier, and how a model file can execute code on load. That knowledge could, in principle, be turned toward offensive use. We study it for the opposite reason: you cannot defend against an attack you do not understand. The goal throughout is to recognize these techniques, reason about why they succeed, and figure out what stops them.</p>
+      </aside>
+
+
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="defense-pointer-title">
+        <h3 class="nyu-callout__title" id="defense-pointer-title">Where the Defenses Are Covered</h3>
+        <p>This module is a catalog of attacks: poisoning at training time, evasion at inference time, the ML supply chain as an attack surface, and excessive agency. Each section closes with awareness-level countermeasures rather than a defensive program, which can leave the impression that the module stops halfway.</p>
+        <p>The engineering response is Module 11, Defending the Pipeline. It works through input validation and output filtering, guardrail architectures, the attack surfaces particular to deployment patterns such as RAG, monitoring and detection for several of the attacks named here, and a structured method for assessing a deployment before it ships. This module is the catalog that the assessment work draws on.</p>
+      </aside>
+
+      <!-- ============ SECTION 1 ============ -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Where Poisoning Sits in the Lifecycle</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>A model is only as trustworthy as the data it learned from. <button type="button" class="nyu-define" data-term="data-poisoning">Poisoning attacks</button> exploit that fact by corrupting the training set so the finished model carries the attacker's intent, while still looking normal on every test anyone is likely to run.</p>
+
+        <p>Every model moves through the same <button type="button" class="nyu-define" data-term="ml-lifecycle">lifecycle stages</button>: someone collects data, labels it, trains on it, deploys the result, and then runs inputs through it to get predictions. Each stage is a place an attacker can act. Poisoning is the training-time attack. The adversary never touches the deployed model or its inputs; they reach back to the data the model learned from and change what the model becomes.</p>
+
+        <p>That framing tells us what a poisoning defense has to protect: the provenance and integrity of training data, not the runtime. It also tells us why detection is hard. A poisoned model is not broken. It was trained successfully on data that happened to contain the attacker's payload, so it performs correctly on ordinary inputs and reveals its behavior only under the specific conditions the attacker chose.</p>
+
+        <p>We also separate what the attacker is trying to violate. An <button type="button" class="nyu-define" data-term="integrity-availability-privacy">integrity</button> attack makes the model produce specific wrong outputs. An availability attack degrades the model for everyone, turning it into a coin flip. A privacy attack pulls training data or model internals back out. Most poisoning we study aims at integrity: the model stays generally accurate, but does the wrong thing on command.</p>
+      </section>
+
+      <!-- ============ SECTION 2 ============ -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Three Ways to Poison</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The three techniques differ in what the attacker changes and how visible the change is. Each card names the technique, what the attacker modifies, and why it evades notice.</p>
+
+        <div class="nyu-cards">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <h3 class="nyu-card__title"><button type="button" class="nyu-define" data-term="backdoor-poisoning">Backdoor poisoning</button></h3>
+            <p>Adds examples that tie a trigger to a target label. Picture a network-intrusion classifier trained on flows that all carry one rare packet-timing signature, all labeled benign. The model learns that signature as one more pattern, classifies ordinary traffic correctly, and waves through any later traffic that carries the trigger. The backdoor is conditional, so ordinary testing misses it.</p>
+            <div class="nyu-embed-frame">
+              <iframe src="interactive/01_backdoor/backdoor.html" title="Interactive: step through a backdoor poisoning attack on a network-intrusion classifier" loading="lazy" style="height:620px;"></iframe>
+            </div>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-14 14H3v-4L17 3z"/></svg>
+            </div>
+            <h3 class="nyu-card__title"><button type="button" class="nyu-define" data-term="label-flipping">Label flipping</button></h3>
+            <p>Leaves the inputs alone and changes their labels. Relabel a batch of genuinely malicious flows as benign during training, and the decision boundary shifts toward calling attacks normal. This is blunter than a backdoor and easier to detect if anyone audits the labels, because the inputs and their labels no longer agree.</p>
+            <div class="nyu-embed-frame">
+              <iframe src="interactive/01_label_flip/label_flip.html" title="Interactive: step through a label-flipping attack and see how a label audit catches the mismatch" loading="lazy" style="height:620px;"></iframe>
+            </div>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+            </div>
+            <h3 class="nyu-card__title"><button type="button" class="nyu-define" data-term="clean-label">Clean-label poisoning</button></h3>
+            <p>The subtle one, and the technique students most often misread. The labels stay correct. The attacker perturbs the inputs instead, nudging them in feature space so a reviewer checking the labels sees nothing wrong, yet the model still learns a corrupted association. Because no label is mislabeled, a label audit passes clean. The poison hides inside the inputs.</p>
+            <div class="nyu-embed-frame">
+              <iframe src="interactive/01_clean_label/clean_label.html" title="Interactive: step through a clean-label poisoning attack where labels stay correct but inputs carry the corruption" loading="lazy" style="height:620px;"></iframe>
+            </div>
+          </div>
+        </div>
+
+        <p>Let's visualize the three techniques one more time to really drive it home. We'll inject each poison into the same training set, then run a label audit and watch which one slips through.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/1_poison_lab/poison_lab.html" title="Interactive: inject backdoor, label-flip, or clean-label poison into a training set, then run a label audit to see which survives" loading="lazy" style="height:660px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">Why this matters for a security team</h3>
+        <p>Security tooling increasingly ships trained models: the classifier in an intrusion detector, the model behind an alert-triage assistant, the anomaly detector watching authentication. If any of those learned from data an attacker could influence, the model can carry a defect that no accuracy number will reveal. A team that only measures aggregate accuracy will grade a backdoored model as excellent. Recognizing poisoning as a training-time integrity problem changes what the team asks: not only how accurate this model is, but where its training data came from, and who could have touched it.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="mis-title">
+          <h3 class="nyu-callout__title" id="mis-title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+          Clean-label does not change the labels
+          </h3>
+          <p>The most frequent error is believing clean-label poisoning changes the labels. It does not. Its entire premise is that the labels stay correct so the poison survives a label review. Any description of "the flipped label" in a clean-label attack has merged two different techniques.</p>
+        </aside>
+      </section>
+
+      <!-- ============ SECTION 3 ============ -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Poisoning at Web Scale</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Large models train on data scraped from the open web, and much of that data is not as fixed as it looks. Researchers demonstrated two practical attacks on this.</p>
+
+        <h3 class="nyu-subsection-title">Two practical web-scale attacks</h3>
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Split-view</h4>
+              <p class="nyu-process__detail">The adversary buys expired domains that a public dataset still points to, then serves poisoned content to the crawler that later re-downloads the data. The version the model trains on differs from the version the dataset's authors reviewed. The trust assumption breaks in space: the crawler sees one thing, the reviewer saw another.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Frontrunning</h4>
+              <p class="nyu-process__detail">The adversary injects malicious edits into a resource like a crowd-edited encyclopedia just before its scheduled snapshot is taken, timing the poison to land in the archived copy. The trust assumption breaks in time: the poison lands after review, before the snapshot.</p>
+            </div>
+          </li>
+        </ol>
+
+        <p>The reported result: poisoning roughly 0.01% of two popular image-text datasets would have cost about 60 dollars.</p>
+
+        <p>Two structural points make the case land. Both attacks act at the data-collection stage, before training begins, which is what fixes them as poisoning rather than evasion. Both work by breaking one assumption, that a dataset's contents stay stable between the moment they are reviewed and the moment they are downloaded: split-view breaks it in space, so the crawler and the reviewer see different data, and frontrunning breaks it in time, so the poison lands after review but before the snapshot. The cost is the rest of the finding. Sixty dollars and a hundredth of a percent is a low enough barrier that a defender has to assume some fraction of scraped training data is already adversarial.</p>
+
+        <h3 class="nyu-subsection-title">Reading a striking result carefully</h3>
+        <p>A 2025 finding unsettles a common assumption. Researchers reported that a roughly constant number of poisoned documents, around 250, was enough to plant a backdoor in models ranging from hundreds of millions to over ten billion parameters. If that holds, poisoning does not require a fixed percentage of the training set that grows with the model; it may need only a small, fixed count of documents.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="preprint-title">
+          <h3 class="nyu-callout__title" id="preprint-title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+            Treat this as provisional
+          </h3>
+          <p>This is a single study, not yet through peer review. It tested one narrow kind of backdoor, and the authors caution against assuming it generalizes to every model, every training setup, or every attack goal. The finding is important enough to change how we think about feasibility, and unsettled enough that we hold it loosely and date it. That habit, treating a striking result as provisional until independent work confirms it, is the same discipline we apply to any capability claim in this field.</p>
+        </aside>
+
+        <p>Step through the economics of poisoning at scale: watch how the required amount of poison changes as models grow, and see where the trust breaks and what it costs.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/1_web_scale/web_scale.html" title="Interactive: scrub model size to compare percentage-based versus constant-count poisoning, with the split-view and frontrunning cost economics" loading="lazy" style="height:720px;"></iframe>
+        </div>
+
+        <p>How feasible poisoning is in production remains unsettled. The cheap web-scale result is peer-reviewed and solid; the near-constant-count result is newer and not yet confirmed. Defenders plan under that uncertainty, which usually means treating training-data provenance as a control worth investing in even before the research fully settles. That investment has a cost: vetting and tracking the origin of training data is slower and more expensive than scraping whatever is available. The payoff shows up later in the course, when the quality of the data behind a fine-tuned model determines how well it holds up against adversarial inputs.</p>
+      </section>
+
+      <!-- ============ SECTION 4 ============ -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Classify the Attack</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            Reasoning task
+          </h3>
+          <p class="nyu-scenario__prompt">You are handed descriptions of three poisoning incidents against an intrusion-detection classifier. For each, decide the technique, the lifecycle stage it attacks, whether the attacker's goal is integrity, availability, or privacy, and why it would be hard to detect. Then answer the question that separates real understanding from memorized labels: which of the three would survive a careful audit of the training labels, and why? A full answer key is provided with your activity materials. Reveal the reasoning below only after you have committed your own answers.</p>
+          <button class="nyu-scenario__btn">Show reasoning approach</button>
+          <div class="nyu-scenario__answer">
+            <p>Work each item along three axes before naming it:</p>
+            <ul>
+              <li><strong>What did the attacker change?</strong> Labels only points to label flipping. Inputs with a trigger tied to a target label points to a backdoor. Inputs perturbed while labels stay correct points to clean-label.</li>
+              <li><strong>What stage, what goal?</strong> All three act at the data or training stage. Most aim at integrity: normal accuracy, wrong behavior on command.</li>
+              <li><strong>Which survives a label audit?</strong> Only clean-label. Its labels are correct by construction, so an audit of labels finds nothing; the poison lives in the inputs. Backdoor and label-flipping both leave a label-level trace a careful audit can catch.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="quiz-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-1-prompt">An attacker submits training flows that all share one rare timing signature, all labeled benign, and leaves the rest of the training set untouched. The deployed model scores well on every benchmark but waves through any traffic carrying that signature. Which technique is this?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Label flipping changes labels on existing inputs and does not install a trigger that switches the model's behavior. Here the attacker adds trigger-bearing examples and the model behaves normally until the trigger appears, which is a backdoor.">Label flipping</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Backdoor poisoning</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Clean-label attacks perturb inputs while keeping labels correct and do not rely on a trigger that flips behavior on cue. The defining feature here is the trigger tied to a target label.">Clean-label poisoning</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Evasion happens at inference time against a finished model. This attack modifies the training data, so it is poisoning.">Evasion</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. A trigger is tied to a target output, so the model stays accurate on ordinary traffic and passes benchmarks, and misbehaves only when the trigger is present. That conditional behavior is what makes a backdoor hard to catch."
+               data-incorrect-msg="Reconsider what the attacker changed and when. The inputs carry a trigger tied to a target label, added at training time, and the model behaves normally until the trigger appears."></div>
+        </div>
+      </section>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 2: Evasion Attacks: Fooling the Model at Inference Time.</strong> Poisoning corrupts the model before it is finished. This section keeps the model exactly as trained and attacks it from the other end of the lifecycle: crafting an input that the finished model gets wrong on purpose.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

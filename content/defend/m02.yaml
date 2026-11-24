@@ -1,0 +1,94 @@
+n: 2
+short: How LLMs work
+title: How LLMs work
+time: 6 sections · about 3.5 hours
+lede: From text to tokens to vectors to a next-token guess. Where model behavior comes from, how to map risks to the model lifecycle, and why models make things up.
+idea: |
+  To defend an LLM system you need a mental model of what happens inside it. The model turns text into **tokens**, tokens into **vectors**, mixes them with **attention**, and outputs a **probability** for every possible next token. Then it picks one and repeats.
+
+  Everything the model "knows" is in its weights from training. Everything it "sees" right now is in its context window. Most risks live in one of those two places.
+
+  !eli5 Think of autocomplete on your phone, trained on a huge library and made very smart. It still only guesses the next word. It does not look anything up unless you hand it a page to read.
+primer: |
+  ### Step 1. Text becomes tokens
+
+  A tokenizer cuts text into tokens. Common words are one token. Rare strings, such as IP addresses, hashes and hex dumps, break into many tokens. This is the **token tax** on security data. Logs cost more and fill the context window faster than normal prose.
+
+  ### Step 2. Tokens become vectors
+
+  Each token maps to an **embedding**, a list of numbers. Training places related tokens near each other. Similarity is usually measured with **cosine similarity**, because the direction of a vector carries the meaning.
+
+  ### Step 3. Attention mixes context
+
+  Transformer layers let every token look at the tokens before it and decide which ones matter. After many layers, the last position holds a summary used to predict what comes next.
+
+  ### Step 4. Probabilities and sampling
+
+  The model gives a probability to every token in its vocabulary. **Temperature** controls the pick. At 0 it takes the most likely token every time. Higher values add randomness. That is why the same prompt can give different answers.
+
+  ### Step 5. Where behavior comes from
+
+  Behavior is a **stack**, not one source.
+
+  1. **Pretraining** gives broad knowledge, stored in the weights. This is parametric memory, frozen at a cutoff date.
+  2. **Post-training** shapes behavior. Supervised fine-tuning teaches format. RLHF trains a reward model from human preferences and then tunes the model toward it. DPO learns directly from preference pairs, without a separate reward model.
+  3. **Inference time** adds the system prompt, retrieved documents, tool results and decoding settings.
+
+  ### Step 6. Why models fabricate
+
+  Two different failures look alike. **Fabrication** is confident false content, such as an invented CVE or URL. **Variability** is a different answer on each run. Version numbers and identifiers are where models guess most, because many numbers are plausible and none stands out.
+
+  !key Deploying a model locally keeps data on your servers. It does not make the system secure. Data residency and security are different questions.
+diagrams:
+  - type: flow
+    title: The pipeline inside one generation step
+    nodes: [["Text", "box"], ["Tokens", "raised"], ["Vectors", "raised"], ["Transformer layers", "def"], ["Next-token probabilities", "def"], ["Pick one, append, repeat", "box"]]
+    edges: ["", "", "", "", ""]
+    caption: The six pipeline labs in this module let you click through each stage.
+  - type: flow
+    title: The behavior stack and its risks
+    lanes:
+      - nodes: [["Pretraining data", "box", "poisoning, memorized PII"], ["Post-training", "box", "weak alignment"], ["Inference context", "atk", "injection, leakage"], ["Decoding", "box", "variability"]]
+        edges: ["", "", ""]
+    caption: Section 3 maps the OWASP LLM Top 10 onto these stages and matches each to controls.
+terms:
+  - [Token, "A small piece of text that the model reads and writes."]
+  - [Context window, "The maximum number of tokens the model can read at once."]
+  - [Embedding, "A vector of numbers that stands for a token or a text."]
+  - [Attention, "The mechanism that lets each token weigh other tokens."]
+  - [Temperature, "A setting that controls how random the next-token pick is."]
+  - [RLHF, "Reinforcement learning from human feedback. A reward model learned from human rankings guides tuning."]
+  - [DPO, "Direct preference optimization. Learns from preferred and rejected answers without a separate reward model."]
+  - [Quantization, "Storing weights with fewer bits. Smaller and faster, with some loss of quality."]
+  - [Model card, "A document that describes a model's training, intended use and limits."]
+sections:
+  01_how-text-becomes-computation.html: "How your prompt becomes tokens and vectors, why security data such as IPs and hashes costs many tokens, and how attention decides what the model focuses on. Six small labs walk through each stage."
+  02_where-model-behavior-comes-from.html: "Model behavior comes from a stack. Pretraining, fine-tuning and alignment, and what happens at inference time with context, retrieval, tools and decoding. Also why benchmark scores can be inflated by memorized test data."
+  03_model-lifecycle-risk-map.html: "Map each risk to the lifecycle stage where it starts, match it to a control, place the OWASP LLM Top 10 on the map, and read model cards like a practitioner."
+  04_deployment-decisions.html: "Cloud API, local or hybrid. What each choice changes for security, why local is not the same as secure, how quantization affects behavior, and how to keep a deployment auditable and reproducible."
+  05_why_modules_fabricate.html: "Why models invent facts and why the same prompt gives different answers. The kinds of hallucination in security work, when the risk rises, and a workflow to detect and reduce it."
+  06_references-and-readings.html: "Every paper, standard and tool used in Module 2, sorted by type and by section."
+other_fw:
+  - [OWASP LLM Top 10 2025, "Section 3 places each entry on the lifecycle. [Open the list](@owasptop10)."]
+  - [NIST AI 600-1, "The generative AI profile lists confabulation, meaning hallucination, as one of its 12 risks. [Read it](@nist6001)."]
+slides:
+  summary: |
+    The lecture opens with a game called Spot the Hallucination, where each round has five checkable statements and only one is true. It then explains autoregressive pretraining, why a lookup table cannot predict text, how word vectors start random and move during training, why cosine similarity is used, RLHF compared with DPO, the memory-bandwidth bottleneck of real GPUs, and a live model that invents identifiers.
+  files: [M02.pdf]
+quiz:
+  - q: Why does an IPv4 address use more tokens than a common word?
+    opts: ["It is encrypted", "Rare strings split into many small tokens", "Numbers are not allowed"]
+    a: 1
+    why: Tokenizers learn common words as single tokens. Unusual strings break into pieces.
+  - q: At temperature 0, what happens?
+    opts: ["The model picks the most likely token every time", "The model stops", "The output is fully random"]
+    a: 0
+    why: Temperature 0 removes sampling randomness, which makes runs repeatable.
+  - q: A team says "we run the model on our own server, so it is secure". What is wrong?
+    opts: ["Nothing", "Local hosting decides where data lives, not whether the system resists injection or leaks", "Local models cannot be attacked"]
+    a: 1
+    why: Data residency and security are separate questions.
+  - q: Which part of an answer is a model least sure of, as a rule?
+    opts: ["Common product names", "Version numbers and exact identifiers", "Grammar"]
+    a: 1
+    why: Many numbers are plausible and none stands out, so each digit is a guess.

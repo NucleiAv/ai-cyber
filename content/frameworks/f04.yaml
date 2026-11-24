@@ -1,0 +1,117 @@
+slug: f04
+num: "04"
+short: STRIDE threat modeling
+title: STRIDE, threat modeling an LLM app
+time: about 1.5 hours
+lede: A simple way to find what can go wrong in a design before attackers do. Draw the system, then walk six kinds of threat across every part.
+headings: {attack: "How to use it, step by step", cases: "Real examples", defend: "Strengths and limits", map: "How it links to the others", lab: "Try it"}
+other_fw:
+  - [OWASP LLM Top 10, "Use STRIDE to find threats in your design, then use OWASP to check you did not miss known LLM risks. See [framework 05](f05.html)."]
+  - [MITRE ATLAS, "Name the attacker techniques behind each threat you find. See [framework 01](f01.html)."]
+
+idea: |
+  **Threat modeling** means thinking about attacks while you design, when fixes are cheap. **STRIDE** is a checklist of six threat types. Loren Kohnfelder and Praerit Garg created it at Microsoft in 1999.
+
+  Each letter is a threat, and each threat breaks one security property.
+
+  !eli5 Before you move into a house, you walk every room and ask six questions. Can someone pretend to be me? Change my things? Deny they did something? See my secrets? Lock me out? Get a master key? STRIDE is those six questions for software.
+
+terms:
+  - [Spoofing, "Pretending to be someone or something else. Breaks authentication."]
+  - [Tampering, "Changing data or code without permission. Breaks integrity."]
+  - [Repudiation, "Denying an action with no proof either way. Breaks non-repudiation."]
+  - [Information disclosure, "Showing data to someone not allowed to see it. Breaks confidentiality."]
+  - [Denial of service, "Making the system unavailable. Breaks availability."]
+  - [Elevation of privilege, "Getting more power than allowed. Breaks authorization."]
+  - [Data flow diagram, "A simple drawing of processes, data stores, external entities, data flows and trust boundaries."]
+  - [Trust boundary, "A line where data moves between parts with different trust, such as from the internet into your server."]
+
+how: |
+  ### The four questions
+
+  Adam Shostack's four-question frame is the shortest guide to any threat model.
+
+  1. What are we working on?
+  2. What can go wrong?
+  3. What are we going to do about it?
+  4. Did we do a good job?
+
+  STRIDE answers question 2.
+
+  ### STRIDE on an LLM support bot
+
+  - **Spoofing.** A user types a fake system block and the model treats it as the developer. (Module 9, Yarrow Mutual.)
+  - **Tampering.** An attacker edits a document in the RAG store. (Lesson 7, poisoning.)
+  - **Repudiation.** The agent sends a refund, and no log shows which prompt caused it.
+  - **Information disclosure.** The bot repeats its system prompt or another user's data. (Lessons 4 and 11.)
+  - **Denial of service.** A sponge prompt burns the token budget. (Lesson 14.)
+  - **Elevation of privilege.** An injected instruction makes the agent use tools the user may not use. (Lesson 9.)
+
+diagrams:
+  - type: flow
+    title: A data flow diagram of a RAG bot with its trust boundary
+    lanes:
+      - label: outside, untrusted
+        labelkind: atk
+        nodes: [["User", "box"], ["Web pages and uploads", "atk"]]
+        edges: [""]
+      - label: inside, our system
+        labelkind: def
+        nodes: [["Chat API", "def"], ["LLM", "def"], ["Vector store", "raised"], ["Email tool", "raised"]]
+        edges: ["", "", ""]
+    caption: Every arrow that crosses from the outside lane into the inside lane crosses the trust boundary. Walk STRIDE on each of those arrows first.
+
+attack_steps:
+  - Draw the data flow diagram. Include every external entity, process, data store and flow.
+  - Draw the trust boundaries.
+  - For each element and each flow, ask the six STRIDE questions.
+  - Write each threat as one sentence, such as "An outsider can tamper with the vector store through uploads".
+  - Choose a response for each. Mitigate, remove the feature, transfer the risk, or accept it with a named owner.
+  - Check your list against the OWASP LLM Top 10 to catch misses.
+  - Repeat when the design changes.
+
+cases:
+  - [Yarrow Claims Assistant, "STRIDE finds information disclosure on the outbound email flow and tampering on inbound email. Removing the outbound channel answers both. Module 9 reaches the same fix through the lethal trifecta."]
+  - [Fernhill Contractor API, "Elevation of privilege on the unauthenticated model reload endpoint, found in Module 11. A data flow diagram shows that flow crossing the trust boundary with no check."]
+
+defense: |
+  **Strengths**
+
+  - Easy to learn and quick to run in a design meeting.
+  - Works on any system, including LLM apps and agents.
+  - Free tools help, such as the Microsoft Threat Modeling Tool and OWASP Threat Dragon.
+
+  **Limits**
+
+  - It finds threat types, not their likelihood. Rank them with risk or real data.
+  - It depends on a correct diagram. Missing a flow means missing its threats.
+  - LLM-specific risks, such as prompt injection, can hide inside Spoofing, Tampering and Elevation, so add the OWASP list as a second pass.
+
+lab:
+  intro: |
+    Threat model the email agent from lesson 9.
+  steps:
+    - Draw its data flow diagram. User, agent, mail API, inbox, outside senders.
+    - Mark the trust boundary where outside email enters.
+    - Write at least one threat for each STRIDE letter.
+    - Pick a response for each and name an owner.
+    - Compare with the defenses in [lesson 9](../attack/l09.html#defend).
+
+quiz:
+  - q: An attacker edits a document in the RAG store. Which STRIDE threat is it?
+    opts: ["Spoofing", "Tampering", "Repudiation"]
+    a: 1
+    why: Changing data without permission breaks integrity, which is Tampering.
+  - q: An agent sends money and nothing records which prompt caused it. Which threat?
+    opts: ["Repudiation", "Denial of service", "Elevation of privilege"]
+    a: 0
+    why: Without logs nobody can prove who caused the action.
+  - q: Which security property does Information disclosure break?
+    opts: ["Integrity", "Confidentiality", "Availability"]
+    a: 1
+    why: Showing data to the wrong person breaks confidentiality.
+
+refs:
+  - "Microsoft. [STRIDE threat categories in the Threat Modeling Tool](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool-threats)."
+  - "Shostack. [The Four Question Framework](https://github.com/adamshostack/4QuestionFrame)."
+  - "OWASP. [Threat Dragon](https://owasp.org/www-project-threat-dragon/)."

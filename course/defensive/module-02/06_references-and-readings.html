@@ -1,0 +1,269 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Module 2 · Section 6 · References &amp; Readings · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true">
+      <div class="nyu-progress__bar"></div>
+    </div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 2 · Section 6 of 6</div>
+      <h1 class="nyu-hero__title">References &amp; Readings</h1>
+      <p class="nyu-hero__subtitle">
+        All sources, standards, and recommended readings referenced throughout Module 2: How LLMs Work, organized by type and indexed by section.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Section type"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Reference</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 5 parts</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Academic Papers &amp; Preprints</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Frameworks &amp; Standards</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Government Sources</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Tools &amp; Documentation</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Source Caveats</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> References by Section</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+      <!-- ====================== ACADEMIC ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Academic Papers &amp; Preprints</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <ul class="ref-list">
+          <li><strong>Carlini, N., Tramèr, F., Wallace, E., Jagielski, M., Herbert-Voss, A., Lee, K.,
+            Roberts, A., Brown, T., Song, D., Erlingsson, Ú., Oprea, A., &amp; Raffel, C.</strong> (2021).
+            "Extracting Training Data from Large Language Models." <em>30th USENIX Security Symposium</em>, pp. 2633–2650.
+            <span class="ref-tag ref-tag--paper">Paper</span>
+            <br>Demonstrated that training data can be recovered verbatim from a deployed language model.
+            The empirical basis for the memorization risk discussed in Section 2 and for treating
+            fine-tuning data as a disclosure surface.
+            <br><a href="https://www.usenix.org/system/files/sec21-carlini-extracting.pdf" target="_blank" rel="noopener">USENIX Security '21 (PDF)</a>
+            · <a href="https://arxiv.org/abs/2012.07805" target="_blank" rel="noopener">arXiv:2012.07805</a></li>
+
+          <li><strong>Liu, N. F., Lin, K., Hewitt, J., Paranjape, A., Bevilacqua, M., Petroni, F., &amp; Liang, P.</strong> (2023).
+            "Lost in the Middle: How Language Models Use Long Contexts."
+            <em>Transactions of the Association for Computational Linguistics.</em>
+            <span class="ref-tag ref-tag--paper">Paper</span>
+            <br>Documents the retrieval degradation for information placed in the centre of a long input.
+            The basis for the Section 1 knowledge check on the 40-page report.
+            <br><a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">arXiv:2307.03172</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== FRAMEWORKS ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Frameworks &amp; Standards</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <ul class="ref-list">
+          <li><strong>OWASP GenAI Security Project.</strong> <em>OWASP Top 10 for LLM Applications.</em>
+            <span class="ref-tag ref-tag--framework">Framework</span>
+            <br>The industry-recognized classification for LLM security risks, used in Section 3 to organize
+            risks by lifecycle stage and revisited in depth in Modules 9 through 11.
+            <br><a href="https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/" target="_blank" rel="noopener">2026 edition (current)</a>
+            · <a href="https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/" target="_blank" rel="noopener">2025 edition</a>
+            · <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener">Project home</a></li>
+
+          <li><strong>National Institute of Standards and Technology (NIST).</strong>
+            <em>SP 800-218: Secure Software Development Framework (SSDF) v1.1.</em> NIST, 2022.
+            <span class="ref-tag ref-tag--framework">Framework</span>
+            <br>Referenced in Section 3 as an example of a publication whose number and content students should
+            verify rather than accept from model output.
+            <br><a href="https://csrc.nist.gov/projects/ssdf" target="_blank" rel="noopener">NIST SSDF project</a>
+            · <a href="https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-218.pdf" target="_blank" rel="noopener">SP 800-218 (PDF)</a></li>
+
+          <li><strong>National Institute of Standards and Technology (NIST).</strong>
+            <em>SP 800-218A: Secure Software Development Practices for Generative AI and Dual-Use Foundation Models.</em> NIST.
+            <span class="ref-tag ref-tag--framework">Framework</span>
+            <br>An SSDF community profile that adds AI-specific practices across the model development lifecycle.
+            The closest standards analogue to the lifecycle risk map built in Section 3.
+            <br><a href="https://csrc.nist.gov/pubs/sp/800/218/a/final" target="_blank" rel="noopener">NIST SP 800-218A</a></li>
+
+          <li><strong>MITRE.</strong> <em>ATT&amp;CK Knowledge Base.</em> MITRE Corporation.
+            <span class="ref-tag ref-tag--framework">Framework</span>
+            <br>Referenced across Sections 2 and 3 as the adversary tactic and technique taxonomy that security
+            teams already use, and as the model for how a shared vocabulary makes risks comparable.
+            <br><a href="https://attack.mitre.org/" target="_blank" rel="noopener">MITRE ATT&amp;CK</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== REGULATORY ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Government Sources</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <ul class="ref-list">
+          <li><strong>European Parliament and Council.</strong>
+            <em>Regulation (EU) 2024/1689 (Artificial Intelligence Act).</em> 13 June 2024.
+            <span class="ref-tag ref-tag--reference">Regulation</span>
+            <br>Cited in Section 3 for its transparency and documentation obligations, which are what make
+            model cards and data provenance an operational requirement rather than a courtesy.
+            Entered into force 1 August 2024.
+            <br><a href="https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng" target="_blank" rel="noopener">EUR-Lex: Regulation (EU) 2024/1689</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== TOOLS ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Tools &amp; Documentation</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <ul class="ref-list">
+          <li><strong>Live Tokenizer.</strong> <span class="ref-tag ref-tag--tool">Interactive</span>
+            <br>Type security data and watch it split into tokens in real time. Built for this course to make
+            the token tax on IP addresses, hashes, and log lines concrete.</li>
+          <li><strong>Pipeline Stages (six animations).</strong> <span class="ref-tag ref-tag--tool">Interactive</span>
+            <br>Embedding lookup, positional encoding, transformer layers, projection to logits, probabilities
+            and sampling, and decoding to text. Each stage can be paused.</li>
+          <li><strong>Embedding Space Explorer.</strong> <span class="ref-tag ref-tag--tool">Interactive</span>
+            <br>A 3D view of how related terms cluster in vector space.</li>
+          <li><strong>Quantization Curve.</strong> <span class="ref-tag ref-tag--tool">Interactive</span>
+            <br>Shows the accuracy-versus-memory trade-off behind the deployment decisions in Section 4.</li>
+        </ul>
+      </section>
+
+      <!-- ====================== SOURCE CAVEATS ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Source Caveats</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">Reading Sources Critically</h3>
+          <p>Every source has a context. When you read security research, keep these caveats in mind:</p>
+        </aside>
+
+        <table class="nyu-table nyu-table--even">
+          <thead>
+            <tr><th>Source Category</th><th>Key Caveat</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Peer-reviewed papers (Carlini et al.; Liu et al.)</td>
+              <td>Findings are tied to the specific model versions and context lengths tested. The &ldquo;lost in the middle&rdquo; effect in particular varies with architecture and context window, so treat the shape of the result as the lesson rather than the exact numbers.</td>
+            </tr>
+            <tr>
+              <td>Living frameworks (OWASP Top 10 for LLM Applications, MITRE ATT&amp;CK)</td>
+              <td>Both are revised on their own schedules, and OWASP renumbers and reorders entries between editions. Cite the edition and the date you consulted it.</td>
+            </tr>
+            <tr>
+              <td>Regulation (EU AI Act, Regulation (EU) 2024/1689)</td>
+              <td>Obligations phase in across several years and implementing acts and standards continue to appear. Check the current consolidated text before relying on any specific duty or deadline.</td>
+            </tr>
+            <tr>
+              <td>Practice catalogs (NIST SP 800-218 and 800-218A)</td>
+              <td>The SSDF is a catalog of practices to select from, not a compliance checklist and not a maturity score. It tells you what to consider, not what is sufficient.</td>
+            </tr>
+            <tr>
+              <td>Course-built interactives (tokenizer, pipeline stages, embedding explorer)</td>
+              <td>Deliberately simplified teaching models. They reproduce the shape of the mechanism, not the arithmetic of any production system, and are not a source of measurements.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================== BY SECTION ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">References by Section</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Use this index to find the sources behind each section of Module 2.</p>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 1: How Text Becomes Computation</h3>
+          <ul class="ref-list">
+            <li>Liu et al. (2023). Lost-in-the-middle degradation across long contexts.</li>
+            <li>Context window figures for current model families are illustrative and change frequently;
+              verify against vendor documentation before quoting them operationally.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 2: Where Model Behavior Comes From</h3>
+          <ul class="ref-list">
+            <li>Carlini et al. (2021, USENIX Security). Training data extraction and memorization.</li>
+            <li>MITRE ATT&amp;CK. Shared adversary vocabulary.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 3: The Model Lifecycle as a Risk Map</h3>
+          <ul class="ref-list">
+            <li>OWASP Top 10 for LLM Applications. Risk classification mapped to lifecycle stages.</li>
+            <li>NIST SP 800-218 and SP 800-218A. Secure development practices, including the generative AI profile.</li>
+            <li>Regulation (EU) 2024/1689 (AI Act). Transparency and documentation obligations.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 4: Deployment as a Security Architecture Decision</h3>
+          <ul class="ref-list">
+            <li>No external sources cited. The deployment comparison and branching scenario are original
+              instructional content built on the concepts established in Sections 1 through 3.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 5: Why Models Fabricate and Why Outputs Vary</h3>
+          <ul class="ref-list">
+            <li>Carlini et al. (2021). Memorization as a source of confident but unsourced output.</li>
+            <li>Fabrication taxonomy (factual, source, entity conflation, logical confabulation) is original
+              to this course, developed to give practitioners a vocabulary for triaging model errors.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+
+</html>

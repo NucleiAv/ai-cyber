@@ -1,0 +1,269 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 9 · Section 6 · References &amp; Readings · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 9 · Section 6 of 6</div>
+<h1 class="nyu-hero__title">References &amp; Readings</h1>
+<p class="nyu-hero__subtitle">All sources, citations, and recommended readings referenced throughout Module 9: Prompt Injection and Attacking AI Systems, organized by category and section.</p>
+<div class="nyu-hero__meta" aria-label="Section overview"><span aria-label="Section type"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Reference</span> <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 8 parts</span></div>
+</header><nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Recommended Readings</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Further Optional Readings</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Frameworks &amp; Standards</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Tools &amp; Documentation</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Case Studies &amp; Incident Reports</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Datasets</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> Source Caveats</a></li>
+        <li><a href="#sec-8"><span class="nyu-toc__num">8</span> References by Section</a></li>
+      </ol>
+</nav><main id="main" tabindex="-1"><!-- ====================== RECOMMENDED ====================== -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">Recommended Readings</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>UK NCSC.</strong> "Prompt injection is not SQL injection (it may be worse)." December 8, 2025. <span class="ref-tag ref-tag--government">Government</span> <br>Focus on the architectural argument: why parameterized queries cannot be replicated for natural language. Note the strength of the claim: "may never be properly mitigated." ~10 min. <br><a href="https://www.ncsc.gov.uk/blog-post/prompt-injection-is-not-sql-injection" target="_blank" rel="noopener">ncsc.gov.uk/blog-post/prompt-injection-is-not-sql-injection</a></li>
+<li><strong>OWASP Foundation.</strong> "OWASP Top 10 for LLM Applications, Version 2025." November 2025. <span class="ref-tag ref-tag--framework">Framework</span> <br>Read the LLM01 (Prompt Injection) entry thoroughly. For the remaining nine categories, read the title and one-paragraph description. Note which categories relate to injection: LLM02, LLM05, LLM06, LLM07. ~15 min. <br><a href="https://genai.owasp.org/llm-top-10/" target="_blank" rel="noopener">genai.owasp.org/llm-top-10/</a><br><strong>On the numbering.</strong> OWASP revises this list periodically and the identifiers are not stable across editions: entries change position, merge, or get renamed. Every OWASP citation in this course is the <strong>2025</strong> edition, so the numbers stay consistent from Module 9 through Module 11. Treat the set of failure modes as the durable content and the numbering as a citation detail, and name the edition whenever you quote an identifier in professional work.</li>
+<li><strong>Greshake, K., Abdelnabi, S., Mishra, S., Endres, C., Holz, T., &amp; Fritz, M.</strong> (2023). "Not what you've signed up for: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection." <em>AISec '23, ACM.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Read Sections 1 (introduction and threat model), 2-3 (attack taxonomy), and 6 (discussion). The key insight is the separation of attacker and user. Compare to the EchoLeak incident in Section 4. Published 2023; some demonstrations may have been mitigated, but the taxonomy remains current. ~30 min. <br><a href="https://arxiv.org/abs/2302.12173" target="_blank" rel="noopener">arxiv.org/abs/2302.12173</a></li>
+<li><strong>Cohen, S., Bitton, R., &amp; Nassi, B.</strong> (2024). "ComPromptMized: Unleashing Zero-click Worms that Target GenAI-Powered Applications" ("Morris II"). <em>Preprint.</em> <span class="ref-tag ref-tag--paper">Preprint</span> <br>Demonstrates a self-replicating prompt that spreads between AI email assistants, the lateral-movement / "worming" stage referenced in Section 5's kill chain. Research demonstration; treat as proof-of-concept. ~20 min. <br><a href="https://arxiv.org/abs/2403.02817" target="_blank" rel="noopener">arxiv.org/abs/2403.02817</a></li>
+<li><strong>Zou, A., Wang, Z., Carlini, N., Nasr, M., Kolter, J. Z., &amp; Fredrikson, M.</strong> (2023). "Universal and Transferable Adversarial Attacks on Aligned Language Models." <em>Preprint.</em> <span class="ref-tag ref-tag--paper">Preprint</span> <br>Introduces the GCG method: an automated greedy and gradient search finds adversarial suffixes, often not human-readable, that flip a model from refusing to complying and transfer across models from different vendors. Referenced in Section 1 as evidence that the instruction/data gap is architectural, not a wording problem. ~25 min. <br><a href="https://arxiv.org/abs/2307.15043" target="_blank" rel="noopener">arxiv.org/abs/2307.15043</a></li>
+<li><strong>Anthropic.</strong> "Many-shot jailbreaking." April 2024. <span class="ref-tag ref-tag--practitioner">Practitioner</span> <br>First-party disclosure: a model provider demonstrates how filling the context window with hundreds of fabricated harmful Q&amp;A pairs exploits in-context learning to override safety alignment. Effectiveness follows a power law over context length. Key reading for Section 3's jailbreaking coverage. ~15 min. <br><a href="https://www.anthropic.com/research/many-shot-jailbreaking" target="_blank" rel="noopener">anthropic.com/research/many-shot-jailbreaking</a></li>
+</ul>
+</section>
+
+<!-- ====================== FURTHER READINGS ====================== -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">Further Optional Readings</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>Anthropic.</strong> "Many-shot jailbreaking." April 2024. <span class="ref-tag ref-tag--practitioner">Practitioner</span> <br>First-party disclosure of a vulnerability by a model provider. Demonstrates how in-context learning becomes a jailbreaking vector. ~15 min. <br><a href="https://www.anthropic.com/research/many-shot-jailbreaking" target="_blank" rel="noopener">anthropic.com/research/many-shot-jailbreaking</a></li>
+<li><strong>Schulhoff, S., et al.</strong> (2023). "Ignore This Title and HackAPrompt." <em>EMNLP 2023 (Best Theme Paper).</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Largest prompt injection dataset (600K+ adversarial prompts, 29 technique categories). Directly relevant to the CTF experience. ~25 min. <br><a href="https://arxiv.org/abs/2311.16119" target="_blank" rel="noopener">arxiv.org/abs/2311.16119</a></li>
+<li><strong>Pleger, J., et al.</strong> (2026). "The Promptware Kill Chain." <em>arXiv 2601.09625.</em> <span class="ref-tag ref-tag--paper">Preprint</span> <br>Seven-stage attack chain framework. Documents 21 real incidents. Not peer-reviewed as of mid-2026. ~30 min. <br><a href="https://arxiv.org/abs/2601.09625" target="_blank" rel="noopener">arxiv.org/abs/2601.09625</a></li>
+<li><strong>NIST.</strong> "Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations (AI 100-2e2025)." March 2025. <span class="ref-tag ref-tag--government">Government</span> <br>Formal government taxonomy classifying prompt injection within the broader adversarial ML landscape. Read the prompt injection sections only. ~20 min. <br><a href="https://csrc.nist.gov/pubs/ai/100/2/e2025/final" target="_blank" rel="noopener">csrc.nist.gov/pubs/ai/100/2/e2025/final</a></li>
+<li><strong>Chen, Y., et al.</strong> (2025). "ASIDE: Architectural Separation of Instructions and Data in Language Models." <em>ICLR 2025.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Proposes an architectural solution to the instruction/data boundary problem via orthogonal embedding rotation. ~25 min. <br><a href="https://arxiv.org/abs/2503.10566" target="_blank" rel="noopener">arxiv.org/abs/2503.10566</a></li>
+<li><strong>Szekeres, L., Payer, M., Wei, T., &amp; Song, D.</strong> (2013). "SoK: Eternal War in Memory." <em>IEEE Symposium on Security and Privacy (S&amp;P).</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Peer-reviewed systematization of memory-corruption defenses. Background for Section 1's hardware angle: it explains W^X / DEP, the NX bit, and why enforcing a code-versus-data boundary in hardware is what stops classical code injection, the very guarantee a transformer cannot provide. ~30 min. <br><a href="https://nebelwelt.net/teaching/18-725-LSS/01-EternalWar.pdf" target="_blank" rel="noopener">nebelwelt.net/teaching/18-725-LSS/01-EternalWar.pdf</a></li>
+<li><strong>Aim Security.</strong> "EchoLeak." <em>arXiv 2509.10540.</em> September 2025. <span class="ref-tag ref-tag--paper">Preprint</span> <br>Full technical write-up of the EchoLeak incident (CVE-2025-32711). Aim Security is a vendor; treat capability claims accordingly. ~20 min. <br><a href="https://arxiv.org/abs/2509.10540" target="_blank" rel="noopener">arxiv.org/abs/2509.10540</a></li>
+<li><strong>RAND Corporation.</strong> <em>Securing AI Model Weights: Preventing Theft and Misuse of Frontier Models by State Actors.</em> 2024. <span class="ref-tag ref-tag--government">Policy</span> <br>Analysis of the security challenges around protecting large model weights from exfiltration by state-level adversaries. Relevant to Section 1: GCG-style adversarial suffix attacks require access to model weights, making weight security a prerequisite for preventing gradient-based attacks on frontier models. ~30 min. <br><a href="https://www.rand.org/pubs/research_reports/RRA2849-1.html" target="_blank" rel="noopener">rand.org/pubs/research_reports/RRA2849-1.html</a></li>
+</ul>
+</section>
+
+<!-- ====================== FRAMEWORKS ====================== -->
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Frameworks &amp; Standards</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>OWASP Foundation.</strong> <em>Top 10 for LLM Applications, Version 2025.</em> November 2025. <span class="ref-tag ref-tag--framework">Framework</span> <br>Consensus taxonomy for the ten most critical LLM application risks. Primary classification framework for this module. <br><a href="https://genai.owasp.org/llm-top-10/" target="_blank" rel="noopener">genai.owasp.org/llm-top-10/</a></li>
+<li><strong>NIST.</strong> <em>AI 100-2e2025: Adversarial Machine Learning Taxonomy.</em> March 2025. <span class="ref-tag ref-tag--framework">Framework</span> <br>Government taxonomy classifying prompt injection within the broader adversarial ML landscape. <br><a href="https://csrc.nist.gov/pubs/ai/100/2/e2025/final" target="_blank" rel="noopener">csrc.nist.gov/pubs/ai/100/2/e2025/final</a></li>
+<li><strong>MITRE.</strong> <em>ATLAS (Adversarial Threat Landscape for AI Systems).</em> Continuously updated. <span class="ref-tag ref-tag--framework">Framework</span> <br>Knowledge base of adversarial tactics and techniques for AI systems. <br><a href="https://atlas.mitre.org/" target="_blank" rel="noopener">atlas.mitre.org</a></li>
+</ul>
+</section>
+
+<!-- ====================== TOOLS ====================== -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Tools &amp; Documentation</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>Promptfoo.</strong> <em>Red-teaming framework.</em> <span class="ref-tag ref-tag--tool">Tool</span> <br>Red-teaming framework with OWASP LLM Top 10 testing templates. <br><a href="https://promptfoo.dev/" target="_blank" rel="noopener">promptfoo.dev</a></li>
+<li><strong>Garak (NVIDIA).</strong> <em>LLM vulnerability scanner.</em> <span class="ref-tag ref-tag--tool">Tool</span> <br>LLM vulnerability scanner with automated probe generation. <br><a href="https://github.com/NVIDIA/garak" target="_blank" rel="noopener">github.com/NVIDIA/garak</a></li>
+<li><strong>PyRIT (Microsoft).</strong> <em>Python Risk Identification Tool for generative AI.</em> <span class="ref-tag ref-tag--tool">Tool</span> <br>Open framework for automated red-teaming of LLM systems, including prompt-injection and jailbreak probes. <br><a href="https://github.com/Azure/PyRIT" target="_blank" rel="noopener">github.com/Azure/PyRIT</a></li>
+</ul>
+<h3>CTF Platforms</h3>
+<table class="nyu-table nyu-table--even">
+<thead>
+<tr>
+<th scope="col">Platform</th>
+<th scope="col">Role</th>
+<th scope="col">Access</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://gandalf.lakera.ai/" target="_blank" rel="noopener">Gandalf (Lakera)</a></td>
+<td>Primary (required Levels 1-4)</td>
+<td>Free, no account required</td>
+</tr>
+<tr>
+<td><a href="https://promptairlines.com/" target="_blank" rel="noopener">Prompt Airlines (Wiz)</a></td>
+<td>Secondary / optional</td>
+<td>Free, no account required</td>
+</tr>
+<tr>
+<td><a href="https://launchthenukes.engineering.nyu.edu/dashboard" target="_blank" rel="noopener">NYU Nuclear Site</a></td>
+<td>Secondary / optional</td>
+<td>NYU internal</td>
+</tr>
+<tr>
+<td><a href="https://crucible.dreadnode.io/" target="_blank" rel="noopener">Dreadnode Crucible</a></td>
+<td>Backup / advanced</td>
+<td>Free, may require registration</td>
+</tr>
+<tr>
+<td>CrowdStrike AI Unlocked</td>
+<td>Backup</td>
+<td>May require registration</td>
+</tr>
+<tr>
+<td>PortSwigger Web LLM Attacks</td>
+<td>Backup</td>
+<td>Free, account required</td>
+</tr>
+</tbody>
+</table>
+
+</section>
+
+<!-- ====================== CASE STUDIES ====================== -->
+<section class="nyu-section" id="sec-5">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">5</span>
+<h2 class="nyu-section__title">Case Studies &amp; Incident Reports</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>Chevrolet chatbot incident (December 2023).</strong> <span class="ref-tag ref-tag--paper">Incident</span> <br>ChatGPT-powered dealership chatbot manipulated via instruction override to agree to sell a vehicle for $1. AI Incident Database entry #622. Referenced in Sections 2 and 4. <br><a href="https://incidentdatabase.ai/cite/622/" target="_blank" rel="noopener">incidentdatabase.ai/cite/622/</a></li>
+<li><strong>EchoLeak / CVE-2025-32711 (June 2025).</strong> <span class="ref-tag ref-tag--paper">Incident</span> <br>Zero-click indirect prompt injection in Microsoft 365 Copilot (CVSS 9.3). Full write-up: Aim Security, arXiv 2509.10540. CVE record; Microsoft security advisory. Referenced in Section 4. <br><a href="https://arxiv.org/abs/2509.10540" target="_blank" rel="noopener">arxiv.org/abs/2509.10540</a></li>
+<li><strong>Google Gemini memory poisoning (February 2025).</strong> <span class="ref-tag ref-tag--paper">Incident</span> <br>Delayed tool invocation used to inject persistent false memories into Gemini Advanced. Researcher disclosure (Johann Rehberger); Google acknowledgment. Referenced in Section 4.</li>
+<li><strong>GitHub Copilot markdown attack (2025).</strong> <span class="ref-tag ref-tag--paper">Incident</span> <br>Five crafted documents with invisible Markdown comments manipulated Copilot responses 90% of the time. Referenced in Section 4.</li>
+</ul>
+</section>
+
+<!-- ====================== DATASETS ====================== -->
+<section class="nyu-section" id="sec-6">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">6</span>
+<h2 class="nyu-section__title">Datasets</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>HackAPrompt.</strong> <span class="ref-tag ref-tag--dataset">Dataset</span> <br>600K+ human-written adversarial prompts from a global prompt hacking competition. <br><a href="https://huggingface.co/datasets/hackaprompt/hackaprompt-dataset" target="_blank" rel="noopener">huggingface.co/datasets/hackaprompt/hackaprompt-dataset</a></li>
+<li><strong>InjecAgent.</strong> <span class="ref-tag ref-tag--dataset">Dataset</span> <br>1,054 indirect injection test cases across 17 user tools and 62 attacker tools. Via ACL 2024 paper.</li>
+</ul>
+</section>
+
+<!-- ====================== CAVEATS ====================== -->
+<section class="nyu-section" id="sec-7">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">7</span>
+<h2 class="nyu-section__title">Source Caveats</h2>
+</div>
+<hr class="nyu-section__rule">
+<aside class="nyu-callout nyu-callout--warning" role="note">
+<h3 class="nyu-callout__title">Reading Sources Critically</h3>
+<p>Every source has a context. When reading security research, keep these caveats in mind:</p>
+</aside>
+<table class="nyu-table nyu-table--even">
+<thead>
+<tr>
+<th scope="col">Source Category</th>
+<th scope="col">Key Caveat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model provider disclosures (Anthropic many-shot)</td>
+<td>First-party vulnerability disclosures are valuable but may understate the severity or scope relative to independent findings</td>
+</tr>
+<tr>
+<td>Vendor security research (Aim Security / EchoLeak)</td>
+<td>Aim Security sells AI security products; treat capability claims and severity framing with vendor-source caution</td>
+</tr>
+<tr>
+<td>Preprints (Promptware Kill Chain, arXiv 2601.09625)</td>
+<td>Not peer-reviewed as of mid-2026; treat incident counts and specific statistics as indicative, not definitive</td>
+</tr>
+<tr>
+<td>Government guidance (UK NCSC, NIST)</td>
+<td>Authoritative for policy context but may not reflect the latest empirical findings</td>
+</tr>
+<tr>
+<td>Benchmark results (HackAPrompt, jailbreak success rates)</td>
+<td>Benchmark performance depends on model version, prompt format, and evaluation criteria. Results from one model version may not transfer to later versions</td>
+</tr>
+<tr>
+<td>CTF platforms (Gandalf, Prompt Airlines)</td>
+<td>Intentionally vulnerable by design; success rates and techniques do not directly predict production-system vulnerability</td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<!-- ====================== BY SECTION ====================== -->
+<section class="nyu-section" id="sec-8">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">8</span>
+<h2 class="nyu-section__title">References by Section</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Use this index to find sources cited in each section of Module 9.</p>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 1: The Instruction/Data Boundary Problem</h3>
+<ul class="ref-list">
+<li>UK NCSC, "Prompt injection is not SQL injection" (2025). Architectural argument and parameterized query comparison.</li>
+<li>Chen et al., ASIDE (ICLR 2025). Architectural separation research via orthogonal embedding rotation.</li>
+<li>OWASP LLM Top 10, Version 2025. LLM01: Prompt Injection classification.</li>
+<li>RAND Corporation, "Securing AI Model Weights" (2024). Weight security as a prerequisite for preventing gradient-based adversarial suffix attacks.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 2: Direct Injection and System Prompt Extraction</h3>
+<ul class="ref-list">
+<li>Schulhoff et al., HackAPrompt (EMNLP 2023). 29 injection technique categories; dataset for CTF activity.</li>
+<li>Chevrolet chatbot incident (2023). AI Incident Database entry #622. Direct injection real-world example.</li>
+<li>OWASP LLM Top 10, Version 2025. LLM01 and LLM06 (Excessive Agency) classification.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 3: Jailbreaking and Alignment Bypass</h3>
+<ul class="ref-list">
+<li>Anthropic, "Many-shot jailbreaking" (2024). In-context learning as jailbreaking vector; power law over context length.</li>
+<li>Zou et al. (2023). GCG adversarial suffix generation; transferability across model families.</li>
+<li>Persona-based jailbreaking study (2025). Effectiveness of role-play jailbreaking against safety-trained models.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 4: Indirect Prompt Injection</h3>
+<ul class="ref-list">
+<li>Greshake et al. (AISec '23). Foundational indirect injection taxonomy: data theft, worming, ecosystem contamination, unauthorized API calls.</li>
+<li>Aim Security, EchoLeak / CVE-2025-32711 (arXiv 2509.10540). Zero-click indirect injection case study. Vendor source.</li>
+<li>Google Gemini memory poisoning (February 2025). Persistent injection via delayed tool invocation. Researcher disclosure.</li>
+<li>GitHub Copilot markdown attack (2025). Invisible Markdown comments manipulating code suggestions.</li>
+<li>Pleger et al., Promptware Kill Chain (arXiv 2601.09625, 2026). Persistence and lateral movement analysis. Preprint.</li>
+<li>Palo Alto Networks Unit 42 (December 2025). First documented malicious (non-researcher) indirect prompt injection in the wild.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 5: Professional Classification, Attack Chains, and What Comes Next</h3>
+<ul class="ref-list">
+<li>OWASP LLM Top 10, Version 2025. Full framework: LLM01, LLM02, LLM05, LLM06, LLM07.</li>
+<li>Pleger et al., Promptware Kill Chain (arXiv 2601.09625, 2026). Seven-stage attack chain; 21 incident analysis. Preprint.</li>
+<li>OpenAI, instruction hierarchy research (2023). Instruction prioritization approach; ~16% improvement in robust accuracy.</li>
+<li>Chen et al., ASIDE (ICLR 2025). Optimistic position on architectural solutions.</li>
+<li>UK NCSC, "Prompt injection is not SQL injection" (2025). Pessimistic position on fundamental unsolvability.</li>
+<li>OpenAI acknowledgment (referenced via UK NCSC). Major model provider position that prompt injection may never be fully solved.</li>
+<li>NIST AI 100-2e2025. Formal adversarial ML taxonomy.</li>
+<li>MITRE ATLAS. Adversarial AI technique knowledge base.</li>
+</ul>
+</div>
+</section>
+</main><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"> <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"> </a></footer><button class="nyu-fab" aria-label="Back to top of page"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> </button></div>
+<p>
+<script src="../tooltips/glossary.js"></script>
+<script src="../js/nyu-tandon-course.js"></script>
+</p></body></html>

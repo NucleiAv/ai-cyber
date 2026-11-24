@@ -1,0 +1,358 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 8 · Section 7 · References &amp; Readings · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 8 · Section 7 of 7</div>
+      <h1 class="nyu-hero__title">References &amp; Readings</h1>
+      <p class="nyu-hero__subtitle">All sources, citations, and recommended readings referenced throughout Module 8: The AI Threat Landscape, organized by category and section.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Section type"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Reference</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 7 parts</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Academic Papers &amp; Preprints</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Frameworks &amp; Standards</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Government Sources</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Practitioner &amp; Institutional Resources</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Case Studies &amp; Incident Reports</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Source Caveats</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> References by Section</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+      <!-- ====================== SECTION 1: ACADEMIC PAPERS ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Academic Papers &amp; Preprints</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li>
+            <strong>Hazell, J.</strong> (2023). "Spear Phishing with Large Language Models." <span class="ref-tag ref-tag--paper">Preprint</span>
+            <br>Controlled study of automated profiling and lure generation. Reports that automated profiling produces accurate target descriptions in a large majority of cases. Source for Section 2's phishing pipeline and effectiveness discussion. <em>Not peer-reviewed.</em>
+            <br><a href="https://arxiv.org/abs/2305.06972" target="_blank" rel="noopener">arXiv:2305.06972</a>
+          </li>
+          <li>
+            <strong>Lermen, S., et al.</strong> (2026). "A Large-Scale Study of Personalized Phishing using LLMs." <em>USENIX Security 2026.</em> <span class="ref-tag ref-tag--paper">Paper</span>
+            <br>Peer-reviewed large-scale effectiveness and scale evidence for AI-generated phishing. Source for Section 2. Read the methodology to understand population and limits.
+          </li>
+          <li>
+            <strong>Happe, A., et al.</strong> (2025). "On the Surprising Efficacy of LLMs for Penetration-Testing." <span class="ref-tag ref-tag--paper">Preprint</span>
+            <br>Capability and limits of AI pen-test agents on controlled targets. Source for Section 3. <em>Not peer-reviewed.</em>
+            <br><a href="https://arxiv.org/abs/2507.00829" target="_blank" rel="noopener">arXiv:2507.00829</a>
+          </li>
+          <li>
+            <strong>RAND Corporation.</strong> (2024/2025). "Investigating the Potential Use of Frontier AI Models for Offensive Cyberattacks: A Human Uplift Study." <span class="ref-tag ref-tag--paper">Report</span>
+            <br>Commissioned by a national AI security institute. Found that frontier models gave lower-skilled actors only bounded uplift and could not autonomously chain a full campaign. Independent (not an AI vendor), but a controlled experiment whose conditions may not capture every real-world dynamic. Source for Section 4.
+            <br><a href="https://www.rand.org/" target="_blank" rel="noopener">rand.org</a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 2: FRAMEWORKS ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Frameworks &amp; Standards</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li>
+            <strong>MITRE Corporation.</strong> <em>ATLAS, v5.1.0.</em> (November 2025). <span class="ref-tag ref-tag--framework">Framework</span>
+            <br>Adversarial-AI tactics-and-techniques knowledge base. Used in Sections 3 and 5 for classifying offensive AI behaviors. Living document; verify current version each term.
+            <br><a href="https://atlas.mitre.org/" target="_blank" rel="noopener">atlas.mitre.org</a>
+          </li>
+          <li>
+            <strong>MITRE Corporation.</strong> <em>ATT&amp;CK.</em> <span class="ref-tag ref-tag--framework">Framework</span>
+            <br>Adversary tactics, techniques, and procedures knowledge base. Used in Section 3 alongside the Cyber Kill Chain for attacker-stage mapping.
+            <br><a href="https://attack.mitre.org/" target="_blank" rel="noopener">attack.mitre.org</a>
+          </li>
+          <li>
+            <strong>Lockheed Martin.</strong> <em>Cyber Kill Chain.</em> <span class="ref-tag ref-tag--framework">Framework</span>
+            <br>Seven-stage attacker-lifecycle model. Used in Section 3 for mapping AI-assisted behaviors to attacker stages.
+            <br><a href="https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html" target="_blank" rel="noopener">lockheedmartin.com</a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 3: GOVERNMENT SOURCES ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Government Sources</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li>
+            <strong>NIST.</strong> (2025). <em>NIST IR 8596.</em> <span class="ref-tag ref-tag--government">Government</span>
+            <br>Guidance on active detection and recurring impersonation drills as replacements for static phishing-awareness tips. Source for the process-over-detection principle in Sections 2 and 6.
+            <br><a href="https://csrc.nist.gov/" target="_blank" rel="noopener">csrc.nist.gov</a>
+          </li>
+          <li>
+            <strong>NIST.</strong> (2025). <em>Draft Cybersecurity Framework Profile for Artificial Intelligence.</em> (December 2025). <span class="ref-tag ref-tag--government">Government</span>
+            <br>Defender adaptation to AI-enabled threats. Source for Section 6. Confirm current title and status; the draft is in public comment.
+            <br><a href="https://csrc.nist.gov/" target="_blank" rel="noopener">csrc.nist.gov</a>
+          </li>
+          <li>
+            <strong>Europol.</strong> Europol assessments on AI-enabled criminal tooling. <span class="ref-tag ref-tag--government">Government</span>
+            <br>Government agency perspective on barrier-lowering for criminal use of AI. Source for Section 1.
+            <br><a href="https://www.europol.europa.eu/" target="_blank" rel="noopener">europol.europa.eu</a>
+          </li>
+          <li>
+            <strong>ENISA.</strong> (2025). <em>ENISA Threat Landscape 2025.</em> <span class="ref-tag ref-tag--government">Government</span>
+            <br>European-perspective data on AI phishing and deepfake forecasts. Some headline percentages trace to vendor inputs; treat figures as reported and dated. Source for Section 2.
+            <br><a href="https://www.enisa.europa.eu/publications/enisa-threat-landscape-2025" target="_blank" rel="noopener">enisa.europa.eu</a>
+          </li>
+          <li>
+            <strong>International AI Safety Report.</strong> (2025/2026). <span class="ref-tag ref-tag--government">Government</span>
+            <br>Expert-panel report on AI risks including offensive cyber. Source for the calibration evidence in Section 4.
+          </li>
+          <li>
+            <strong>NIST Open Media Forensics Challenge; DARPA Semantic Forensics.</strong> <span class="ref-tag ref-tag--government">Government</span>
+            <br>Authoritative benchmarking efforts for deepfake detection. Source for the detection-fragility discussion in Sections 2 and 6.
+            <br><a href="https://www.nist.gov/itl/iad/mig/open-media-forensics-challenge" target="_blank" rel="noopener">nist.gov</a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 4: PRACTITIONER RESOURCES ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Practitioner &amp; Institutional Resources</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li>
+            <strong>Google Threat Intelligence Group (GTIG).</strong> (November 2025). "Advances in Threat Actor Usage of AI Tools." <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+            <br>Operational reporting on threat-actor adoption of AI tools, including the PROMPTFLUX and PROMPTSTEAL malware families and influence-operations case studies. Vendor source; treat its telemetry as reflecting what one company observes, not the full landscape. Source for Sections 1 and 4.
+            <br><a href="https://cloud.google.com/blog/topics/threat-intelligence" target="_blank" rel="noopener">cloud.google.com</a>
+          </li>
+          <li>
+            <strong>Anthropic.</strong> (2025). "Disrupting the first reported AI-orchestrated cyber espionage campaign" (GTG-1002). <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+            <br>Flagship-autonomy report behind the Section 4 case. Vendor-reported magnitudes; some external analysts dispute the "first" and "autonomous" framing. <em>Not peer-reviewed.</em>
+            <br><a href="https://www.anthropic.com/research" target="_blank" rel="noopener">anthropic.com/research</a>
+          </li>
+          <li>
+            <strong>OpenAI.</strong> (2025). "Disrupting malicious uses of AI: October 2025." <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+            <br>Cross-provider corroboration and the "old playbooks faster" thesis. Vendor source; read with the vendor's incentive in view. Source for Sections 1 and 4.
+            <br><a href="https://openai.com/global-affairs/disrupting-malicious-uses-of-ai-october-2025/" target="_blank" rel="noopener">openai.com/global-affairs</a>
+            <br>Full report (PDF): <a href="https://cdn.openai.com/threat-intelligence-reports/7d662b68-952f-4dfd-a2f2-fe55b041cc4a/disrupting-malicious-uses-of-ai-october-2025.pdf" target="_blank" rel="noopener">cdn.openai.com</a>
+          </li>
+          <li>
+            <strong>Trend Micro.</strong> "Hype vs. Reality: AI in the Cybercriminal Underground." <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+            <br>Critical analysis of dark-LLM tools marketed to criminals; finds many are thin wrappers or outright scams. Used in Section 1 as a skeptical counterweight. Vendor source; useful precisely as a critical-reading exercise.
+            <br><a href="https://www.trendmicro.com/" target="_blank" rel="noopener">trendmicro.com</a>
+          </li>
+          <li>
+            <strong>Palo Alto Networks Unit 42.</strong> (2025). Criminal AI-tooling reporting. <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+            <br>Reporting on refreshed WormGPT variant and criminal AI adoption. Source for Section 1. Vendor source; treat its threat framing accordingly.
+          </li>
+          <li>
+            <strong>CrowdStrike.</strong> (2026). <em>2026 Global Threat Report.</em> <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+            <br>Annual threat report covering breakout-time data (29-minute average, 27-second fastest observed), malware-free intrusion rates, and AI-enabled adversary operations. Source for the Section 6 example briefing. Vendor source; figures reflect CrowdStrike's telemetry, not the full threat landscape.
+            <br><a href="https://www.crowdstrike.com/global-threat-report/" target="_blank" rel="noopener">crowdstrike.com</a>
+          </li>
+          <li>
+            <strong>Zeltser, L.</strong> "Templates for Cybersecurity Executive Briefings." <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+            <br>Four customizable briefing templates covering threat intel, vulnerabilities, incidents, and assessments, drawn from the author's SANS Cybersecurity Writing course. Source for the "bottom line first" and "What We Don't Know" principles in Section 6.
+            <br><a href="https://zeltser.com/cyber-brief-templates-for-decision-makers" target="_blank" rel="noopener">zeltser.com</a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 5: CASE STUDIES ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Case Studies &amp; Incident Reports</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li>
+            <strong>AI Incident Database #634.</strong> (2024). Arup deepfake video-call fraud. <span class="ref-tag ref-tag--paper">Incident</span>
+            <br>Real-time deepfake video call that led to $25.6M in wire transfers. Source for Section 2's deepfake mini-case. Corroborated by contemporaneous independent reporting.
+            <br><a href="https://incidentdatabase.ai/" target="_blank" rel="noopener">incidentdatabase.ai</a>
+          </li>
+          <li>
+            <strong>AI Incident Database #1263.</strong> (2025). GTG-1002 AI-orchestrated espionage campaign. <span class="ref-tag ref-tag--paper">Incident</span>
+            <br>Reported disruption of an AI-orchestrated cyber-espionage campaign. Source for the Section 4 report walkthrough and the Section 5 case analysis. The vendor report's magnitudes are self-reported; some external analysts dispute the "first" and "autonomous" framing.
+            <br><a href="https://incidentdatabase.ai/" target="_blank" rel="noopener">incidentdatabase.ai</a>
+          </li>
+          <li>
+            <strong>Google Project Zero / DeepMind.</strong> (2024 to 2025). Google's Big Sleep / Project Naptime. <span class="ref-tag ref-tag--paper">Incident</span>
+            <br>AI-driven agent found a real zero-day vulnerability in SQLite (CVE-2025-6965) that traditional fuzzing had missed. Source for Section 3. Vendor research division; the Google team frames the work defensively.
+            <br><a href="https://googleprojectzero.blogspot.com/" target="_blank" rel="noopener">googleprojectzero.blogspot.com</a>
+          </li>
+          <li>
+            <strong>CVE-2025-6965.</strong> SQLite vulnerability discovered by the Big Sleep agent. <span class="ref-tag ref-tag--standard">Standard</span>
+            <br>Authoritative vulnerability database record. Source for Section 3.
+            <br><a href="https://www.cve.org/" target="_blank" rel="noopener">cve.org</a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 6: SOURCE CAVEATS ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Source Caveats</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">Reading Sources Critically</h3>
+          <p>Every source has a context. When you read security research, keep these caveats in mind:</p>
+        </aside>
+
+        <table class="nyu-table nyu-table--even">
+          <thead>
+            <tr><th>Source Category</th><th>Key Caveat</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>AI vendor threat reports (GTIG, Anthropic GTG-1002, OpenAI)</td>
+              <td>Produced by companies with commercial interests that can pull in two directions: sometimes downplaying offensive capability to reassure customers, sometimes emphasizing it to demonstrate the value of their safety work. Treat magnitudes as reported, not settled.</td>
+            </tr>
+            <tr>
+              <td>Security vendor analysis (Trend Micro, Unit 42, ENISA headline figures)</td>
+              <td>Vendor methodologies may favor larger numbers or narrower populations. Treat vendor-sourced figures as directional, not authoritative. Cross-check against independent evidence where possible.</td>
+            </tr>
+            <tr>
+              <td>Academic preprints (Hazell 2023, Happe et al. 2025)</td>
+              <td>Not peer-reviewed. Cite findings as study-specific on a specific date, not as universal constants. Methodology sections are required reading.</td>
+            </tr>
+            <tr>
+              <td>Benchmark results (pen-test agents, deepfake detectors, capture-the-flag studies)</td>
+              <td>Always specify: which dataset, which model, what conditions. Benchmark performance does not equal production performance. Results can be inflated by training-data contamination.</td>
+            </tr>
+            <tr>
+              <td>Incident reports (AI Incident Database #634, #1263)</td>
+              <td>Compiled from contemporaneous reporting; details may evolve as investigations proceed. Verify against primary sources before citing in professional work.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            A note on statistics in this module
+          </h3>
+          <p>Several widely circulated figures (for example, that AI-supported phishing represents a large majority of social-engineering activity, or large year-over-year percentage increases in vishing and deepfake incidents) originate in vendor or practitioner reporting. Treat such numbers as reported by a specific source, on a specific date, and verify them against a primary source before relying on them. Dating and sourcing every capability and threat claim is itself a skill this module teaches.</p>
+        </aside>
+
+        <p>Living content (specific cases, tool examples, framework versions, and statistics) should be verified before each term. The full module source bibliography, including source tiers and verification flags, accompanies this module for instructors.</p>
+      </section>
+
+      <!-- ====================== SECTION 7: REFERENCES BY SECTION ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">References by Section</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Use this index to find sources cited in each section of Module 8.</p>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 1: Attacker Economics and the Dual-Use Inversion</h3>
+          <ul class="ref-list">
+            <li>Europol assessments. Government agency perspective on AI-enabled criminal barrier-lowering.</li>
+            <li>Unit 42 (2025). WormGPT variant and criminal AI-tooling market reporting.</li>
+            <li>Trend Micro, "Hype vs. Reality." Skeptical counterweight on dark-LLM tool marketing.</li>
+            <li>OpenAI (Oct 2025). Influence-operations awareness; the "scale" lever example.</li>
+            <li>GTIG (2025). Influence-operations case studies and threat-actor adoption.</li>
+            <li>Dual-use framing carried forward from Module 1.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 2: Social Engineering at Machine Scale</h3>
+          <ul class="ref-list">
+            <li>Hazell (2023). Preprint; not peer-reviewed. Automated profiling accuracy and spear-phishing effectiveness.</li>
+            <li>TU-Berlin / Lermen et al. (USENIX Security 2026). Large-scale peer-reviewed phishing effectiveness evidence.</li>
+            <li>AI Incident Database #634 (2024). Arup deepfake video-call fraud case.</li>
+            <li>ENISA Threat Landscape 2025. European-perspective data on AI social-engineering trends.</li>
+            <li>NIST IR 8596 (2025). Active detection and process-oriented anti-phishing guidance.</li>
+            <li>NIST Open Media Forensics Challenge; DARPA Semantic Forensics. Deepfake detection benchmarking and fragility evidence.</li>
+            <li>Cross-reference: Module 1 Section 6, "$11 Voice Clone" case and UC Berkeley CLTC deepfakes audio quiz.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 3: Recon, Attack-Surface Mapping, and Vulnerability Discovery</h3>
+          <ul class="ref-list">
+            <li>Google Project Zero / DeepMind, Google's Big Sleep / Project Naptime (2024 to 2025). AI-driven vulnerability discovery in SQLite.</li>
+            <li>CVE-2025-6965. Authoritative vulnerability record for the Big Sleep finding.</li>
+            <li>Happe et al. (2025). Preprint; not peer-reviewed. AI pen-test agent capability and limits.</li>
+            <li>MITRE ATT&amp;CK and Lockheed Martin Cyber Kill Chain. Attacker-stage mapping frameworks.</li>
+            <li>Mechanism grounding from Module 1 (hallucination), Module 6 (context window), Module 2 (data contamination).</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 4: Autonomy, Agents, and the Evidence Debate</h3>
+          <ul class="ref-list">
+            <li>GTIG AI Threat Tracker (Nov 2025, R1). PROMPTFLUX and PROMPTSTEAL runtime-AI malware families.</li>
+            <li>Anthropic, GTG-1002 report (Nov 2025). AI-orchestrated espionage campaign claim.</li>
+            <li>AI Incident Database #1263. GTG-1002 incident record.</li>
+            <li>RAND human-uplift study (2024/2025, R2). Independent calibration evidence on the autonomy ceiling.</li>
+            <li>OpenAI (Oct 2025). "Old playbooks faster" cross-provider finding.</li>
+            <li>International AI Safety Report (2025/2026). Expert-panel AI risk assessment.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 5: Classifying Offensive AI with MITRE ATLAS</h3>
+          <ul class="ref-list">
+            <li>MITRE ATLAS. Tactics-and-techniques taxonomy for adversarial AI; the classification method and the worked GTG-1002 mapping.</li>
+            <li>Anthropic, GTG-1002 report (Nov 2025); Arup deepfake reporting (2024); Google Big Sleep / CVE-2025-6965 (2024 to 2025). The three incidents compared in the case task.</li>
+          </ul>
+
+          <h3 class="ref-section__title">Section 6: Boundaries and Defense Implications</h3>
+          <ul class="ref-list">
+            <li>NIST IR 8596 (2025). Process-oriented defensive guidance against AI-enabled threats.</li>
+            <li>NIST draft Cybersecurity Framework Profile for AI (Dec 2025). Defender adaptation guidance.</li>
+            <li>NIST Open Media Forensics Challenge; DARPA Semantic Forensics. Detection fragility motivating process controls.</li>
+            <li>Computer Fraud and Abuse Act. Legal framing at awareness level for authorization boundary.</li>
+            <li>Boundary criteria synthesized from the module research brief.</li>
+            <li>Zeltser, L. "Templates for Cybersecurity Executive Briefings." "Bottom line first" and "What We Don't Know" structural principles for the briefing section.</li>
+            <li>CrowdStrike (2026). <em>2026 Global Threat Report.</em> Breakout-time data and AI-enabled adversary operations statistics used in the example briefing.</li>
+          </ul>
+        </div>
+
+      </section>
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

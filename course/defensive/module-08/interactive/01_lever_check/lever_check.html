@@ -1,0 +1,654 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Dual-Use Mirror</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ===== TOKENS ===== */
+:root {
+  --violet: #57068C;
+  --violet-50: #F5EDFA;
+  --violet-100: #E8D8F2;
+  --ink: #1A1A1A;
+  --ink-soft: #3A3A3A;
+  --ink-mute: #6B6B6B;
+  --rule: #E2E2E2;
+  --rule-soft: #F0F0F0;
+  --surface: #FFFFFF;
+  --sunken: #F6F4F8;
+  --def-color: #1560AC;
+  --def-bg: #E6F0FA;
+  --off-color: #C42A2A;
+  --off-bg: #FBE8E8;
+  --match: #166B3A;
+  --match-bg: #E6F4EC;
+  --warn: #8A5D00;
+  --warn-bg: #FCF1DC;
+  --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
+html, body { overflow: visible; height: auto; }
+body { font-family: var(--sans); color: var(--ink); background: var(--sunken); padding: 12px; }
+
+/* ===== OUTER ===== */
+.stage {
+  max-width: 880px; margin: 0 auto; background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(20,0,40,.06); overflow: hidden;
+}
+
+/* ===== HEADER ===== */
+.hdr {
+  padding: 18px 22px 14px;
+  background: linear-gradient(135deg, var(--def-bg) 0%, var(--surface) 50%, var(--off-bg) 100%);
+  border-bottom: 1px solid var(--rule);
+}
+.hdr-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hdr-badge {
+  font-family: var(--mono); font-size: 0.8575rem; font-weight: 700;
+  background: var(--violet); color: #fff; padding: 3px 10px;
+  border-radius: 5px; letter-spacing: .04em; text-transform: uppercase;
+}
+.hdr h1 { font-size: 1.05rem; font-weight: 700; flex: 1; min-width: 0; }
+.hdr-sub { font-size: 0.9325rem; line-height: 1.55; color: var(--ink-soft); margin-top: 6px; }
+
+/* Progress dots */
+.dots { display: flex; gap: 7px; }
+.dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--rule); background: var(--surface);
+  transition: all .3s ease;
+}
+.dot.active { border-color: var(--violet); background: var(--violet-50); transform: scale(1.15); }
+.dot.done { border-color: var(--match); background: var(--match); }
+.dot.wrong { border-color: var(--off-color); background: var(--off-color); }
+
+/* ===== CASE DISPLAY ===== */
+.case-area { padding: 22px; }
+
+/* Case counter */
+.case-counter {
+  font-family: var(--mono); font-size: 0.88rem; font-weight: 700;
+  color: var(--ink-mute); margin-bottom: 14px;
+  letter-spacing: .03em; text-transform: uppercase;
+}
+
+/* Split panel */
+.mirror {
+  display: grid; grid-template-columns: 1fr 4px 1fr;
+  gap: 0; min-height: 180px; margin-bottom: 16px;
+}
+@media (max-width: 640px) {
+  .mirror { grid-template-columns: 1fr; gap: 12px; }
+  .mirror-divider { display: none; }
+}
+
+/* Divider */
+.mirror-divider {
+  background: linear-gradient(180deg, var(--def-color), var(--violet), var(--off-color));
+  border-radius: 2px; position: relative;
+}
+.mirror-divider::after {
+  content: '\21C4'; /* ⇄ */
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--violet);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.925rem; color: var(--violet); font-weight: 700;
+  line-height: 28px; text-align: center;
+}
+
+/* Defensive panel (left) */
+.panel-def {
+  padding: 16px 18px; border: 2px solid var(--def-bg);
+  border-radius: 12px; background: var(--surface);
+}
+.panel-label {
+  font-size: 0.8425rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.panel-label svg { width: 14px; height: 14px; flex-shrink: 0; }
+.panel-def .panel-label { color: var(--def-color); }
+.panel-def .panel-label svg { stroke: var(--def-color); }
+.panel-def-text {
+  font-size: 0.955rem; font-weight: 600; line-height: 1.55; color: var(--ink);
+}
+.panel-def-ctx {
+  font-size: 0.8725rem; color: var(--ink-mute); margin-top: 8px;
+  font-style: italic;
+}
+
+/* Offensive panel (right) */
+.panel-off {
+  padding: 16px 18px; border: 2px solid var(--off-bg);
+  border-radius: 12px; background: var(--surface);
+}
+.panel-off .panel-label { color: var(--off-color); }
+.panel-off .panel-label svg { stroke: var(--off-color); }
+.panel-off-prompt {
+  font-size: 0.9025rem; color: var(--ink-mute); margin-bottom: 10px;
+  line-height: 1.45;
+}
+
+/* Option cards */
+.opt-card {
+  appearance: none; display: block; width: 100%; text-align: left;
+  border: 1.5px solid var(--rule); border-radius: 8px;
+  background: var(--surface); padding: 10px 14px;
+  font: inherit; font-size: 0.9175rem; font-weight: 500;
+  line-height: 1.5; color: var(--ink-soft);
+  cursor: pointer; transition: all .2s; margin-bottom: 6px;
+}
+.opt-card:last-child { margin-bottom: 0; }
+.opt-card:hover:not(.locked) {
+  border-color: var(--off-color); background: var(--off-bg);
+  color: var(--ink);
+}
+.opt-card:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+.opt-card.chosen-right {
+  border-color: var(--match); background: var(--match-bg); color: var(--ink);
+  font-weight: 600; cursor: default;
+}
+.opt-card.chosen-wrong {
+  border-color: var(--off-color); background: var(--off-bg); color: var(--ink);
+  cursor: default; opacity: .7;
+}
+.opt-card.reveal-correct {
+  border-color: var(--match); background: var(--match-bg); color: var(--ink);
+  font-weight: 600; cursor: default;
+}
+.opt-card.locked { cursor: default; }  /* the unchosen options are the
+   comparison the activity is teaching; fading them hid the lesson */
+.opt-card .opt-marker {
+  display: none; float: right; font-weight: 700; font-size: 0.895rem;
+  margin-left: 8px;
+}
+.opt-card.chosen-right .opt-marker,
+.opt-card.chosen-wrong .opt-marker,
+.opt-card.reveal-correct .opt-marker { display: inline; }
+.opt-card.chosen-right .opt-marker { color: var(--ink); }
+.opt-card.chosen-wrong .opt-marker { color: var(--ink); }
+.opt-card.reveal-correct .opt-marker { color: var(--ink); }
+
+/* ===== FEEDBACK ===== */
+.feedback {
+  display: none; border-radius: 10px; padding: 14px 18px;
+  margin-bottom: 12px; animation: slideUp .35s ease;
+}
+.feedback.show { display: block; }
+.feedback.correct {
+  background: var(--match-bg); border: 1px solid rgba(22,107,58,.2);
+}
+.feedback.incorrect {
+  background: var(--warn-bg); border: 1px solid rgba(138,93,0,.2);
+}
+.fb-verdict {
+  font-size: 0.88rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; margin-bottom: 4px;
+}
+.feedback.correct .fb-verdict { color: var(--ink); }
+.feedback.incorrect .fb-verdict { color: var(--ink); }
+.fb-text { font-size: 0.9175rem; line-height: 1.6; color: var(--ink-soft); }
+.fb-text strong { color: var(--ink); }
+.fb-insight {
+  font-size: 0.895rem; font-weight: 600; color: var(--violet);
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,.08);
+  font-style: italic;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Next button */
+.next-btn {
+  appearance: none; border: 2px solid var(--violet); background: var(--violet);
+  color: #fff; border-radius: 8px; padding: 9px 24px;
+  font: inherit; font-size: 0.925rem; font-weight: 700;
+  cursor: pointer; transition: all .2s; display: none;
+}
+.next-btn.show { display: inline-flex; align-items: center; gap: 6px; }
+.next-btn:hover { background: #3D0461; border-color: #3D0461; }
+.next-btn:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+.next-btn svg { width: 14px; height: 14px; }
+
+/* ===== SUMMARY ===== */
+.summary { display: none; padding: 22px; animation: slideUp .5s ease; }
+.summary.show { display: block; }
+
+.sum-score-row {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-bottom: 18px; padding: 16px 18px;
+  background: var(--sunken); border: 1px solid var(--rule); border-radius: 10px;
+}
+.sum-score-num {
+  font-family: var(--mono); font-size: 1.5rem; font-weight: 800; color: var(--ink);
+}
+.sum-score-num .denom { font-size: 0.9437rem; color: var(--ink-mute); }
+.sum-grade {
+  font-size: 0.91rem; font-weight: 700; padding: 4px 12px; border-radius: 6px;
+}
+.sum-grade.g-high { background: #166534; color: #fff; }
+.sum-grade.g-mid { background: #854D0E; color: #fff; }
+.sum-grade.g-low { background: #991B1B; color: #fff; }
+
+.sum-title {
+  font-size: 0.955rem; font-weight: 700; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.sum-title svg { width: 18px; height: 18px; }
+
+/* Pair cards in summary */
+.pair-card {
+  display: grid; grid-template-columns: 1fr 32px 1fr;
+  gap: 0; align-items: center;
+  border: 1px solid var(--rule); border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 8px;
+  font-size: 0.9025rem; line-height: 1.5;
+}
+@media (max-width: 540px) {
+  .pair-card { grid-template-columns: 1fr; gap: 4px; text-align: center; }
+  .pair-arrow { transform: rotate(90deg); }
+}
+.pair-def { color: var(--def-color); font-weight: 600; }
+.pair-arrow {
+  text-align: center; font-size: 1rem; color: var(--violet); font-weight: 700;
+}
+.pair-off { color: var(--off-color); font-weight: 600; }
+.pair-card .pair-result {
+  font-size: 0.85rem; font-weight: 700; margin-left: 4px;
+  padding: 1px 5px; border-radius: 3px; vertical-align: middle;
+}
+.pair-result.ok { background: #166534; color: #fff; }
+.pair-result.nok { background: #991B1B; color: #fff; }
+
+/* Takeaway */
+.sum-takeaway {
+  background: var(--violet-50); border: 1px solid var(--violet-100);
+  border-radius: 10px; padding: 14px 18px; margin-top: 14px;
+}
+.sum-takeaway p { font-size: 0.925rem; line-height: 1.6; color: var(--ink-soft); margin: 0; }
+.sum-takeaway strong { color: var(--ink); }
+
+.reset-btn {
+  appearance: none; border: 1.5px solid var(--violet); background: var(--surface);
+  color: var(--violet); border-radius: 8px; padding: 8px 20px;
+  font: inherit; font-size: 0.91rem; font-weight: 700;
+  cursor: pointer; transition: all .2s; margin-top: 14px;
+}
+.reset-btn:hover { background: var(--violet); color: #fff; }
+.reset-btn:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+
+/* ===== ACCESSIBILITY ===== */
+*:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="hdr">
+    <div class="hdr-row">
+      <span class="hdr-badge">Dual-Use</span>
+      <h1>The Dual-Use Mirror</h1>
+      <div class="dots" id="dots"></div>
+    </div>
+    <p class="hdr-sub">Every defensive AI capability has an offensive mirror image. For each defensive use below, identify its offensive twin.</p>
+  </div>
+
+  <div id="case-area" class="case-area"></div>
+  <div id="summary" class="summary"></div>
+</div>
+
+<script>
+/* ============================================================
+   CASE DATA
+   ============================================================ */
+var CASES = [
+  {
+    defensive: 'Summarize a threat advisory into an executive briefing',
+    context: 'We covered this in Module 4 (Threat Intelligence).',
+    options: [
+      { text: 'Summarize a target\'s public profile into a personalized spear-phishing pretext', correct: true },
+      { text: 'Encrypt the advisory so only authorized readers can access it', correct: false,
+        fb: 'Encryption is data protection, not summarization. The mirror uses the same text-processing skill for a different purpose.' },
+      { text: 'Translate the advisory into other languages for global security teams', correct: false,
+        fb: 'Translation is still defensive. The offensive mirror redirects the summarization capability at a target\'s data, not at organizational communications.' },
+      { text: 'Delete sensitive details from the advisory before distributing it', correct: false,
+        fb: 'Redaction is a different capability. The mirror preserves the core skill (summarize information) and points it at a target rather than at a report.' }
+    ],
+    explanation: 'The same summarization capability that distills a 40-page threat report into a one-page briefing can distill a target\'s public presence into a personalized phishing pretext. The model does not care whether it summarizes for defense or offense.',
+    insight: 'Summarization is direction-agnostic: the model compresses information regardless of who benefits.'
+  },
+  {
+    defensive: 'Extract indicators of compromise (IoCs) from threat intelligence reports',
+    context: 'We covered this in Module 4 (Threat Intelligence).',
+    options: [
+      { text: 'Publish threat indicators to a public sharing platform like MISP', correct: false,
+        fb: 'Sharing is still a defensive action. The mirror is not about what happens after extraction; it is about the extraction skill itself being turned toward the attacker\'s goals.' },
+      { text: 'Extract an organization\'s published defensive signatures to craft evasions', correct: true },
+      { text: 'Generate synthetic threat indicators for red-team training exercises', correct: false,
+        fb: 'Generating test data is still defensive. The offensive mirror uses the same extraction capability against defensive intelligence, not to create fake data.' },
+      { text: 'Correlate IoCs across multiple reports to identify campaign-level patterns', correct: false,
+        fb: 'Correlation enhances the defensive use. The mirror points the extraction capability at defensive data rather than offensive intelligence.' }
+    ],
+    explanation: 'If a model can pull structured threat data out of unstructured reports for a defender, it can pull defensive signatures out of published advisories for an attacker. The extraction capability is identical; the target data and intent differ.',
+    insight: 'Extraction cuts both ways: anything a model can surface for defenders, it can surface for attackers.'
+  },
+  {
+    defensive: 'Review source code to identify security vulnerabilities before deployment',
+    context: 'We covered this in Module 5 (Secure Code Review).',
+    options: [
+      { text: 'Rewrite vulnerable functions with secure alternatives', correct: false,
+        fb: 'Remediation is still defensive. The offensive mirror uses the same vulnerability-finding capability but for exploitation rather than fixing.' },
+      { text: 'Generate comprehensive documentation for the code base', correct: false,
+        fb: 'Documentation is a different capability entirely. The mirror preserves the specific skill (finding vulnerabilities) and flips the intent.' },
+      { text: 'Obfuscate the code to make reverse engineering harder', correct: false,
+        fb: 'Obfuscation is a defensive protection measure using a different skill. The mirror of "find vulnerabilities to fix them" is "find vulnerabilities to exploit them."' },
+      { text: 'Analyze target software to discover exploitable vulnerabilities for attack', correct: true }
+    ],
+    explanation: 'The capability that identifies a buffer overflow in your code review is exactly the capability that identifies it for an attacker. The technical analysis is identical; only the purpose changes.',
+    insight: 'Vulnerability analysis is dual-use by definition: finding flaws serves whoever finds them first.'
+  },
+  {
+    defensive: 'Triage SOC alerts by severity, context, and likely false-positive rate',
+    context: 'We covered this in Module 3 (SOC Automation).',
+    options: [
+      { text: 'Forward all critical alerts to law enforcement immediately', correct: false,
+        fb: 'Forwarding is a downstream defensive action. The mirror applies the same prioritization logic to a criminal\'s stolen assets.' },
+      { text: 'Generate realistic synthetic alerts for SOC analyst training exercises', correct: false,
+        fb: 'Synthetic data generation is a different capability. The mirror keeps the core skill (intelligent prioritization) and applies it to criminal data.' },
+      { text: 'Automate alert suppression for known false-positive patterns', correct: false,
+        fb: 'Suppression optimizes the defensive workflow. The offensive mirror of prioritization is ranking the attacker\'s stolen assets by exploitable value.' },
+      { text: 'Triage stolen credentials by account value, access level, and resale price', correct: true }
+    ],
+    explanation: 'Prioritization is a general capability. An AI that ranks alerts by severity for a SOC analyst can just as easily rank stolen credentials by account value for a criminal. Both require the same contextual scoring and data enrichment.',
+    insight: 'Prioritization scales to any domain: the same ranking logic serves any user\'s objectives.'
+  },
+  {
+    defensive: 'Detect anomalous patterns in network traffic to flag potential intrusions',
+    context: 'We covered this in Module 6 (Network Analysis).',
+    options: [
+      { text: 'Generate network traffic that mimics normal patterns to evade intrusion detection', correct: true },
+      { text: 'Increase network bandwidth capacity to handle traffic spikes', correct: false,
+        fb: 'Bandwidth management is infrastructure, not AI pattern learning. The offensive mirror of learning normal traffic is using that knowledge to blend in.' },
+      { text: 'Block all traffic originating from known-malicious IP ranges', correct: false,
+        fb: 'Blocking is a downstream defensive action. The mirror uses the same behavioral model (what does normal look like?) for evasion instead of detection.' },
+      { text: 'Log all network traffic for post-incident forensic analysis', correct: false,
+        fb: 'Logging is passive data collection, not pattern detection. The mirror of "learn normal to spot anomalies" is "learn normal to avoid triggering anomalies."' }
+    ],
+    explanation: 'If a model can learn what normal network traffic looks like in order to flag deviations, it can also learn what normal looks like in order to generate traffic that blends in. The detection model and the evasion model share the same understanding of baseline behavior.',
+    insight: 'Understanding "normal" is the foundation of both detection and evasion.'
+  },
+  {
+    defensive: 'Draft incident-response communications for stakeholders during a breach',
+    context: 'We covered this in Module 7 (Incident Response).',
+    options: [
+      { text: 'Archive incident communications for compliance and legal review', correct: false,
+        fb: 'Archiving is a process step, not a text-generation capability. The mirror preserves the writing capability and redirects it toward deception.' },
+      { text: 'Generate employee security-awareness training materials', correct: false,
+        fb: 'Training content is still defensive. The offensive mirror uses the same persuasive-writing capability to deceive rather than educate.' },
+      { text: 'Translate incident communications into other languages for global teams', correct: false,
+        fb: 'Translation is still a defensive use. The mirror of "write persuasive communications for defense" is "write persuasive communications for offense."' },
+      { text: 'Draft convincing social-engineering messages at scale for phishing campaigns', correct: true }
+    ],
+    explanation: 'The same text-generation capability that drafts clear, audience-appropriate crisis communications for an IR team can draft clear, audience-appropriate phishing lures for an attacker. Both require adapting tone, urgency, and technical detail to the reader.',
+    insight: 'Persuasive writing is persuasive writing, regardless of whether it defends or deceives.'
+  }
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+var current = 0;
+var answers = [];    /* { chosen: idx, correct: bool } per case */
+var shuffled = [];   /* shuffled option indices per case */
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  /* Pre-shuffle options for each case */
+  shuffled = CASES.map(function(c) {
+    var indices = c.options.map(function(_,i){ return i; });
+    for (var i = indices.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = indices[i]; indices[i] = indices[j]; indices[j] = t;
+    }
+    return indices;
+  });
+  answers = [];
+  current = 0;
+  renderDots();
+  renderCase();
+  sendHeight();
+}
+
+/* ============================================================
+   DOTS
+   ============================================================ */
+function renderDots() {
+  var d = document.getElementById('dots');
+  d.innerHTML = '';
+  for (var i = 0; i < CASES.length; i++) {
+    var dot = document.createElement('span');
+    dot.className = 'dot';
+    if (i === current) dot.classList.add('active');
+    if (answers[i]) {
+      dot.classList.remove('active');
+      dot.classList.add(answers[i].correct ? 'done' : 'wrong');
+    }
+    d.appendChild(dot);
+  }
+}
+
+/* ============================================================
+   RENDER CASE
+   ============================================================ */
+function renderCase() {
+  var area = document.getElementById('case-area');
+  var sum = document.getElementById('summary');
+  sum.className = 'summary';
+  sum.innerHTML = '';
+  area.style.display = 'block';
+
+  if (current >= CASES.length) { showSummary(); return; }
+
+  var c = CASES[current];
+  var order = shuffled[current];
+
+  var html = '<div class="case-counter">Case ' + (current+1) + ' of ' + CASES.length + '</div>';
+
+  /* Mirror panels */
+  html += '<div class="mirror">';
+
+  /* Left: Defensive */
+  html += '<div class="panel-def">'
+    + '<div class="panel-label">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+    + ' Defensive Capability</div>'
+    + '<div class="panel-def-text">' + c.defensive + '</div>'
+    + '<div class="panel-def-ctx">' + c.context + '</div>'
+    + '</div>';
+
+  /* Divider */
+  html += '<div class="mirror-divider"></div>';
+
+  /* Right: Offensive options */
+  html += '<div class="panel-off">'
+    + '<div class="panel-label">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18.36 6.64a9 9 0 0 1-12.73 0"/><path d="M5.64 17.36a9 9 0 0 1 12.73 0"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/></svg>'
+    + ' Offensive Mirror</div>'
+    + '<div class="panel-off-prompt">Which of these is the true offensive twin of this capability?</div>';
+
+  for (var i = 0; i < order.length; i++) {
+    var oi = order[i];
+    var opt = c.options[oi];
+    html += '<button class="opt-card" data-oi="' + oi + '" onclick="pickAnswer(' + oi + ', this)">'
+      + opt.text
+      + '<span class="opt-marker"></span>'
+      + '</button>';
+  }
+
+  html += '</div></div>';
+
+  /* Feedback placeholder */
+  html += '<div class="feedback" id="feedback"></div>';
+
+  /* Next button */
+  html += '<button class="next-btn" id="next-btn" onclick="nextCase()">'
+    + (current < CASES.length - 1 ? 'Next Case' : 'See Results')
+    + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>';
+
+  area.innerHTML = html;
+  sendHeight();
+}
+
+/* ============================================================
+   PICK ANSWER
+   ============================================================ */
+function pickAnswer(oi, btnEl) {
+  if (answers[current]) return; /* already answered */
+
+  var c = CASES[current];
+  var isCorrect = c.options[oi].correct;
+  answers[current] = { chosen: oi, correct: isCorrect };
+
+  /* Lock all option cards */
+  var cards = document.querySelectorAll('.opt-card');
+  cards.forEach(function(card) {
+    card.classList.add('locked');
+    var idx = parseInt(card.dataset.oi);
+    if (idx === oi) {
+      card.classList.add(isCorrect ? 'chosen-right' : 'chosen-wrong');
+      card.querySelector('.opt-marker').textContent = isCorrect ? '✓' : '✗';
+    }
+    if (c.options[idx].correct && !isCorrect) {
+      card.classList.add('reveal-correct');
+      card.querySelector('.opt-marker').textContent = '✓';
+    }
+  });
+
+  /* Show feedback */
+  var fb = document.getElementById('feedback');
+  var fbHtml = '<div class="fb-verdict">' + (isCorrect ? 'Correct' : 'Not quite') + '</div>';
+
+  if (!isCorrect) {
+    var wrongFb = c.options[oi].fb || '';
+    if (wrongFb) fbHtml += '<p class="fb-text">' + wrongFb + '</p>';
+    fbHtml += '<p class="fb-text" style="margin-top:6px"><strong>The mirror pair:</strong> ' + c.explanation + '</p>';
+  } else {
+    fbHtml += '<p class="fb-text">' + c.explanation + '</p>';
+  }
+
+  fbHtml += '<div class="fb-insight">' + c.insight + '</div>';
+
+  fb.innerHTML = fbHtml;
+  fb.className = 'feedback show ' + (isCorrect ? 'correct' : 'incorrect');
+
+  /* Show next button */
+  document.getElementById('next-btn').classList.add('show');
+
+  /* Update dots */
+  renderDots();
+  sendHeight();
+}
+
+/* ============================================================
+   NEXT CASE
+   ============================================================ */
+function nextCase() {
+  current++;
+  if (current >= CASES.length) {
+    showSummary();
+  } else {
+    renderDots();
+    renderCase();
+  }
+  sendHeight();
+}
+
+/* ============================================================
+   SUMMARY
+   ============================================================ */
+function showSummary() {
+  document.getElementById('case-area').style.display = 'none';
+  var sum = document.getElementById('summary');
+
+  var correct = answers.filter(function(a){ return a.correct; }).length;
+  var pct = Math.round(correct / CASES.length * 100);
+  var grade, gc;
+  if (pct >= 83) { grade = 'Excellent'; gc = 'g-high'; }
+  else if (pct >= 50) { grade = 'Good'; gc = 'g-mid'; }
+  else { grade = 'Keep practicing'; gc = 'g-low'; }
+
+  var html = '<div class="sum-score-row">'
+    + '<div class="sum-score-num">' + correct + '<span class="denom"> / ' + CASES.length + '</span></div>'
+    + '<div class="sum-grade ' + gc + '">' + pct + '% | ' + grade + '</div>'
+    + '</div>';
+
+  html += '<div class="sum-title">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+    + ' All Dual-Use Pairs</div>';
+
+  CASES.forEach(function(c, i) {
+    var a = answers[i];
+    var correctOpt = c.options.filter(function(o){ return o.correct; })[0];
+    var rCls = a.correct ? 'ok' : 'nok';
+    var rTxt = a.correct ? '✓' : '✗';
+    html += '<div class="pair-card">'
+      + '<div class="pair-def">' + c.defensive + '</div>'
+      + '<div class="pair-arrow">⇄</div>'
+      + '<div class="pair-off">' + correctOpt.text
+      + ' <span class="pair-result ' + rCls + '">' + rTxt + '</span></div>'
+      + '</div>';
+  });
+
+  html += '<div class="sum-takeaway">'
+    + '<p><strong>Key takeaway:</strong> Every pair in the list above uses the same model, the same weights, the same API call. The only thing that changes is the prompt and the person writing it. A defender who can name precisely which defensive skill has an offensive twin is in a far better position than one who says "AI is a threat" and stops there. The dual-use inversion is not a flaw to be patched; it is a structural property of general-purpose AI that security strategy must account for.</p>'
+    + '</div>';
+
+  html += '<button class="reset-btn" onclick="resetAll()">Try Again</button>';
+
+  sum.innerHTML = html;
+  sum.className = 'summary show';
+  renderDots();
+  sendHeight();
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+function resetAll() {
+  init();
+}
+
+/* ============================================================
+   IFRAME RESIZE
+   ============================================================ */
+var _lastH = 0;
+function sendHeight() {
+  requestAnimationFrame(function() {
+    var el = document.querySelector('.stage');
+    var h = el ? el.offsetHeight + 24 : document.body.scrollHeight;
+    if (h !== _lastH) {
+      _lastH = h;
+      window.parent.postMessage({ type: 'iframeHeight', height: h }, '*');
+    }
+  });
+}
+if (typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(function(){ sendHeight(); }).observe(document.querySelector('.stage') || document.body);
+}
+window.addEventListener('load', function(){ init(); });
+window.addEventListener('resize', sendHeight);
+</script>
+</body>
+</html>

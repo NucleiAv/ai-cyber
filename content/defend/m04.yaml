@@ -1,0 +1,320 @@
+n: 4
+short: Threat detection and triage
+title: Intrusion detection, log analysis and AI triage
+time: 8 sections · about 4 hours
+lede: How a SOC turns raw logs into alerts, where machine learning and LLMs fit in triage, how they fail, and how to judge a detector with the numbers your own team can afford.
+idea: |
+  A security operations center (SOC) gets thousands of alerts a day and has a few analysts. **Triage** is deciding which alerts a person looks at, and how soon.
+
+  Tools can help at every step. Parsers read logs, signature engines and ML detectors raise alerts, and LLMs can summarize and label them. Each tool fails in its own way. This module teaches you to **check machine output against ground truth**, and to choose a detector by what it costs your team.
+
+  !eli5 Triage in a hospital decides who sees a doctor first. If the nurse's computer says "minor" for a heart attack, nobody rushes. In a SOC, a "Low" label on a real attack does the same.
+primer: |
+  ### Step 1. Logs and parsing
+
+  Devices write logs in formats such as **syslog** and **CEF** (Common Event Format). A parser pulls out fields, such as source IP, destination port and action. **Ground truth** for a field is what the log line itself contains. If a tool reports a value that is not in the line, it invented it.
+
+  ### Step 2. Detection at wire speed
+
+  Network detection must keep up with traffic. **Signature engines** such as Snort and Suricata match rules in real time. **Flow records** summarize connections into numbers, such as bytes, packets and duration. ML detectors read those numbers. Supervised models learn known attacks. **Anomaly detection** flags what looks unusual.
+
+  ### Step 3. The four-step triage pipeline
+
+  1. **Parse.** Extract fields from the raw alert.
+  2. **Classify.** Give a triage severity, such as Critical, High, Medium, Low or Informational.
+  3. **Enrich.** Add context to Critical and High alerts.
+  4. **Hand off.** Pass alerts to analysts, most severe first.
+
+  The label from step 2 decides whether a person ever sees the alert.
+
+  ### Step 4. Five ways LLM triage fails
+
+  - **Hallucinated IOC.** Names an IP, domain or hash that is not in the log.
+  - **Severity inflation.** Calls a routine event high because its words sound like an attack.
+  - **Severity deflation.** Calls a real threat low, so no analyst looks. This is the most dangerous.
+  - **Context fabrication.** Gives a confident explanation the log does not support.
+  - **Knowledge cutoff.** Cannot recognize tools or CVEs newer than its training data.
+
+  ### Step 5. Measure with your own budget
+
+  A vendor's precision and recall mean different things for a team of 3 and a team of 20. Work out how many investigations a day the detector creates, and how many attacks it misses. For detectors with a tunable threshold, compare them at the **false positive rate your team can afford**, not by AUC alone.
+diagrams:
+  - type: flow
+    title: The triage pipeline from the lecture
+    nodes: [["Raw alert", "box"], ["A. Parse", "raised", "fields"], ["B. Classify", "def", "severity"], ["C. Enrich", "raised", "context"], ["D. Hand off", "box", "most severe first"]]
+    edges: ["", "", "Critical, High", ""]
+    caption: Step B decides if a person ever sees the alert. A wrong Low in step B hides the attack.
+  - type: layers
+    title: Where each tool fits, by time budget
+    attack: 50,000 flows per second
+    layers:
+      - ["Signatures and ML on flow numbers", "Milliseconds, full volume", "partial"]
+      - ["LLM drafts a rationale for flagged alerts", "Seconds, only what was flagged", "partial"]
+      - ["Analyst decides and owns the call", "Minutes, the few that matter", "stop"]
+    caption: Each stage gets a smaller, more important share of the traffic.
+terms:
+  - [SOC, "Security operations center. The team that watches and responds to alerts."]
+  - [CEF, "Common Event Format. A log format with a pipe-separated header and key=value extension."]
+  - [Syslog PRI, "The number in angle brackets at the start of a syslog line. It packs facility and severity."]
+  - [Ground truth, "The real value, checked against the evidence itself."]
+  - [Beacon, "A compromised host that calls its attacker's server on a regular schedule."]
+  - [Deterministic, "Same input, same output, every time."]
+  - [Stochastic, "Output is sampled, so repeated runs can differ."]
+  - [TPR, "True positive rate. Attacks caught divided by real attacks. The same as recall."]
+  - [AUC, "Area under the ROC curve. One score across every threshold, from 0.5 (guessing) to 1.0."]
+  - [Concept drift, "Traffic changes over time, so a trained detector gets worse."]
+sections:
+  01_the-soc-analysts-challenge.html: "Why SOCs drown in alerts, how analysts triage, the main log formats, how logs are parsed, and how to check any tool's output against ground truth with a CEF example."
+  02_triage-pipeline-and-metrics.html: "How SOCs automate triage, an LLM-based pipeline traced alert by alert, confusion matrix metrics for any classifier, where LLM triage fails, and a DNS beaconing case."
+  03_how-machines-detect-intrusions.html: "Where detection has to run at wire speed, signature engines as the baseline, how packets become flow features in the UNSW-NB15 schema, and three detector types compared."
+  04_detection-in-practice.html: "Classify an SSH brute-force burst end to end, spot exfiltration and floods in flow features, why detectors go stale, how to read benchmark claims, and how to pick a detector a small team can run."
+  05_comparing-approaches.html: "Ten thousand events and three analysts. The baseline you already run, the alert record as a data contract, what classical ML adds, and LLM triage as one more tool, not a replacement."
+  06_evidence-and-roc-curves.html: "Trace one C2 beaconing alert from signal to verdict, then read ROC curves against the false positive budget your team can afford."
+  07_failure-and-choosing-tools.html: "A worked incident where AI triage failed and nobody caught it, who was accountable, and how to choose tools on evidence."
+  08_references-and-readings.html: "Every reading, standard and dataset used in Module 4, with recommended and optional readings."
+desk:
+  title: The analyst bench
+  blurb: "Nine benches from the class workbook. Check two parsers against a log, decode a syslog priority, name LLM failure modes, work out what a vendor's numbers cost your team, and find the three failures behind a ransomware case. Answers from the class slides."
+  lede: "In each bench a machine produced an output and you check it against the evidence. The answers come from the Module 4 answer slides."
+  situation: |
+    **The triage pipeline.** A. Parse extracts fields. B. Classify gives Critical, High, Medium, Low or Informational. C. Enrich adds context to Critical and High. D. Hand off passes alerts to analysts, most severe first.
+  rounds:
+    - title: Bench 1. Checking two parsers against ground truth
+      info: |
+        The log entry, in CEF.
+
+        `CEF:0|AcmeFW|Firewall|2.1|401|Denied Connection|8|src=172.16.5.22 dst=10.10.1.50 dpt=22 proto=TCP spt=51442 act=deny cs1Label=Reason cs1=Policy violation`
+
+        The header has seven fields split by `|`. Field 7 is the CEF severity, 0 to 10, in bands. 0 to 3 Low, 4 to 6 Medium, 7 to 8 High, 9 to 10 Very High. A field that is not in the entry has ground truth NOT PRESENT.
+      items:
+        - type: sort
+          q: "For each field, which tool is wrong?"
+          rows:
+            - ["dest port. Parser 22, model 22", "Neither"]
+            - ["action. Parser deny, model deny", "Neither"]
+            - ["timestamp. Parser not present, model 2026-05-15T10:30:00Z", "Model"]
+            - ["severity. Parser High (8), model medium", "Model"]
+          opts: ["Parser", "Model", "Both", "Neither"]
+          why: "The entry has no timestamp, so the model invented one. The severity is 8, which is in the High band, so the model mapped it wrong."
+        - type: open
+          q: The model made two errors of different kinds. Describe each one.
+          a: |
+            - **Fabrication.** It returned a timestamp for a field that does not exist. A false timeline sends an investigation to the wrong hour.
+            - **Mapping error.** It read severity 8 and called it medium. Nothing was invented, but the value was translated wrong. Medium leaves the alert in the queue, where High would have been worked.
+        - type: open
+          q: In production nobody fills in a ground-truth column. Why would each error be hard to notice?
+          a: "Both outputs look normal. A timestamp looks like any timestamp, and medium is a valid label. The errors show only when you compare the output with the source line. In class, a chat model at temperature 0.7 returned an invented timestamp in all ten runs."
+    - title: Bench 2. Naming the failure
+      info: "Key terms. Hallucinated IOC, severity inflation, severity deflation, context fabrication, knowledge cutoff."
+      items:
+        - type: sort
+          q: "Match each wrong model summary to its failure mode."
+          rows:
+            - ["sshd. Accepted publickey for deploy from 10.0.0.9, a 03:00 job on the same host every night. Model said High, probable lateral movement.", "Severity inflation"]
+            - ["EICAR test file from 198.51.100.222, quarantined. Model said it was linked to C2 at 203.0.113.77.", "Hallucinated IOC"]
+            - ["Internal host queries a 48-hour-old domain every 5 to 7 minutes all day. Model said Low, routine scan.", "Severity deflation"]
+            - ["A 41 MB POST to an unknown host at 02:14 from a finance PC. Model said standard cloud backup.", "Context fabrication"]
+          opts: ["Hallucinated IOC", "Severity inflation", "Severity deflation", "Context fabrication", "Knowledge cutoff"]
+          why: "Nothing in the sshd alert suggests lateral movement. 203.0.113.77 appears nowhere in the source. A scan does not repeat every 5 to 7 minutes all day, which is a beacon. Nothing in the proxy alert mentions backup."
+        - q: Which of these four errors is the most dangerous for the SOC?
+          opts: ["Severity inflation", "Hallucinated IOC", "Severity deflation"]
+          a: 2
+          why: "Inflation and hallucination waste time, but an analyst still sees the alert and can fix the record. Deflation removes the alert from every analyst's view, so nobody can notice the error."
+    - title: Bench 3. One Suricata alert, read field by field
+      info: |
+        `<38>1 2026-05-15T03:22:17Z idsensor01 suricata 5501 - - [1:2024897:3] ET MALWARE Win32/Agent.UNK CnC Beacon [Priority: 1] {TCP} 192.168.4.100:49152 -> 203.0.113.45:443`
+
+        The syslog envelope is `<38>`, version, timestamp and sensor name. The Suricata message is the signature ID, the signature name, the rule author's priority (1 is highest), the protocol, and source to destination. 192.168.x.x is a private range, used only inside an organization.
+      items:
+        - q: What priority did the rule's author give this signature?
+          opts: ["38", "1", "3"]
+          a: 1
+          why: "[Priority: 1] is set by whoever wrote the Suricata rule. 1 is the highest."
+        - q: Is the source host 192.168.4.100 inside or outside your network?
+          opts: ["Inside, it is a private 192.168.x.x address", "Outside, it is a public address", "You cannot tell"]
+          a: 0
+          why: "192.168.0.0/16 is a private range, so the machine that started this beacon is one of yours."
+        - type: num
+          q: "Decode the syslog priority <38>. PRI = facility × 8 + severity. What is the facility number?"
+          a: 4
+          tol: 0
+          why: "38 ÷ 8 = 4 remainder 6. Facility 4 is security or authorization messages. Check, 4 × 8 + 6 = 38."
+        - type: num
+          q: "And what is the syslog severity number?"
+          a: 6
+          tol: 0
+          why: "The remainder is 6, which is Informational. The sensor was set up to log at that level. It is not an opinion about the attack."
+        - type: sort
+          q: "Three labels sit on this one alert. Which question does each answer?"
+          rows:
+            - ["Syslog severity, set in the sensor's logging configuration at install", "B. How urgent is this log message, as the sensor was set up to report it?"]
+            - ["Suricata priority 1, set by the rule author months earlier", "C. How serious is the kind of attack this signature detects?"]
+            - ["Triage severity, set by step B for this alert on this network", "A. How dangerous is this event for this particular network?"]
+          opts: ["A. How dangerous is this event for this particular network?", "B. How urgent is this log message, as the sensor was set up to report it?", "C. How serious is the kind of attack this signature detects?"]
+          why: "All three are correct at once because they answer different questions, set by different people at different times."
+        - type: open
+          q: To set the triage severity, what must step B know that the alert line does not say?
+          a: "What 192.168.4.100 is. A radiology workstation, a domain controller and a test laptop change the risk. An asset inventory, or a colleague who knows the network, supplies that. The log line cannot."
+        - q: "A model given only the alert text answered Critical, which is correct. What did it most likely rely on?"
+          opts: ["Its knowledge of your network", "Words a person wrote into the rule, such as MALWARE, CnC, Beacon and Priority 1", "The destination port 443"]
+          a: 1
+          why: "Given an alert worded 'routine scan', the same method would answer Low with the same confidence, which is severity deflation. A correct answer here does not show the model can judge severity on your network."
+    - title: Bench 4. One alert, five runs
+      info: "Over five runs the LLM classifier said High, Medium, High, High and Medium. The SIEM rule said High all five times. The pipeline escalates only High."
+      items:
+        - type: open
+          q: If you had run each tool once and seen High both times, what would that run tell you about each tool?
+          a: "For the SIEM rule, everything. It is deterministic, so one run is definitive. For the LLM, one sample from a spread. That sample happened to be High."
+        - type: open
+          q: Name two fixes that make the LLM classifier possible to evaluate, and what each costs.
+          a: |
+            - **Set temperature to 0.** Results become repeatable. You lose the variation that signaled the alert was ambiguous.
+            - **Run it n times and report the spread.** Cost and latency multiply by n on every alert.
+        - type: open
+          q: Runs 2 and 5 said Medium. What happened to the alert in those runs, and would anyone have noticed?
+          a: "It was never escalated. Nobody was notified and nothing was logged as a miss. The pipeline kept one run and reported it with more confidence than the evidence supports."
+    - title: Case A. A beacon triaged as Low
+      info: "DNS queries from an internal host every 5 to 7 minutes all day. The domain was registered 48 hours before. The C2 framework is nine months newer than the model's training data. The LLM said Low, routine scan, likely a vulnerability assessment tool. The compromise was found 12 hours later by other means."
+      items:
+        - type: sort
+          q: "Did each failure mode happen in this case?"
+          rows:
+            - ["Hallucinated IOC", "No"]
+            - ["Severity inflation", "No"]
+            - ["Severity deflation", "Yes"]
+            - ["Context fabrication", "Yes"]
+            - ["Knowledge cutoff", "Yes"]
+          opts: ["Yes", "No"]
+          why: "A confirmed beacon was marked Low (deflation). 'Routine scan' is a story the evidence does not support, since a scan does not repeat every 5 to 7 minutes all day (fabrication). The C2 framework is newer than the training data (cutoff). No made-up IOC and no inflation."
+        - q: Which mode explains why nobody looked for twelve hours?
+          opts: ["Context fabrication", "Severity deflation", "Knowledge cutoff"]
+          a: 1
+          why: "Low takes the alert out of every analyst's view."
+        - type: open
+          q: Write a deterministic rule, with no model involved, that would send this pattern to an analyst whatever the model says. What does it cost?
+          a: "**If** the queried domain was registered in the last 72 hours, **then** send the alert to an analyst. The cost is volume. Content delivery networks and marketing sites also use new domains, and each one uses an investigation slot. Bench 6 counts what the team can afford."
+    - title: Bench 5. What the score costs your team
+      info: "Vendor quote. Precision 0.40, recall 0.90. 200 actionable alerts reach triage each week. Recall = TP ÷ (TP + FN). Precision = TP ÷ (TP + FP)."
+      items:
+        - type: num
+          q: Real alerts it catches each week (recall × 200)
+          a: 180
+          tol: 0
+          why: "0.90 × 200 = 180."
+        - type: num
+          q: Real alerts it misses each week
+          a: 20
+          tol: 0
+          why: "200 − 180 = 20 real actionable alerts nobody sees."
+        - type: num
+          q: Alerts it flags in total each week (caught ÷ precision)
+          a: 450
+          tol: 0
+          why: "180 ÷ 0.40 = 450."
+        - type: num
+          q: False alarms each week
+          a: 270
+          tol: 0
+          why: "450 − 180 = 270, each one an investigation slot."
+        - type: num
+          q: For a team of 3, investigations per analyst per working day (450 ÷ 3 ÷ 5)
+          a: 30
+          tol: 0.5
+          why: "150 a week each, about 30 a day, at the top of a 16 to 32 a day limit. For a team of 20 it is about 22.5 a week, or 4.5 a day, which is workable. Same model, same numbers, different team. Report precision and recall separately, because one combined score hides this."
+    - title: Bench 6. Choosing the operating point
+      info: "This SOC sees 10,000 events a day. 3 are real attacks. The team can investigate 15 alerts a day. Detectors A (random forest, AUC 0.97, TPR 0.85 at FPR 0.001, 0.98 at 0.01), B (isolation forest, AUC 0.82, 0.45 and 0.74) and C (logistic regression, AUC 0.88, 0.60 and 0.83)."
+      items:
+        - type: num
+          q: Slots left for false alarms each day (15 − real attacks)
+          a: 12
+          tol: 0
+          why: "15 − 3 = 12."
+        - type: num
+          q: False positive rate the team can afford (12 ÷ 9,997)
+          a: 0.0012
+          tol: 0.0001
+          why: "12 ÷ 9,997 ≈ 0.0012, which is close to 0.001."
+        - type: num
+          q: Attacks caught per day by C at FPR 0.001 (TPR × 3)
+          a: 1.8
+          tol: 0.01
+          why: "0.60 × 3 = 1.80. A catches 2.55 and B catches 1.35."
+        - type: num
+          q: Gap between A and C in attacks caught per day at FPR 0.01
+          a: 0.45
+          tol: 0.01
+          why: "A catches 0.98 × 3 = 2.94 and C catches 0.83 × 3 = 2.49, a gap of 0.45. At the rate you can afford the gap is 0.75."
+        - type: open
+          q: The AUC gap between A and C is 0.09 at both rates. Is the gap in attacks caught the same? What does that tell you about choosing by AUC?
+          a: "No. It is 0.75 attacks a day at the affordable rate and 0.45 at 0.01. AUC averages over every threshold, including ones you cannot afford, so it hides the difference at your operating point. Compare detectors at the false positive rate your team can actually run."
+    - title: Bench 7. Who handles what
+      items:
+        - type: sort
+          q: "Match each SOC task to the stage that should handle it."
+          rows:
+            - ["Classify 50,000 network flows per second in real time", "ML detectors on flow numbers, at full volume"]
+            - ["Draft an explanation of why a flagged DNS query looks suspicious", "An LLM drafts a rationale, the analyst verifies"]
+            - ["Decide whether to escalate an alert to incident response", "A human analyst makes the call and is accountable"]
+            - ["Detect unusual byte-count patterns in flow data", "An unsupervised model compares against a baseline"]
+            - ["Combine three related alerts into one incident summary", "An LLM drafts a narrative, the SOC lead checks it"]
+          opts: ["A human analyst makes the call and is accountable", "An unsupervised model compares against a baseline", "An LLM drafts a narrative, the SOC lead checks it", "ML detectors on flow numbers, at full volume", "An LLM drafts a rationale, the analyst verifies"]
+          why: "Volume goes to fast ML. Unusual patterns go to anomaly detection. Language work goes to an LLM with a person checking. Accountable decisions stay with a person."
+        - type: sort
+          q: "Match each weakness of one tool used alone to its fix."
+          rows:
+            - ["ML flags an alert and the analyst cannot see why", "An LLM drafts a rationale from the alert and logs, the analyst verifies"]
+            - ["An LLM needs 30 seconds per entry, far too slow for full volume", "Signatures and ML cut volume first, the LLM sees only flagged alerts"]
+            - ["A supervised model misses attack types absent from its training data", "Unsupervised detection flags outliers, LLM suggestions are leads to verify"]
+            - ["An LLM reports a threat that is not in the logs", "Validation gates, such as schema checks, ground-truth lookups and review"]
+            - ["ML accuracy degrades over months as traffic changes", "Scheduled retraining on fresh labels"]
+          opts: ["Scheduled retraining on fresh labels", "An LLM drafts a rationale from the alert and logs, the analyst verifies", "Validation gates, such as schema checks, ground-truth lookups and review", "Signatures and ML cut volume first, the LLM sees only flagged alerts", "Unsupervised detection flags outliers, LLM suggestions are leads to verify"]
+          why: "Each tool covers a gap in another. No single tool works alone."
+    - title: Case B. A critical alert triaged as Low
+      info: "02:14 the ML layer raises a critical alert. Unusual SMB traffic from a radiology workstation to the domain controller. 02:14 the LLM enrichment step calls it Low, routine network scan. 02:15 the overnight analyst reads Low, accepts it without opening the evidence, and moves on. 14:00 ransomware encrypts patient records, imaging and billing."
+      items:
+        - type: open
+          q: Name the three failures, what went wrong in each, and who owned each one.
+          a: |
+            1. **Enrichment.** A fluent, confident, wrong classification. Owned by the model and the team that deployed it.
+            2. **Verification.** A label accepted without opening the evidence. Owned by the analyst.
+            3. **The organization.** No policy for a critical detection paired with a low triage. Owned by leadership.
+
+            Detection worked. The failures were in enrichment, verification and policy.
+        - type: open
+          q: At 02:14 the ML detector said critical and the LLM said Low, and nothing compared them. Write a rule that flags the disagreement.
+          a: "**If** the detection severity is Critical **and** the triage severity is Low or Informational, **then** escalate to an analyst immediately and require them to open the evidence before closing."
+    - title: Before you adopt. Questions for a vendor
+      info: "Four analysts. About 8,000 events a day reach the queue, and signature rules already close most of them. A vendor offers an LLM triage assistant quoting precision 0.72 and recall 0.88. Nobody has piloted it."
+      items:
+        - type: open
+          q: "Choose the two questions that matter most for this SOC, and say what you need to see before a pilot and who produces it. 1. What does the baseline already catch, and what does this tool add? 2. At our operating point, what is the measured TPR? 3. Which step does a human own, and what evidence must they open? 4. What would tell us in six months that we chose wrong?"
+          a: |
+            One strong pair is **1 and 2**.
+
+            - **Question 1.** The signatures already close most events, so the tool's value is only what it adds on top. Ask for a side-by-side run on a week of our own alerts that shows what the baseline missed and the tool caught. The SOC lead and a detection engineer produce it.
+            - **Question 2.** With four analysts, our affordable false positive rate is low. Ask for the TPR measured at that rate on our data, not the vendor's precision and recall on theirs. A detection engineer works out the budget, as in Bench 6.
+
+            Questions 3 and 4 are also strong. Ownership prevents Case B, and a six-month signal catches drift.
+  card: |
+    - Check every machine output against the source line. Absent fields are NOT PRESENT.
+    - Severity deflation is the failure that hides attacks.
+    - One LLM run is a sample. Rules are deterministic.
+    - Work out investigations per analyst per day before you buy.
+    - Compare detectors at the false positive rate you can afford, not by AUC.
+    - Flag any disagreement between detection and triage.
+other_fw:
+  - [MITRE ATT&CK, "Beaconing and C2 map to the Command and Control tactic. [Open ATT&CK](https://attack.mitre.org/tactics/TA0011/)."]
+  - [OWASP LLM09, "Triage failures such as fabrication are misinformation. [Read LLM09](https://genai.owasp.org/llmrisk/llm092025-misinformation/)."]
+slides:
+  summary: |
+    The lecture opens with three analysts facing 500 alerts in one shift and works through the same benches as the workbook. Parsers against ground truth, the failure modes of LLM triage, three severity labels on one Suricata alert, the four-step pipeline, five runs of one alert, a beacon missed for twelve hours, time budgets per detection stage, a Suricata threshold rule, flow records, the vendor quote for two team sizes, ROC and AUC, operating points, task assignment, a ransomware case and questions to ask a vendor.
+  files: [M04_Lecture.pdf, M04_Analyst_Workbook.pdf]
+quiz:
+  - q: A tool reports a value that you cannot find anywhere in the log line. What is the ground truth?
+    opts: ["The tool's value", "NOT PRESENT", "Unknown"]
+    a: 1
+    why: Ground truth is what the entry itself contains.
+  - q: Two detectors differ by 0.09 AUC. What should you compare before choosing?
+    opts: ["Their logos", "Attacks caught at the false positive rate your team can afford", "Their AUC only"]
+    a: 1
+    why: AUC averages over thresholds you will never use.

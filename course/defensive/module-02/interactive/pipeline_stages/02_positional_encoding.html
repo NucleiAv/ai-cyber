@@ -1,0 +1,409 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage 2: Positional Encoding</title>
+<style>
+  :root {
+    --violet: #57068C;
+    --violet-dark: #3D0461;
+    --violet-50: #F5EDFA;
+    --violet-100: #E9D7F4;
+    --violet-200: #D2B3E5;
+    --teal: #155E63;
+    --teal-50: #E6F2F4;
+    --teal-100: #BDE0E5;
+    --amber: #B5651D;
+    --amber-50: #FBF1E5;
+    --ink: #1A1A1A;
+    --ink-soft: #3A3A3A;
+    --ink-mute: #6B6B6B;
+    --rule: #E2E2E2;
+    --rule-soft: #F0F0F0;
+    --surface: #FAFAFC;
+    --font-body: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #fff; color: var(--ink);
+    font-family: var(--font-body); line-height: 1.4; padding: 16px;
+  }
+  .stage {
+    max-width: 760px; margin: 0 auto; background: #fff;
+    border: 1px solid var(--rule); border-radius: 12px;
+    padding: 22px 22px 18px; box-shadow: 0 1px 2px rgba(20, 0, 40, 0.05);
+  }
+  .stage-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .stage-num {
+    font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+    color: #fff; background: #4C1D95;
+    padding: 3px 8px; border-radius: 4px; letter-spacing: 0.04em;
+  }
+  .stage-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink); }
+  .stage-input {
+    margin: 10px 0 14px; font-family: var(--font-mono); font-size: 0.78rem;
+    color: var(--ink-mute); background: var(--surface); padding: 7px 10px;
+    border-radius: 6px; border: 1px solid var(--rule-soft);
+  }
+  .stage-input b { color: var(--ink-soft); font-weight: 600; margin-right: 6px; }
+
+  /* Position strip */
+  .pos-strip {
+    display: flex; gap: 6px; justify-content: center;
+    margin: 4px 0 18px; flex-wrap: wrap;
+  }
+  .pos-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    transition: transform 0.3s ease;
+  }
+  .pos-item.active { transform: translateY(-3px); }
+  .pos-chip {
+    font-family: var(--font-mono); font-size: 0.75rem;
+    padding: 3px 7px; border-radius: 4px;
+    background: #4C1D95; color: #fff;
+    border: 1px solid var(--violet-100); white-space: pre;
+    transition: all 0.3s ease;
+  }
+  .pos-item.active .pos-chip {
+    background: var(--violet); color: #fff; border-color: var(--violet);
+    box-shadow: 0 4px 10px rgba(87, 6, 140, 0.25);
+  }
+  .pos-num {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    color: var(--ink-mute); letter-spacing: 0.04em;
+  }
+  .pos-item.active .pos-num { color: var(--violet); font-weight: 700; }
+
+  /* Equation row */
+  .equation {
+    display: grid;
+    grid-template-columns: 1fr 24px 1fr 24px 1fr;
+    gap: 8px;
+    align-items: stretch;
+    margin: 16px 0 6px;
+  }
+  .vec-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 14px 10px 10px;
+    position: relative;
+    text-align: center;
+  }
+  .vec-card.word { border-color: var(--violet-100); background: #FCFAFD; }
+  .vec-card.pos { border-color: var(--teal-100); background: #F4FAFB; }
+  .vec-card.out { border-color: var(--violet); background: #fff; box-shadow: 0 4px 12px rgba(87, 6, 140, 0.10); }
+  .vec-label {
+    position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+    background: #fff; padding: 0 6px;
+    font-size: 0.6rem; letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 700;
+    color: var(--ink-mute); white-space: nowrap;
+  }
+  .vec-card.word .vec-label { color: var(--violet-dark); }
+  .vec-card.pos .vec-label { color: var(--teal); }
+  .vec-card.out .vec-label { color: var(--violet-dark); }
+
+  .vec-numbers {
+    display: flex; flex-direction: column; gap: 4px;
+    font-family: var(--font-mono); font-size: 0.78rem;
+    color: var(--ink);
+  }
+  .vec-numbers span {
+    padding: 3px 0; border-radius: 3px;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .vec-card.word .vec-numbers span { color: var(--ink); }
+  .vec-card.pos .vec-numbers span { color: var(--teal); }
+  .vec-card.out .vec-numbers span { color: var(--ink); font-weight: 700; }
+
+  .vec-card.flash .vec-numbers span {
+    background: var(--violet-50);
+  }
+  .vec-card.pos.flash .vec-numbers span { background: var(--teal-50); }
+  .vec-card.out.flash .vec-numbers span { background: var(--violet-50); }
+
+  .vec-dots {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    color: var(--ink-mute); padding: 2px 0;
+  }
+
+  .op {
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 1.4rem;
+    color: var(--violet); font-weight: 700;
+  }
+  .op.eq { color: var(--ink-soft); }
+
+  .caption {
+    margin: 14px 0 0; font-size: 0.82rem;
+    color: var(--ink-soft); text-align: center; line-height: 1.45;
+  }
+  .caption b { color: var(--violet-dark); font-weight: 700; }
+
+  @media (max-width: 640px) {
+    .equation { grid-template-columns: 1fr; }
+    .op { padding: 4px 0; font-size: 1.1rem; }
+  }
+
+
+  /* Embedded in the course page: remove the outer demo frame and page padding.
+     Keep the demo itself responsive; the parent iframe measures this .stage box. */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden;
+  }
+  body {
+    display: block;
+  }
+  .stage {
+    margin: 0 auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    padding-top: 0 !important;
+  }
+  .stage-input {
+    margin-top: 0 !important;
+  }
+
+  /* WCAG 2.2.2 (Pause, Stop, Hide): this stage animates on a loop for more
+     than five seconds, so it must offer a way to stop the motion. */
+  .anim-controls {
+    display: flex; justify-content: flex-end; gap: 4px;
+    margin: 6px 0 0;
+  }
+  .anim-controls button {
+    border: 1px solid var(--rule, #E2E2E2);
+    border-radius: 999px;
+    background: var(--surface, #fff);
+    color: var(--ink-soft, #3A3A3A);
+    cursor: pointer;
+    font: 800 0.66rem/1 var(--font-mono, monospace);
+    padding: 5px 10px;
+  }
+  .anim-controls button:hover { border-color: var(--violet-100, #E8D8F2); color: var(--violet-dark, #3D0461); }
+  @media (prefers-reduced-motion: reduce) { .anim-controls { display: flex; } }
+</style>
+</head>
+<body>
+<section class="stage" aria-label="Stage 2: Positional encoding">
+  <div class="stage-input">
+    <b>Input:</b><span style="font-family:var(--font-mono);">Analyze this log: 192.168.1.105 port 443 SYN</span>
+  </div>
+
+  <div class="pos-strip" id="posStrip"></div>
+
+  <div class="equation">
+    <div class="vec-card word" id="cardWord">
+      <span class="vec-label">Word vector</span>
+      <div class="vec-numbers" id="vecWord"></div>
+    </div>
+    <div class="op">+</div>
+    <div class="vec-card pos" id="cardPos">
+      <span class="vec-label">Position <span id="posIdxLabel">0</span></span>
+      <div class="vec-numbers" id="vecPos"></div>
+    </div>
+    <div class="op eq">=</div>
+    <div class="vec-card out" id="cardOut">
+      <span class="vec-label">With position</span>
+      <div class="vec-numbers" id="vecOut"></div>
+    </div>
+  </div>
+
+  <p class="caption">
+    The same word at different positions gets a different vector. The model adds a <b>position signal</b>
+    so it knows that <b>192</b> comes before <b>168</b>, and <b>SYN</b> sits at the end.
+  </p>
+  <div class="anim-controls" role="group" aria-label="Animation controls">
+    <button type="button" class="anim-toggle" aria-pressed="true">Pause</button>
+  </div>
+</section>
+
+<script>
+  const TOKENS = ['Analyze', ' this', ' log', ':', ' 192', ' port', ' 443', ' SYN'];
+
+  // Token-specific word vectors (4 sample dims + "...")
+  const WORD_VECS = [
+    [0.12, -0.34, 0.88, 0.05],
+    [-0.21, 0.56, 0.04, 0.89],
+    [0.44, -0.18, -0.62, 0.27],
+    [0.08, 0.91, -0.05, -0.33],
+    [-0.55, 0.22, 0.37, 0.71],
+    [0.30, -0.47, 0.16, 0.62],
+    [-0.18, 0.74, -0.29, 0.05],
+    [0.61, -0.12, 0.48, -0.36]
+  ];
+
+  // Sinusoidal-flavoured position vectors (4 dims for display)
+  function posVec(p, dims = 4) {
+    const out = [];
+    for (let i = 0; i < dims; i++) {
+      const angle = p / Math.pow(10000, (2 * Math.floor(i / 2)) / dims);
+      out.push(i % 2 === 0 ? Math.sin(angle) : Math.cos(angle));
+    }
+    return out;
+  }
+
+  function fmt(n) {
+    const s = n.toFixed(2);
+    return n >= 0 ? '+' + s : s;
+  }
+
+  function renderVec(elId, arr) {
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    arr.forEach(v => {
+      const span = document.createElement('span');
+      span.textContent = fmt(v);
+      el.appendChild(span);
+    });
+    const dots = document.createElement('div');
+    dots.className = 'vec-dots';
+    dots.textContent = '⋮';
+    el.appendChild(dots);
+  }
+
+  // Build position strip
+  const strip = document.getElementById('posStrip');
+  TOKENS.forEach((t, i) => {
+    const div = document.createElement('div');
+    div.className = 'pos-item';
+    div.dataset.idx = i;
+    div.innerHTML = `
+      <span class="pos-chip">${t.replace(/ /g, '·')}</span>
+      <span class="pos-num">pos ${i}</span>`;
+    strip.appendChild(div);
+  });
+
+  function setActive(idx) {
+    document.querySelectorAll('.pos-item').forEach(p => {
+      p.classList.toggle('active', +p.dataset.idx === idx);
+    });
+    document.getElementById('posIdxLabel').textContent = idx;
+
+    const word = WORD_VECS[idx];
+    const pos  = posVec(idx);
+    const sum  = word.map((w, i) => w + pos[i]);
+
+    renderVec('vecWord', word);
+    renderVec('vecPos',  pos);
+    renderVec('vecOut',  sum);
+
+    // brief flash highlight
+    ['cardWord', 'cardPos', 'cardOut'].forEach((id, k) => {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 480);
+      }, 120 + k * 220);
+    });
+  }
+
+  let cursor = 0;
+  function tick() {
+    setActive(cursor);
+    cursor = (cursor + 1) % TOKENS.length;
+  }
+  tick();
+  /* Pausable loop: WCAG 2.2.2. Honours prefers-reduced-motion by
+     starting paused for users who have asked for less motion. */
+  var _animTimer = null;
+  var _animBtn = document.querySelector('.anim-toggle');
+  var _reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function _animStart() { clearInterval(_animTimer); _animTimer = setInterval(tick, 1800); }
+  function _animStop()  { clearInterval(_animTimer); _animTimer = null; }
+  function _animSet(on) {
+    if (on) _animStart(); else _animStop();
+    if (_animBtn) {
+      _animBtn.textContent = on ? 'Pause' : 'Play';
+      _animBtn.setAttribute('aria-pressed', String(on));
+    }
+  }
+  if (_animBtn) _animBtn.addEventListener('click', function () { _animSet(_animTimer === null); });
+  _animSet(!_reduce);
+</script>
+
+<script>
+  /* Cross-origin-safe iframe sizing for Brightspace/local LMS embeds.
+     The child measures only its own .stage box and sends that number upward.
+     The parent never reads contentDocument, so this works even when the LMS
+     serves the iframe from a different origin or sandboxed content URL. */
+  (function() {
+    var MIN_HEIGHT = 120;
+    var MAX_HEIGHT = 1400;
+    var EXTRA_PIXELS = 10;
+    var lastSent = 0;
+    var raf = 0;
+
+    function getEmbedId() {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        return params.get('embedId') || window.name || document.title || window.location.pathname;
+      } catch (err) {
+        return window.name || document.title || 'pipeline-stage';
+      }
+    }
+
+    function measureHeight() {
+      var stage = document.querySelector('.stage') || document.body;
+      var rect = stage.getBoundingClientRect();
+      var styles = window.getComputedStyle(stage);
+      var mt = parseFloat(styles.marginTop) || 0;
+      var mb = parseFloat(styles.marginBottom) || 0;
+      var height = Math.ceil(rect.height + mt + mb + EXTRA_PIXELS);
+      if (!Number.isFinite(height)) height = MIN_HEIGHT;
+      return Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, height));
+    }
+
+    function postHeight() {
+      raf = 0;
+      var height = measureHeight();
+      if (Math.abs(height - lastSent) < 2) return;
+      lastSent = height;
+      try {
+        window.parent.postMessage({
+          kind: 'nyu-pipeline-stage-height',
+          embedId: getEmbedId(),
+          height: height
+        }, '*');
+      } catch (err) {}
+    }
+
+    function schedulePost() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(postHeight);
+    }
+
+    window.addEventListener('load', schedulePost);
+    window.addEventListener('resize', schedulePost);
+    window.addEventListener('orientationchange', schedulePost);
+    document.addEventListener('DOMContentLoaded', schedulePost);
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(schedulePost).catch(function() {});
+    }
+
+    try {
+      var stage = document.querySelector('.stage') || document.body;
+      if (window.ResizeObserver && stage) {
+        var ro = new ResizeObserver(schedulePost);
+        ro.observe(stage);
+      }
+    } catch (err) {}
+
+    // Bounded follow-up measurements catch animations, font swaps, and JS-populated rows.
+    [0, 50, 150, 300, 700, 1200, 2200, 4000].forEach(function(delay) {
+      setTimeout(schedulePost, delay);
+    });
+  })();
+</script>
+
+</body>
+</html>

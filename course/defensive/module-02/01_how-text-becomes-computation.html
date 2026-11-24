@@ -1,0 +1,808 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 2 · Section 1 · How Text Becomes Computation · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+
+
+  <style>
+    /* Pipeline stage embeds. The child pages stay responsive inside fluid iframes.
+       Height comes from child postMessage events, so this does not depend on
+       same-origin access and does not use scrollHeight feedback loops. */
+    .nyu-pipeline-stage-frame {
+      width: 100%;
+      max-width: 760px;
+      margin: 0.75rem auto 0;
+      line-height: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+    .nyu-pipeline-stage-frame--narrow {
+      max-width: 640px;
+    }
+    .nyu-pipeline-stage-frame iframe {
+      display: block;
+      width: 100%;
+      height: var(--pipeline-fallback-height, 520px);
+      border: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+
+
+    /* Larger modal variant for the embedding-space visualizer. Reuses the same
+       modal pattern as the Live Tokenizer while giving the 3D workspace room. */
+    .anim-modal.anim-modal--embedding-space {
+      width: min(1220px, calc(100vw - 2rem));
+      max-width: 1220px;
+      height: min(900px, calc(100vh - 2rem));
+      display: flex;
+      flex-direction: column;
+    }
+    .anim-modal__iframe.anim-modal__iframe--embedding-space {
+      flex: 1 1 auto;
+      width: 100%;
+      height: auto;
+      min-height: 0;
+      border: 0;
+      background: #fff;
+    }
+    @media (max-width: 760px) {
+      .anim-modal.anim-modal--embedding-space {
+        width: calc(100vw - 1rem);
+        height: calc(100vh - 1rem);
+      }
+    }
+
+    /* Right-align the single bottom navigation card on Section 1. */
+    </style>
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 2 · Section 1 of 7</div>
+      <h1 class="nyu-hero__title">How Text Becomes Computation</h1>
+      <p class="nyu-hero__subtitle">
+        How your prompts become tokens, how tokens become numerical vectors, how transformer layers
+        transform those vectors through attention to produce predictions, and why security data pays a
+        token tax that general text does not.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~24 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 3 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 1 knowledge check</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> From Text to Tokens</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Token Tax on Security Data</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> How Attention Shapes the Output</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">Learning Objectives</h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Explain</strong> how text is converted into tokens and why security relevant data consumes disproportionate context window space.</span></li>
+          <li><span><strong>Trace</strong> the computation pipeline from token IDs through embedding lookup, transformer layers, logits, and decoding, and explain why this pipeline is mathematical transformation rather than comprehension.</span></li>
+          <li><span><strong>Describe</strong> how the attention mechanism determines which parts of your input influence the model's output, and why this is a statistical process rather than comprehension.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1: From Text to Tokens ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">From Text to Tokens</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          An LLM never sees your text. It cannot process characters, words, or sentences directly. Before anything else happens, a
+          <button type="button" class="nyu-define" data-term="tokenizer">tokenizer</button>
+          converts your input into a sequence of
+          <button type="button" class="nyu-define" data-term="token-m02">tokens</button>
+          . These are subword chunks that the model treats as its fundamental units of input.
+        </p>
+
+        <p>
+          This is the first stage of how text becomes computation: your prompt is split into
+          a sequence of numerical IDs, and from this point forward, the model operates entirely
+          on those numbers. Understanding this process is essential because it determines how
+          much of your security data actually fits in a single prompt, and what gets lost
+          when it does not.
+        </p>
+
+        <h3 class="nyu-subsection-title">How Tokenization Works</h3>
+
+        <p>
+          Tokenizers are built during model training using algorithms like
+          <button type="button" class="nyu-define" data-term="byte-pair-encoding">Byte Pair Encoding (BPE)</button>.
+          The algorithm scans the training corpus and identifies which character sequences appear
+          most frequently. Those frequent sequences earn their own entry in the tokenizer's
+          <button type="button" class="nyu-define" data-term="tokenizer-vocabulary">vocabulary</button>.
+          Common English words like "the," "security," and "network" typically become single tokens.
+          Rare or domain specific text (hexadecimal strings, Base64 payloads, log syntax) gets
+          split into many small fragments because those patterns were uncommon in the training data.
+        </p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">You type a prompt</h4>
+              <p class="nyu-process__detail">Your input is plain text: a question, a log entry, a block of code.</p>
+              <code class="nyu-process__sample" style="white-space:pre-wrap;">Analyze this log: 192.168.1.105 port 443 SYN</code>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">The tokenizer splits it into subword chunks</h4>
+              <p class="nyu-process__detail">Each chunk maps to an ID in the vocabulary. Common phrases stay intact; technical syntax fragments.</p>
+              <code class="nyu-process__sample" style="white-space:pre-wrap;">["Analyze", " this", " log", ":", " 192", ".", "168", ".", "1", ".", "105", " port", " 443", " SYN"]</code>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">The model receives a sequence of numerical IDs</h4>
+              <p class="nyu-process__detail">Each token is replaced by an integer ID from the tokenizer's vocabulary. The word "Analyze" might map to ID 38875, the space+word " this" to 1596, and so on. These IDs are not meaningful on their own. They are lookup keys that the model uses to begin computation. What happens next, from embedding lookup through prediction, is covered in the subsection below.</p>
+              <code class="nyu-process__sample" style="white-space:pre-wrap;">[38875, 1596, 3251, 235292, 23109, 235265, 235274, ...]</code>
+            </div>
+          </li>
+        </ol>
+
+        <div class="nyu-callout">
+          <p>
+            <strong>Key insight:</strong> The word "Analyze" becomes one token. The IP
+            address <code>192.168.1.105</code> becomes five or more tokens. One logical
+            unit of security data consumes the same token budget as several English words.
+            This asymmetry is the foundation of every capacity calculation you will do
+            with LLMs in security operations.
+          </p>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            Going deeper: why does the vocabulary matter?
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Modern tokenizers vary in vocabulary size and training method. Larger vocabularies can represent more patterns as single tokens, but no vocabulary is equally efficient across all domains. Typical sizes range from roughly 32,000 entries in older models to over 250,000 in newer ones (for example, GPT-4 uses ~100,000 entries, Llama 3 uses 128,000, and some Google models exceed 256,000). These vocabularies are built from massive training corpora dominated by natural language text using algorithms like BPE or SentencePiece. The vocabulary is always optimized for what appeared frequently in training. Security specific syntax, including hexadecimal strings, Base64 payloads, log formats, and protocol flags, was a tiny fraction of that data, so it rarely earned dedicated vocabulary entries. The consequence: security text is systematically more expensive to process than general English, regardless of which model family you use.</p>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">From IDs to Vectors to Predictions</h3>
+
+        <p>
+          Tokenization converts your prompt into a list of integer IDs. But a list of integers
+          is not something a neural network can operate on directly. The model needs dense numerical
+          representations it can transform through learned mathematical operations. The journey
+          from token IDs to a generated response follows a fixed pipeline that every
+          transformer based LLM shares.
+        </p>
+
+        <p>
+          Continuing with the same example prompt:
+        </p>
+        <code class="nyu-process__sample" style="white-space:pre-wrap;display:block;margin-bottom:var(--sp-4);">Analyze this log: 192.168.1.105 port 443 SYN</code>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Embedding lookup</h4>
+              <p class="nyu-process__detail">Each token ID is used as a lookup key into an <strong>embedding table</strong>: a large matrix learned during training. The row corresponding to each ID is an <strong>embedding</strong>, a vector of floating point numbers (typically thousands of dimensions) that captures statistical patterns the token was associated with during training. The embedding for "Analyze" captures different patterns than the embedding for "SYN." At this stage, each embedding reflects only the token itself, with no awareness of surrounding context. These vectors are the model's actual input, not the text and not the IDs.</p>
+              <div class="nyu-pipeline-stage-frame" style="--pipeline-fallback-height: 420px;">
+                <iframe src="interactive/pipeline_stages/01_embedding_lookup.html" name="pipeline-stage-01" title="Interactive demo: Embedding lookup" loading="lazy"></iframe>
+              </div>
+
+
+              <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="embedding-space-title" style="margin-top:1rem;">
+                <h3 class="nyu-callout__title" id="embedding-space-title">
+                  <span class="nyu-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </span>
+                  Interactive: Embedding Space Visualizer
+                </h3>
+                <p>Explore how embedding vectors can place related items near each other in a projected space. Rotate, zoom, filter groups, and click points to inspect how different concepts shape the neighborhood.</p>
+                <p style="margin-top:0.5rem;">
+                  <button type="button" onclick="openEmbeddingSpaceModal()" style="font-family:inherit;font-size:0.9rem;font-weight:600;padding:0.5rem 1.2rem;border-radius:0.5rem;border:2px solid #57068C;background:#57068C;color:#fff;cursor:pointer;">
+                    &#9654; Launch Embedding Space Visualizer
+                  </button>
+                </p>
+              </aside>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Positional encoding</h4>
+              <p class="nyu-process__detail">Embedding vectors alone carry no information about order, so the model needs <strong>positional information</strong> to know that "192" appears before "168" and that "SYN" comes at the end. To build the foundation first, we begin with the method introduced with the original Transformer in 2017, shown in the demo below. In that method, a fixed sinusoidal position vector is added to each token's embedding, so the same token at a different position produces a different vector. Understanding this approach makes the modern one easier to follow. Most modern models instead use Rotary Position Embedding (RoPE), which leaves the embeddings unchanged and applies position inside the attention computation of every transformer layer (step 3). RoPE rotates the vectors that attention uses to compare tokens (the Query and Key vectors described in Part 3) so that the resulting attention scores reflect the relative distance between tokens. The purpose is the same in both approaches: without positional information, the model would treat the input as an unordered bag of tokens.</p>
+              <div class="nyu-pipeline-stage-frame" style="--pipeline-fallback-height: 380px;">
+                <iframe src="interactive/pipeline_stages/02_positional_encoding.html" name="pipeline-stage-02" title="Interactive demo: Positional encoding" loading="lazy"></iframe>
+              </div>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Transformer layers process the vectors</h4>
+              <p class="nyu-process__detail">The sequence of position aware embedding vectors passes through dozens of <strong>transformer layers</strong> (a large model may have 80 or more). Each layer applies two operations in sequence. First, the <strong>attention mechanism</strong> lets each token position exchange information with other positions. In global attention layers, every token can interact with every other token; in local or sliding window layers, each token interacts only with nearby neighbors.&nbsp;</p>
+              <p class="nyu-process__detail">A&nbsp;<strong>causal mask</strong> ensures that during generation, each token can only attend to tokens that came before it, never to future tokens that have not been generated yet. Second, a <strong>feed forward network</strong> transforms each token's representation independently, applying learned patterns to reshape the information. After many layers of attention and feed forward processing, each vector has been updated: "SYN" now carries contextual information about the port number and IP address that preceded it, not just its own isolated embedding.</p>
+<div class="nyu-pipeline-stage-frame nyu-pipeline-stage-frame--narrow" style="--pipeline-fallback-height: 390px;">
+              <iframe src="interactive/pipeline_stages/03_transformer_layers.html" name="pipeline-stage-03" title="Interactive demo: Transformer layers" loading="lazy"></iframe>
+              </div>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Projection to logits</h4>
+              <p class="nyu-process__detail">After the final transformer layer, the model takes the vector at the last token position and projects it into a set of <strong>logits</strong>: one raw score for every entry in the vocabulary. If the vocabulary has 128,000 entries, this step produces 128,000 scores. A high logit for a token like " This" means the model's learned weights make that token a strong candidate to come next. A low logit for a token like " banana" means the model considers it unlikely in this context.</p>
+              <div class="nyu-pipeline-stage-frame" style="--pipeline-fallback-height: 500px;">
+                <iframe src="interactive/pipeline_stages/04_projection_to_logits.html" name="pipeline-stage-04" title="Interactive demo: Projection to logits" loading="lazy"></iframe>
+              </div>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">5</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Probabilities and token selection</h4>
+              <p class="nyu-process__detail">The logits are converted into <strong>probabilities</strong> using a function called softmax, which normalizes the scores so they sum to 1. The model then selects the next token using a <strong>decoding strategy</strong>. Common strategies include: <strong>greedy decoding</strong>, which always picks the highest probability token; <strong>temperature sampling</strong>, which flattens or sharpens the distribution to control randomness; <strong>top k sampling</strong>, which restricts the choice to the <em>k</em> most likely tokens; and <strong>top p (nucleus) sampling</strong>, which includes tokens until their cumulative probability reaches a threshold <em>p</em>. More on these later!</p>
+              <p class="nyu-process__detail">In practice, these controls are often combined (for example, temperature with top p). This process is <strong>autoregressive</strong>: the selected token is appended to the context, and the entire pipeline repeats from step 1 to generate the next token. Each prediction is conditioned on everything that came before it, including the model's own previous outputs.</p>
+<div class="nyu-pipeline-stage-frame" style="--pipeline-fallback-height: 470px;">
+              <iframe src="interactive/pipeline_stages/05_probabilities_sampling.html" name="pipeline-stage-05" title="Interactive demo: Probabilities and token selection" loading="lazy"></iframe>
+              </div>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">6</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Decoding back to text</h4>
+              <p class="nyu-process__detail">Once the model emits a stop signal or reaches a length limit, the full sequence of generated token IDs is converted back into readable text by the tokenizer. This <strong>decoding</strong> step is the reverse of tokenization: IDs become subword chunks, and chunks are reassembled into the response you see. The entire journey, from your typed prompt to the model's answer, was a chain of matrix multiplications over numerical vectors. The model may develop internal representations that correlate with meaningful patterns, but the mechanism is mathematical transformation, not human like comprehension.</p>
+              <div class="nyu-pipeline-stage-frame" style="--pipeline-fallback-height: 430px;">
+                <iframe src="interactive/pipeline_stages/06_decoding_to_text.html" name="pipeline-stage-06" title="Interactive demo: Decoding back to text" loading="lazy"></iframe>
+              </div>
+            </div>
+          </li>
+        </ol>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <h3>Text does not become understanding</h3>
+          <p>
+            It is tempting to describe the pipeline above as the model "reading" your prompt
+            and "deciding" what to say. That framing is misleading. What actually happens is:
+            text becomes numerical vectors, and the model performs learned matrix operations
+            over those vectors to predict the statistically most likely next token. The output
+            often <em>looks</em> like comprehension because the patterns learned during training
+            are powerful, but the mechanism is mathematical transformation, not reasoning. Every
+            time the model produces an insightful analysis of your firewall logs, it is executing
+            the same fixed sequence of vector multiplications and probability calculations described
+            above.
+          </p>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            Going deeper: why does autoregressive generation matter for security analysis?
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>The process above is called <strong>autoregressive generation</strong>: the model predicts one token at a time, and each prediction becomes part of the input for the next. This has a practical consequence for security work. <span class="nyu-glow-phrase" aria-label="Key concept">If the model makes a mistake early in its response, for example misidentifying a source IP, every subsequent token is generated conditioned on that error.</span> The model does not go back and revise. It builds forward from whatever it has already produced, which means early errors can compound. This is one reason why breaking complex security analyses into smaller, verifiable steps tends to produce better results than asking for a single long analysis in one pass.</p>
+          </div>
+        </div>
+
+        <!-- Knowledge Check: Pipeline -->
+        <div class="nyu-quiz" aria-labelledby="quiz-pipeline-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-pipeline-prompt">
+            A SOC analyst types "Analyze this log: 192.168.1.105 port 443 SYN"
+            into an LLM. After tokenization, what does the model actually compute
+            over to generate its response?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-pipeline-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The model never sees English words. Text is converted to token IDs before anything else happens, and the IDs are then replaced by embedding vectors. Nothing in the computation resembles reading.">The original English words, which the model reads and interprets like a human analyst.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Token IDs are only lookup keys. They are arbitrary integers with no numerical meaning, so computing over them directly would be meaningless. They index into an embedding table, and the retrieved vectors are what the model actually processes.">The raw token IDs, which the model processes as a sequence of integers.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Learned numerical vectors (embeddings) derived from the token IDs, which are then updated through many transformer layers of attention and feed forward computation.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Tokenizers do not compress text into binary. They split text into subword units and map each to an ID from a fixed vocabulary. There is no binary encoding stage, and the model never operates on the sentence as a single unit.">A compressed binary representation of the full sentence created by the tokenizer.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+            data-correct-msg="Correct. The model never operates on text or raw IDs directly. Token IDs are lookup keys into an embedding table. The resulting vectors pass through dozens of transformer layers, where attention and feed forward networks progressively update them. The final vector is projected into logits, converted to probabilities, and used to select the next token. The entire process is mathematical transformation over numerical vectors."
+            data-incorrect-msg="Not quite. The model does not process English words, raw integers, or compressed binary. Token IDs serve as lookup keys to retrieve embedding vectors, which are then updated through many transformer layers. The model computes over these learned numerical vectors, not over text or IDs themselves.">
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 2: Token Tax ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Token Tax on Security Data</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          The practical consequence of tokenization is what we call the <strong>token tax</strong>:
+          the hidden cost of processing security data through a system optimized for natural language.
+          Different data types consume dramatically different amounts of your token budget.
+        </p>
+
+        <div class="nyu-cards nyu-cards--3">
+          <div class="nyu-card">
+            <h3>IPv4 Address</h3>
+            <p><code>192.168.1.105</code></p>
+            <p><strong>~5 to 7 tokens</strong></p>
+            <p>Splits on dots and number groups. One logical unit becomes five or more fragments.</p>
+          </div>
+          <div class="nyu-card">
+            <h3>SHA-256 Hash</h3>
+            <p><code>e3b0c44298fc...7852b855</code></p>
+            <p><strong>~20 to 25 tokens</strong></p>
+            <p>Hexadecimal characters rarely form coherent units in the tokenizer's vocabulary.</p>
+          </div>
+          <div class="nyu-card">
+            <h3>Firewall Log Entry</h3>
+            <p>Full UFW line with MACs, IPs, ports, flags</p>
+            <p><strong>~55 to 75 tokens</strong></p>
+            <p>Multiple expensive elements compound within a single entry.</p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-callout--warning">
+          <h3>Hexadecimal data is the most expensive</h3>
+          <p>
+            A single SHA-256 hash consumes as many tokens as a full paragraph of
+            English text. When you paste a list of indicators of compromise into an
+            LLM, each hash, IP, and encoded payload is consuming far more of
+            your context budget than you would estimate by character count alone.
+          </p>
+        </div>
+
+        <div class="nyu-callout nyu-callout--tip">
+          <p>
+            <strong>Tokenization varies by model.</strong> Different model families
+            use different tokenizers with different vocabularies. The token counts
+            above are representative but the exact count for a given input will
+            differ across models. Always test with the tokenizer of the model
+            you are actually using.
+          </p>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="tokenizer-title">
+          <h3 class="nyu-callout__title" id="tokenizer-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </span>
+            Interactive: Live Tokenizer
+          </h3>
+          <p>See the token tax in action. Paste any text into the live tokenizer and watch how it splits into tokens. Try pasting an IP address, a SHA-256 hash, and a plain English sentence to compare the token counts yourself.</p>
+          <p style="margin-top:0.5rem;">
+            <button type="button" onclick="openTokenizerModal()" style="font-family:inherit;font-size:0.9rem;font-weight:600;padding:0.5rem 1.2rem;border-radius:0.5rem;border:2px solid #57068C;background:#57068C;color:#fff;cursor:pointer;">
+              &#9654; Launch Live Tokenizer
+            </button>
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3: Attention ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">How Attention Shapes the Output</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Part 1 traced the pipeline: text becomes tokens, tokens become
+          embeddings, and transformer layers transform those embeddings into
+          predictions. This part takes a closer look at step 3 of that pipeline.
+          Attention is not a separate stage that runs after the pipeline; it is the
+          first of the two operations inside every transformer layer, so it runs once
+          per layer, dozens of times over, before any logits are produced. The
+          mechanism at the heart of each transformer layer is <em>attention</em>, and
+          understanding how it works is essential for predicting when an LLM will
+          handle your security data well and when it will not.
+        </p>
+
+        <p>
+          The central mechanism is called
+          <button type="button" class="nyu-define" data-term="attention-mechanism">attention</button>.
+          When the model processes your input, it does not treat all tokens equally. In
+          every attention layer, each token position computes a relevance score against
+          the other positions it is allowed to see. The causal mask described in step 3
+          limits each position to itself and the tokens that came before it. In a full
+          (global) attention layer, that means every earlier token in the input; in
+          architectures that use local or sliding window attention, some layers restrict
+          this comparison further to nearby tokens only (see the accordion in this
+          section for details). In either case, tokens that score high contribute more
+          to the updated vector at that position, and tokens that score low contribute
+          less. Attention never selects the next token directly. It refines each
+          position's vector, and only the vector at the final position, after the last
+          layer, is projected into logits in step 4.
+        </p>
+
+        <p>
+          A useful way to think about this is a three part process known as
+          <strong>Query Key Value (QKV)</strong>:
+        </p>
+
+        <div class="nyu-cards nyu-cards--3">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <h3>Q: Query</h3>
+            <p><strong>"What am I looking for?"</strong></p>
+            <p>Each token position produces a Query describing what information it needs from the tokens it can see. When the model predicts the next token, the Query at the final position is the one whose result ultimately feeds that prediction. Think of it as a search request broadcast to the earlier tokens.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3>K: Key</h3>
+            <p><strong>"What do I contain?"</strong></p>
+            <p>Each input token advertises what kind of information it offers. The model compares every Key against the Query to compute a relevance score for each token.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <h3>V: Value</h3>
+            <p><strong>"Here is my information."</strong></p>
+            <p>Each input token carries content that gets combined into the updated vector of the position that issued the Query. Tokens with high relevance scores contribute more of their Value; low scoring tokens contribute less.</p>
+          </div>
+        </div>
+
+        <p>
+          The model compares the Query against every Key to compute relevance scores,
+          then uses those scores to take a weighted combination of all the Values. The
+          critical insight is that the model does not read your input word by word like
+          a human reader. While processing your prompt, it computes attention for all
+          positions in parallel, and each position can draw directly on any earlier
+          token, however far back, through this relevance scoring mechanism. The
+          response itself is still generated autoregressively, one token at a time, as
+          described in step 5; the parallelism applies to how the input is processed,
+          not to how the output is produced. This is why the <em>structure and
+          placement</em> of data within your prompt can meaningfully affect the quality
+          of the output.
+        </p>
+
+        <p>
+          Each attention layer also runs several of these QKV computations side by side,
+          known as <strong>attention heads</strong>. Each head learns its own Query, Key,
+          and Value projections, so different heads can track different kinds of
+          relationships; one head might link a port number to the protocol flag that
+          follows it, while another tracks sentence structure. The outputs of all heads
+          are combined before the layer's feed forward network processes each position.
+        </p>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <h3>Attention is not understanding</h3>
+          <p>
+            Attention is a learned statistical operation over vectors. It can develop
+            internal representations that support remarkably useful behavior, including
+            patterns that correlate with syntactic structure, entity relationships, and
+            domain specific conventions. However, these representations are not equivalent
+            to human comprehension, awareness, intent, or judgment. When we say the model
+            "pays attention to" certain tokens, we mean it assigns them higher relevance
+            weights through matrix operations, not that it understands why those tokens
+            matter.
+          </p>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            Going deeper: long context attention techniques
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>
+              Processing long inputs efficiently is one of the central engineering challenges
+              in LLM design. Different model families combine several techniques to balance
+              computational cost, memory usage, and attention quality. The techniques fall
+              into two groups: <strong>attention patterns</strong> (which tokens can see which)
+              and <strong>infrastructure optimizations</strong> (making the math faster and
+              lighter on memory).
+            </p>
+
+            <!-- ── Visual: Global vs Sliding-Window ── -->
+            <div style="max-width:580px;margin:var(--sp-4) auto var(--sp-6);text-align:center;">
+              <svg viewBox="0 0 580 200" xmlns="http://www.w3.org/2000/svg" role="img"
+                   aria-label="Diagram comparing global attention, where every token connects to every other token, with sliding window attention, where each token connects only to nearby neighbors.">
+                <!-- Global attention -->
+                <text x="145" y="18" text-anchor="middle" font-family="Open Sans, sans-serif" font-size="12" font-weight="700" fill="#1A1A1A">Global (full) attention</text>
+                <!-- Token row -->
+                <rect x="20"  y="80" width="36" height="24" rx="4" fill="#57068C" opacity="0.85"/>
+                <text x="38"  y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T1</text>
+                <rect x="68"  y="80" width="36" height="24" rx="4" fill="#57068C" opacity="0.85"/>
+                <text x="86"  y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T2</text>
+                <rect x="116" y="80" width="36" height="24" rx="4" fill="#57068C" opacity="0.85"/>
+                <text x="134" y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T3</text>
+                <rect x="164" y="80" width="36" height="24" rx="4" fill="#57068C" opacity="0.85"/>
+                <text x="182" y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T4</text>
+                <rect x="212" y="80" width="36" height="24" rx="4" fill="#57068C" opacity="0.85"/>
+                <text x="230" y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T5</text>
+                <!-- Connection arcs (all-to-all) -->
+                <path d="M38,80 Q62,40 86,80"  fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <path d="M38,80 Q86,28 134,80" fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <path d="M38,80 Q110,20 182,80" fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <path d="M38,80 Q134,14 230,80" fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <path d="M86,80 Q110,40 134,80" fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <path d="M86,80 Q134,28 182,80" fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <path d="M86,80 Q158,20 230,80" fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <path d="M134,80 Q158,40 182,80" fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <path d="M134,80 Q182,28 230,80" fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <path d="M182,80 Q206,40 230,80" fill="none" stroke="#57068C" stroke-width="1.2" opacity="0.35"/>
+                <text x="145" y="128" text-anchor="middle" font-family="Open Sans, sans-serif" font-size="10" fill="#666">Every token ↔ every token</text>
+                <text x="145" y="142" text-anchor="middle" font-family="Open Sans, sans-serif" font-size="10" fill="#C42A2A">Cost grows quadratically</text>
+
+                <!-- Sliding window attention -->
+                <text x="435" y="18" text-anchor="middle" font-family="Open Sans, sans-serif" font-size="12" font-weight="700" fill="#1A1A1A">Sliding window (local) attention</text>
+                <rect x="310" y="80" width="36" height="24" rx="4" fill="#166534"/>
+                <text x="328" y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T1</text>
+                <rect x="358" y="80" width="36" height="24" rx="4" fill="#166534"/>
+                <text x="376" y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T2</text>
+                <rect x="406" y="80" width="36" height="24" rx="4" fill="#166534"/>
+                <text x="424" y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T3</text>
+                <rect x="454" y="80" width="36" height="24" rx="4" fill="#166534"/>
+                <text x="472" y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T4</text>
+                <rect x="502" y="80" width="36" height="24" rx="4" fill="#166534"/>
+                <text x="520" y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">T5</text>
+                <!-- Local arcs only (window = 2 neighbors) -->
+                <path d="M328,80 Q352,50 376,80" fill="none" stroke="#1F8A4C" stroke-width="1.5" opacity="0.5"/>
+                <path d="M376,80 Q400,50 424,80" fill="none" stroke="#1F8A4C" stroke-width="1.5" opacity="0.5"/>
+                <path d="M424,80 Q448,50 472,80" fill="none" stroke="#1F8A4C" stroke-width="1.5" opacity="0.5"/>
+                <path d="M472,80 Q496,50 520,80" fill="none" stroke="#1F8A4C" stroke-width="1.5" opacity="0.5"/>
+                <!-- Dim the long range arcs that DON'T exist -->
+                <line x1="328" y1="78" x2="424" y2="78" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+                <line x1="328" y1="76" x2="472" y2="76" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
+                <line x1="328" y1="74" x2="520" y2="74" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3" opacity="0.2"/>
+                <text x="435" y="128" text-anchor="middle" font-family="Open Sans, sans-serif" font-size="10" fill="#666">Each token ↔ nearby neighbors only</text>
+                <text x="435" y="142" text-anchor="middle" font-family="Open Sans, sans-serif" font-size="10" fill="#166534">Cost grows linearly</text>
+
+                <!-- Divider -->
+                <line x1="290" y1="10" x2="290" y2="150" stroke="#ddd" stroke-width="1" stroke-dasharray="4,4"/>
+
+                <!-- Caption -->
+                <text x="290" y="175" text-anchor="middle" font-family="Open Sans, sans-serif" font-size="10.5" fill="#666" font-style="italic">
+                  Hybrid models alternate between these two patterns across layers.
+                </text>
+                <text x="290" y="192" text-anchor="middle" font-family="Open Sans, sans-serif" font-size="10.5" fill="#666" font-style="italic">
+                  Dashed lines = connections that sliding window layers do not make.
+                </text>
+              </svg>
+            </div>
+
+            <!-- ── Attention patterns ── -->
+            <h4 style="margin-top:var(--sp-4);margin-bottom:var(--sp-3);font-size:0.95rem;">Attention patterns</h4>
+
+            <p>
+              <strong>Full (global) attention</strong> lets every token attend to every other token.
+              This captures the richest relationships but scales
+              <button type="button" class="nyu-define" data-term="quadratic-scaling">quadratically</button>
+              with input length, making it expensive for long contexts.
+            </p>
+            <p>
+              <strong>Sliding window (local) attention</strong> restricts each token to a
+              fixed neighborhood (e.g., 4,096 nearby tokens). This is efficient for local
+              patterns like syntax and sentence structure, but cannot form
+              <button type="button" class="nyu-define" data-term="long-range-connections">long range connections</button>
+              on its own.
+            </p>
+            <p>
+              <strong>Local/global hybrid</strong> architectures alternate local and global
+              layers within the same model. Local layers handle nearby context efficiently;
+              periodic global layers provide full context visibility. This is the pattern
+              most current long context models use.
+            </p>
+            <p>
+              <button type="button" class="nyu-define" data-term="grouped-query-attention">Grouped query attention (GQA)</button>
+              reduces memory and compute costs by sharing Key and Value projections across
+              multiple attention heads, allowing models to maintain more heads within a
+              fixed memory budget.
+            </p>
+
+            <!-- ── Infrastructure optimizations ── -->
+            <h4 style="margin-top:var(--sp-6);margin-bottom:var(--sp-3);font-size:0.95rem;">Infrastructure optimizations</h4>
+
+            <p>
+              <strong>Improved positional encodings:</strong> techniques like
+              <button type="button" class="nyu-define" data-term="rope-extensions">RoPE extensions</button>
+              and YaRN scaling allow models to handle sequences longer than those seen
+              during training without retraining the model from scratch.
+            </p>
+            <p>
+              <strong>KV cache optimizations:</strong> during autoregressive generation, the model stores
+              Key and Value vectors from all previous tokens in a
+              <button type="button" class="nyu-define" data-term="kv-cache">KV cache</button>
+              so it does not recompute them at each step. For long inputs this cache
+              becomes a major memory bottleneck.
+              Techniques like
+              <button type="button" class="nyu-define" data-term="multi-query-attention">multi query attention</button>
+              and
+              <button type="button" class="nyu-define" data-term="paged-attention">paged attention</button>
+              reduce the memory the cache requires, making long context inference practical.
+            </p>
+
+            <div class="nyu-callout nyu-callout--tip" style="margin-top:var(--sp-4);">
+              <p>
+                <strong>In practice, most current long context models combine several of these techniques.</strong>
+                None fully eliminates the attention degradation effects discussed in Section 5 of this Module,
+                but each generation of models narrows the gap.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== UP NEXT ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 2: The Context Window and Its Limits.</strong> The pipeline you just traced runs inside a fixed budget. We work out how much of that budget your data actually gets after overhead, then look at what happens to material placed in the middle of a long input, which is where the attention mechanism from this section stops behaving the way the marketing number suggests.</p>
+        </aside>
+
+    </main>
+
+
+    <!-- ====================== TOKENIZER MODAL ====================== -->
+    <div class="anim-modal-overlay" id="tokenizerOverlay" aria-hidden="true">
+      <div class="anim-modal" role="dialog" aria-label="Live Tokenizer">
+        <div class="anim-modal__header">
+          <span class="anim-modal__title">Live Tokenizer</span>
+          <button class="anim-modal__close" onclick="closeTokenizerModal()" aria-label="Close tokenizer">&times;</button>
+        </div>
+        <iframe class="anim-modal__iframe" id="tokenizerIframe" src="" title="Live Tokenizer Tool"></iframe>
+      </div>
+    </div>
+
+
+    <!-- ====================== EMBEDDING SPACE MODAL ====================== -->
+    <div class="anim-modal-overlay" id="embeddingSpaceOverlay" aria-hidden="true">
+      <div class="anim-modal anim-modal--embedding-space" role="dialog" aria-label="Embedding Space Visualizer">
+        <div class="anim-modal__header">
+          <span class="anim-modal__title">Embedding Space Visualizer</span>
+          <button class="anim-modal__close" onclick="closeEmbeddingSpaceModal()" aria-label="Close embedding space visualizer">&times;</button>
+        </div>
+        <iframe class="anim-modal__iframe anim-modal__iframe--embedding-space" id="embeddingSpaceIframe" src="" title="Embedding Space Visualizer"></iframe>
+      </div>
+    </div>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script>
+    function openTokenizerModal() {
+      var overlay = document.getElementById('tokenizerOverlay');
+      var iframe = document.getElementById('tokenizerIframe');
+      iframe.src = 'interactive/tokenizer/live-tokenizer.html';
+      overlay.classList.add('is-open');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeTokenizerModal() {
+      var overlay = document.getElementById('tokenizerOverlay');
+      var iframe = document.getElementById('tokenizerIframe');
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      iframe.src = '';
+    }
+    function openEmbeddingSpaceModal() {
+      var overlay = document.getElementById('embeddingSpaceOverlay');
+      var iframe = document.getElementById('embeddingSpaceIframe');
+      iframe.src = 'interactive/embedding_space/embedding_space_sim.html';
+      overlay.classList.add('is-open');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeEmbeddingSpaceModal() {
+      var overlay = document.getElementById('embeddingSpaceOverlay');
+      var iframe = document.getElementById('embeddingSpaceIframe');
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      iframe.src = '';
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeTokenizerModal();
+        closeEmbeddingSpaceModal();
+      }
+    });
+  </script>
+  <script>
+    /* Activate glow effect after the phrase has been in view for a moment */
+    (function() {
+      var phrase = document.querySelector('.nyu-glow-phrase');
+      if (!phrase || !('IntersectionObserver' in window)) return;
+      var timer = null;
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            timer = setTimeout(function() { phrase.classList.add('is-glowing'); }, 600);
+          } else {
+            clearTimeout(timer);
+            phrase.classList.remove('is-glowing');
+          }
+        });
+      }, { threshold: 0.8 });
+      observer.observe(phrase);
+    })();
+  </script>
+
+
+
+  <script>
+    /* Receive responsive heights from pipeline-stage iframes.
+       This is intentionally one-way: child measures itself, parent sets iframe height.
+       No parent contentDocument access, no scrollHeight measurement, no ResizeObserver on
+       the parent page, and no height transitions. */
+    (function() {
+      var framesById = Object.create(null);
+
+      function registerFrames() {
+        var frames = document.querySelectorAll('.nyu-pipeline-stage-frame iframe[name]');
+        for (var i = 0; i < frames.length; i += 1) {
+          framesById[frames[i].name] = frames[i];
+        }
+      }
+
+      function setFrameHeight(iframe, height) {
+        if (!iframe || !Number.isFinite(height)) return;
+        if (height < 120 || height > 1400) return;
+        var current = parseFloat(iframe.style.height || iframe.getAttribute('height') || 0) || 0;
+        if (Math.abs(current - height) < 2) return;
+        iframe.style.height = Math.ceil(height) + 'px';
+      }
+
+      window.addEventListener('message', function(event) {
+        var data = event.data;
+        if (!data || data.kind !== 'nyu-pipeline-stage-height') return;
+        var iframe = framesById[data.embedId];
+        if (!iframe) {
+          registerFrames();
+          iframe = framesById[data.embedId];
+        }
+        setFrameHeight(iframe, Number(data.height));
+      });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', registerFrames);
+      } else {
+        registerFrames();
+      }
+    })();
+  </script>
+
+</body>
+</html>

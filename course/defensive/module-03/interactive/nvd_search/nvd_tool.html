@@ -1,0 +1,848 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NVD CVE Lookup Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #ffffff;
+      --panel-strong: #ffffff;
+      --ink: #1d1b22;
+      --muted: #6d6875;
+      --line: rgba(30, 26, 38, .12);
+      --purple: #57068c;
+      --purple-2: #7d2bbf;
+      --green: #137a4b;
+      --orange: #b85600;
+      --red: #b3261e;
+      --shadow: 0 4px 16px rgba(31, 22, 40, .10);
+      --radius: 14px;
+      --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body,
+    button,
+    input {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: auto;
+      font-synthesis: none;
+    }
+
+    html {
+      margin: 0;
+      height: auto;
+      background-color: #ffffff !important;
+      background-image: none !important;
+    }
+
+    body {
+      margin: 0;
+      height: auto;
+      font-family: var(--sans);
+      -webkit-text-size-adjust: 100%;
+      color: var(--ink);
+      background-color: #ffffff !important;
+      background-image: none !important;
+      display: block;
+      padding: 0;
+    }
+
+    body::before,
+    body::after {
+      content: none !important;
+      display: none !important;
+    }
+
+    .page {
+      width: 100%;
+      max-width: none;
+      min-height: 0;
+      margin: 0;
+      padding: 24px 18px 28px;
+      background-color: #ffffff !important;
+      background-image: none !important;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .hero,
+    .results {
+      width: min(1040px, 100%);
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .intro {
+      padding: clamp(24px, 4vw, 44px);
+      position: relative;
+      isolation: isolate;
+    }
+
+    .intro::after {
+      content: "";
+      position: absolute;
+      right: -50px;
+      bottom: -60px;
+      width: 160px;
+      height: 160px;
+      border-radius: 999px;
+      background: rgba(87, 6, 140, .11);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border: 1px solid #57068C;
+      border-radius: 999px;
+      color: #fff;
+      background: #57068C;
+      font-size: 0.8125rem;                        /* 13 px, matches --fs-xs */
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: #fff;
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, .18);
+    }
+
+    h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(1.625rem, 3.4vw, 2rem);    /* 26–32 px, matches --fs-xl to --fs-2xl */
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: -.03em;
+    }
+
+    .sub {
+      max-width: 55ch;
+      margin: 0;
+      font-size: 0.9375rem;                        /* 15 px, matches --fs-sm */
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .search-panel {
+      display: grid;
+      align-content: center;
+      padding: clamp(20px, 3vw, 32px);
+      background: #ffffff;
+    }
+
+    .terminal {
+      background: #16131d;
+      color: #f8f4ff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 18px 45px rgba(28, 22, 37, .26);
+    }
+
+    .term-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      color: rgba(255,255,255,.72);
+      font-family: var(--mono);
+      font-size: 0.75rem;                          /* 12 px */
+    }
+
+    .lights {
+      display: flex;
+      gap: 7px;
+    }
+
+    .lights span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.35);
+    }
+
+    .term-body {
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+    }
+
+    label {
+      display: block;
+      color: rgba(255,255,255,.76);
+      font-size: 0.75rem;                          /* 12 px */
+      font-weight: 600;
+      letter-spacing: .055em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+
+    .prompt-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      font-family: var(--mono);
+      color: rgba(255,255,255,.78);
+    }
+
+    .prompt-mark { color: #c99cff; }
+
+    input {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.14);
+      outline: none;
+      border-radius: 12px;
+      padding: 12px 12px;
+      background: rgba(255,255,255,.08);
+      color: white;
+      font: 600 0.9375rem/1.15 var(--mono);        /* 15 px, matches --fs-sm */
+      text-transform: uppercase;
+      transition: border-color .2s, background .2s, box-shadow .2s;
+    }
+
+    input:focus {
+      border-color: rgba(201,156,255,.85);
+      background: rgba(255,255,255,.12);
+      box-shadow: 0 0 0 5px rgba(125,43,191,.18);
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      border-radius: 12px;
+      padding: 12px 15px;
+      background: var(--purple);
+      color: white;
+      font-family: var(--sans);
+      font-size: 0.9375rem;                        /* 15 px, matches --fs-sm */
+      line-height: 1.15;
+      font-weight: 600;
+      box-shadow: 0 10px 20px rgba(87,6,140,.18);
+      transition: background-color .15s ease, box-shadow .15s ease, opacity .15s ease;
+      white-space: nowrap;
+    }
+
+    button:hover { background: var(--purple-2); box-shadow: 0 14px 26px rgba(87,6,140,.26); }
+    button:active { background: var(--purple); }
+    button:disabled { opacity: .62; cursor: wait; }
+
+    .examples {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .example {
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      box-shadow: none;
+      color: rgba(255,255,255,.88);
+      font-family: var(--mono);
+      font-size: 0.8125rem;                        /* 13 px, matches --fs-xs */
+      font-weight: 600;
+      padding: 10px;
+      line-height: 1.2;
+      text-align: left;
+    }
+
+    .example span {
+      display: block;
+      font-family: var(--sans);
+      font-size: 0.75rem;                          /* 12 px */
+      font-weight: 600;
+      color: rgba(255,255,255,.5);
+      margin-top: 4px;
+      line-height: 1.25;
+    }
+
+    .small-note {
+      margin: 0;
+      color: rgba(255,255,255,.55);
+      font-size: 0.8125rem;                        /* 13 px, matches --fs-xs */
+      line-height: 1.45;
+    }
+
+    .results {
+      min-height: 0;
+      padding: clamp(18px, 3vw, 30px);
+      display: grid;
+      gap: 18px;
+    }
+
+    .state {
+      display: grid;
+      place-items: center;
+      min-height: 0;
+      padding: 32px 24px;
+      border: 1px dashed rgba(29,27,34,.18);
+      border-radius: 10px;
+      background: rgba(255,255,255,.43);
+      text-align: center;
+      padding: 24px;
+    }
+
+    .state strong {
+      display: block;
+      font-size: 1.1875rem;                        /* 19 px, matches --fs-md */
+      margin-bottom: 6px;
+      letter-spacing: -.02em;
+    }
+
+    .state p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9375rem;                        /* 15 px, matches --fs-sm */
+      line-height: 1.5;
+      max-width: 54ch;
+    }
+
+    .result-card {
+      display: none;
+      gap: 16px;
+    }
+
+    .result-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+    }
+
+    .cve-id {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: clamp(1.375rem, 3vw, 1.625rem);  /* 22–26 px, matches --fs-lg to --fs-xl */
+      letter-spacing: -.03em;
+    }
+
+    .nickname-text {
+      width: fit-content;
+      margin-top: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #57068C;
+      color: #fff;
+      font-size: 0.8125rem;                        /* 13 px, matches --fs-xs */
+      font-weight: 600;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .nickname-text:empty { display: none; }
+
+    .status-pill,
+    .score-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.8125rem;                        /* 13 px, matches --fs-xs */
+      font-weight: 600;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .status-pill { background: #166534; color: #fff; }
+    .status-pill.missing { background: #991B1B; color: #fff; }
+    .status-pill.error { background: #9A3412; color: #fff; }
+
+    .score-pill { background: #57068C; color: #fff; }
+    .score-pill.critical { background: #991B1B; color: #fff; }
+    .score-pill.high { background: #9A3412; color: #fff; }
+    .score-pill.medium { background: #854D0E; color: #fff; }
+    .score-pill.low { background: #166534; color: #fff; }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .meta {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255,255,255,.58);
+      padding: 12px 14px;
+      min-width: 0;
+    }
+
+    .meta span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.75rem;                          /* 12 px */
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 5px;
+    }
+
+    .meta strong {
+      font-family: var(--mono);
+      font-size: 0.8125rem;                        /* 13 px, matches --fs-xs */
+      overflow-wrap: anywhere;
+    }
+
+    .description {
+      margin: 0;
+      color: #34303b;
+      font-size: 0.9375rem;                        /* 15 px, matches --fs-sm */
+      line-height: 1.62;
+    }
+
+    .refs {
+      display: grid;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .refs-title {
+      color: var(--muted);
+      font-size: 0.75rem;                          /* 12 px */
+      font-weight: 600;
+      letter-spacing: .045em;
+      text-transform: uppercase;
+    }
+
+    .ref-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ref-list a, .direct-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 1px solid #57068C;
+      border-radius: 999px;
+      background: #57068C;
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.8125rem;                        /* 13 px, matches --fs-xs */
+      font-weight: 600;
+      max-width: 100%;
+    }
+
+    .direct-link { width: fit-content; margin-top: 14px; }
+
+    .loading {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loading::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-color: rgba(87,6,140,.06);
+      opacity: 0;
+      animation: softPulse 1.05s infinite alternate;
+    }
+
+    @keyframes softPulse { to { opacity: 1; } }
+
+    @media (max-width: 820px) {
+      .page { padding: 18px 12px 24px; }
+      .hero { grid-template-columns: 1fr; }
+      .intro { padding: 26px; }
+      .search-panel { padding: 16px; }
+      .prompt-row { grid-template-columns: auto 1fr; }
+      .prompt-row button { grid-column: 1 / -1; }
+      .examples { grid-template-columns: 1fr; }
+      .meta-grid { grid-template-columns: 1fr; }
+      .result-top { display: grid; }
+    }
+
+
+    /* Embed-safe background reset: the page itself must stay plain white. */
+    html,
+    body,
+    main.page {
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+      background-image: none !important;
+    }
+  
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body style="background:#ffffff !important; background-image:none !important;">
+  <main class="page" aria-label="NVD CVE lookup demo">
+    <section class="hero">
+      <div class="card intro">
+        <div class="eyebrow"><span class="dot"></span>Live CVE lookup</div>
+        <h1>Search the NVD.</h1>
+        <p class="sub">Enter a CVE ID and query the National Vulnerability Database. Named real CVEs should return structured vulnerability data. A fake, LLM-suggested CVE should return no matching record.</p>
+      </div>
+
+      <div class="card search-panel">
+        <div class="terminal">
+          <div class="term-bar">
+            <div class="lights" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div>nvd_lookup</div>
+          </div>
+          <div class="term-body">
+            <div>
+              <label for="cveInput">CVE ID</label>
+              <div class="prompt-row">
+                <span class="prompt-mark">$</span>
+                <input id="cveInput" autocomplete="off" spellcheck="false" value="CVE-2021-44228" aria-label="CVE ID" />
+                <button id="searchBtn">Search</button>
+              </div>
+            </div>
+
+            <div class="examples" aria-label="example CVE searches">
+              <button class="example" data-cve="CVE-2021-44228">CVE-2021-44228<span>Log4Shell</span></button>
+              <button class="example" data-cve="CVE-2017-0144">CVE-2017-0144<span>EternalBlue / WannaCry</span></button>
+              <button class="example" data-cve="CVE-2014-0160">CVE-2014-0160<span>Heartbleed</span></button>
+              <button class="example" data-cve="CVE-2026-99999">CVE-2026-99999<span>LLM suggested CVE</span></button>
+            </div>
+
+            <p class="small-note">Uses the public NVD 2.0 API. Public access may be rate-limited, so avoid repeatedly clicking search.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card results" aria-live="polite">
+      <div id="emptyState" class="state">
+        <div>
+          <strong>Ready to query.</strong>
+          <p>Try Log4Shell, EternalBlue / WannaCry, or Heartbleed, then try the LLM-suggested fake CVE to see how an empty NVD response looks.</p>
+        </div>
+      </div>
+
+      <div id="resultCard" class="result-card">
+        <div class="result-top">
+          <div>
+            <h2 id="resultId" class="cve-id"></h2>
+            <div id="nicknameText" class="nickname-text"></div>
+            <a id="nvdPage" class="direct-link" target="_blank" rel="noopener noreferrer">Open NVD detail page</a>
+          </div>
+          <div id="scorePill" class="score-pill"></div>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta"><span>Status</span><strong id="statusText"></strong></div>
+          <div class="meta"><span>Published</span><strong id="publishedText"></strong></div>
+          <div class="meta"><span>Last Modified</span><strong id="modifiedText"></strong></div>
+        </div>
+
+        <p id="descriptionText" class="description"></p>
+
+        <div class="refs">
+          <div class="refs-title">Selected references</div>
+          <div id="refList" class="ref-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const input = document.getElementById('cveInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const emptyState = document.getElementById('emptyState');
+    const resultCard = document.getElementById('resultCard');
+    const resultId = document.getElementById('resultId');
+    const nicknameText = document.getElementById('nicknameText');
+    const nvdPage = document.getElementById('nvdPage');
+    const scorePill = document.getElementById('scorePill');
+    const statusText = document.getElementById('statusText');
+    const publishedText = document.getElementById('publishedText');
+    const modifiedText = document.getElementById('modifiedText');
+    const descriptionText = document.getElementById('descriptionText');
+    const refList = document.getElementById('refList');
+
+    const CVE_PATTERN = /^CVE-\d{4}-\d{4,}$/i;
+    const CVE_LABELS = {
+      'CVE-2021-44228': 'Log4Shell',
+      'CVE-2017-0144': 'EternalBlue / WannaCry',
+      'CVE-2014-0160': 'Heartbleed',
+      'CVE-2026-99999': 'LLM suggested CVE'
+    };
+
+    function normalizeCve(value) {
+      return value.trim().toUpperCase();
+    }
+
+    function setBusy(isBusy) {
+      searchBtn.disabled = isBusy;
+      searchBtn.textContent = isBusy ? 'Searching...' : 'Search';
+    }
+
+    function showState(title, body, type = '') {
+      resultCard.style.display = 'none';
+      emptyState.style.display = 'grid';
+      emptyState.classList.toggle('loading', type === 'loading');
+      emptyState.innerHTML = `<div><strong>${title}</strong><p>${body}</p></div>`;
+    }
+
+    function formatDate(value) {
+      if (!value) return 'Unknown';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function getEnglishDescription(cve) {
+      return cve.descriptions?.find(d => d.lang === 'en')?.value || 'No English description was provided in the NVD record.';
+    }
+
+    function getBestMetric(cve) {
+      const metricGroups = [
+        cve.metrics?.cvssMetricV40,
+        cve.metrics?.cvssMetricV31,
+        cve.metrics?.cvssMetricV30,
+        cve.metrics?.cvssMetricV2
+      ].filter(Boolean);
+
+      for (const group of metricGroups) {
+        if (group.length) {
+          const metric = group[0];
+          const data = metric.cvssData || {};
+          const score = data.baseScore ?? metric.baseScore;
+          const severity = data.baseSeverity || metric.baseSeverity || 'Unknown';
+          const version = data.version ? `CVSS ${data.version}` : 'CVSS';
+          return { score, severity, version };
+        }
+      }
+      return { score: null, severity: 'Unknown', version: 'CVSS' };
+    }
+
+    function scoreClass(severity) {
+      const s = (severity || '').toLowerCase();
+      if (s.includes('critical')) return 'critical';
+      if (s.includes('high')) return 'high';
+      if (s.includes('medium')) return 'medium';
+      if (s.includes('low')) return 'low';
+      return '';
+    }
+
+    function renderResult(cve) {
+      const metric = getBestMetric(cve);
+      const id = cve.id;
+      const refs = (cve.references?.referenceData || cve.references || []).slice(0, 5);
+
+      emptyState.style.display = 'none';
+      resultCard.style.display = 'grid';
+
+      resultId.textContent = id;
+      nicknameText.textContent = CVE_LABELS[id] || '';
+      nvdPage.href = `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(id)}`;
+      statusText.textContent = cve.vulnStatus || 'Unknown';
+      publishedText.textContent = formatDate(cve.published);
+      modifiedText.textContent = formatDate(cve.lastModified);
+      descriptionText.textContent = getEnglishDescription(cve);
+
+      scorePill.className = `score-pill ${scoreClass(metric.severity)}`;
+      scorePill.textContent = metric.score === null
+        ? 'No CVSS score'
+        : `${metric.severity} · ${metric.score} · ${metric.version}`;
+
+      refList.innerHTML = '';
+      if (!refs.length) {
+        const muted = document.createElement('span');
+        muted.textContent = 'No references listed.';
+        muted.style.color = 'var(--muted)';
+        muted.style.fontSize = '13px';
+        refList.appendChild(muted);
+        return;
+      }
+
+      refs.forEach((ref, index) => {
+        const url = ref.url;
+        if (!url) return;
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = `Reference ${index + 1}`;
+        refList.appendChild(a);
+      });
+    }
+
+    async function searchCve() {
+      const cveId = normalizeCve(input.value);
+      input.value = cveId;
+
+      if (!CVE_PATTERN.test(cveId)) {
+        showState('Invalid CVE format.', 'Use the standard pattern CVE-YEAR-NUMBER, for example CVE-2021-44228.');
+        return;
+      }
+
+      setBusy(true);
+      showState('Querying NVD...', `Searching the NVD API for ${cveId}.`, 'loading');
+
+      const apiUrl = `https://services.nvd.nist.gov/rest/json/cves/2.0?cveIds=${encodeURIComponent(cveId)}`;
+
+      try {
+        const response = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
+        if (!response.ok) throw new Error(`NVD returned HTTP ${response.status}`);
+        const data = await response.json();
+        const record = data.vulnerabilities?.[0]?.cve;
+
+        if (!record || data.totalResults === 0) {
+          const label = CVE_LABELS[cveId] ? `${CVE_LABELS[cveId]} (${cveId})` : cveId;
+          showState('No NVD record found.', `${label} returned zero matches. This is what you should expect when an LLM suggests a CVE that does not actually exist in the NVD.`);
+          return;
+        }
+
+        renderResult(record);
+      } catch (error) {
+        showState(
+          'NVD request could not complete.',
+          `The browser could not fetch the NVD API response. This can happen because of rate limits, network policy, or CORS behavior. Try again later or open the NVD detail page directly.`
+        );
+        const link = document.createElement('a');
+        link.className = 'direct-link';
+        link.href = `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(cveId)}`;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = `Open NVD page for ${cveId}`;
+        emptyState.querySelector('div').appendChild(link);
+        console.error(error);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    searchBtn.addEventListener('click', searchCve);
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Enter') searchCve();
+    });
+
+    document.querySelectorAll('.example').forEach(button => {
+      button.addEventListener('click', () => {
+        input.value = button.dataset.cve;
+        searchCve();
+      });
+    });
+
+    /* Report height to parent for iframe auto-resize.
+       html/body are height:auto so body.scrollHeight always reflects
+       actual content, not the iframe viewport. */
+    (function() {
+      if (window.parent === window) return;
+      var lastH = 0;
+      var pending = 0;
+
+      function reportHeight() {
+        pending = 0;
+        var h = document.body.scrollHeight;
+        if (h && h > 50 && h !== lastH) {
+          lastH = h;
+          window.parent.postMessage({ kind: 'nyu-embed-height', height: h }, '*');
+        }
+      }
+
+      function scheduleReport() {
+        if (pending) clearTimeout(pending);
+        pending = setTimeout(reportHeight, 100);
+      }
+
+      window.addEventListener('load', function() {
+        reportHeight();
+        setTimeout(reportHeight, 200);
+        setTimeout(reportHeight, 600);
+        setTimeout(reportHeight, 1500);
+      });
+
+      /* MutationObserver: fires when DOM changes (search results render).
+         Do NOT use ResizeObserver here; it creates a feedback loop
+         (parent resizes iframe → body resizes → observer fires → repeat). */
+      new MutationObserver(scheduleReport)
+        .observe(document.body, { childList: true, subtree: true });
+    })();
+  </script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

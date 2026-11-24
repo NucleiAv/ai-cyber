@@ -1,0 +1,473 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 1 · Section 4 · Language Models, Hallucination, and Trust · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+  <style>
+    /* ============ Next-Token Prediction Demo ============ */
+    .ntp-demo {
+      background: var(--surface-sunken, #F6F4F8);
+      border: 2px solid var(--rule, #E2E2E2);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin: 1.75rem 0;
+    }
+    .ntp-demo__label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink-mute, #6B6B6B);
+      margin-bottom: 0.6rem;
+    }
+    .ntp-demo__text {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--ink, #1A1A1A);
+      margin-bottom: 1rem;
+      min-height: 2.5em;
+    }
+    .ntp-demo__text .ntp-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.15em;
+      background: var(--nyu-violet, #57068C);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: ntpBlink 0.8s step-end infinite;
+    }
+    @keyframes ntpBlink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .ntp-predict-slot {
+      display: inline-block;
+      background: #57068C;
+      border: 2px dashed #3D0461;
+      border-radius: 0.35rem;
+      padding: 0.05rem 0.5rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      font-size: 0.9rem;
+      margin-left: 4px;
+      vertical-align: baseline;
+      animation: ntpSlotPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes ntpSlotPulse {
+      0%,100% { border-color: var(--nyu-violet, #57068C); }
+      50%     { border-color: #B07CD6; }
+    }
+
+    .ntp-demo__candidates {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      min-height: 44px;
+      align-items: flex-end;
+    }
+    .ntp-prob {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .ntp-prob.is-visible { opacity: 1; transform: translateY(0); }
+    .ntp-prob.is-chosen .ntp-prob__word {
+      background: var(--nyu-violet, #57068C);
+      color: #fff;
+      transform: scale(1.08);
+    }
+
+    .ntp-prob__bar-wrap {
+      width: 28px;
+      height: 60px;
+      background: #E8E4EC;
+      border-radius: 4px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .ntp-prob__bar {
+      width: 100%;
+      background: var(--nyu-violet, #57068C);
+      border-radius: 4px 4px 0 0;
+      transition: height 0.5s cubic-bezier(0.4,0,0.2,1);
+    }
+    .ntp-prob__pct {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--ink-mute, #6B6B6B);
+    }
+    .ntp-prob__word {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+      background: #4C1D95;
+      color: #fff;
+      transition: background 0.3s, color 0.3s, transform 0.3s;
+    }
+
+    .ntp-demo__controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .ntp-btn {
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.45rem 1rem;
+      border-radius: 0.5rem;
+      border: 2px solid var(--nyu-violet, #57068C);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .ntp-btn--primary {
+      background: var(--nyu-violet, #57068C);
+      color: #fff;
+    }
+    .ntp-btn--primary:hover { background: #6E29A8; }
+    .ntp-btn--secondary {
+      background: transparent;
+      color: var(--nyu-violet, #57068C);
+    }
+    .ntp-btn--secondary:hover { background: #F5EDFA; }
+    .ntp-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .ntp-demo__step-label {
+      font-size: 0.8rem;
+      color: var(--ink-mute, #6B6B6B);
+      margin-left: auto;
+    }
+
+    /* ============ Go Deeper resource list ============ */
+    .nyu-go-deeper-list {
+      margin: 0.75rem 0 0;
+      padding: 0;
+    }
+    .nyu-go-deeper-list dt {
+      font-weight: 600;
+      font-size: 0.88rem;
+      margin-top: 0.85rem;
+      line-height: 1.4;
+    }
+    .nyu-go-deeper-list dt:first-child { margin-top: 0.25rem; }
+    .nyu-go-deeper-list dt a {
+      color: var(--nyu-violet, #57068C);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .nyu-go-deeper-list dt a:hover { color: var(--nyu-violet-dark, #3D0063); }
+    .nyu-go-deeper-list__icon {
+      display: inline-block;
+      width: 1.2em;
+      text-align: center;
+      margin-right: 0.15em;
+    }
+    .nyu-go-deeper-list dd {
+      margin: 0.2rem 0 0 1.5em;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      color: var(--ink-soft, #3A3A3A);
+    }
+  
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a> <!-- ====================== HERO ====================== --><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 1 · Section 4 of 7</div>
+<h1 class="nyu-hero__title">Language Models, Hallucination, and Trust</h1>
+<p class="nyu-hero__subtitle">How LLMs generate text through next-token prediction, why hallucination is structural rather than fixable, and what this means for security operations.</p>
+<div class="nyu-hero__meta" aria-label="Section overview"><span aria-label="Estimated time"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg> ~20 min read </span> <span aria-label="Number of parts"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> 4 parts </span> <span aria-label="Knowledge checks"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line><circle cx="12" cy="12" r="10"></circle></svg> 2 knowledge checks </span></div>
+</header><!-- ====================== TOC ====================== --><nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+<li><a href="#sec-1"><span class="nyu-toc__num">1</span> What Is a Large Language Model?</a></li>
+<li><a href="#sec-2"><span class="nyu-toc__num">2</span> How Text Generation Works</a></li>
+<li><a href="#sec-3"><span class="nyu-toc__num">3</span> Hallucination: A Structural Property</a></li>
+<li><a href="#sec-4"><span class="nyu-toc__num">4</span> Large Reasoning Models</a></li>
+</ol>
+</nav><main id="main" tabindex="-1"><!-- ====================== OBJECTIVES ====================== -->
+<section class="nyu-objectives" aria-labelledby="lo-title">
+<h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+<p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+<ul class="nyu-objectives__list">
+<li><span><strong>Describe</strong> how an LLM generates text via next-token prediction, and evaluate the security implications of hallucination as a structural property.</span></li>
+<li><span><strong>Compare</strong> ML, LLMs, and LRMs in security contexts, identifying distinct capabilities, limitations, and risk profiles.</span></li>
+</ul>
+</section>
+<!-- ====================== SECTION 1 ====================== -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">What Is a Large Language Model?</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>A <button type="button" class="nyu-define" data-term="large-language-model">large language model (LLM)</button> is a neural network trained on massive text data (trillions of tokens, billions of parameters) that generates text by predicting the most probable next word (or, more precisely, the next <button type="button" class="nyu-define" data-term="token-m01">token</button>).</p>
+<p>The mental model you should carry: an LLM is an extraordinarily sophisticated autocomplete system. It generates what is <em>statistically likely to follow</em>, not what is <em>true</em>. This distinction is the single most important thing a security professional needs to understand about language models.</p>
+<p>LLMs now write phishing emails, analyze security logs, summarize CVE reports, generate code, and classify threats. Their capabilities are real and growing, but every output is a statistical prediction, not a fact retrieval, and that gap has direct security consequences you will explore throughout this page.</p>
+</section>
+<!-- ====================== SECTION 2 ====================== -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">How Text Generation Works</h2>
+</div>
+<hr class="nyu-section__rule">
+<p><strong>Next-token prediction:</strong> Given the text "The server was compromised via a..." the model assigns a probability to every possible next token in its vocabulary. It selects one (say, "misconfigured"), appends it, and repeats. The entire response is built one token at a time, each conditioned on everything that came before.</p>
+<p><strong>Context window:</strong> An LLM can only "see" a fixed amount of text at a time, specifically its <button type="button" class="nyu-define" data-term="context-window-m01">context window</button>. Everything outside that window is invisible. If you paste 10,000 log lines into a model with an 8,000 token window, the model literally cannot see the overflow and will not tell you it missed anything.</p>
+<p><strong>Temperature and sampling:</strong> A randomness parameter controls how the model selects from its probability distribution. Higher temperature means more variation; the same prompt produces different outputs each time. This is by design, not a defect, but it means you cannot rely on reproducible results from the same query.</p>
+<!-- Interactive: Next-Token Prediction Demo -->
+<div class="ntp-demo" aria-labelledby="ntp-title">
+<p class="ntp-demo__label" id="ntp-title">Interactive Demo: Next Token Prediction</p>
+<div class="ntp-demo__text" id="ntpText" aria-live="polite" aria-atomic="false">The firewall detected unusual <span class="ntp-predict-slot" id="ntpSlot">???</span></div>
+<div class="ntp-demo__candidates" id="ntpCandidates" aria-label="Token candidates with probabilities"></div>
+<div class="ntp-demo__controls"><button class="ntp-btn ntp-btn--primary" id="ntpNextBtn" onclick="ntpStep()">▶ Predict Next Token</button> <button class="ntp-btn ntp-btn--secondary" id="ntpResetBtn" onclick="ntpReset()">↺ Reset</button> <span class="ntp-demo__step-label" id="ntpStepLabel">Step 0 / 6</span></div>
+</div>
+<aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="viz-title">
+<h3 class="nyu-callout__title" id="viz-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"></path></svg> </span> Go Deeper: How Transformers Work</h3>
+<p>Want a deeper look at how self-attention and token prediction work inside a real model? Three resources, from conceptual narrative to interactive detail:</p>
+<dl class="nyu-go-deeper-list">
+<dt><span class="nyu-go-deeper-list__icon" aria-hidden="true">▶</span> <a href="https://www.youtube.com/watch?v=wjZofJX0v4M&amp;vl=en" target="_blank" rel="noopener">3Blue1Brown: Attention in Transformers, Visually Explained</a></dt>
+<dd>A clear visual walkthrough of the mechanism inside modern LLMs: embeddings, attention heads, and next-token prediction. The best narrative introduction to the architecture.</dd>
+<dt><span class="nyu-go-deeper-list__icon" aria-hidden="true">⚙</span> <a href="https://bbycroft.net/llm" target="_blank" rel="noopener">Brendan Bycroft: LLM Visualization</a></dt>
+<dd>An interactive browser tool that lets you inspect a tiny GPT-style model down to the matrix operations. Step through each layer and see exactly how input tokens become output probabilities.</dd>
+<dt><span class="nyu-go-deeper-list__icon" aria-hidden="true">📄</span> <a href="https://jalammar.github.io/illustrated-gpt2/" target="_blank" rel="noopener">Jay Alammar: The Illustrated GPT-2</a></dt>
+<dd>The clearest visual explainer of decoder-only transformers, masked self-attention, and text generation. Diagrams walk through each stage of a forward pass with no code required.</dd>
+</dl>
+</aside>
+</section>
+<!-- ====================== SECTION 3 ====================== -->
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Hallucination: A Structural Property</h2>
+</div>
+<hr class="nyu-section__rule">
+<p><button type="button" class="nyu-define" data-term="hallucination-m01">Hallucination</button> is the generation of plausible sounding but factually incorrect output, sometimes delivered with complete confidence. An LLM asked about a specific CVE may fabricate a CVE number that looks correct, cite a vulnerability that does not exist, or confidently describe mitigation steps that would not work.</p>
+<p>This is not a bug. It is a structural property of next-token prediction. The model generates text that is statistically probable given its training data. It does not retrieve facts from a database, and it has no internal mechanism to check whether its output is true. Mathematical research demonstrates that hallucination is inherent to the architecture, not a problem that will be solved by the next model version (Xu et al., 2024).</p>
+<p><strong>The professional imperative:</strong> Every LLM output used in a security context must be validated against authoritative sources. Not sometimes. Every time.</p>
+<!-- Danger callout: hallucination examples -->
+<aside class="nyu-callout nyu-callout--danger" role="note" aria-labelledby="halluc-title">
+<h3 class="nyu-callout__title" id="halluc-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> </span> Security-Critical Hallucination Examples</h3>
+<p><strong>Fabricated CVE numbers:</strong> LLMs generate CVE identifiers that look syntactically correct but reference vulnerabilities that do not exist. An analyst acting on a fabricated CVE wastes investigation time, or worse, misses the real vulnerability.</p>
+<p><strong>Hallucinated package names:</strong> When generating code, LLMs recommend software packages that do not exist. Researchers found that 19.7% of LLM suggested package dependencies were hallucinated (Spracklen et al., 2025). This is not just an accuracy problem. It is an exploitable attack surface (see the slopsquatting case below).</p>
+<p><strong>Confident but wrong security recommendations:</strong> LLMs may recommend security configurations that are outdated, inapplicable, or actively harmful, delivered with the same confidence as correct advice.</p>
+</aside>
+<!-- Slopsquatting case spotlight -->
+<aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="slop-title">
+<h3 class="nyu-callout__title" id="slop-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg> </span> Case Spotlight: Slopsquatting</h3>
+<p>Spracklen et al. (2025, USENIX) analyzed 576,000 code samples generated by 16 LLMs and found that <strong>19.7% of recommended package dependencies were hallucinated</strong>, meaning they did not exist in any package registry. Critically, 43% of these hallucinated names were <em>repeatable</em>: the same LLM produced the same fake package name across multiple runs.</p>
+<p>This repeatability transforms hallucination from an accuracy problem into a <strong>supply chain attack vector</strong>. An attacker who identifies predictably hallucinated package names can register those names in public registries, populate them with malicious code, and wait for developers using LLM generated code to install them. The attack requires no interaction with the victim because the LLM does the delivery.</p>
+<p><strong>Before you move on:</strong> Why does the 43% repeatability rate matter more than the 19.7% hallucination rate for an attacker planning this campaign? Think about what predictability gives an attacker that randomness does not. You will explore this fully in Activity 5 (Slopsquatting Case Study), a separate assignment.</p>
+</aside>
+<!-- Knowledge Check 1 -->
+<div class="nyu-quiz" aria-labelledby="q1-prompt">
+<div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+<p class="nyu-quiz__prompt" id="q1-prompt">A junior analyst tests an LLM for incident reporting by feeding it real incident details. The LLM produces a well-structured, professional report and even suggests a root cause the team had not considered. The analyst says: "This is great, it captured everything and found something new." What is the <em>most important</em> thing to verify?</p>
+<div class="nyu-quiz__options" role="radiogroup" aria-labelledby="q1-prompt"><button class="nyu-quiz__option" role="radio" data-correct="true">Whether the "novel root cause" is factually supported by the incident evidence.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Consistency testing matters for deployment decisions, but the immediate risk here is that a single hallucinated root cause, acted upon during a live incident, could misdirect the entire investigation right now. Verify the factual claim first.">Whether the LLM consistently performs this well across different incident types.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Report formatting is a cosmetic concern. The dangerous part of this scenario is that the LLM generated a 'novel root cause' the team hadn't considered. If that root cause is a hallucination, acting on it could send the investigation in the wrong direction entirely.">Whether the report format matches organizational standards.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Training data composition affects long-term reliability, but LLMs can hallucinate regardless of their training data. Even a model trained on millions of incident reports can fabricate plausible-sounding but false root causes. The immediate priority is verifying this specific claim.">Whether the LLM was trained on similar incident data.</button></div>
+<div class="nyu-quiz__feedback" data-correct-msg="Correct. A plausible sounding root cause that is not supported by evidence could misdirect the investigation. This is hallucination in a high stakes context. The output was persuasive enough to lower the analyst's critical scrutiny, which is exactly how hallucination causes operational harm. Consistency testing (option B) matters for deployment, but a single hallucinated root cause acted upon during a real incident could have severe consequences." data-incorrect-msg="Not quite. The most urgent risk is that the 'novel insight' is a hallucination, a plausible but fabricated root cause that could misdirect the investigation. When LLM output sounds confident and professional, it lowers critical scrutiny, which is the mechanism by which hallucination causes real operational harm."></div>
+</div>
+</section>
+<!-- ====================== SECTION 4 ====================== -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Large Reasoning Models</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>A <button type="button" class="nyu-define" data-term="large-reasoning-model">large reasoning model (LRM)</button> is an LLM augmented with chain-of-thought reasoning via reinforcement learning. Where a standard LLM generates an immediate response in a single pass, an LRM produces an internal reasoning chain, working through a problem step by step before committing to an answer.</p>
+<!-- Accordion for LRM depth -->
+<div class="nyu-accordion"><button class="nyu-accordion__trigger" aria-expanded="false"> <span class="nyu-accordion__icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg> </span> How LRMs Differ from LLMs, and Why It Matters for Security (read before the knowledge check below) <svg xmlns="http://www.w3.org/2000/svg" class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg> </button>
+<div class="nyu-accordion__panel">
+<p><strong>Worked example, LLM vs. LRM on the same query:</strong></p>
+<p><em>Query:</em> "Is CVE-2024-3094 exploitable if our XZ Utils version is 5.6.0 but we don't use systemd?"</p>
+<p><em>LLM response pattern:</em> Generates an immediate, confident answer, possibly correct, possibly hallucinated. Single pass: input produces output with no visible reasoning.</p>
+<p><em>LRM response pattern:</em> Generates an internal reasoning chain first: "Step 1: CVE-2024-3094 affects XZ Utils 5.6.0-5.6.1. Step 2: The backdoor triggers through systemd's use of liblzma during SSH authentication. Step 3: If systemd is not used, the exploitation path through SSH is not present. Step 4: However, other applications linking liblzma could theoretically be affected. Step 5: Therefore the answer is 'likely not exploitable via the documented path, but confirm no other liblzma consumers exist.'"</p>
+<p><strong>Security implications of LRMs:</strong></p>
+<ul>
+<li><strong>Reasoning chains can be hijacked.</strong> An attacker can supply text that the model treats as its own prior deliberation, so that the chain proceeds from premises the attacker chose rather than from the ones the task actually presents. In <em>H-CoT</em> (Kuo et al., arXiv 2502.12893), the injected material imitates the model's internal safety-reasoning phase, and the model continues as though it had already completed and passed that check. The injected step does not need to survive into the visible answer. It only needs to alter the premises on which the remaining steps build, and a single altered premise early in the chain will cascade through everything that follows.</li>
+<li><strong>Reasoning is opaque.</strong> Whether the visible chain faithfully represents the model's actual computation is itself uncertain. The chain is generated text, a post hoc narrative, not a transparent execution log.</li>
+<li><strong>Reasoning length is itself an attack parameter.</strong> The intuitive expectation is that a model which deliberates longer about safety should be harder to subvert, and the evidence points the other way. <em>Chain-of-Thought Hijacking</em> (Zhao et al., arXiv 2510.26418) pads a harmful request with long sequences of entirely benign puzzle reasoning and reports attack success rates of 94% to 100% against Gemini 2.5 Pro, o4-mini, Grok 3 mini, and Claude 4 Sonnet. The mechanism the authors identify is <em>refusal dilution</em>: middle layers encode the strength of the safety check and later layers encode its outcome, and a long benign chain attenuates both by drawing attention away from the harmful tokens. Note carefully what this is not. Nothing adversarial is injected into the reasoning at all, so this is a distinct failure mode from the one above rather than a larger-scale version of it. Length is the weapon.</li>
+<li><strong>Cost and latency.</strong> The extended reasoning pass consumes significantly more tokens and time. In a SOC automation pipeline, this tradeoff (better accuracy vs. slower response) must be evaluated per use case.</li>
+<li><strong>Visible reasoning is persuasive to the analyst.</strong> The three implications above concern the model. This one concerns the person reading its output. A chain that presents itself as a numbered sequence of justified steps invites the reader to audit the form of the argument rather than its content, and a fabricated chain is no less orderly than a sound one. The practical consequence is that an LRM verdict is likely to receive <em>less</em> scrutiny than a bare LLM verdict of identical quality, which inverts the review posture the added reasoning was supposed to earn. Treat the chain as a claim requiring verification, not as evidence supporting the conclusion it precedes.</li>
+</ul>
+</div>
+</div>
+<!-- Knowledge Check --><fieldset class="nyu-quiz" id="quiz-3"><legend class="nyu-quiz__prompt"><span class="nyu-quiz__badge">Knowledge Check</span> A SOC analyst uses an LRM to investigate a suspicious binary. The model produces a detailed, multi step reasoning chain concluding the binary is benign. What is the primary risk?</legend> <label class="nyu-quiz__option"> <input type="radio" name="q3" data-correct=""> The reasoning chain itself could be a hallucination: plausible sounding steps that arrive at a wrong conclusion, and the analyst may trust it more because it "showed its work." <span class="nyu-quiz__fb">Correct. The extended reasoning format creates a false sense of rigor. Each step looks logical, making the analyst less likely to question the final verdict.</span> </label> <label class="nyu-quiz__option"> <input type="radio" name="q3"> The model will take too long to respond during an active incident. <span class="nyu-quiz__fb">Latency is a real concern, but the primary risk is misplaced trust. The danger of LRMs is that their reasoning chains look convincing even when fabricated.</span> </label> <label class="nyu-quiz__option"> <input type="radio" name="q3"> The binary could contain a prompt injection that hijacks the reasoning chain. <span class="nyu-quiz__fb">This is a real attack vector, and it corresponds to the first security implication above, the H-CoT case in which injected content is taken up as the chain's own premises. It is not the third implication, which concerns reasoning length rather than injected steps. Even so, misplaced trust remains the primary risk here: absent any adversarial input at all, the model can produce an internally consistent but factually wrong chain.</span> </label></fieldset><!-- Forward pointers -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 5: Measuring AI Performance.</strong> We cover the confusion matrix, precision, recall, and F1, and why understanding these metrics is the difference between a useful security tool and expensive alert noise. Every vendor claim you evaluate rests on numbers of this kind.</p>
+        </aside>
+</section>
+</main><!-- ====================== FOOTER ====================== --><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"> <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"> </a></footer><button class="nyu-fab" aria-label="Back to top of section"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> </button></div>
+<script src="../tooltips/glossary.js"></script>
+<script src="../js/nyu-tandon-course.js"></script>
+<script>
+  /* ============================================================
+     NEXT-TOKEN PREDICTION DEMO
+     ============================================================ */
+  (function() {
+    "use strict";
+
+    const STEPS = [
+      {
+        context: "The firewall detected unusual",
+        candidates: [
+          { word: "traffic", prob: 0.42 },
+          { word: "activity", prob: 0.28 },
+          { word: "patterns", prob: 0.15 },
+          { word: "behavior", prob: 0.10 },
+          { word: "requests", prob: 0.05 }
+        ],
+        chosen: 0
+      },
+      {
+        context: "The firewall detected unusual traffic",
+        candidates: [
+          { word: "from", prob: 0.51 },
+          { word: "originating", prob: 0.22 },
+          { word: "on", prob: 0.14 },
+          { word: "patterns", prob: 0.08 },
+          { word: "that", prob: 0.05 }
+        ],
+        chosen: 0
+      },
+      {
+        context: "The firewall detected unusual traffic from",
+        candidates: [
+          { word: "an", prob: 0.35 },
+          { word: "a", prob: 0.25 },
+          { word: "multiple", prob: 0.20 },
+          { word: "unknown", prob: 0.12 },
+          { word: "external", prob: 0.08 }
+        ],
+        chosen: 2
+      },
+      {
+        context: "The firewall detected unusual traffic from multiple",
+        candidates: [
+          { word: "sources", prob: 0.38 },
+          { word: "IP", prob: 0.30 },
+          { word: "external", prob: 0.18 },
+          { word: "internal", prob: 0.09 },
+          { word: "endpoints", prob: 0.05 }
+        ],
+        chosen: 1
+      },
+      {
+        context: "The firewall detected unusual traffic from multiple IP",
+        candidates: [
+          { word: "addresses", prob: 0.62 },
+          { word: "ranges", prob: 0.18 },
+          { word: "sources", prob: 0.12 },
+          { word: "blocks", prob: 0.05 },
+          { word: "subnets", prob: 0.03 }
+        ],
+        chosen: 0
+      },
+      {
+        context: "The firewall detected unusual traffic from multiple IP addresses",
+        candidates: [
+          { word: ".", prob: 0.30 },
+          { word: "targeting", prob: 0.28 },
+          { word: ",", prob: 0.20 },
+          { word: "indicating", prob: 0.15 },
+          { word: "associated", prob: 0.07 }
+        ],
+        chosen: 1
+      }
+    ];
+
+    let currentStep = 0;
+
+    function render() {
+      const textEl = document.getElementById("ntpText");
+      const candEl = document.getElementById("ntpCandidates");
+      const stepLabel = document.getElementById("ntpStepLabel");
+      const nextBtn = document.getElementById("ntpNextBtn");
+      if (!textEl || !candEl) return;
+
+      if (currentStep === 0) {
+        textEl.innerHTML = STEPS[0].context + ' <span class="ntp-predict-slot" id="ntpSlot">???</span>';
+        candEl.innerHTML = "";
+        stepLabel.textContent = "Step 0 / " + STEPS.length;
+        nextBtn.disabled = false;
+        return;
+      }
+
+      const step = STEPS[currentStep - 1];
+      const chosenWord = step.candidates[step.chosen].word;
+
+      // Show context with chosen word highlighted
+      if (currentStep < STEPS.length) {
+        textEl.innerHTML = step.context + " <strong style='color:#57068C'>" + chosenWord + "</strong>" +
+          ' <span class="ntp-predict-slot" id="ntpSlot">???</span>';
+      } else {
+        // Final step
+        textEl.innerHTML = step.context + " <strong style='color:#57068C'>" + chosenWord + "</strong>" +
+          '<span class="ntp-cursor"></span>';
+      }
+
+      // Show candidates
+      candEl.innerHTML = "";
+      step.candidates.forEach(function(c, i) {
+        const div = document.createElement("div");
+        div.className = "ntp-prob";
+        div.innerHTML =
+          '<div class="ntp-prob__bar-wrap"><div class="ntp-prob__bar" style="height:0%"></div></div>' +
+          '<span class="ntp-prob__pct">' + (c.prob * 100).toFixed(0) + '%</span>' +
+          '<span class="ntp-prob__word">' + c.word + '</span>';
+        if (i === step.chosen) div.classList.add("is-chosen");
+        candEl.appendChild(div);
+
+        // Animate in
+        setTimeout(function() {
+          div.classList.add("is-visible");
+          div.querySelector(".ntp-prob__bar").style.height = (c.prob * 100) + "%";
+        }, (i + 1) * 120);
+      });
+
+      stepLabel.textContent = "Step " + currentStep + " / " + STEPS.length;
+      nextBtn.disabled = (currentStep >= STEPS.length);
+    }
+
+    window.ntpStep = function() {
+      if (currentStep >= STEPS.length) return;
+      currentStep++;
+      render();
+    };
+
+    window.ntpReset = function() {
+      currentStep = 0;
+      render();
+    };
+
+    // Initialize on load
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", render);
+    } else {
+      render();
+    }
+  })();
+  </script></body></html>

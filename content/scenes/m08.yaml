@@ -1,0 +1,35 @@
+- title: The Arup deepfake call, and the control that beats it
+  stats: [Employee doubt, Signal relied on, Money sent]
+  nodes:
+    email: {label: Fake CFO email, x: 0, y: 1, kind: atk}
+    emp: {label: Finance employee, x: 2, y: 1, kind: box, tag: Hong Kong office}
+    call: {label: Video call, x: 2, y: 3, kind: atk, tag: every face a deepfake}
+    bank: {label: Bank transfers, x: 4, y: 1, kind: atk, tag: "15 transfers"}
+    cb: {label: Callback on a known number, x: 4, y: 3, kind: def}
+    cfo: {label: Real CFO, x: 6, y: 3, kind: box}
+  links: [[email, emp], [call, emp], [emp, bank], [emp, cb], [cb, cfo]]
+  steps:
+    - title: An email asks for secret transfers
+      text: In January 2024 a finance employee at Arup got an email that seemed to come from the CFO. The employee was suspicious. Good instinct.
+      on: [email, emp]
+      flow: [[email, emp, atk]]
+      stats: [High, Wording, "$0"]
+    - title: A video call removes the doubt
+      text: The employee joins a call with the CFO and several colleagues. All of them are deepfakes built from public footage. Seeing and hearing them feels like proof.
+      on: [call, emp]
+      flow: [[call, emp, atk]]
+      mark: {emp: warn}
+      stats: [Gone, Face and voice, "$0"]
+    - title: The money leaves
+      text: Over one day the employee makes 15 transfers, about 25.6 million US dollars. The funds were not recovered.
+      on: [emp, bank]
+      flow: [[emp, bank, atk]]
+      mark: {bank: bad}
+      stats: [Gone, Face and voice, "$25.6M"]
+    - title: A process control does not need to spot the fake
+      text: A required callback on a number already on file reaches the real CFO, on a channel the attacker does not control. A second approver for large transfers adds one more step the attacker cannot complete.
+      on: [cb, cfo]
+      show: [email, emp, call, cb, cfo]
+      flow: [[emp, cb, def], [cb, cfo, def]]
+      mark: {cb: ok}
+      stats: [Restored, Callback, "$0"]

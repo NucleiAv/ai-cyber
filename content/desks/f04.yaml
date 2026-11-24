@@ -1,0 +1,28 @@
+title: Threat model an AI meeting assistant
+lede: Run STRIDE on a meeting assistant that joins calls, writes notes and emails action items.
+blurb: Assign each threat to a STRIDE letter and pick a response with an owner.
+situation: |
+  **MeetMate** joins video calls, transcribes them, stores notes in a shared drive, and emails action items to attendees. Anyone can invite it to a meeting by email.
+rounds:
+  - title: Round 1. Name the letter
+    items:
+      - type: sort
+        q: Which STRIDE threat is each item?
+        rows:
+          - ["An outsider invites MeetMate and pretends to be the CEO in the call", "Spoofing"]
+          - ["Someone edits stored notes to change a decision", "Tampering"]
+          - ["Nobody can prove who changed a note", "Repudiation"]
+          - ["Notes from a board meeting are emailed to all attendees, including a guest", "Information disclosure"]
+          - ["A flood of invites keeps MeetMate busy all day", "Denial of service"]
+          - ["Spoken words in a call make MeetMate email the notes to an outside address", "Elevation of privilege"]
+        opts: ["Spoofing", "Tampering", "Repudiation", "Information disclosure", "Denial of service", "Elevation of privilege"]
+        why: "Each threat breaks one property. Authentication, integrity, non-repudiation, confidentiality, availability and authorization."
+      - q: The last threat comes from words spoken in the call. Which OWASP entry also names it?
+        opts: ["LLM01 Prompt injection", "LLM03 Supply chain", "LLM10 Unbounded consumption"]
+        a: 0
+        why: "A transcript is untrusted text the model reads. Spoken instructions are indirect prompt injection."
+  - title: Round 2. Decide
+    items:
+      - type: open
+        q: Pick a response for the email threat and name an owner.
+        a: "Mitigate. MeetMate may email only attendees from the calendar invite on the company domain, enforced in code, and a person approves any outside recipient. Owner, the product security lead."

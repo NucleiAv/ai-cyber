@@ -1,0 +1,331 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Disclosure Lag</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --nyu-violet: #57068C; --nyu-violet-dark: #3D0461; --nyu-violet-50: #F5EDFA;
+      --nyu-violet-100: #E8D8F2; --nyu-violet-200: #D2B3E5;
+      --danger: #C42A2A; --danger-bg: #FBE8E8;
+      --success: #166B3A; --success-bg: #E6F4EC;
+      --warning: #8A5D00; --warning-bg: #FCF1DC;
+      --info: #1E5FA8; --info-bg: #E7F0FA;
+      --ink: #1A1A1A; --ink-soft: #3A3A3A; --ink-mute: #6B6B6B;
+      --rule: #E2E2E2; --surface: #FFFFFF; --surface-sunken: #F6F4F8;
+      --shadow: 0 10px 30px rgba(18, 22, 33, 0.06);
+      --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+      --LABELW: 120px;   /* lane label column */
+      --GAP: 12px;       /* gap between label and track */
+      --OFFSET: 132px;   /* LABELW + GAP : where the track area starts */
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--surface-sunken); padding: 12px 16px 8px; }
+    main { width: min(880px, 100%); margin: 0 auto; }
+    .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; box-shadow: var(--shadow); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; margin-bottom: 12px; }
+    .topbar h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+    .btn { appearance: none; border: 1px solid var(--nyu-violet); background: var(--nyu-violet); color: #fff; border-radius: 8px; padding: 9px 18px; font: inherit; font-weight: 600; font-size: 0.86rem; cursor: pointer; transition: background 140ms ease, transform 140ms ease; }
+    .btn:hover { background: var(--nyu-violet-dark); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .tl { padding: 14px 16px 14px; }
+
+    /* the plot: lanes + a playhead overlay share one coordinate system */
+    .plot { position: relative; }
+
+    .lane { display: grid; grid-template-columns: var(--LABELW) 1fr; column-gap: var(--GAP); align-items: center; }
+    .lane + .lane { margin-top: 8px; }
+    .lane__label { text-align: right; line-height: 1.18; }
+    .lane__label b { font-size: 0.76rem; font-weight: 700; color: var(--ink-soft); }
+    .lane__label small { display: block; font-weight: 600; font-size: 0.62rem; color: var(--ink-mute); }
+    .lane__track { position: relative; height: 42px; background: var(--surface-sunken); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+
+    /* per-lane blind-spot segment: behind markers, above the track background */
+    .blind { position: absolute; top: 0; bottom: 0; left: 0; width: 0; z-index: 1;
+      background: repeating-linear-gradient(45deg, rgba(196,42,42,0.09), rgba(196,42,42,0.09) 7px, rgba(196,42,42,0.16) 7px, rgba(196,42,42,0.16) 14px);
+      border-left: 2px dashed var(--danger); border-right: 2px dashed var(--danger);
+      opacity: 0; transition: opacity 350ms ease; pointer-events: none; }
+    .blind.on { opacity: 1; }
+    .lane.exploit .blind { border-right-color: transparent; }
+
+    /* markers: a dot at the time point, label extending to the right (never clipped on the left) */
+    .marker { position: absolute; top: 50%; transform: translateY(-50%) scale(0.5); transform-origin: left center;
+      display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; z-index: 3;
+      font-family: var(--mono); font-size: 0.66rem; font-weight: 700; padding: 4px 9px 4px 7px;
+      border-radius: 999px; border: 1.5px solid; opacity: 0; transition: opacity 280ms ease, transform 280ms cubic-bezier(0.2,1.4,0.4,1); }
+    .marker.on { opacity: 1; transform: translateY(-50%) scale(1); }
+    .marker .dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; flex: none; }
+    .m-cve { color: #fff; background: #57068C; border-color: #57068C; }
+    .m-expl { color: #fff; background: #991B1B; border-color: #991B1B; }
+    .m-nvd { color: #fff; background: #1E40AF; border-color: #1E40AF; }
+    .m-kev { color: #fff; background: #991B1B; border-color: #991B1B; }
+    .m-epss { color: #fff; background: #854D0E; border-color: #854D0E; }
+    .marker.done .dot::after { content: "\2713"; }
+
+    /* playhead overlay: positioned to the track area only, so it lines up with the markers */
+    .ph { position: absolute; top: 0; bottom: 0; left: var(--OFFSET); right: 0; pointer-events: none; z-index: 5; }
+    .playhead { position: absolute; top: 2px; bottom: 2px; width: 2px; background: var(--nyu-violet); left: 0%; }
+    .playhead::after { content: ""; position: absolute; top: -4px; left: 50%; transform: translateX(-50%); width: 11px; height: 11px; border-radius: 50%; background: var(--nyu-violet); border: 2px solid #fff; }
+
+    /* captions that ride above the plot in track coordinates */
+    .cap-band { position: absolute; top: -6px; transform: translateX(-50%); font-family: var(--mono); font-size: 0.6rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--danger); background: #fff; padding: 1px 7px; border: 1px solid #efc9c9; border-radius: 999px;
+      opacity: 0; transition: opacity 300ms ease; white-space: nowrap; }
+    .cap-band.on { opacity: 1; }
+    .cap-close { position: absolute; top: -6px; transform: translateX(-50%); font-family: var(--mono); font-size: 0.6rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--success); background: #fff; padding: 1px 7px; border: 1px solid #c1e3cf; border-radius: 999px;
+      opacity: 0; transition: opacity 300ms ease; white-space: nowrap; }
+    .cap-close.on { opacity: 1; }
+
+    .axis { display: grid; grid-template-columns: var(--LABELW) 1fr; column-gap: var(--GAP); margin-top: 8px; }
+    .axis__scale { position: relative; height: 15px; }
+    .axis__tick { position: absolute; transform: translateX(-50%); font-family: var(--mono); font-size: 0.6rem; color: var(--ink-mute); }
+
+    .readout { margin-top: 12px; padding: 11px 14px; background: var(--surface-sunken); border: 1px solid var(--rule); border-radius: 10px; display: flex; gap: 12px; align-items: flex-start; }
+    .readout__day { font-family: var(--mono); font-weight: 700; font-size: 0.84rem; color: #fff; background: var(--nyu-violet); border-radius: 7px; padding: 5px 9px; white-space: nowrap; }
+    .readout__msg { font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); min-height: 2.7em; }
+    .readout__msg strong { color: var(--ink); }
+
+    .takeaway { margin: 12px 16px 4px; padding: 10px 14px; background: var(--nyu-violet-50); border: 1px solid var(--nyu-violet-100); border-left: 4px solid var(--nyu-violet); border-radius: 8px; font-size: 0.84rem; color: var(--ink-soft); }
+    .takeaway strong { color: #1A1A1A; }  /* violet on violet-50 is same-hue; the
+       bold weight and the violet left rule already carry the emphasis */
+
+    @media (max-width: 620px) {
+      :root { --LABELW: 84px; --OFFSET: 96px; }
+      .lane__label b { font-size: 0.66rem; }
+      .marker { font-size: 0.58rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .marker, .blind, .cap-band, .cap-close { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card topbar">
+      <h1>One Vulnerability, Four Clocks</h1>
+      <button class="btn" id="playBtn" type="button">Play the disclosure</button>
+    </div>
+
+    <div class="card">
+      <div class="tl">
+        <div class="plot" id="plot">
+
+          <div class="lane exploit">
+            <div class="lane__label"><b>In the wild</b><small>attackers</small></div>
+            <div class="lane__track"><div class="blind"></div><span class="marker m-expl" data-day="0.6"><span class="dot"></span>exploitation begins</span></div>
+          </div>
+
+          <div class="lane">
+            <div class="lane__label"><b>CVE + Vendor</b><small>existence, versions</small></div>
+            <div class="lane__track"><div class="blind"></div><span class="marker m-cve" data-day="0.3"><span class="dot"></span>CVE assigned, advisory out</span></div>
+          </div>
+
+          <div class="lane">
+            <div class="lane__label"><b>CISA KEV</b><small>exploitation</small></div>
+            <div class="lane__track"><div class="blind"></div><span class="marker m-kev" data-day="2.5"><span class="dot"></span>added to KEV</span></div>
+          </div>
+
+          <div class="lane">
+            <div class="lane__label"><b>NVD</b><small>CVSS, CPE, CWE</small></div>
+            <div class="lane__track"><div class="blind"></div><span class="marker m-nvd" data-day="5"><span class="dot"></span>enrichment lands</span></div>
+          </div>
+
+          <div class="lane">
+            <div class="lane__label"><b>EPSS</b><small>prediction</small></div>
+            <div class="lane__track"><div class="blind"></div><span class="marker m-epss" data-day="1.5"><span class="dot"></span>recomputing</span></div>
+          </div>
+
+          <!-- playhead + captions, aligned to the track coordinate system -->
+          <div class="ph" id="ph">
+            <span class="cap-band" id="capBand">defender blind spot</span>
+            <span class="cap-close" id="capClose">blind spot closes</span>
+            <div class="playhead" id="playhead"></div>
+          </div>
+        </div>
+
+        <div class="axis">
+          <div></div>
+          <div class="axis__scale" id="axisScale"></div>
+        </div>
+
+        <div class="readout">
+          <span class="readout__day" id="roDay">Day 0</span>
+          <div class="readout__msg" id="roMsg">Press play. One real vulnerability reaches you through four sources that each update on a different clock.</div>
+        </div>
+      </div>
+
+      <p class="takeaway"><strong>No single source is complete or instant.</strong> A CVE can be public, and exploited, before NVD finishes enriching it. The hatched band is the window where waiting on any one source leaves you blind.</p>
+    </div>
+  </main>
+
+  <script>
+    'use strict';
+    var $ = function (id) { return document.getElementById(id); };
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var MAXDAY = 8;
+    var BLIND_START = 0.6, BLIND_END = 5;
+    function xPct(day) { return 3 + (day / MAXDAY) * 94; }   // percent within the track area
+
+    // place markers at their day
+    var markers = Array.prototype.slice.call(document.querySelectorAll('.marker'));
+    markers.forEach(function (m) { m.style.left = xPct(parseFloat(m.dataset.day)) + '%'; });
+
+    // axis ticks
+    var ax = $('axisScale');
+    for (var d = 0; d <= MAXDAY; d += 1) {
+      var t = document.createElement('span'); t.className = 'axis__tick'; t.style.left = xPct(d) + '%';
+      t.textContent = d; ax.appendChild(t);
+    }
+    var dlabel = document.createElement('span'); dlabel.className = 'axis__tick'; dlabel.style.left = xPct(0) + '%';
+
+    // blind band segments (one per lane), captions
+    var blinds = Array.prototype.slice.call(document.querySelectorAll('.blind'));
+    function sizeBlind() {
+      blinds.forEach(function (b) { b.style.left = xPct(BLIND_START) + '%'; b.style.width = (xPct(BLIND_END) - xPct(BLIND_START)) + '%'; });
+    }
+    sizeBlind();
+    $('capBand').style.left = ((xPct(BLIND_START) + xPct(BLIND_END)) / 2) + '%';
+    $('capClose').style.left = xPct(BLIND_END) + '%';
+
+    var playhead = $('playhead'), roDay = $('roDay'), roMsg = $('roMsg'), btn = $('playBtn');
+    var busy = false, raf = null;
+
+    // event script, in order, with readable pauses
+    var STEPS = [
+      { day: 0.3, marker: '.m-cve',
+        msg: '<strong>Day 0. CVE assigned, vendor advisory out.</strong> You now have an ID, a description, and the affected and fixed versions. No standardized severity yet.' },
+      { day: 0.6, marker: '.m-expl', openBlind: true,
+        msg: '<strong>Exploitation begins in the wild.</strong> Attackers do not wait for paperwork. The defender blind spot opens here.' },
+      { day: 1.5, marker: '.m-epss',
+        msg: '<strong>EPSS starts predicting.</strong> A probability that the flaw is exploited soon, updated continuously. A prediction, never a confirmation.' },
+      { day: 2.5, marker: '.m-kev',
+        msg: '<strong>Added to CISA KEV.</strong> Confirmed in the wild exploitation, with a federal remediation deadline, before NVD has even scored it.' },
+      { day: 5, marker: '.m-nvd', closeBlind: true, hold: 2600,
+        msg: '<strong>Day 5. NVD enrichment lands.</strong> Only now do you get the CVSS vector, CPE product matches, and CWE class. The blind spot closes.' },
+      { day: 6.6, complete: true, hold: 2800,
+        msg: '<strong>Full picture, at last.</strong> All four sources now describe the same CVE. Notice how long the gap was: the most useful days were the ones before the slowest clock caught up.' }
+    ];
+
+    function reset() {
+      markers.forEach(function (m) { m.classList.remove('on', 'done'); });
+      blinds.forEach(function (b) { b.classList.remove('on'); });
+      $('capBand').classList.remove('on'); $('capClose').classList.remove('on');
+      playhead.style.left = xPct(0) + '%';
+      roDay.textContent = 'Day 0';
+      roMsg.innerHTML = 'Press play. One real vulnerability reaches you through four sources that each update on a different clock.';
+    }
+
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    function glideTo(day, dur) {
+      return new Promise(function (resolve) {
+        var from = parseFloat(playhead.style.left) || xPct(0);
+        var to = xPct(day);
+        if (reduce) { playhead.style.left = to + '%'; roDay.textContent = 'Day ' + day.toFixed(1); resolve(); return; }
+        var t0 = null;
+        function frame(t) {
+          if (t0 === null) t0 = t;
+          var p = Math.min(1, (t - t0) / dur);
+          var ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+          var cur = from + (to - from) * ease;
+          playhead.style.left = cur + '%';
+          var dayNow = ((cur - 3) / 94) * MAXDAY;
+          roDay.textContent = 'Day ' + Math.max(0, dayNow).toFixed(1);
+          if (p < 1) { raf = requestAnimationFrame(frame); } else { resolve(); }
+        }
+        raf = requestAnimationFrame(frame);
+      });
+    }
+
+    async function run() {
+      if (busy) return; busy = true; btn.disabled = true;
+      reset();
+      await sleep(reduce ? 0 : 450);
+      for (var i = 0; i < STEPS.length; i++) {
+        var s = STEPS[i];
+        await glideTo(s.day, reduce ? 0 : 850);
+        roDay.textContent = 'Day ' + s.day.toFixed(1);
+        if (s.marker) {
+          var m = document.querySelector(s.marker);
+          m.classList.add('on');
+          // mark prior markers as logged
+          markers.forEach(function (mm) { if (mm.classList.contains('on') && mm !== m) mm.classList.add('done'); });
+        }
+        if (s.openBlind) { blinds.forEach(function (b) { b.classList.add('on'); }); $('capBand').classList.add('on'); }
+        if (s.closeBlind) { $('capClose').classList.add('on'); }
+        if (s.complete) { markers.forEach(function (mm) { mm.classList.add('on', 'done'); }); }
+        roMsg.innerHTML = s.msg;
+        await sleep(reduce ? 700 : (s.hold || 2100));
+      }
+      roDay.textContent = 'Done';
+      roMsg.innerHTML = '<strong>Four clocks, never synchronized.</strong> Route each claim to the source that owns it: existence to the CVE and vendor advisory, severity to NVD, exploitation to KEV. And note when each was last current.';
+      btn.disabled = false; btn.textContent = 'Replay'; busy = false;
+    }
+
+    btn.addEventListener('click', run);
+    window.addEventListener('resize', function () { sizeBlind(); markers.forEach(function (m) { m.style.left = xPct(parseFloat(m.dataset.day)) + '%'; }); });
+    reset();
+
+    /* ---------- Embed height reporting ---------- */
+    var mainEl = document.querySelector('main');
+    var lastReported = 0;
+    function reportHeight() {
+      var h = Math.ceil(mainEl.getBoundingClientRect().bottom + 10);
+      if (h > 50 && h !== lastReported) { lastReported = h; window.parent.postMessage({ kind: 'nyu-embed-height', height: h }, '*'); }
+    }
+    window.addEventListener('load', function () { lastReported = 0; reportHeight(); });
+    window.addEventListener('resize', function () { requestAnimationFrame(reportHeight); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { lastReported = 0; reportHeight(); });
+    if ('ResizeObserver' in window) new ResizeObserver(function () { requestAnimationFrame(reportHeight); }).observe(mainEl);
+    reportHeight();
+  </script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

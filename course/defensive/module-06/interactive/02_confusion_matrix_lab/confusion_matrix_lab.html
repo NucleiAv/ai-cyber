@@ -1,0 +1,344 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Review Confusion Matrix Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--blue:#1560AC;--blue-bg:#E6F0FA;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+    .top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em;flex:1 1 auto;min-width:180px}
+    .step-badge{font-size:.7rem;font-weight:700;color:#fff;background:#4C1D95;border:1.5px solid var(--v200);border-radius:8px;padding:4px 12px;white-space:nowrap}
+    .body-wrap{padding:0 18px 14px}
+
+    /* Progress bar */
+    .prog{height:4px;background:var(--rule);border-radius:2px;margin-bottom:14px;overflow:hidden}
+    .prog-fill{height:100%;background:var(--v);border-radius:2px;transition:width .5s ease;width:0}
+
+    /* Scenario brief */
+    .brief{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+    .brief-box{flex:1;min-width:200px;border:1.5px solid var(--rule);border-radius:10px;padding:10px 12px}
+    .brief-box h3{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .brief-box h3 svg{width:14px;height:14px;flex-shrink:0}
+    .brief-item{font-size:.7rem;padding:3px 0;color:var(--ink);display:flex;align-items:center;gap:6px;line-height:1.4}
+    .brief-item .cwe{font-family:var(--mono);font-size:.62rem;padding:1px 5px;border-radius:4px;background:rgba(0,0,0,.06);white-space:nowrap}
+    .brief-item.done{opacity:0.61;text-decoration:line-through}
+
+    /* Step card */
+    .step-card{border:1.5px solid var(--rule);border-radius:10px;overflow:hidden;animation:fadeUp .3s ease}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .step-header{padding:10px 14px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px}
+    .step-header .num{width:26px;height:26px;border-radius:50%;background:var(--v);color:#fff;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .step-header .title{font-size:.78rem;font-weight:700;color:var(--ink)}
+
+    .step-body{padding:12px 14px}
+    .finding-row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+    .finding-box{flex:1;min-width:180px;padding:10px;border-radius:8px;border:1.5px solid}
+    .finding-box.llm{border-color:var(--v200);background:var(--v50)}
+    .finding-box.truth{border-color:#6CBF8B;background:var(--grn-bg)}
+    .finding-box.missed{border-color:var(--red);background:var(--red-bg)}
+    .finding-box h4{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+    .finding-box.llm h4{color:var(--ink)}
+    .finding-box.truth h4{color:var(--ink)}
+    .finding-box.missed h4{color:var(--ink)}
+    .finding-box p{font-size:.72rem;line-height:1.45}
+    .finding-box .cwe{font-family:var(--mono);font-size:.64rem;padding:1px 6px;border-radius:4px;background:rgba(0,0,0,.06);display:inline-block;margin-top:4px}
+
+    .question{font-size:.76rem;font-weight:600;margin-bottom:10px;line-height:1.45}
+    .options{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    @media(max-width:500px){.options{grid-template-columns:1fr}}
+    .opt-btn{appearance:none;border:1.5px solid var(--rule);background:var(--sf);border-radius:8px;padding:8px 12px;font:inherit;font-size:.72rem;font-weight:600;cursor:pointer;text-align:left;transition:all .2s;color:var(--ink);display:flex;align-items:center;gap:8px}
+    .opt-btn:hover:not(:disabled){border-color:var(--v200);background:var(--v50)}
+    .opt-btn:disabled{cursor:default;opacity:.7}
+    .opt-btn.correct{border-color:#166534;background:#166534;color:#fff}
+    .opt-btn.wrong{border-color:#991B1B;background:#991B1B;color:#fff}
+    .opt-btn .icon{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--rule);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.7rem;transition:all .2s}
+    .opt-btn.correct .icon{border-color:var(--grn);background:var(--grn);color:#fff}
+    .opt-btn.wrong .icon{border-color:var(--red);background:var(--red);color:#fff}
+
+    .feedback{margin-top:10px;padding:10px 12px;border-radius:8px;font-size:.72rem;line-height:1.5;animation:fadeUp .3s ease;display:none}
+    .feedback.ok{background:#166534;border:1px solid #166534;color:#fff}
+    .feedback.no{background:var(--red-bg);border:1px solid var(--red);color:#1A1A1A}
+    .feedback b{font-weight:700}
+
+    .next-btn{appearance:none;border:none;background:var(--v);color:#fff;border-radius:8px;padding:8px 20px;font:inherit;font-size:.74rem;font-weight:600;cursor:pointer;margin-top:10px;display:none;transition:background .2s}
+    .next-btn:hover{background:var(--v-d)}
+
+    /* Results */
+    .results{display:none}
+    .summary-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;justify-content:center}
+    .sum-chip{padding:5px 12px;border-radius:8px;font-size:.7rem;font-weight:700;border:1.5px solid}
+    .sum-chip.tp{background:#166534;border-color:#166534;color:#fff}
+    .sum-chip.wcwe{background:#854D0E;border-color:#854D0E;color:#fff}
+    .sum-chip.fp{background:#991B1B;border-color:#991B1B;color:#fff}
+    .sum-chip.fn{background:#1E40AF;border-color:#1E40AF;color:#fff}
+
+    .metric-calc{margin-bottom:12px;padding:10px 14px;border:1.5px solid var(--rule);border-radius:10px;opacity:0;transform:translateY(6px);transition:all .5s ease}
+    .metric-calc.show{opacity:1;transform:translateY(0)}
+    .metric-name{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--v);margin-bottom:4px}
+    .metric-formula{font-family:var(--mono);font-size:.74rem;color:var(--ink);line-height:1.6}
+    .metric-formula .hl{color:var(--v);font-weight:700}
+    .metric-bar{height:10px;border-radius:5px;background:var(--rule);overflow:hidden;margin-top:6px}
+    .metric-fill{height:100%;border-radius:5px;background:var(--v);transition:width 1s ease;width:0}
+    .metric-note{font-size:.68rem;color:var(--ink2);margin-top:4px;line-height:1.4}
+
+    .restart-btn{appearance:none;border:1.5px solid var(--v200);background:#57068C;color:#fff;border-radius:8px;padding:6px 14px;font:inherit;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s;margin-top:10px}
+    .restart-btn:hover{background:var(--v);color:#fff}
+
+    .insight{padding:12px 18px;font-size:.76rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.5}
+    .insight b{color:var(--ink);font-weight:700}
+  </style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>Code Review Confusion Matrix Lab</h1>
+    <span class="step-badge" id="stepBadge">Step 1 of 5</span>
+  </div>
+  <div class="body-wrap">
+    <div class="prog"><div class="prog-fill" id="progFill"></div></div>
+
+    <div class="brief" id="brief">
+      <div class="brief-box">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="var(--v)" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg> LLM Reported 4 Findings</h3>
+        <div class="brief-item" id="bf1">SQL injection L12 <span class="cwe">CWE-89</span></div>
+        <div class="brief-item" id="bf2">XSS L28 <span class="cwe">CWE-79</span></div>
+        <div class="brief-item" id="bf3">Insecure deser. L45 <span class="cwe">CWE-20</span></div>
+        <div class="brief-item" id="bf4">Hardcoded creds L7 <span class="cwe">CWE-798</span></div>
+      </div>
+      <div class="brief-box">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="var(--grn)" stroke-width="2.2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Answer Key: 4 Known Vulnerabilities</h3>
+        <div class="brief-item" id="bt1">#1 SQL injection L12 <span class="cwe">CWE-89</span></div>
+        <div class="brief-item" id="bt2">#2 XSS L28 <span class="cwe">CWE-79</span></div>
+        <div class="brief-item" id="bt3">#3 Insecure deser. L45 <span class="cwe">CWE-502</span></div>
+        <div class="brief-item" id="bt4">#4 Missing auth L33 <span class="cwe">CWE-862</span></div>
+      </div>
+    </div>
+
+    <div id="stepArea"></div>
+
+    <div class="results" id="results">
+      <div class="summary-row">
+        <span class="sum-chip tp">2 True Positives</span>
+        <span class="sum-chip wcwe">1 Wrong CWE</span>
+        <span class="sum-chip fp">1 False Positive</span>
+        <span class="sum-chip fn">1 Missed (FN)</span>
+      </div>
+      <div class="metric-calc" id="mc1">
+        <div class="metric-name">Detection Rate (Recall)</div>
+        <div class="metric-formula">(TP + Wrong CWE) / Known Vulnerabilities = (2 + 1) / 4 = <span class="hl">75%</span></div>
+        <div class="metric-bar"><div class="metric-fill" id="mf1"></div></div>
+        <div class="metric-note">The LLM found 3 of the 4 real vulnerabilities. The wrong CWE still counts as detected.</div>
+      </div>
+      <div class="metric-calc" id="mc2">
+        <div class="metric-name">Precision</div>
+        <div class="metric-formula">True Positives / Total LLM Findings = 3 / 4 = <span class="hl">75%</span></div>
+        <div class="metric-bar"><div class="metric-fill" id="mf2"></div></div>
+        <div class="metric-note">Three of four findings were real; one in four was spurious. Repeated false positives erode developer trust.</div>
+      </div>
+      <div class="metric-calc" id="mc3">
+        <div class="metric-name">CWE Accuracy</div>
+        <div class="metric-formula">Correct CWE / Detected Vulnerabilities = 2 / 3 = <span class="hl">67%</span></div>
+        <div class="metric-bar"><div class="metric-fill" id="mf3"></div></div>
+        <div class="metric-note">Finding 3 mapped to CWE-20 (generic) instead of CWE-502 (deserialization). Wrong CWE leads to wrong remediation.</div>
+      </div>
+      <button class="restart-btn" onclick="restart()">Restart</button>
+    </div>
+  </div>
+  <div class="insight" id="ins">Classify each of the LLM's findings against the answer key. You will work through all five items, then compute the metrics.</div>
+</div></div>
+
+<script>
+const STEPS = [
+  {
+    num:1,title:"SQL Injection on Line 12",
+    finding:{text:"SQL injection vulnerability on line 12",cwe:"CWE-89"},
+    truth:{text:"Vulnerability #1: SQL injection on line 12",cwe:"CWE-89"},
+    matchNote:"The LLM's finding matches a known vulnerability at the same location, and both say CWE-89.",
+    correct:0,
+    feedOk:"<b>Correct.</b> The finding matches a real vulnerability and the CWE is correct. This is a True Positive with correct CWE classification.",
+    feedNo:"<b>Not quite.</b> The LLM found a real vulnerability (it matches #1 in the answer key) and reported the correct CWE-89. That makes it a True Positive with correct CWE.",
+    briefDone:["bf1","bt1"]
+  },
+  {
+    num:2,title:"XSS on Line 28",
+    finding:{text:"Cross-site scripting vulnerability on line 28",cwe:"CWE-79"},
+    truth:{text:"Vulnerability #2: XSS on line 28",cwe:"CWE-79"},
+    matchNote:"The LLM's finding matches a known vulnerability, and the CWE matches.",
+    correct:0,
+    feedOk:"<b>Correct.</b> Another True Positive with matching CWE. The LLM correctly identified both the vulnerability and its classification.",
+    feedNo:"<b>Not quite.</b> This finding matches vulnerability #2 in the answer key, and both agree on CWE-79. True Positive, correct CWE.",
+    briefDone:["bf2","bt2"]
+  },
+  {
+    num:3,title:"Insecure Deserialization on Line 45",
+    finding:{text:"Insecure deserialization on line 45",cwe:"CWE-20"},
+    truth:{text:"Vulnerability #3: Insecure deserialization on line 45",cwe:"CWE-502"},
+    matchNote:"The LLM found the right vulnerability, but reported CWE-20 (Improper Input Validation) instead of CWE-502 (Deserialization of Untrusted Data).",
+    correct:1,
+    feedOk:"<b>Correct.</b> The vulnerability was detected, but the CWE is wrong. CWE-20 is a broad, class-level entry; CWE-502 is the specific, base-level deserialization weakness. Wrong CWE leads to wrong remediation guidance.",
+    feedNo:"<b>Not quite.</b> The LLM did find the real vulnerability (it matches #3), but it reported CWE-20 instead of CWE-502. The vulnerability is detected but misclassified, so this is True Positive with wrong CWE.",
+    briefDone:["bf3","bt3"]
+  },
+  {
+    num:4,title:"Hardcoded Credentials on Line 7",
+    finding:{text:"Hardcoded credentials on line 7",cwe:"CWE-798"},
+    truth:null,
+    matchNote:"The LLM flagged line 7, but the answer key has no vulnerability at that location. There are no hardcoded credentials.",
+    correct:2,
+    feedOk:"<b>Correct.</b> This finding does not match any entry in the answer key. The LLM reported something that is not a real vulnerability. This wastes developer time investigating a non-issue.",
+    feedNo:"<b>Not quite.</b> Check the answer key: there is no vulnerability on line 7, and no CWE-798 entry. The LLM flagged something that does not exist. That is a False Positive.",
+    briefDone:["bf4"]
+  },
+  {
+    num:5,title:"Missing Authorization on Line 33",
+    finding:null,
+    truth:{text:"Vulnerability #4: Missing authorization check on line 33",cwe:"CWE-862"},
+    matchNote:"The answer key lists this vulnerability, but the LLM never reported it. Look through the LLM's four findings: none of them mention line 33 or CWE-862.",
+    correct:3,
+    feedOk:"<b>Correct.</b> The LLM missed this entirely. This vulnerability will go unpatched unless another method catches it. This is the risk of relying solely on AI review.",
+    feedNo:"<b>Not quite.</b> The LLM produced four findings, and none of them cover this vulnerability. Since it exists in the answer key but the LLM did not report it, it is a Missed vulnerability (False Negative).",
+    briefDone:["bt4"]
+  }
+];
+
+const OPT_LABELS = [
+  {label:"True Positive (correct CWE)",icon:"✔"},
+  {label:"True Positive (wrong CWE)",icon:"⇄"},
+  {label:"False Positive",icon:"✘"},
+  {label:"Missed (False Negative)",icon:"○"}
+];
+
+let currentStep = 0;
+let answered = false;
+
+function renderStep(){
+  const s = STEPS[currentStep];
+  const area = document.getElementById('stepArea');
+  document.getElementById('stepBadge').textContent = 'Step '+(currentStep+1)+' of 5';
+  document.getElementById('progFill').style.width = ((currentStep)/5*100)+'%';
+
+  let findingHTML = '';
+  if(s.finding && s.truth){
+    findingHTML = '<div class="finding-row">'
+      +'<div class="finding-box llm"><h4>LLM Finding</h4><p>'+s.finding.text+'</p><span class="cwe">'+s.finding.cwe+'</span></div>'
+      +'<div class="finding-box truth"><h4>Answer Key</h4><p>'+s.truth.text+'</p><span class="cwe">'+s.truth.cwe+'</span></div>'
+      +'</div>';
+  } else if(s.finding && !s.truth){
+    findingHTML = '<div class="finding-row">'
+      +'<div class="finding-box llm"><h4>LLM Finding</h4><p>'+s.finding.text+'</p><span class="cwe">'+s.finding.cwe+'</span></div>'
+      +'<div class="finding-box missed"><h4>Answer Key</h4><p>No matching vulnerability found</p></div>'
+      +'</div>';
+  } else {
+    findingHTML = '<div class="finding-row">'
+      +'<div class="finding-box missed"><h4>LLM Findings</h4><p>Not reported by LLM</p></div>'
+      +'<div class="finding-box truth"><h4>Answer Key</h4><p>'+s.truth.text+'</p><span class="cwe">'+s.truth.cwe+'</span></div>'
+      +'</div>';
+  }
+
+  let optsHTML = '';
+  OPT_LABELS.forEach((o,i) => {
+    optsHTML += '<button class="opt-btn" data-idx="'+i+'" onclick="choose('+i+')"><span class="icon">'+o.icon+'</span>'+o.label+'</button>';
+  });
+
+  area.innerHTML = '<div class="step-card">'
+    +'<div class="step-header"><span class="num">'+s.num+'</span><span class="title">'+s.title+'</span></div>'
+    +'<div class="step-body">'
+    +findingHTML
+    +'<p class="question">'+s.matchNote+'</p>'
+    +'<div class="options" id="opts">'+optsHTML+'</div>'
+    +'<div class="feedback" id="fb"></div>'
+    +'<button class="next-btn" id="nextBtn" onclick="nextStep()">'+(currentStep<4?'Next →':'See Results →')+'</button>'
+    +'</div></div>';
+  answered = false;
+  sendHeight();
+}
+
+function choose(idx){
+  if(answered) return;
+  answered = true;
+  const s = STEPS[currentStep];
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach((b,i) => {
+    b.disabled = true;
+    if(i === s.correct) b.classList.add('correct');
+    if(i === idx && idx !== s.correct) b.classList.add('wrong');
+  });
+  const fb = document.getElementById('fb');
+  fb.style.display = 'block';
+  if(idx === s.correct){
+    fb.className = 'feedback ok';
+    fb.innerHTML = s.feedOk;
+  } else {
+    fb.className = 'feedback no';
+    fb.innerHTML = s.feedNo;
+  }
+  document.getElementById('nextBtn').style.display = 'inline-block';
+  // Grey out brief items
+  s.briefDone.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.classList.add('done');
+  });
+  document.getElementById('ins').innerHTML = idx===s.correct
+    ? '<b>Well done.</b> '+(4-currentStep)+' item(s) remaining.'
+    : '<b>Review the feedback above.</b> Click Next to continue.';
+  sendHeight();
+}
+
+function nextStep(){
+  currentStep++;
+  if(currentStep >= 5){
+    showResults();
+  } else {
+    renderStep();
+  }
+}
+
+function showResults(){
+  document.getElementById('stepArea').innerHTML = '';
+  document.getElementById('brief').style.display = 'none';
+  document.getElementById('stepBadge').textContent = 'Results';
+  document.getElementById('progFill').style.width = '100%';
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('ins').innerHTML = '<b>All findings classified.</b> Three metrics summarize the LLM\'s performance. Each tells you something different.';
+
+  setTimeout(()=>{document.getElementById('mc1').classList.add('show');document.getElementById('mf1').style.width='75%';},200);
+  setTimeout(()=>{document.getElementById('mc2').classList.add('show');document.getElementById('mf2').style.width='75%';},700);
+  setTimeout(()=>{document.getElementById('mc3').classList.add('show');document.getElementById('mf3').style.width='67%';},1200);
+  sendHeight();
+  setTimeout(sendHeight,1500);
+}
+
+function restart(){
+  currentStep = 0;
+  answered = false;
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('brief').style.display = '';
+  document.querySelectorAll('.brief-item').forEach(el=>el.classList.remove('done'));
+  ['mc1','mc2','mc3'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  ['mf1','mf2','mf3'].forEach(id=>document.getElementById(id).style.width='0');
+  renderStep();
+}
+
+renderStep();
+
+function sendHeight(){
+  var el=document.querySelector('.w');if(!el)return;
+  var r=el.getBoundingClientRect();
+  var pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+pad),src:location.href},'*');
+}
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  if(window.ResizeObserver){new ResizeObserver(sendHeight).observe(document.querySelector('.w')||body);}else{setInterval(sendHeight,500);}
+  window.addEventListener('load',function(){setTimeout(sendHeight,200);});setTimeout(sendHeight,50);
+})();
+</script>
+</body>
+</html>

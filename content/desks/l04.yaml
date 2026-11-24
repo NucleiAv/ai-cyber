@@ -1,0 +1,30 @@
+title: Stop a RAG app from leaking
+lede: A law firm's assistant answers from 2 million documents. Some are confidential. Find the leaks and fix them in the right place.
+blurb: Decide where each control belongs, and handle a deletion request the honest way.
+situation: |
+  **Harlow and Finch LLP** built an assistant over its document store. Documents are tagged Public, Internal or Confidential, but the search runs as one service account that can read everything. A junior clerk asked "what are the partner bonuses this year?" and got a summary of a Confidential memo.
+rounds:
+  - title: Round 1. Where does the fix go?
+    items:
+      - q: Where should the firm enforce document permissions?
+        opts: ["In the system prompt", "In the search step, filtering by the user's permissions before any text reaches the model", "In an output filter only"]
+        a: 1
+        why: "Once a Confidential chunk is in the prompt, no instruction reliably keeps the model quiet. Filtering in search means the model never sees it."
+      - type: sort
+        q: Match each problem to its best fix.
+        rows:
+          - ["Search uses one account that reads everything", "Pass the user's identity and filter by permission"]
+          - ["An API key sits in the system prompt", "Move it to server code or a secret manager"]
+          - ["Client names appear in answers", "Output filter for names and IDs, as a last layer"]
+          - ["Two clients share one index", "Separate indexes per client"]
+        opts: ["Pass the user's identity and filter by permission", "Move it to server code or a secret manager", "Output filter for names and IDs, as a last layer", "Separate indexes per client"]
+        why: "Each fix acts where the problem starts. Output filters help but come last, because they miss reworded data."
+  - title: Round 2. Delete my data
+    items:
+      - q: A former client asks the firm to delete their data. The firm also fine-tuned a model on old case files. What is true?
+        opts: ["Deleting the source files removes the data from the model", "The model may still hold memorized text; full removal means retraining or unproven unlearning", "Models never memorize"]
+        a: 1
+        why: "Carlini and others showed models can memorize exact text. Deleting the file does not change the weights. Retraining without the data works but is costly, and unlearning is still research."
+      - type: open
+        q: What should the firm do differently next time?
+        a: "Do not fine-tune on personal or client data that may need deletion. Keep that data in the RAG store, where it can be deleted and filtered by permission, and train only on data the firm can keep."

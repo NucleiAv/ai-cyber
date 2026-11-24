@@ -1,0 +1,438 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 4 &middot; Section 3 &middot; How Machines Detect Intrusions &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 4 &middot; Section 3 of 8</div>
+      <h1 class="nyu-hero__title">How Machines Detect Intrusions</h1>
+      <p class="nyu-hero__subtitle">
+        Where detection runs at wire speed, how signature engines set the baseline, how raw packets become the flow records a model can read, and how the three detector families differ in what they can and cannot catch.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~18 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 5 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks</span>
+      </div>
+    </header>
+
+    <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="prereading-note">
+      <h2 class="nyu-callout__title" id="prereading-note">Recommended Pre-Reading</h2>
+      <p>Before working through this section, read the UNSW-NB15 project page (linked on the References page). We will use its feature descriptions throughout, especially in the worked example and the practice scenarios.</p>
+    </aside>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Wire-Speed Problem: Where Detection Happens</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Signatures First: The Snort and Suricata Baseline</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> From Packets to Features: Flows and the UNSW-NB15 Schema</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Three Detectors Compared: Rules, Supervised ML, Anomaly Detection</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Explain</strong> how classical ML models are used for intrusion detection, including how raw packets become flow records and feature vectors, and why feature engineering sets the ceiling on detection quality.</span></li>
+          <li><span><strong>Compare</strong> detection approaches (rule-based, supervised ML, and unsupervised anomaly detection) and their tradeoffs for different organizational contexts.</span></li>
+        </ul>
+      </section>
+
+      <!-- ===== 1 ===== -->
+
+      <!-- ====================== THE WIRE-SPEED PROBLEM: WHERE DETECTION HAPPENS ====================== -->
+<section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The Wire-Speed Problem: Where Detection Happens</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>In Sections 1 and 2, we worked after the fact. Logs already existed, alerts already existed, and our job (with parsers, <button type="button" class="nyu-define" data-term="siem">SIEM</button> rules, and an LLM as one assistant among several) was to make sense of them. This section asks the question we skipped: where do those alerts come from in the first place?</p>
+
+        <p>The answer is the <button type="button" class="nyu-define" data-term="ids">intrusion detection system</button>, and it operates under a constraint none of our earlier tools faced. A busy enterprise link carries millions of packets per second. The decision "is this traffic suspicious?" has to be made in-line, in microseconds, on every packet or connection. No human reads at that speed, and neither does a language model. Whatever fills this slot must be fast, cheap per decision, and predictable.</p>
+
+        <p>It helps to see where each tool in this module actually sits. Reading the latency context explains why each stage uses the tools it does!</p>
+
+        <!-- VISUAL: detection pipeline placement diagram with latency budget per stage -->
+        <ol class="nyu-process" id="latency-budget" aria-label="Where detection sits in the monitoring pipeline">
+          <li class="nyu-process__step"><span class="nyu-process__num">1</span><div class="nyu-process__body"><h3 class="nyu-process__title">Network tap / sensor</h3><p class="nyu-process__detail">Copies traffic off the wire. Latency budget: microseconds. Tools: hardware, capture drivers.</p></div></li>
+          <li class="nyu-process__step"><span class="nyu-process__num">2</span><div class="nyu-process__body"><h3 class="nyu-process__title">Detection (this section)</h3><p class="nyu-process__detail">Decides what becomes an alert. Latency budget: microseconds to milliseconds. Tools: signature engines, ML classifiers, anomaly detectors.</p></div></li>
+          <li class="nyu-process__step"><span class="nyu-process__num">3</span><div class="nyu-process__body"><h3 class="nyu-process__title">Collection and correlation</h3><p class="nyu-process__detail">Aggregates alerts and logs. Latency budget: seconds. Tools: SIEM, normalization rules (Section 1).</p></div></li>
+          <li class="nyu-process__step"><span class="nyu-process__num">4</span><div class="nyu-process__body"><h3 class="nyu-process__title">Triage</h3><p class="nyu-process__detail">Prioritizes what humans see. Latency budget: seconds to minutes. Tools: correlation rules, SOAR playbooks, LLM assistance (Section 2).</p></div></li>
+          <li class="nyu-process__step"><span class="nyu-process__num">5</span><div class="nyu-process__body"><h3 class="nyu-process__title">Analyst investigation</h3><p class="nyu-process__detail">Confirms or dismisses. Latency budget: minutes to hours. Tools: human judgment, every evidence source available.</p></div></li>
+        </ol>
+
+        <p>Everything we did in Sections 1 and 2 lives in stages 3 through 5. This section is about stage 2, the layer that decides what exists for the rest of the pipeline to analyze. We will not build a detector or train a model here. Building and training these systems is beyond our scope; our goal is to understand them well enough to evaluate them, work with the engineers who run them, and reason about where LLM assistance does and does not fit alongside them.</p>
+      </section>
+
+      <!-- ===== 2 ===== -->
+
+      <!-- ====================== SIGNATURES FIRST: THE SNORT AND SURICATA BASELINE ====================== -->
+<section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Signatures First: The Snort and Suricata Baseline</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The workhorse of <a class="nyu-xref" href="#latency-budget">stage 2</a>, in most production networks, is not machine learning of any kind. It is <button type="button" class="nyu-define" data-term="signature-based">signature-based detection</button>: tools such as <button type="button" class="nyu-define" data-term="snort">Snort</button> and <button type="button" class="nyu-define" data-term="suricata">Suricata</button> that match traffic against a database of rules written by human analysts. This is the baseline every other approach in this section is measured against, so we start by reading one rule closely.</p>
+
+        <!-- VISUAL: annotated rule breakdown; hover or tap each line for the field explanation -->
+        <div class="nyu-annot-code" aria-label="Annotated Snort rule, one clause per line">
+          <div class="nyu-annot-code__line" data-note="<strong>Action and protocol.</strong> When every condition below matches, generate an alert (other actions include log, pass, drop). The rule applies to TCP traffic only."><span class="nyu-annot-code__num">1</span><span class="nyu-annot-code__code">alert tcp \</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Direction: who is talking to whom.</strong> Traffic from any port on external networks, going to port 22 (SSH) on our protected network. The variables are defined in the sensor configuration."><span class="nyu-annot-code__num">2</span><span class="nyu-annot-code__code">  $EXTERNAL_NET any -&gt; $HOME_NET 22 \</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Human-readable message.</strong> This text becomes the alert name the analyst sees in the SIEM."><span class="nyu-annot-code__num">3</span><span class="nyu-annot-code__code">  (msg:"Possible SSH brute-force attempt"; \</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>State condition.</strong> Only count connections headed to the server, ignoring the server's replies."><span class="nyu-annot-code__num">4</span><span class="nyu-annot-code__code">  flow:to_server; \</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>The actual detection logic.</strong> Fire when the same source IP opens 5 or more matching connections within 60 seconds. This threshold clause is the entire intelligence of the rule: a human decided that 5 in 60 separates suspicious from normal."><span class="nyu-annot-code__num">5</span><span class="nyu-annot-code__code">  threshold:type both, track by_src, count 5, seconds 60; \</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Bookkeeping.</strong> A category for reporting, a unique rule ID (this one is in the locally-assigned range), and a revision number so rule updates can be tracked."><span class="nyu-annot-code__num">6</span><span class="nyu-annot-code__code">  classtype:attempted-recon; sid:1000001; rev:1;)</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__notes">Hover or tap a line to see what it does.</div>
+        </div>
+
+        <p>Notice what this rule is. It is a precise, human-written statement of one attack pattern, and that gives signature detection three properties worth respecting:</p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>Fast:</strong> signature engines operate at line rate, processing millions of packets per second. They fit the stage-2 latency budget by design.</li>
+          <li><strong>Deterministic:</strong> the same traffic always produces the same result. There is no sampling, no randomness, no version-to-version drift in behavior.</li>
+          <li><strong>Interpretable:</strong> when the rule fires, the explanation is the rule. Line 5 tells the analyst exactly why the alert exists.</li>
+        </ul>
+
+        <p>The limitation is the mirror image of the strength. A signature can only describe what someone has already seen and written down. A genuinely new attack matches no rule and passes through silently. Rule sets also decay: someone must write, test, tune, and retire rules continuously as attacks change. Signature detection is the production baseline not because it is complete, but because its costs and failure modes are well understood. Every approach that follows in this section exists to cover what rules cannot, and each one pays for that coverage somewhere else.</p>
+      </section>
+
+      <!-- ===== 3 ===== -->
+
+      <!-- ====================== FROM PACKETS TO FEATURES: FLOWS AND THE UNSW-NB15 SCHEMA ====================== -->
+<section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">From Packets to Features: Flows and the UNSW-NB15 Schema</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>To move beyond rules, an ML-based detector needs numeric input. But network traffic does not arrive as numbers in neat columns. It arrives as packets, and the path from packets to model input involves two transformations that we need to understand before any talk of algorithms, because everything a model can and cannot detect is decided here.</p>
+
+        <h3 class="nyu-subsection-title">Step One: Packets Are Grouped into Flows</h3>
+
+        <p>Raw traffic can be recorded in full as <button type="button" class="nyu-define" data-term="pcap">PCAP</button> captures, but full capture is enormous and most of it is irrelevant to any single decision. So monitoring systems summarize. All packets that share the same <button type="button" class="nyu-define" data-term="five-tuple">five-tuple</button> within a time window are collapsed into one <button type="button" class="nyu-define" data-term="network-flow">flow</button> record: one row that describes the whole conversation.</p>
+
+        <!-- VISUAL: packets-to-prediction pipeline; the payload is discarded at step 3 and never reaches the model -->
+        <ol class="nyu-process" aria-label="How packets become a model decision">
+          <li class="nyu-process__step"><span class="nyu-process__num">1</span><div class="nyu-process__body"><h4 class="nyu-process__title">Packets on the wire</h4><p class="nyu-process__detail">Headers and payloads, millions per second.</p></div></li>
+          <li class="nyu-process__step"><span class="nyu-process__num">2</span><div class="nyu-process__body"><h4 class="nyu-process__title">Flow assembly</h4><p class="nyu-process__detail">Packets sharing a five-tuple are grouped into one conversation record.</p></div></li>
+          <li class="nyu-process__step"><span class="nyu-process__num">3</span><div class="nyu-process__body"><h4 class="nyu-process__title">Feature extraction</h4><p class="nyu-process__detail">The flow becomes numbers: durations, counts, byte totals, timing statistics. <strong>Payload content is discarded here.</strong></p></div></li>
+          <li class="nyu-process__step"><span class="nyu-process__num">4</span><div class="nyu-process__body"><h4 class="nyu-process__title">Feature vector</h4><p class="nyu-process__detail">One row of numbers per flow, e.g. <code>[dur=0.42, spkts=7, sbytes=1834, ...]</code></p></div></li>
+          <li class="nyu-process__step"><span class="nyu-process__num">5</span><div class="nyu-process__body"><h4 class="nyu-process__title">Classifier decision</h4><p class="nyu-process__detail">The model outputs a label and a score. It has never seen a packet, only the vector.</p></div></li>
+        </ol>
+
+        <p>Here is the transformation made concrete. On the left of the table is what actually crossed the wire for one short <button type="button" class="nyu-define" data-term="ssh">SSH</button> connection; on the right is the single flow record it collapses into. We will reuse this exact connection in the worked example in part 5.</p>
+
+        <!-- VISUAL: side-by-side transformation table, raw packets to one flow record -->
+        <div class="nyu-table-wrap" id="packet-vs-flow">
+        <table class="nyu-table nyu-table--compact nyu-table--prose" aria-label="One SSH connection as packets and as a flow record">
+          <thead>
+            <tr>
+              <th scope="col">What crossed the wire (packet view)</th>
+              <th scope="col">What the flow record keeps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>10.0.14.55:44312 → 10.0.0.22:22</code> TCP SYN, then handshake (3 packets), then 4 packets of encrypted SSH negotiation and data, then teardown. Payload bytes: present but encrypted.</td>
+              <td>
+                <code>proto=tcp</code><br>
+                <code>dur=0.42</code> (seconds)<br>
+                <code>spkts=7, dpkts=6</code><br>
+                <code>sbytes=1834, dbytes=1326</code><br>
+                <code>sttl=62, dttl=64</code><br>
+                <code>sinpkt=58.3</code> (ms, average)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+
+        <p>Read the right column again and notice what is gone: the payload, the credentials tried, the commands run, everything inside the connection. A flow record describes the <strong>shape</strong> of a conversation, not its content. This loss is permanent for every downstream tool. An encrypted exfiltration and a legitimate large upload can produce nearly identical flow records, and no model consuming flow features can recover the difference. We will see this limit bite in the practice scenarios.</p>
+
+        <p>The tradeoff has a compensating benefit. Behavioral shape generalizes across networks better than packet-level detail does. Researchers have found that models trained on attributes of individual packets, such as exact TTL values and precise timings, <strong>transferred poorly to other networks</strong>, because those attributes are environment-specific. Flow-level aggregates, by contrast, capture patterns such as "many short connections to one service" that look similar wherever they occur.</p>
+
+        <h3 class="nyu-subsection-title">Step Two: Flows Are Described by a Feature Schema</h3>
+
+        <p>Which numbers get extracted from each flow? That is defined by a feature <button type="button" class="nyu-define" data-term="schema">schema</button>, and the parallel to Section 1 is exact. There, log fields had names, types, and definitions set by the log producer, and we learned to read the documentation before trusting a field. Feature sets work the same way: each one is defined and documented by whoever built it, and the documentation is where its meaning lives.</p>
+
+        <p>The schema we will work with belongs to UNSW-NB15, a research dataset created at UNSW Sydney (Moustafa and Slay, 2015; details and links on the References page). It defines 49 features per flow, grouped by the authors into categories. This is one research team's documented design, widely used in IDS research; it is not an industry standard, and other tools define different features. The table below shows 15 representative features, using the dataset's own category names, with a column we added: the attack behavior each feature can encode. That last column is the point of this whole exercise.</p>
+
+        <!-- VISUAL: field-by-field schema table with category grouping and "what it encodes" column -->
+        <div class="nyu-table-wrap" id="feature-schema">
+        <table class="nyu-table nyu-table--striped" aria-label="UNSW-NB15 representative features with categories and encoded attack behaviors">
+          <thead>
+            <tr>
+              <th scope="col">Feature</th>
+              <th scope="col">Description</th>
+              <th scope="col">Category (per dataset docs)</th>
+              <th scope="col">Attack behavior it can encode</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>dur</code></td>
+              <td>Connection duration (seconds)</td>
+              <td>Basic</td>
+              <td>Brute-force attempts are brief; persistent channels are long</td>
+            </tr>
+            <tr>
+              <td><code>spkts</code></td>
+              <td>Source-to-destination packet count</td>
+              <td>Basic</td>
+              <td>Floods produce extreme packet counts</td>
+            </tr>
+            <tr>
+              <td><code>dpkts</code></td>
+              <td>Destination-to-source packet count</td>
+              <td>Basic</td>
+              <td>Rejected logins produce small, repetitive replies</td>
+            </tr>
+            <tr>
+              <td><code>sbytes</code></td>
+              <td>Source-to-destination bytes</td>
+              <td>Basic</td>
+              <td>Uploads out of the network inflate this side</td>
+            </tr>
+            <tr>
+              <td><code>dbytes</code></td>
+              <td>Destination-to-source bytes</td>
+              <td>Basic</td>
+              <td>Exfiltration shows high sbytes with low dbytes (asymmetry)</td>
+            </tr>
+            <tr>
+              <td><code>sttl</code></td>
+              <td>Source-to-destination <button type="button" class="nyu-define" data-term="ttl">TTL</button> value</td>
+              <td>Basic</td>
+              <td>Hints at sender distance and OS; environment-specific</td>
+            </tr>
+            <tr>
+              <td><code>dttl</code></td>
+              <td>Destination-to-source TTL value</td>
+              <td>Basic</td>
+              <td>Same, for the responder</td>
+            </tr>
+            <tr>
+              <td><code>sinpkt</code></td>
+              <td>Source inter-packet arrival time (ms)</td>
+              <td>Time</td>
+              <td>Machine-driven attacks send packets at near-zero intervals</td>
+            </tr>
+            <tr>
+              <td><code>dinpkt</code></td>
+              <td>Destination inter-packet arrival time (ms)</td>
+              <td>Time</td>
+              <td>Response timing shifts when a server is under load</td>
+            </tr>
+            <tr>
+              <td><code>sjit</code></td>
+              <td>Source <button type="button" class="nyu-define" data-term="jitter">jitter</button> (ms)</td>
+              <td>Time</td>
+              <td>Scripted traffic is steady; human traffic varies</td>
+            </tr>
+            <tr>
+              <td><code>ct_srv_src</code></td>
+              <td>Connections with same service and source address (last 100 connections)</td>
+              <td>Connection (generated)</td>
+              <td>One source hammering one service: brute-force fingerprint</td>
+            </tr>
+            <tr>
+              <td><code>ct_dst_sport_ltm</code></td>
+              <td>Connections with same destination address and source port (last 100)</td>
+              <td>Connection (generated)</td>
+              <td>Port reuse patterns typical of scanners and floods</td>
+            </tr>
+            <tr>
+              <td><code>ct_srv_dst</code></td>
+              <td>Connections with same service and destination address (last 100)</td>
+              <td>Connection (generated)</td>
+              <td>Many connections converging on one service at one host</td>
+            </tr>
+            <tr>
+              <td><code>is_ftp_login</code></td>
+              <td>Whether the FTP session authenticated (1) or not (0)</td>
+              <td>General purpose (generated)</td>
+              <td>Anonymous vs authenticated FTP activity</td>
+            </tr>
+            <tr>
+              <td><code>ct_flw_http_mthd</code></td>
+              <td>Count of flows with HTTP methods such as GET and POST</td>
+              <td>General purpose (generated)</td>
+              <td>Visible only for plaintext HTTP; blind inside <button type="button" class="nyu-define" data-term="tls">TLS</button></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+
+        <p>Two things deserve a careful look.</p>
+
+        <p>First, the "Connection (generated)" features aggregate over a sliding window of the last 100 connections. A single flow cannot reveal that one source opened 87 SSH connections in a minute; a windowed count can. This is how flow records come to encode behavior over time.</p>
+
+        <p>Second, every row of that last column is analyst knowledge frozen into arithmetic. Someone knew brute-force looks like one source hammering one service, and built <code>ct_srv_src</code> so a model could see it. This is <button type="button" class="nyu-define" data-term="feature-engineering">feature engineering</button>, and it is where detection quality is mostly decided. The model never sees the network; it sees what the features let it see.</p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="key-insight">
+          <h3 class="nyu-callout__title" id="key-insight">The Ceiling Principle</h3>
+          <p>Features set the ceiling on what any model can detect. The algorithm only determines how close to that ceiling you get. Two strong algorithms given the same good features perform similarly; the best algorithm in the world given features that miss the signal detects nothing.</p>
+        </aside>
+      </section>
+
+      <!-- ===== 4 ===== -->
+
+      <!-- ====================== THREE DETECTORS COMPARED: RULES, SUPERVISED ML, ANOMALY DETECTION ====================== -->
+<section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Three Detectors Compared: Rules, Supervised ML, Anomaly Detection</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>With the data layer clear, we can compare the detection approaches honestly. We already know the rule-based baseline from <a class="nyu-xref" href="#sec-2">part 2</a>. The two ML approaches differ in one fundamental way: what they learn from.</p>
+
+        <p><button type="button" class="nyu-define" data-term="supervised-ml">Supervised classification</button> learns from labeled flows: each training example carries a verdict (attack or benign) established in advance. Tree-ensemble algorithms such as <button type="button" class="nyu-define" data-term="random-forest">Random Forest</button> and <button type="button" class="nyu-define" data-term="xgboost">XGBoost</button> are common choices because flow features are tabular data. Published studies on UNSW-NB15 report strong results, with scores varying by train/test split and metric (see the References page). Three costs come with those scores: labels are expensive to produce, labels go stale as attacks change, and a supervised model only recognizes attack types it was trained on. A genuinely new attack is invisible to it, exactly as it is to a rule.</p>
+
+        <p><button type="button" class="nyu-define" data-term="unsupervised-anomaly">Unsupervised anomaly detection</button> learns from unlabeled traffic. It models what normal looks like for a given network, then flags deviations. This is the only approach with a real chance against novel attacks, including <button type="button" class="nyu-define" data-term="zero-day">zero-day exploits</button>, because it never needed to see the attack in advance. The price is the false alarm budget: anomalous does not mean malicious. New applications, holiday traffic, and software updates all deviate from the baseline and get flagged, and every such flag consumes analyst time (a <button type="button" class="nyu-define" data-term="false-positive">false positive</button>, in Section 2's vocabulary).</p>
+
+        <!-- VISUAL: three-approach comparison grid; scan down a column to profile one approach, across a row to compare -->
+        <div class="nyu-table-wrap" id="detector-grid">
+        <table class="nyu-table nyu-table--striped" aria-label="Comparison of rule-based, supervised ML, and unsupervised anomaly detection">
+          <thead>
+            <tr>
+              <th scope="col">Property</th>
+              <th scope="col">Rule-based / signatures</th>
+              <th scope="col">Supervised ML</th>
+              <th scope="col">Unsupervised anomaly</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Learns from</strong></td>
+              <td>Human-written rules</td>
+              <td>Labeled attack and benign flows</td>
+              <td>Unlabeled traffic (its own baseline)</td>
+            </tr>
+            <tr>
+              <td><strong>Known attacks</strong></td>
+              <td>Strong, if a rule exists</td>
+              <td>Strong on trained categories</td>
+              <td>Weaker; sees them only as deviations</td>
+            </tr>
+            <tr>
+              <td><strong>Novel attacks</strong></td>
+              <td>Blind</td>
+              <td>Blind</td>
+              <td>Possible, if the attack looks unusual</td>
+            </tr>
+            <tr>
+              <td><strong>False positive profile</strong></td>
+              <td>Low, tunable per rule</td>
+              <td>Moderate, depends on training quality</td>
+              <td>Highest; "unusual" happens constantly</td>
+            </tr>
+            <tr>
+              <td><strong>Interpretability</strong></td>
+              <td>The rule is the explanation</td>
+              <td>Partial (feature importances)</td>
+              <td>Low ("this deviated" without a category)</td>
+            </tr>
+            <tr>
+              <td><strong>Ongoing cost</strong></td>
+              <td>Rule writing and tuning</td>
+              <td>Labeling and retraining</td>
+              <td>Baseline upkeep, alert review capacity</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+
+        <p>Research comparing these approaches consistently finds the pattern the grid suggests: supervised methods win on known attack types, unsupervised methods provide the only coverage for truly novel ones, and rules remain the cheap, predictable backbone. No single row of strengths covers the threat landscape, which is why real deployments layer them. Where an LLM fits into this picture is a question we take up later in this section and in the next, after we have seen these detectors work, and fail, on concrete traffic!</p>
+      </section>
+
+      <!-- ===== 5 ===== -->
+
+      <!-- ====================== CHECK YOUR UNDERSTANDING ====================== -->
+<section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 1</span></div>
+          <p class="nyu-quiz__prompt" id="kc-1">What is the primary advantage of unsupervised anomaly detection over supervised classification for intrusion detection?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-1">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Supervised methods typically achieve higher accuracy on known attack types because they are trained with labeled examples of those specific attacks. Unsupervised methods trade accuracy for coverage of novel threats.">Higher accuracy on all attack types</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Ability to detect attack types not present in training data</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Unsupervised methods are not inherently cheaper computationally. Some anomaly detection algorithms can be expensive to run, especially on high-dimensional data.">Lower computational cost</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Unsupervised methods generally have worse interpretability. They flag an event as anomalous but do not explain what attack category it belongs to, making analyst investigation harder, not easier.">Better interpretability of results</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Unsupervised methods learn what normal looks like and flag deviations, so sufficiently unusual behavior triggers an alert even for attack types never seen in training. The price is a higher false positive rate, because anomalous does not mean malicious. Supervised methods are stronger on known attack types but cannot detect what they were not trained to recognize."
+               data-incorrect-msg="Review the tradeoff in part 4: supervised methods excel at known patterns, unsupervised methods provide coverage for novel threats. The primary advantage of unsupervised methods is detecting attack types not present in training data, at the cost of more false alarms."></div>
+        </div>
+
+        
+<div class="nyu-quiz" aria-labelledby="kc-3">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 3</span></div>
+          <p class="nyu-quiz__prompt" id="kc-3">Why does feature engineering matter more than algorithm selection for ML-based intrusion detection?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-3">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="ML algorithms are not identical; they have different strengths and performance profiles. The point is that even the best algorithm cannot recover signals the features never captured.">Because all ML algorithms perform identically</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Because features encode domain knowledge about what distinguishes attacks from normal traffic, and poor features limit even the best algorithm</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Speed is not the reason. Feature engineering is often the slower, more expertise-heavy task. The reason is information content: features determine what the model can see at all.">Because feature engineering is faster than algorithm selection</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="No regulatory framework mandates specific IDS features. The importance of feature engineering is technical: features set the information ceiling that constrains every downstream model.">Because regulatory frameworks require specific features</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Features determine the information available to the model; they set the ceiling. If the feature set misses the signals that separate attack from benign, no algorithm can compensate. The features encode the domain knowledge; the algorithm determines how efficiently it is used."
+               data-incorrect-msg="Reconsider the ceiling principle from part 3: features determine what signals exist for the model at all. The algorithm determines how close to that ceiling you get, but it cannot exceed it."></div>
+        </div>
+
+        
+      
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 4: Detection in Practice: Worked Examples and Choosing a Detector.</strong> Next we put these three detector families to work on real flow records: classifying a brute-force burst end to end, recognising exfiltration and flood patterns, watching a detector decay after deployment, and choosing one a small clinic can operate.</p>
+        </aside>
+      </section>
+
+
+</main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+</body>
+</html>

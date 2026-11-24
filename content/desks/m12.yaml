@@ -1,0 +1,37 @@
+title: The governance desk
+lede: A company deploys an AI triage tool. Assign the residual risk, measure fairness, and turn wishes into enforceable policy.
+blurb: Map tasks to NIST AI RMF functions, find a hidden disparity, and rewrite policy statements as controls.
+source: scenario practice, written for this site from Module 12
+situation: |
+  **Clearwater Credit Union** uses an AI tool to flag suspicious loan applications for manual review. Overall accuracy is 92 percent. Nobody has signed off on the remaining risk.
+rounds:
+  - title: Round 1. Which RMF function?
+    items:
+      - type: sort
+        q: Which NIST AI RMF function does each task belong to?
+        rows:
+          - ["Name who accepts the residual risk", "Govern"]
+          - ["List where the tool is used and who it affects", "Map"]
+          - ["Track false positive rates per applicant group each month", "Measure"]
+          - ["Pause the tool when a disparity passes a set limit", "Manage"]
+        opts: ["Govern", "Map", "Measure", "Manage"]
+        why: "Govern sets roles and accountability, Map finds context and risk, Measure tracks numbers, and Manage decides and acts."
+  - title: Round 2. Measure, then write policy
+    items:
+      - type: num
+        q: Group A has 30 false positives out of 1,000 good applicants. Group B has 90 out of 1,000. How many times higher is group B's false positive rate?
+        a: 3
+        tol: 0
+        why: "3 percent against 9 percent, three times higher. A good overall accuracy can hide this, so slice the confusion matrix by group."
+      - type: sort
+        q: Is each statement a control or a wish?
+        rows:
+          - ["Staff should use AI responsibly.", "Wish"]
+          - ["Before a flagged loan is declined, a loan officer reviews the source documents and records why.", "Control"]
+          - ["The tool must be fair.", "Wish"]
+          - ["The model owner reports false positive rates per group every month to the risk committee.", "Control"]
+        opts: ["Control", "Wish"]
+        why: "A control names who, what, when and the evidence someone can check. A wish names none of these."
+      - type: open
+        q: Why is "a human reviews every flag" not enough on its own?
+        a: "Automation bias makes people accept machine output, especially under time pressure. The review must require opening the evidence and recording a reason, and its outcomes must be measured."

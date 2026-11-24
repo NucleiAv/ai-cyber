@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script>(function(){try{var t=localStorage.getItem("site.theme");if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){}})()</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Library. Every AI security link in one place</title>
+  <meta name="description" content="Search and filter every paper, article, lab, tool, course, standard, book and certification on the site.">
+  <link rel="icon" href="assets/img/mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/site.css?v=20261124">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header id="top"></header>
+
+<main id="main">
+  <section class="page-head">
+    <div class="wrap">
+      <div class="eyebrow">Library · links checked 23 November 2026</div>
+      <h1>Every link in one place</h1>
+      <p class="lede">Papers, articles, labs, tools, courses, standards, books and certifications from both plans. Search by name or filter by type and topic. A red note marks a link that moved or needs care.</p>
+    </div>
+  </section>
+  <div class="filters"><div class="wrap" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+    <input class="search" id="q" type="search" placeholder="Search" aria-label="Search links">
+    <select class="search" id="topic" style="width:200px" aria-label="Topic"></select>
+    <div class="chips" id="types" role="group" aria-label="Type"></div>
+    <span class="count" id="count"></span>
+  </div></div>
+  <section class="section" style="padding-top:8px"><div class="wrap"><div class="rows" id="lib"></div></div></section>
+</main>
+
+<footer id="foot"></footer>
+<script src="assets/js/data.js?v=20261124"></script>
+<script src="assets/js/modules.js?v=20261124"></script>
+<script src="assets/js/site.js?v=20261124"></script>
+</body>
+</html>

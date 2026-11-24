@@ -1,0 +1,619 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 11 · Section 1 · Defending the Pipeline · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 11 &middot; Section 1 of 7</div>
+      <h1 class="nyu-hero__title">Defending the Pipeline: Input Validation, Output Filtering, and Guardrails</h1>
+      <p class="nyu-hero__subtitle">Defense-in-depth as the practitioner's response to an unsolvable root cause, with honest evidence on what each layer can and cannot stop.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~25 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 7 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          2 knowledge checks
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-0"><span class="nyu-toc__num">0</span> Where We Are and What Changes</a></li>
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Practitioner's Problem</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Input Validation and Output Filtering</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Guardrail Architectures</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Why Guardrails Fail Under Adaptive Attacks</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Defense Layer Rapid Check</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Explain</strong> why defense-in-depth is the only viable strategy for securing LLM applications, given the unsolvability of the instruction/data boundary problem.</span></li>
+          <li><span><strong>Distinguish</strong> deterministic controls from probabilistic controls and explain why effective defense requires both.</span></li>
+          <li><span><strong>Describe</strong> how input validation, output filtering, and guardrail architectures reduce attack success without eliminating risk.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 0: PREFACE ====================== -->
+      <section class="nyu-section" id="sec-0">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">0</span>
+          <h2 class="nyu-section__title">Where We Are and What Changes</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Over the past ten modules we built a toolkit. We learned how models work (tokenization, attention, next-token prediction), why they fabricate, how to structure prompts, and how to measure performance with confusion matrices, precision, and recall. We applied those concepts to real security workflows: SOC triage, threat intelligence, code review, supply chain analysis. Then we spent two modules cataloging everything that can go wrong: prompt injection and the collapsed instruction/data boundary, data poisoning at training time, evasion attacks at inference time, ML supply chain risks from pickle serialization to model-hub typosquatting, and excessive agency when systems act beyond their intended scope. We used the OWASP LLM Top 10, NIST AI 100-2, and MITRE ATLAS to classify those attacks and map them to a shared vocabulary.</p>
+
+        <p>With that foundation in place, we can change the question. Until now, the question was "what can go wrong?" Now we ask "given everything that can go wrong, how do we build, deploy, monitor, and assess AI systems responsibly?" Understanding an attack is analysis; designing a defense is engineering. Classifying an incident after the fact is reactive; assessing a system before deployment is proactive. Both matter, but they require different skills.</p>
+
+        <p>This module draws heavily on concepts we have already studied. Here is what comes back and how we use it differently:</p>
+
+        <table class="nyu-table">
+          <thead>
+            <tr><th>Concept from earlier modules</th><th>Where we learned it</th><th>How this module uses it</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Prompt injection and the instruction/data boundary</strong></td>
+              <td>Module 9 (Sections 1 to 5)</td>
+              <td>Treated as the root cause we cannot fix, then used to motivate every defense layer we study</td>
+            </tr>
+            <tr>
+              <td><strong>Defense-in-depth</strong></td>
+              <td>Module 6, Section 3 (code review)</td>
+              <td>Same principle, entirely new application: six layers for LLM application security instead of five for code review</td>
+            </tr>
+            <tr>
+              <td><strong>OWASP LLM Top 10</strong></td>
+              <td>Modules 2, 9, 10 (classification)</td>
+              <td>Reversed: used as a defensive assessment checklist to find gaps before an attacker does</td>
+            </tr>
+            <tr>
+              <td><strong>Data poisoning and corpus poisoning</strong></td>
+              <td>Module 10, Section 1</td>
+              <td>Used as the attack model for RAG-specific defenses: what controls reduce poisoning risk, and why the vulnerability persists even with controls</td>
+            </tr>
+            <tr>
+              <td><strong>Excessive agency</strong></td>
+              <td>Module 10, Section 4</td>
+              <td>Its three sub-dimensions (excessive functionality, permissions, autonomy) become the basis for least-privilege design decisions we make before deployment</td>
+            </tr>
+            <tr>
+              <td><strong>Confusion matrices, precision, recall</strong></td>
+              <td>Modules 1, 4, 5, 6</td>
+              <td>Assumed as background vocabulary; not re-taught but used throughout when evaluating guardrail accuracy and detection tradeoffs</td>
+            </tr>
+            <tr>
+              <td><strong>Incident response (NIST SP 800-61)</strong></td>
+              <td>Module 8, Section 5</td>
+              <td>The traditional incident response framework stays; we study how AI systems break its assumptions (probabilistic evidence, ephemeral state, continuous harm)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>Along the way we pick up deterministic versus probabilistic controls as an analytical vocabulary, guardrail architectures and the evidence on their real-world effectiveness, deployment-pattern-specific attack surfaces for chatbot, RAG, and API-exposed systems, compound detection for AI abuse monitoring, the CoSAI AI Incident Response Framework, a four-step OWASP defensive assessment methodology, and four AI-for-defense applications (IAM analysis, IaC misconfiguration, malware classification, YARA rule generation), each paired with its documented limitation.</p>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The Practitioner's Problem</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>We spent two modules cataloging attacks. Prompt injection exploits the missing boundary between instructions and data in the context window. Poisoning corrupts training data; evasion fools classifiers at inference time. Supply chain attacks compromise the components a system depends on, and excessive agency lets systems act beyond their intended scope.</p>
+
+        <p>Every one of those attacks traces back to the same root vulnerability: the collapsed instruction/data boundary. An LLM cannot structurally tell "follow this instruction" apart from "here is some text to process." There is no hardware boundary, no type system, no memory protection ring between the two. That separation vanished the moment we started processing arbitrary user input alongside system instructions in the same context window.</p>
+
+        <p>Nobody knows how to restore it. This is not a bug waiting for a patch. It is an architectural property of how large language models work. Researchers have tried delimiter tokens, fine-tuned instruction hierarchy models, and formal verification methods. Some reduce attack success rates; none create a real boundary.</p>
+
+        <p>The practitioner's question, then, is not "how do we solve this?" but "given that the root cause persists, how do we reduce risk enough to justify deployment?" The approach is the same one network security arrived at decades ago: defense-in-depth.</p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="did-callout-title">
+          <h3 class="nyu-callout__title" id="did-callout-title">Defense-in-Depth for LLM Applications</h3>
+          <p><button type="button" class="nyu-define" data-term="defense-in-depth-llm">Defense-in-depth</button>: stack multiple independent controls so that no single bypass compromises the system. We applied the same principle to code review earlier in the course, layering five defenses so a vulnerability missed by one tool might be caught by another. For LLM applications, the stack has six layers: <button type="button" class="nyu-define" data-term="input-validation-llm">input validation</button>, <button type="button" class="nyu-define" data-term="guardrails">guardrails</button>, privilege separation, <button type="button" class="nyu-define" data-term="output-filtering">output filtering</button>, monitoring, and human-in-the-loop review. Each layer is imperfect on its own. The strategy works because the layers fail independently.</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_defense_in_depth/defense-in-depth-scenario-lab.html" title="Interactive: Defense-in-depth scenario lab showing how layered controls catch threats individual layers miss" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <p>"Fail independently" is the key phrase in that definition. If two layers share the same blind spot, one attack bypasses both. Two keyword filters are not defense-in-depth; they are the same defense repeated. A keyword filter plus a model-based classifier plus a rate limiter is defense-in-depth, because the three fail for different reasons: the keyword filter misses encoded inputs, the classifier misses novel patterns, and the rate limiter misses slow, patient attackers. An attack would need to evade all three at once.</p>
+
+        <p>This maps directly to the network security concepts we already know. A perimeter firewall, an intrusion detection system on internal segments, endpoint monitoring on each host, and an incident response process for when everything else fails: four layers, each catching threats the others miss. The LLM defense stack follows the same logic on a different threat surface.</p>
+
+        <h3 class="nyu-subsection-title">Deterministic versus probabilistic controls</h3>
+
+        <p>Not all controls fail the same way, and how a control fails tells us what role it should play in the stack.</p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Deterministic</h4>
+            <p>A <button type="button" class="nyu-define" data-term="rate-limiting">rate limiter</button> blocking any user who exceeds 100 requests per minute produces the same outcome every time. Request 101 is rejected whether it is benign, malicious, or written in Klingon. The decision rests on a countable, unambiguous property (request count) rather than on interpreting meaning.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Probabilistic</h4>
+            <p>A classifier-based guardrail that detects jailbreak attempts produces a variable outcome. It may or may not flag a given input depending on how similar that input is to its training data. Change the wording, encode the payload differently, or switch languages, and the result changes. The decision boundary can be probed and gamed.</p>
+          </div>
+        </div>
+
+        <p>This distinction gives us a vocabulary for the rest of the module. It is not about quality; both types are useful. It is about what kind of guarantee each one provides.</p>
+
+        <table class="nyu-table">
+          <thead>
+            <tr><th></th><th><button type="button" class="nyu-define" data-term="deterministic-control" style="color:#fff;text-decoration-color:rgba(255,255,255,.5)">Deterministic controls</button></th><th><button type="button" class="nyu-define" data-term="probabilistic-control" style="color:#fff;text-decoration-color:rgba(255,255,255,.5)">Probabilistic controls</button></th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Behavior</strong></td>
+              <td>Same result every time</td>
+              <td>Results vary with input distribution</td>
+            </tr>
+            <tr>
+              <td><strong>Examples</strong></td>
+              <td>Rate limiters, sandbox execution, privilege enforcement, allow-lists, structured output validation</td>
+              <td>Classifier-based guardrails, LLM-as-judge review, safety training, content-based filtering</td>
+            </tr>
+            <tr>
+              <td><strong>Network analogy</strong></td>
+              <td>Firewall: block or allow by rule</td>
+              <td><button type="button" class="nyu-define" data-term="ids">IDS</button>: classify traffic patterns, may miss novel attacks</td>
+            </tr>
+            <tr>
+              <td><strong>Guarantee</strong></td>
+              <td>Hard floor that no prompting can bypass</td>
+              <td>Reduces frequency of successful attacks</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>Nobody builds a network with only a firewall or only an <button type="button" class="nyu-define" data-term="ids">IDS</button>; effective defense uses both. A guardrail classifier catches automated abuse and casual jailbreak attempts, and that has real value. But when consequential actions are at stake, at least one deterministic control should stand between the model's output and the real world. No amount of clever prompting can bypass a permission that was never granted.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_deterministic_vs_probalistic/deterministic-vs-probabilistic-controls.html" title="Interactive: side-by-side comparison of a deterministic rate limiter and a probabilistic semantic guardrail processing the same requests" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Misconception: "Probabilistic" Does Not Mean "Unreliable"
+          </h3>
+          <p>Probabilistic controls reduce attack success rates against non-adaptive adversaries, which covers most real-world abuse. The problem is relying on them alone for consequential decisions. Two keyword filters are not defense-in-depth; a keyword filter plus a model-based classifier plus a rate limiter is. The layers must be independent and heterogeneous.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Input Validation and Output Filtering</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">Input validation: the pre-model defense layer</h3>
+
+        <p>Input validation controls what reaches the model. It is the first layer an attacker's prompt encounters, and the simplest version, a keyword filter blocking known jailbreak phrases, is also the least effective.</p>
+
+        <p>A keyword filter that blocks "ignore your instructions" operates on exact string matching. An attacker who knows the filter exists (and we should always assume they do) can encode the same phrase in Base64: <code>aWdub3JlIHlvdXIgaW5zdHJ1Y3Rpb25z</code>. Or substitute Unicode lookalike characters: "ign0re y0ur instruct1ons." Or rephrase entirely: "disregard the above directives." Or split the phrase across multiple messages. String matching operates in one representation space; language meaning lives in another. The attacker can always find an input that means the same thing to the model but looks different to the filter.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_input_representation_bypass/input-representation-bypass-explorer.html" title="Interactive: exploring how the same malicious intent bypasses keyword filters through encoding, Unicode substitution, and rephrasing" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <p>Effective input validation works in layers, each operating on a different representation:</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Encoding-aware fuzzy matching</h4>
+              <p class="nyu-process__detail">Catches character substitutions, Unicode tricks, and common encoding schemes by normalizing the input before comparison rather than matching raw strings.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">ML-powered classifiers</h4>
+              <p class="nyu-process__detail">Small, specialized classifiers detect injection patterns in embedding space rather than string space. Many are compact enough to run on a CPU alongside the main application, catching semantic variations that string matching misses. The trade-off: they are probabilistic and may miss novel patterns absent from their training data.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Token budgeting</h4>
+              <p class="nyu-process__detail">Caps the number of tokens a single request can consume, preventing resource abuse and limiting the space available for complex injection payloads.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Prompt delineation markers</h4>
+              <p class="nyu-process__detail">Structured tags separate user input from system instructions, making it easier for the model to tell data from directives. This is a soft defense, not a structural boundary, but it raises the difficulty of injection.</p>
+            </div>
+          </li>
+        </ol>
+
+        <p>Each technique catches threats the others miss, which is why input validation is a layer, not a single tool.</p>
+
+        <h3 class="nyu-subsection-title">Output filtering: the post-model defense layer</h3>
+
+        <p>Input validation tries to stop bad prompts from reaching the model. Output filtering addresses the opposite side: the model has already produced a response, and we need to decide whether that response is safe to deliver to the user or a downstream system.</p>
+
+        <p>The operating principle: treat all LLM output as untrusted. This is the OWASP LLM05 principle. The model is a source of content, not an authority. Its output can contain harmful material the model was tricked into generating, leaked data from the training set or retrieval corpus, or injection payloads targeting downstream systems. A model that outputs JavaScript into a web page, or SQL into a database query, is a concrete example of each.</p>
+
+        <p>This connects directly to traditional web security. If an LLM's output is rendered in a browser without sanitization, a successful prompt injection can produce a cross-site scripting (XSS) payload. Interpolated into a SQL query, it can produce SQL injection. The LLM becomes a vector for attacks that predate it by decades. Output encoding and structured format validation are the same defenses web applications have needed since the early 2000s.</p>
+
+        <table class="nyu-table">
+          <thead>
+            <tr><th>Output filtering mode</th><th>How it works</th><th>Deterministic?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Classifier-based content filtering</strong></td>
+              <td>Scans responses for policy violations, harmful content, or leaked sensitive information</td>
+              <td>No. Catches known categories but probabilistic.</td>
+            </tr>
+            <tr>
+              <td><strong>LLM-as-judge review</strong></td>
+              <td>A second model evaluates the first model's output for policy compliance</td>
+              <td>No. More nuanced than a classifier but slower, and the judge model can be wrong.</td>
+            </tr>
+            <tr>
+              <td><strong>Structured format validation</strong></td>
+              <td>Enforces that output conforms to a defined schema (JSON fields, allowed values, expected types)</td>
+              <td>Yes. If the output does not match the schema, it is rejected regardless of content.</td>
+            </tr>
+            <tr>
+              <td><strong>Output encoding</strong></td>
+              <td>Sanitizes the model's response before it reaches downstream systems like databases, APIs, or web pages</td>
+              <td>Yes. Analogous to encoding user input before inserting it into HTML.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 class="nyu-subsection-title">Least privilege for AI systems</h3>
+
+        <p>Privilege separation is a deterministic control. OWASP identifies three sub-dimensions of <button type="button" class="nyu-define" data-term="excessive-agency">excessive agency</button> that we studied in the attacks module: excessive functionality (the system has tools it does not need), excessive permissions (the system has broader access than its task requires), and excessive autonomy (the system acts without human approval on consequential actions).</p>
+
+        <p>Applying least privilege means three concrete steps: remove tools the application does not use, restrict each tool's permissions to the minimum scope, and require human approval for high-impact actions. These are architectural decisions made before deployment, not runtime classifiers. No prompt injection can grant the model access to a tool that was never connected.</p>
+
+        <p>Consider a customer support chatbot that needs to look up order status and product information. It does not need to modify orders, access employee records, or query the billing system. If the application connects the chatbot to a database with full read-write access "for convenience," a successful prompt injection could instruct it to modify records or extract payment information. Connect it with read-only access to the orders and products tables only, and the same injection attempt fails at the database layer regardless of what the model tries to do. The database will not execute a write query from a read-only connection, no matter how persuasive the prompt.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_least_privilege_blast_radius/least-privilege-blast-radius-simulator.html" title="Interactive: configure agent permissions and observe how least privilege contains a prompt injection attack" loading="lazy" style="height:800px;"></iframe>
+        </div>
+
+        <p>Choosing which tools to connect, what permissions each tool gets, and which actions require a human in the loop are decisions made before deployment. They are not problems solved with better classifiers. Removing a tool from an agent's toolkit eliminates that attack surface entirely.</p>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Guardrail Architectures</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>A guardrail is a constraint on LLM input or output behavior. The term gets used loosely in the industry to mean almost any safety mechanism, which makes it hard to evaluate what someone actually means when they say "we added guardrails." The useful question is not "which product should we deploy?" but "what are we guarding: conversation flow, output format, or content safety?" The answer determines which architecture fits, because each architecture has different failure modes.</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Rule-Based</h4>
+              <p class="nyu-process__detail">Regex patterns, keyword lists, and allow/deny lists. Fast, predictable, deterministic: a regex either matches or it does not. But brittle: an attacker who knows the rules can craft inputs that satisfy every rule while still achieving the attack goal.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Model-Based</h4>
+              <p class="nyu-process__detail">A classifier model evaluates inputs or outputs against a configurable safety taxonomy, flagging prompts that violate defined categories. Catches semantic variations that rule-based systems miss, but probabilistic: accuracy depends on training data and taxonomy coverage. Production latency targets are typically 100-200ms per check.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Hybrid</h4>
+              <p class="nyu-process__detail">Rules handle what can be decided deterministically (format compliance, rate limits, banned-string detection); models handle what requires judgment (semantic classification, intent detection). This is the architecture most production systems use.</p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            What to look for when evaluating guardrail tools
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Guardrail tools change rapidly. Specific products and versions will be different by the time you read this. What matters is learning to evaluate any guardrail tool against a stable set of criteria:</p>
+            <table class="nyu-table">
+              <thead>
+                <tr><th>Evaluation criterion</th><th>What to ask</th><th>Why it matters</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Architecture type</td>
+                  <td>Rule-based, model-based, or hybrid?</td>
+                  <td>Determines the tool's failure mode: brittle rules vs. probabilistic classification vs. a mix of both</td>
+                </tr>
+                <tr>
+                  <td>Scope</td>
+                  <td>Does it cover input, output, or both? Conversational flow, content safety, or structured output?</td>
+                  <td>A tool that only validates output format does not defend against prompt injection at the input layer</td>
+                </tr>
+                <tr>
+                  <td>Latency budget</td>
+                  <td>What latency does each check add? Can it run synchronously without degrading user experience?</td>
+                  <td>A guardrail that adds 500ms per check may be impractical for real-time chat but fine for batch processing</td>
+                </tr>
+                <tr>
+                  <td>Customizability</td>
+                  <td>Can you define your own policy categories? Adjust sensitivity thresholds?</td>
+                  <td>A healthcare chatbot needs different guardrails than an internal code assistant</td>
+                </tr>
+                <tr>
+                  <td>Evaluated accuracy</td>
+                  <td>Has the tool been independently tested on unseen attack patterns, not just its own training data?</td>
+                  <td>Vendor-reported accuracy on known patterns overestimates real-world effectiveness (the 85% to 34% drop)</td>
+                </tr>
+              </tbody>
+            </table>
+            <p>When evaluating tools, apply the same skepticism this section teaches: vendor benchmarks reflect known-pattern accuracy; real-world performance against adaptive adversaries is always lower.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            When a guardrail tool disappears: LLM Guard and open-source supply chain risk
+          </h3>
+          <p>One of the guardrail tools referenced in this module's supplementary materials is <strong>LLM Guard</strong>, built by Protect AI. It offered 15 input scanners and 20 output scanners under an MIT license and was designed to run on CPU without GPU dependencies. On July 9, 2026, Protect AI archived the repository, setting it to read-only. No new patches, no security updates, no maintained releases.</p>
+          <p>Open-source maintainers do not always publish an explicit post-mortem when they archive a project, but repositories are typically set to read-only for a few specific operational and business reasons. In this case, the archiving appears to be part of a strategic shift by Protect AI toward its commercial product line. When a company maintains both an open-source tool and a paid product that overlaps with it, the open-source project can create internal competition, divert engineering resources, and complicate the commercial narrative. Sometimes companies believe archiving helps resolve that tension.</p>
+          <p>This pattern extends beyond any single company. As the AI security landscape matures, standalone open-source scanners are being absorbed into broader platforms: native security features embedded inside API gateways like <button type="button" class="nyu-define" data-term="envoy-proxy">Envoy</button> and <button type="button" class="nyu-define" data-term="kong-gateway">Kong</button>, or enterprise AI firewall products that bundle input validation, output filtering, and monitoring into a single managed service. The standalone scanner category is consolidating.</p>
+          <p>The practical consequence is immediate. Every organization that deployed LLM Guard in production now has a dependency on unmaintained code. No new vulnerability patches. No compatibility updates when upstream libraries change. No adaptation to new attack patterns. This is <strong>abandonware</strong>, and it is a recurring problem in software supply chains. When evaluating any open-source security tool, ask: what is the project's governance model, who funds the maintainers, and what is your migration plan if the project is archived tomorrow?</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">What the evidence says about guardrail effectiveness</h3>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_guardrail_evidence_explorer/guardrail-evidence-explorer.html" title="Interactive: guardrail evidence explorer showing accuracy drop on unseen patterns and adaptive bypass rates" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <p>The evidence on guardrail effectiveness is less reassuring than deployment experience might suggest, and the gap between the two directly shapes how we should design defense architectures.</p>
+
+        <p>A systematic evaluation of 10 guardrail models found the best achieved 85.3% accuracy on known attack patterns. The same study tested those guardrails on unseen attack patterns, prompts not in the guardrail's training data, and accuracy dropped to 33.8%: from catching roughly 5 out of 6 known attacks to catching roughly 1 in 3 novel attacks. The guardrail learned to recognize the attacks it was trained on, not the underlying concept of "injection attempt." This is the same overfitting problem we studied in machine learning fundamentals: high performance on the training distribution, poor generalization to new distributions.</p>
+
+        <p>A second study adds context. Researchers at three major AI labs evaluated 12 distinct prompt injection defenses, covering every major defense strategy available at the time. Under adaptive conditions, where the attacker could study the defense and iterate, all 12 were bypassed at greater than 90% success rates.</p>
+
+        <p>Together, these findings set the terms for the rest of this module. A guardrail catches most casual abuse (the 85% number). It degrades sharply against novel attacks (the 34% number). It fails almost completely against a determined, adaptive adversary (the 90%+ bypass number). That is not a reason to skip guardrails; it is a reason to never rely on them alone.</p>
+
+        <aside class="nyu-callout nyu-callout--danger" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+            The Most Frequent Error
+          </h3>
+          <p>Treating a deployed guardrail as though it eliminates prompt injection risk. The accuracy degradation (85% → 34% on unseen patterns) and the adaptive bypass rate (&gt;90% success) directly contradict that assumption. Guardrails are a layer, not a solution.</p>
+        </aside>
+
+        <p>Guardrails still reduce attack success against non-adaptive adversaries, and that covers most real-world abuse: automated scripts, casual attempts, users who try a known jailbreak phrase once and give up. The problem is sole reliance. A guardrail that catches 85% of attacks is a useful layer. The same guardrail treated as the complete solution leaves the remaining 15% (or more, against adaptive attackers) unaddressed.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/><path d="M9 18h6M10 22h4"/></svg>
+            </span>
+            Emerging Research: Differential-Privacy Prompt Sanitization
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Researchers have begun applying differential privacy to the prompt layer itself. The idea: before a prompt reaches the model, a sanitization step uses differential privacy guarantees and format-preserving encryption to strip or obscure sensitive tokens while preserving the prompt's structure. Early work in this space, <a href="https://www.ndss-symposium.org/ndss-paper/pr%CE%B5%CE%B5mpt-sanitizing-sensitive-prompts-for-llms/" target="_blank" rel="noopener">Pr∈∈mpt</a>, was published at NDSS 2026. The approach is still experimental and has not seen production deployment, but it is interesting because it borrows a well understood privacy mechanism and applies it to a new surface.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== ERT-1 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Why Guardrails Fail Under Adaptive Attacks</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Guardrails fail for specific, analyzable reasons. Work through these three questions; understanding the mechanisms matters more than memorizing the statistics.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_tokenizer_mismatch/tokenizer-mismatch-visualizer.html" title="Interactive: tokenizer mismatch visualizer showing how different tokenizers split the same input into different tokens, creating exploitable blind spots" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Part 2: Training on Known Patterns
+          </h3>
+          <p class="nyu-scenario__prompt">A guardrail is trained on 50,000 known jailbreak patterns and catches 95% of them in testing. Why does this not solve next month's attacks?</p>
+          <button class="nyu-scenario__btn">Show Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p>The 95% catch rate applies to known patterns, which are the distribution the guardrail was trained on. An adaptive attacker does not reuse known patterns; they craft novel ones. The evaluation on unseen patterns shows accuracy dropping from 85% to 34%. Training on yesterday's attacks does not stop tomorrow's.</p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Part 3: Defend Guardrails Honestly
+          </h3>
+          <p class="nyu-scenario__prompt">Write one sentence that defends guardrails while honestly acknowledging their limitations. The sentence should explain why guardrails are worth deploying even though adaptive attackers can bypass them.</p>
+          <button class="nyu-scenario__btn">Show Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p>One approach: "Guardrails substantially reduce attack success against non-adaptive adversaries, which covers most real-world abuse, making them a valuable layer within a defense-in-depth architecture even though they cannot stop an attacker who specifically targets them." The key is the qualifier: "a layer within," not "the solution." Any sentence that calls guardrails sufficient on their own contradicts the evidence.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== TRUE/FALSE RAPID-FIRE ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Defense Layer Rapid Check</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">True or false?</h3>
+
+        <div class="nyu-tf-strip" id="tfStrip">
+          <p>For each statement, decide whether it is true or false. Commit all answers at once.</p>
+          <div class="nyu-tf-strip__rows">
+            <div class="nyu-tf-strip__row" data-correct="false" data-explain="False. A rate limiter is deterministic: it produces the same result every time regardless of the content of the request. Request 101 is blocked whether it is benign or malicious. It may not catch all attacks, but its behavior is predictable and consistent.">
+              <p class="nyu-tf-strip__stmt">A rate limiter is a probabilistic control because it might not catch all attacks.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="true" data-explain="True. The evidence shows guardrail accuracy drops from 85% on known patterns to 34% on unseen patterns. Classifiers learn to recognize their training distribution, not the underlying concept.">
+              <p class="nyu-tf-strip__stmt">A guardrail that achieves 95% accuracy on known jailbreaks will likely perform worse on novel jailbreak patterns it has never seen.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="false" data-explain="False. Schema validation is deterministic: if the output does not match the defined schema, it is rejected regardless of content. The decision is based on structure, not interpretation.">
+              <p class="nyu-tf-strip__stmt">Structured output validation (enforcing a JSON schema) is a probabilistic control.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="true" data-explain="True. Removing a tool eliminates the attack surface entirely (deterministic). Adding a classifier to detect misuse reduces the frequency of successful misuse (probabilistic) but leaves the attack surface open.">
+              <p class="nyu-tf-strip__stmt">Removing a tool from an AI agent's toolkit is a more reliable defense than adding a classifier to detect misuse of that tool.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="false" data-explain="False. Two keyword filters fail for the same reason (encoding, rephrasing, novel patterns). Defense-in-depth requires layers that fail independently and use heterogeneous detection methods.">
+              <p class="nyu-tf-strip__stmt">Two keyword filters checking different lists of banned phrases constitute defense-in-depth.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+          </div>
+          <div class="nyu-tf-strip__actions">
+            <button class="nyu-tf-strip__btn nyu-tf-strip__btn--primary" data-action="check">Check answers</button>
+            <button class="nyu-tf-strip__btn nyu-tf-strip__btn--ghost" data-action="reset">Reset</button>
+            <span class="nyu-tf-strip__score" aria-live="polite"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== KC-1 ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc1-q1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 1 of 2</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc1-q1-prompt">A security engineer deploys a keyword-based input filter blocking 200 known jailbreak phrases, followed by a model-based guardrail classifier. Together, they catch 99% of known attack patterns. Why is this insufficient as a complete defense?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc1-q1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Keyword filters are typically fast (sub-millisecond). Speed is not the issue. Think about what 'known attack patterns' means for an adaptive attacker.">The keyword filter is too slow for production use.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Many guardrail classifier models are small enough to run on CPUs without dedicated GPU resources. The issue is not cost but the fundamental limitation of any classifier against adaptive adversaries.">Model-based guardrails require GPU resources most organizations cannot afford.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">An adaptive attacker can craft inputs specifically designed to evade both layers, and the 99% figure applies only to attacks used in evaluation, not to novel attacks.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This overstates the case. Guardrails substantially reduce attack success rates against non-adaptive adversaries, which covers most real-world abuse. They are real controls; they are just not sufficient controls alone.">Guardrails are not real security controls because they can be bypassed.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Research shows guardrail accuracy drops from 85% to under 34% on unseen attack patterns. Defense-in-depth adds layers beyond input-side controls: output filtering, privilege separation, monitoring, and human-in-the-loop review."
+               data-incorrect-msg="Not quite. The core issue is that the 99% figure is measured against known attack patterns. An adaptive attacker crafts novel inputs designed to evade both layers."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="kc1-q2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 2 of 2</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc1-q2-prompt">Which of the following is a deterministic control rather than a probabilistic control?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc1-q2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Classifier-based guardrails are probabilistic: they may or may not flag a given input depending on similarity to training data.">A classifier-based guardrail that detects jailbreak attempts.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">A rate limiter that blocks any user sending more than 100 requests per minute.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="An LLM-as-judge is probabilistic: it may interpret the same output differently across runs.">An LLM-as-judge that reviews outputs for policy violations.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Safety training is probabilistic: it shapes behavior statistically but does not guarantee any specific output will be safe.">Safety training applied to the base model during fine-tuning.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. A rate limiter produces a consistent, predictable outcome: the 101st request is blocked regardless of content. Deterministic controls are essential for high-consequence actions because they do not depend on classifier accuracy."
+               data-incorrect-msg="Not quite. A rate limiter produces the same result every time, regardless of the content of the request. That consistency is what makes it deterministic."></div>
+        </div>
+
+        <!-- Up Next -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 2: Deployment Patterns and Their Attack Surfaces.</strong> We apply these controls to three deployment architectures, each with a distinct attack surface: chatbot, RAG-augmented, and API-exposed.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

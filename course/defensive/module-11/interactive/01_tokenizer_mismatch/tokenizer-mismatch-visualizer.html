@@ -1,0 +1,1027 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Tokenizer Mismatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --ink: #15171C;
+  --ink2: #565a63;
+  --ink3: #5c6270;
+  --line: #e9eaee;
+  --line2: #d9dbe2;
+  --bg: #ffffff;
+  --paper: #f7f8fa;
+  --violet: #57068C;
+  --violet2: #7a30ad;
+  --vsoft: #f6effb;
+  --vline: #e6d6f3;
+  --red: #c02626;
+  --redline: #efc9c9;
+  --green: #0f7a43;
+  --greenline: #c3e2d0;
+  --amber: #8a5d00;
+  --amberbg: #FCF1DC;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.5;
+}
+
+body { padding: 24px 16px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--paper); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink3); }
+* { scrollbar-width: thin; scrollbar-color: var(--line2) var(--paper); }
+
+.wrap { max-width: 820px; margin: 0 auto; }
+
+.card {
+  border: none;
+  border-radius: 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* --- Card header --- */
+.card-header {
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.card-header h1 {
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+/* --- Input section --- */
+.input-section { padding: 24px 28px 16px; }
+
+.input-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+  margin-bottom: 12px;
+}
+
+.char-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.char-display {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid #d9b867;
+  border-radius: 12px;
+  background: var(--amberbg);
+  min-width: fit-content;
+}
+
+/* Segment rows (grouping bars) */
+.seg-row {
+  display: flex;
+  gap: 2px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.4s ease, opacity 0.3s ease 0.12s, margin 0.4s ease;
+}
+.seg-row.visible {
+  max-height: 30px;
+  opacity: 1;
+}
+.seg-top.visible { margin-bottom: 6px; }
+.seg-bottom.visible { margin-top: 6px; }
+
+.seg {
+  height: 22px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--ink2);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  padding: 0 3px;
+}
+
+.seg-a0 { background: #f6effb; border: 1px solid #e6d6f3; }
+.seg-a1 { background: #ede3f9; border: 1px solid #d4bfea; }
+.seg-b0 { background: #eef0f3; border: 1px solid #dfe2e8; }
+.seg-b1 { background: #e4e7ec; border: 1px solid #ced3db; }
+.seg-bh { background: #fbe8e8; border: 1px solid var(--redline); }
+
+/* Character cells */
+.char-row { display: flex; gap: 2px; }
+
+.char-cell {
+  width: 18px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.example-counter {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--ink3);
+  text-align: center;
+}
+
+/* --- Predict section --- */
+.predict-section { padding: 0 28px 20px; }
+
+.question {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 10px;
+  line-height: 1.45;
+}
+
+.options { display: flex; flex-direction: column; gap: 6px; }
+
+.opt-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--ink);
+  line-height: 1.45;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+}
+.opt-btn:hover:not(:disabled) {
+  border-color: var(--violet2);
+  background: var(--vsoft);
+}
+.opt-btn:disabled { cursor: default; opacity: 0.55; }
+.opt-btn .opt-letter {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink2);
+}
+.opt-btn.sel-correct {
+  border-color: var(--green);
+  background: #e8f5ee;
+}
+.opt-btn.sel-correct .opt-letter {
+  background: var(--greenline);
+  border-color: var(--green);
+}
+.opt-btn.sel-wrong {
+  border-color: var(--red);
+  background: #fbe8e8;
+}
+.opt-btn.sel-wrong .opt-letter {
+  background: var(--redline);
+  border-color: var(--red);
+}
+
+.feedback-box {
+  margin-top: 10px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ink);
+  display: none;
+}
+.feedback-box.show { display: block; }
+.feedback-box.fb-correct {
+  background: #e8f5ee;
+  border: 1px solid var(--greenline);
+}
+.feedback-box.fb-wrong {
+  background: #fbe8e8;
+  border: 1px solid var(--redline);
+}
+
+/* --- Action bars --- */
+.action-bar {
+  padding: 0 28px 16px;
+  display: none;
+  justify-content: center;
+  gap: 10px;
+}
+.action-bar.show { display: flex; }
+
+.btn {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+.btn:hover {
+  border-color: var(--violet2);
+  transform: translateY(-1px);
+}
+.btn-primary {
+  background: var(--violet);
+  border-color: var(--violet);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--violet2);
+  border-color: var(--violet2);
+}
+
+/* --- Lanes --- */
+.lanes-section {
+  padding: 0 28px 8px;
+  display: none;
+}
+.lanes-section.show { display: block; }
+
+.lanes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.lane {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.lane-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.lane-header svg {
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+  color: var(--ink2);
+}
+.lane-title {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.lane-sub {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lane-body {
+  padding: 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.token-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  min-height: 76px;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.chip {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.chip.vis { opacity: 1; transform: translateY(0); }
+
+.chip-guard { background: var(--vsoft); border: 1px solid var(--vline); }
+.chip-model { background: var(--paper); border: 1px solid var(--line); }
+.chip-hl    { background: #fbe8e8; border: 1px solid var(--redline); }
+
+/* Interpretation */
+.interpretation {
+  padding: 10px 12px;
+  border-radius: 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.interpretation.vis { opacity: 1; transform: translateY(0); }
+
+.interp-guard { background: #e8f5ee; border: 1px solid var(--greenline); }
+.interp-model { background: #fbe8e8; border: 1px solid var(--redline); }
+
+.interp-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  margin-bottom: 4px;
+}
+.interp-text {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.badge-safe { background: #e8f5ee; border: 1px solid var(--greenline); }
+.badge-risk { background: #fbe8e8; border: 1px solid var(--redline); }
+
+.badge-row {
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  margin-top: auto;
+}
+.badge-row.vis { opacity: 1; }
+
+/* --- Gap callout --- */
+.gap-section {
+  padding: 12px 28px 18px;
+  display: none;
+}
+.gap-section.show { display: block; }
+
+.gap-callout {
+  padding: 16px 20px;
+  border: 1px solid #d9b867;
+  border-left: 3px solid var(--amber);
+  border-radius: 10px;
+  background: var(--paper);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.gap-callout.vis { opacity: 1; transform: translateY(0); }
+
+.gap-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink2);
+  margin-bottom: 10px;
+}
+
+.gap-cols {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.gap-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  max-width: 200px;
+}
+.gap-col-detail {
+  font-size: 0.72rem;
+  color: var(--ink2);
+  text-align: center;
+  line-height: 1.35;
+}
+.gap-div {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.gap-text {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+/* --- Responsive --- */
+@media (max-width: 700px) {
+  body { padding: 12px 8px; }
+  .card-header, .input-section, .predict-section,
+  .action-bar, .lanes-section, .gap-section { padding-left: 16px; padding-right: 16px; }
+  .lanes { grid-template-columns: 1fr; }
+  .gap-cols { flex-wrap: wrap; gap: 8px; }
+  .gap-div { transform: rotate(90deg); }
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header class="card-header">
+      <h1>Tokenizer Mismatch</h1>
+    </header>
+
+    <!-- Input display -->
+    <section class="input-section">
+      <div class="input-label">Same characters enter both systems</div>
+      <div class="char-scroll">
+        <div class="char-display" id="charDisplay">
+          <div class="seg-row seg-top" id="segA"></div>
+          <div class="char-row" id="charRow"></div>
+          <div class="seg-row seg-bottom" id="segB"></div>
+        </div>
+      </div>
+      <p class="example-counter" id="exCounter">Example 1 of 3</p>
+    </section>
+
+    <!-- Prediction (Phase 1, first example only) -->
+    <section class="predict-section" id="predictSec">
+      <p class="question">The guardrail and the model receive the same input string, but each uses its own tokenizer. Will they split the string into the same tokens?</p>
+      <div class="options">
+        <button type="button" class="opt-btn" id="optA">
+          <span class="opt-letter">A</span>
+          <span>Yes. Same characters in, same tokens out.</span>
+        </button>
+        <button type="button" class="opt-btn" id="optB">
+          <span class="opt-letter">B</span>
+          <span>No. Each tokenizer was trained separately, so they may split the same string at different points.</span>
+        </button>
+      </div>
+      <div class="feedback-box" id="feedback"></div>
+    </section>
+
+    <!-- Tokenize button -->
+    <div class="action-bar" id="tokenizeBar">
+      <button type="button" class="btn btn-primary" id="tokenizeBtn">Tokenize</button>
+    </div>
+
+    <!-- Tokenization lanes (Phase 2) -->
+    <section class="lanes-section" id="lanesSec">
+      <div class="lanes">
+        <div class="lane">
+          <div class="lane-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M12 2l7 4v5c0 5.25-3 8.5-7 10-4-1.5-7-4.75-7-10V6l7-4z"/>
+            </svg>
+            <span class="lane-title">Tokenizer A</span>
+            <span class="lane-sub">Guardrail</span>
+          </div>
+          <div class="lane-body">
+            <div class="token-chips" id="chipsA"></div>
+            <div class="interpretation interp-guard" id="interpA">
+              <div class="interp-label">Interpretation</div>
+              <div class="interp-text" id="interpAText"></div>
+            </div>
+            <div class="badge-row" id="badgeA">
+              <span class="badge badge-safe">SAFE</span>
+            </div>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="lane-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="6" y="6" width="12" height="12" rx="2"/>
+              <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>
+            </svg>
+            <span class="lane-title">Tokenizer B</span>
+            <span class="lane-sub">Protected Model</span>
+          </div>
+          <div class="lane-body">
+            <div class="token-chips" id="chipsB"></div>
+            <div class="interpretation interp-model" id="interpB">
+              <div class="interp-label">Interpretation</div>
+              <div class="interp-text" id="interpBText"></div>
+            </div>
+            <div class="badge-row" id="badgeB">
+              <span class="badge badge-risk">RISK DETECTED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security gap callout -->
+    <section class="gap-section" id="gapSec">
+      <div class="gap-callout" id="gapCallout">
+        <div class="gap-label">Security Gap</div>
+        <div class="gap-cols">
+          <div class="gap-col">
+            <span class="badge badge-safe">GUARDRAIL: SAFE</span>
+            <span class="gap-col-detail" id="gapGuardDetail">Guardrail's tokens hid the threat.</span>
+          </div>
+          <div class="gap-div">
+            <span style="font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--ink3)">&ne;</span>
+          </div>
+          <div class="gap-col">
+            <span class="badge badge-risk">MODEL: RISK</span>
+            <span class="gap-col-detail" id="gapModelDetail">Model's tokens exposed the command.</span>
+          </div>
+        </div>
+        <p class="gap-text">Same input, two tokenizers, two conclusions. The guardrail cleared a string that the model interpreted as a command.</p>
+      </div>
+    </section>
+
+    <!-- Next example button -->
+    <div class="action-bar" id="nextBar">
+      <button type="button" class="btn" id="nextBtn">Try another example</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── Data ── */
+var EXAMPLES = [
+  {
+    input: 'safe_prefix_override_controls',
+    guardTokens: ['safe_','prefix_','over','ride_','controls'],
+    modelTokens: ['safe_prefix_','override','_controls'],
+    highlightIndex: 1,
+    guardInterp: '5 benign-looking fragments. No risk signal.',
+    modelInterp: '"override" is a complete instruction token. The model treats it as a command.',
+    gapGuard: '"override" was split into "over" + "ride_", hiding the keyword.',
+    gapModel: '"override" stayed intact and was recognized as a command.'
+  },
+  {
+    input: 'admin_data_export_all',
+    guardTokens: ['admin_','data_ex','port_','all'],
+    modelTokens: ['admin_data_','export_all'],
+    highlightIndex: 1,
+    guardInterp: 'No single token matches a threat keyword.',
+    modelInterp: '"export_all" is a recognized API command.',
+    gapGuard: '"export" was split across "data_ex" and "port_", no match.',
+    gapModel: '"export_all" stayed intact as a recognized API action.'
+  },
+  {
+    input: 'reset_password_bypass',
+    guardTokens: ['reset_','pass','word_by','pass'],
+    modelTokens: ['reset_password_','bypass'],
+    highlightIndex: 1,
+    guardInterp: 'Fragmented. "bypass" split across tokens.',
+    modelInterp: '"bypass" is a clear security-relevant token.',
+    gapGuard: '"bypass" was split across "word_by" and "pass", undetectable.',
+    gapModel: '"bypass" stayed intact as a single, flaggable token.'
+  }
+];
+
+var CELL_W = 18;
+var CELL_GAP = 2;
+
+/* ── State ── */
+var currentEx = 0;
+var predictionDone = false;
+var animating = false;
+
+/* ── Reduced motion ── */
+var rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function delay(ms){ return rm ? 0 : ms; }
+
+/* ── DOM refs ── */
+var charRow     = document.getElementById('charRow');
+var segA        = document.getElementById('segA');
+var segB        = document.getElementById('segB');
+var exCounter   = document.getElementById('exCounter');
+var predictSec  = document.getElementById('predictSec');
+var optA        = document.getElementById('optA');
+var optB        = document.getElementById('optB');
+var feedback    = document.getElementById('feedback');
+var tokenizeBar = document.getElementById('tokenizeBar');
+var tokenizeBtn = document.getElementById('tokenizeBtn');
+var lanesSec    = document.getElementById('lanesSec');
+var chipsA      = document.getElementById('chipsA');
+var chipsB      = document.getElementById('chipsB');
+var interpA     = document.getElementById('interpA');
+var interpAText = document.getElementById('interpAText');
+var interpB     = document.getElementById('interpB');
+var interpBText = document.getElementById('interpBText');
+var badgeA      = document.getElementById('badgeA');
+var badgeB      = document.getElementById('badgeB');
+var gapSec         = document.getElementById('gapSec');
+var gapCallout     = document.getElementById('gapCallout');
+var gapGuardDetail = document.getElementById('gapGuardDetail');
+var gapModelDetail = document.getElementById('gapModelDetail');
+var nextBar        = document.getElementById('nextBar');
+var nextBtn        = document.getElementById('nextBtn');
+
+/* ── Helpers ── */
+function segWidth(n){ return n * CELL_W + (n - 1) * CELL_GAP; }
+
+function clearChildren(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+
+function addClass(el, c){ el.classList.add(c); }
+function rmClass(el, c){ el.classList.remove(c); }
+
+function showBar(bar){ addClass(bar, 'show'); }
+function hideBar(bar){ rmClass(bar, 'show'); }
+
+/* ── Render character grid ── */
+function renderCharGrid(input){
+  clearChildren(charRow);
+  for(var i = 0; i < input.length; i++){
+    var cell = document.createElement('span');
+    cell.className = 'char-cell';
+    cell.textContent = input[i];
+    charRow.appendChild(cell);
+  }
+}
+
+/* ── Render segment bars ── */
+function renderSegments(tokens, container, type, highlightIndex){
+  clearChildren(container);
+  for(var i = 0; i < tokens.length; i++){
+    var seg = document.createElement('span');
+    seg.className = 'seg';
+    var n = tokens[i].length;
+    seg.style.width = segWidth(n) + 'px';
+    seg.textContent = tokens[i];
+    if(type === 'a'){
+      addClass(seg, i % 2 === 0 ? 'seg-a0' : 'seg-a1');
+    } else {
+      if(i === highlightIndex){
+        addClass(seg, 'seg-bh');
+      } else {
+        addClass(seg, i % 2 === 0 ? 'seg-b0' : 'seg-b1');
+      }
+    }
+    container.appendChild(seg);
+  }
+}
+
+/* ── Render token chips ── */
+function renderChips(tokens, container, type, highlightIndex){
+  clearChildren(container);
+  var chips = [];
+  for(var i = 0; i < tokens.length; i++){
+    var chip = document.createElement('span');
+    chip.className = 'chip';
+    if(type === 'guard'){
+      addClass(chip, 'chip-guard');
+    } else if(i === highlightIndex){
+      addClass(chip, 'chip-hl');
+    } else {
+      addClass(chip, 'chip-model');
+    }
+    chip.textContent = tokens[i];
+    container.appendChild(chip);
+    chips.push(chip);
+  }
+  return chips;
+}
+
+/* ── Show example ── */
+function showExample(idx){
+  var ex = EXAMPLES[idx];
+  renderCharGrid(ex.input);
+  exCounter.textContent = 'Example ' + (idx + 1) + ' of ' + EXAMPLES.length;
+
+  /* Reset segments */
+  rmClass(segA, 'visible');
+  rmClass(segB, 'visible');
+  clearChildren(segA);
+  clearChildren(segB);
+
+  /* Reset lanes */
+  rmClass(lanesSec, 'show');
+  clearChildren(chipsA);
+  clearChildren(chipsB);
+  rmClass(interpA, 'vis');
+  rmClass(interpB, 'vis');
+  rmClass(badgeA, 'vis');
+  rmClass(badgeB, 'vis');
+  interpAText.textContent = '';
+  interpBText.textContent = '';
+
+  /* Reset gap */
+  rmClass(gapSec, 'show');
+  rmClass(gapCallout, 'vis');
+
+  /* Reset action bars */
+  hideBar(tokenizeBar);
+  hideBar(nextBar);
+
+  /* Reset prediction */
+  optA.disabled = false;
+  optB.disabled = false;
+  rmClass(optA, 'sel-correct');
+  rmClass(optA, 'sel-wrong');
+  rmClass(optB, 'sel-correct');
+  rmClass(optB, 'sel-wrong');
+  rmClass(feedback, 'show');
+  rmClass(feedback, 'fb-correct');
+  rmClass(feedback, 'fb-wrong');
+  feedback.textContent = '';
+
+  if(!predictionDone){
+    predictSec.style.display = '';
+    /* tokenize button hidden until prediction answered */
+  } else {
+    predictSec.style.display = 'none';
+    showBar(tokenizeBar);
+  }
+
+  sh();
+}
+
+/* ── Prediction answer ── */
+function handleAnswer(correct){
+  if(animating) return;
+  optA.disabled = true;
+  optB.disabled = true;
+
+  if(correct){
+    addClass(optB, 'sel-correct');
+    addClass(feedback, 'fb-correct');
+    feedback.textContent = 'Correct. Tokenization is model-specific, so the guardrail and the protected model may segment the same string into completely different units.';
+  } else {
+    addClass(optA, 'sel-wrong');
+    addClass(feedback, 'fb-wrong');
+    feedback.textContent = 'Not quite. Tokenizers are trained independently, so the same byte sequence can produce different token boundaries and vocabulary IDs. Characters are not tokens.';
+  }
+  addClass(feedback, 'show');
+  predictionDone = true;
+
+  /* Show tokenize button after short delay */
+  setTimeout(function(){
+    showBar(tokenizeBar);
+    sh();
+  }, delay(400));
+
+  sh();
+}
+
+optA.addEventListener('click', function(){ handleAnswer(false); });
+optB.addEventListener('click', function(){ handleAnswer(true); });
+
+/* ── Tokenize animation ── */
+function tokenize(){
+  if(animating) return;
+  animating = true;
+  tokenizeBtn.disabled = true;
+
+  var ex = EXAMPLES[currentEx];
+
+  /* Prepare segments */
+  renderSegments(ex.guardTokens, segA, 'a', -1);
+  renderSegments(ex.modelTokens, segB, 'b', ex.highlightIndex);
+
+  /* Prepare chips */
+  var guardChips = renderChips(ex.guardTokens, chipsA, 'guard', -1);
+  var modelChips = renderChips(ex.modelTokens, chipsB, 'model', ex.highlightIndex);
+
+  /* Set interpretation text */
+  interpAText.textContent = ex.guardInterp;
+  interpBText.textContent = ex.modelInterp;
+
+  /* Hide prediction section */
+  predictSec.style.display = 'none';
+  hideBar(tokenizeBar);
+
+  /* Step 1: Show segment grouping bars */
+  var t = 0;
+  setTimeout(function(){
+    addClass(segA, 'visible');
+    addClass(segB, 'visible');
+    sh();
+  }, t);
+
+  /* Step 2: Show lanes container */
+  t += delay(450);
+  setTimeout(function(){
+    addClass(lanesSec, 'show');
+    sh();
+  }, t);
+
+  /* Step 3: Stagger guard chips */
+  var chipDelay = delay(200);
+  var guardStart = t + delay(100);
+  for(var i = 0; i < guardChips.length; i++){
+    (function(chip, d){
+      setTimeout(function(){ addClass(chip, 'vis'); sh(); }, d);
+    })(guardChips[i], guardStart + i * chipDelay);
+  }
+
+  /* Step 4: Stagger model chips (simultaneous start) */
+  for(var j = 0; j < modelChips.length; j++){
+    (function(chip, d){
+      setTimeout(function(){ addClass(chip, 'vis'); sh(); }, d);
+    })(modelChips[j], guardStart + j * chipDelay);
+  }
+
+  /* Compute when all chips are done */
+  var maxChips = Math.max(guardChips.length, modelChips.length);
+  var chipsDone = guardStart + (maxChips - 1) * chipDelay + delay(350);
+
+  /* Step 5: Show interpretation boxes */
+  var interpTime = chipsDone + delay(400);
+  setTimeout(function(){
+    addClass(interpA, 'vis');
+    addClass(interpB, 'vis');
+    sh();
+  }, interpTime);
+
+  /* Step 6: Show badges */
+  var badgeTime = interpTime + delay(350);
+  setTimeout(function(){
+    addClass(badgeA, 'vis');
+    addClass(badgeB, 'vis');
+    sh();
+  }, badgeTime);
+
+  /* Step 7: Show gap callout */
+  var gapTime = badgeTime + delay(350);
+  setTimeout(function(){
+    gapGuardDetail.textContent = ex.gapGuard;
+    gapModelDetail.textContent = ex.gapModel;
+    addClass(gapSec, 'show');
+    sh();
+    /* Small delay then animate callout in */
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        addClass(gapCallout, 'vis');
+        sh();
+      });
+    });
+  }, gapTime);
+
+  /* Step 8: Show next button */
+  var nextTime = gapTime + delay(500);
+  setTimeout(function(){
+    showBar(nextBar);
+    nextBtn.textContent = currentEx < EXAMPLES.length - 1
+      ? 'Try another example'
+      : 'Review from start';
+    animating = false;
+    tokenizeBtn.disabled = false;
+    sh();
+  }, nextTime);
+}
+
+tokenizeBtn.addEventListener('click', tokenize);
+
+/* ── Next example ── */
+function nextExample(){
+  if(animating) return;
+  currentEx = (currentEx + 1) % EXAMPLES.length;
+  showExample(currentEx);
+}
+
+nextBtn.addEventListener('click', nextExample);
+
+/* ── Height reporting ── */
+function sh(){
+  var el = document.querySelector('.wrap');
+  if(!el) return;
+  var r = el.getBoundingClientRect();
+  var cs = getComputedStyle(document.body);
+  var h = Math.ceil(r.top + r.height + parseFloat(cs.marginBottom) + parseFloat(cs.paddingBottom) + 2);
+  window.parent.postMessage({
+    kind: 'nyu-embed-height',
+    height: h,
+    src: location.href
+  }, '*');
+}
+
+var ro = new ResizeObserver(sh);
+ro.observe(document.querySelector('.wrap'));
+window.addEventListener('load', sh);
+document.addEventListener('transitionend', sh);
+
+/* ── Init ── */
+showExample(0);
+
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

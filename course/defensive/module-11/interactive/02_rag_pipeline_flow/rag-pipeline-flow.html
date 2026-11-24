@@ -1,0 +1,782 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>RAG Pipeline Data Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redsoft:#fdf5f5;--redline:#efc9c9;
+  --green:#0f7a43;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) var(--paper)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+
+.wrap{max-width:900px;margin:0 auto;padding:0}
+.hdr{padding:24px 28px 0}
+.eyebrow{font-family:var(--mono);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet);margin-bottom:6px}
+.title{font-size:1.15rem;font-weight:700;color:var(--ink);line-height:1.3}
+.subtitle{font-size:.82rem;color:var(--ink2);margin-top:6px;line-height:1.55}
+
+.canvas-wrap{position:relative;width:100%;padding:8px 0 0;overflow:visible}
+canvas{display:block;width:100%;height:auto}
+
+.anim-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 16px 0}
+.ac-btn{font-family:var(--sans);font-size:0.75rem;font-weight:600;color:var(--violet);background:var(--bg);border:1.5px solid var(--vline);border-radius:9px;padding:6px 12px;cursor:pointer}
+.ac-btn:hover{background:var(--vsoft)}
+.ac-btn--primary{background:#57068C;border-color:#57068C;color:#fff}
+.ac-btn--primary:hover{background:#3D0461;border-color:#3D0461}
+.ac-btn:focus-visible{outline:3px solid #FFB81C;outline-offset:2px}
+.ac-stage{font-family:var(--mono);font-size:0.75rem;color:var(--ink2);margin-left:2px}
+/* ── narration strip ── */
+.narration{
+  margin:0 28px;padding:10px 14px;
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  display:flex;align-items:center;gap:10px;
+  min-height:44px;transition:border-color .4s;
+}
+.narration.phase-attack{border-color:var(--redline)}
+.narration.phase-query{border-color:rgba(37,99,235,.3)}
+.narration.phase-retrieve{border-color:rgba(15,122,67,.3)}
+.narration.phase-response{border-color:var(--vline)}
+.narr-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  background:var(--violet);transition:background .4s;
+}
+.narration.phase-attack .narr-dot{background:var(--red)}
+.narration.phase-query .narr-dot{background:#2563eb}
+.narration.phase-retrieve .narr-dot{background:var(--green)}
+.narration.phase-response .narr-dot{background:var(--violet)}
+.narr-text{
+  font-family:var(--mono);font-size:.72rem;font-weight:500;
+  color:var(--ink2);line-height:1.45;
+  transition:opacity .35s;
+}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 28px 20px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:.62rem;font-weight:600;letter-spacing:.04em;color:var(--ink2)}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-dot.flow{background:var(--violet)}
+.legend-dot.query{background:#2563eb}
+.legend-dot.retrieved{background:var(--green)}
+.legend-dot.attack{background:var(--red)}
+
+@media(max-width:600px){
+  .hdr{padding:16px 16px 0}
+  .narration{margin:0 16px}
+  .legend{padding:10px 16px 16px}
+}
+@media(prefers-reduced-motion:reduce){
+  canvas{display:none}
+  .narration::after{content:"Animation paused (reduced motion preference detected).";font-size:.78rem;color:var(--ink3)}
+  .narr-dot,.narr-text{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="eyebrow">RAG Architecture</div>
+    <h1 class="title">The Retrieval Pipeline and Its Attack Surfaces</h1>
+    <p class="subtitle">Follow a document from ingestion to response. Four attack surfaces sit at distinct points in this pipeline; each one exploits a different stage of the retrieval process.</p>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+  </div>
+
+  <div class="narration" id="narration">
+    <div class="narr-dot"></div>
+    <div class="narr-text" id="narrText">Documents flow through the pipeline: ingested, embedded as vectors, indexed in a vector store, and made available for retrieval.</div>
+  </div>
+
+  <div class="anim-controls" role="group" aria-label="Animation controls">
+    <button type="button" class="ac-btn" id="prevBtn" aria-label="Previous stage">&#9664; Prev</button>
+    <button type="button" class="ac-btn ac-btn--primary" id="playBtn" aria-pressed="false">Pause</button>
+    <button type="button" class="ac-btn" id="nextBtn" aria-label="Next stage">Next &#9654;</button>
+    <span class="ac-stage" id="stageLabel" aria-live="polite">Stage 1 of 6</span>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot flow"></div>Document flow</div>
+    <div class="legend-item"><div class="legend-dot query"></div>User query</div>
+    <div class="legend-item"><div class="legend-dot retrieved"></div>Retrieved context</div>
+    <div class="legend-item"><div class="legend-dot attack"></div>Attack flow</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   RAG Pipeline, Animated Data Flow Architecture
+   Canvas + requestAnimationFrame, 60fps particle system
+   ═══════════════════════════════════════════════════════════ */
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const narrEl = document.getElementById('narration');
+const narrText = document.getElementById('narrText');
+let W, H, DPR, scale;
+
+/* ── Colors ── */
+const COL = {
+  ink:     '#15171C',
+  ink2:    '#565a63',
+  ink3:    '#5c6270',
+  violet:  '#57068C',
+  vA:      'rgba(87,6,140,',
+  blue:    '#2563eb',
+  bA:      'rgba(37,99,235,',
+  green:   '#0f7a43',
+  gA:      'rgba(15,122,67,',
+  red:     '#c02626',
+  rA:      'rgba(192,38,38,',
+};
+
+/* ══════════════════════════════════════
+   Layout, pipeline pushed down to y:0.56
+   to leave generous room for labels above
+   and attack labels below
+   ══════════════════════════════════════ */
+
+const NODES = [
+  { id:'ingest',   label:'Document\nIngestion',   x:0.10, y:0.44, shape:'hex',    r:26 },
+  { id:'embed',    label:'Embedding\nGeneration',  x:0.26, y:0.44, shape:'ring',   r:24 },
+  { id:'vector',   label:'Vector Store\nIndex',    x:0.44, y:0.44, shape:'cube',   r:24 },
+  { id:'retrieve', label:'Retrieval\nEngine',      x:0.62, y:0.44, shape:'hex',    r:26 },
+  { id:'context',  label:'LLM Context\nWindow',    x:0.80, y:0.44, shape:'ring',   r:26 },
+  { id:'response', label:'Response',               x:0.93, y:0.44, shape:'circle', r:18 },
+];
+const USER = { id:'user', label:'User Query', x:0.73, y:0.13, shape:'circle', r:16 };
+
+/* ── Edges ── */
+const EDGES = [[0,1],[1,2],[2,3],[3,4],[4,5]];
+
+/* ── Attack definitions with source points ── */
+/* Sources sit close below pipeline; labels below dots fill to bottom edge */
+const ATTACKS = [
+  { nodeIdx:0, label:'Corpus\nPoisoning',
+    src:{x:0.10, y:0.75}, labelPos:'src' },
+  { nodeIdx:1, label:'Adversarial\nEmbeddings',
+    src:{x:0.26, y:0.75}, labelPos:'src' },
+  { nodeIdx:2, label:'Cross-Tenant\nLeakage',
+    src:{x:0.54, y:0.13}, labelPos:'src' },
+  { nodeIdx:3, label:'Cross-Document\nInjection',
+    src:{x:0.62, y:0.75}, labelPos:'src' },
+];
+
+/* ── Particle pools ── */
+let flowP = [];
+let queryP = [];
+let retP = [];
+let atkP = [];      // attack flow particles
+let atkPulses = [];
+let time = 0;
+
+/* ── Narration ── */
+const NARR = [
+  { s:0.00, e:0.18, ph:'',              t:'Documents flow through the pipeline: ingested, embedded as vectors, indexed in a vector store, and made available for retrieval.' },
+  { s:0.18, e:0.32, ph:'phase-query',   t:'A user query enters the system. The query is routed to the Retrieval Engine, which searches the vector store for semantically similar documents.' },
+  { s:0.32, e:0.48, ph:'phase-retrieve', t:'The Retrieval Engine pulls matching documents from the Vector Store. These are the documents whose embeddings scored highest against the query.' },
+  { s:0.48, e:0.60, ph:'phase-retrieve', t:'Retrieved documents are injected into the LLM context window alongside the original query. The model now sees both the question and the retrieved context.' },
+  { s:0.60, e:0.72, ph:'phase-response', t:'The model generates a response grounded in the retrieved documents. The entire path, from ingestion to response, is the attack surface.' },
+  { s:0.72, e:1.00, ph:'phase-attack',   t:'Four attack flows target distinct pipeline stages. Corpus poisoning injects documents at ingestion. Adversarial embeddings exploit encoding. Cross-tenant leakage breaches the vector store. Cross-document injection rides the retrieval channel.' },
+];
+let lastNI = -1;
+
+/* ═══════════════ Sizing ═══════════════ */
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = rect.width;
+  scale = W / 900;
+  H = W * 0.36;
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  /* Pull narration/legend up into the empty canvas bottom.
+     Lowest drawn content: attack labels whose bottom sits at
+     0.75*H + 10*scale + fs*2.3  (dot-center + gap + 2 lines of text).
+     Dead space = H minus that. Negative margin eats it. */
+  const fs = Math.max(7.5, 8.5 * scale);
+  const contentBottom = 0.75 * H + 10 * scale + fs * 2.3;
+  const deadSpace = H - contentBottom - 6 * scale; // keep 6·scale breathing room
+  if (deadSpace > 0) {
+    narrEl.style.marginTop = (-deadSpace) + 'px';
+  } else {
+    narrEl.style.marginTop = '0';
+  }
+
+  /* Reassigning canvas.width above wipes the bitmap. While the loop is running
+     the next frame repaints it, but when the loop is paused nothing does, so the
+     diagram stays blank. This is reachable in normal use: the ResizeObserver on
+     .wrap posts a new height to the parent whenever the narration changes line
+     count, the parent resizes the iframe, and that fires this handler. The
+     stage-6 caption is the longest one, which is why stepping to it blanked the
+     canvas and left it blank. repaintIfPaused is a hoisted function declaration,
+     so the typeof guard is safe during the resize() call inside init(). */
+  if (typeof repaintIfPaused === 'function') repaintIfPaused();
+}
+
+function px(o) { return o.x * W; }
+function py(o) { return o.y * H; }
+function pr(o) { return o.r * scale; }
+
+/* ═══════════════ Drawing primitives ═══════════════ */
+
+function drawHex(cx,cy,r,fill,stroke,lw) {
+  ctx.beginPath();
+  for (let i=0;i<6;i++){
+    const a=Math.PI/3*i-Math.PI/6;
+    const x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();}
+}
+
+function drawRing(cx,cy,r,fill,stroke,lw) {
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();}
+  ctx.beginPath();ctx.arc(cx,cy,r*0.5,0,Math.PI*2);
+  ctx.fillStyle='#fff';ctx.fill();
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw*0.7;ctx.stroke();}
+}
+
+function drawCube(cx,cy,r,fill,stroke,lw) {
+  const s=r*0.68,off=s*0.35;
+  // top
+  ctx.beginPath();
+  ctx.moveTo(cx,cy-s-off);ctx.lineTo(cx+s,cy-off);
+  ctx.lineTo(cx,cy+s*0.3-off);ctx.lineTo(cx-s,cy-off);ctx.closePath();
+  ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();
+  // left
+  ctx.beginPath();
+  ctx.moveTo(cx-s,cy-off);ctx.lineTo(cx,cy+s*0.3-off);
+  ctx.lineTo(cx,cy+s-off);ctx.lineTo(cx-s,cy+s*0.7-off);ctx.closePath();
+  ctx.fillStyle=shade(fill,-15);ctx.fill();ctx.stroke();
+  // right
+  ctx.beginPath();
+  ctx.moveTo(cx+s,cy-off);ctx.lineTo(cx,cy+s*0.3-off);
+  ctx.lineTo(cx,cy+s-off);ctx.lineTo(cx+s,cy+s*0.7-off);ctx.closePath();
+  ctx.fillStyle=shade(fill,-28);ctx.fill();ctx.stroke();
+}
+
+function shade(hex,p){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.max(0,Math.min(255,r+Math.round(r*p/100)));
+  g=Math.max(0,Math.min(255,g+Math.round(g*p/100)));
+  b=Math.max(0,Math.min(255,b+Math.round(b*p/100)));
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+function drawShape(n,glowCol,glowI) {
+  const cx=px(n),cy=py(n),r=pr(n);
+  if(glowCol&&glowI>0){
+    const g=ctx.createRadialGradient(cx,cy,r*0.3,cx,cy,r*2.5);
+    g.addColorStop(0,glowCol+(0.22*glowI)+')');
+    g.addColorStop(1,glowCol+'0)');
+    ctx.fillStyle=g;ctx.fillRect(cx-r*3,cy-r*3,r*6,r*6);
+  }
+  const fill='#f6effb',stroke=COL.violet,lw=1.5*scale;
+  if(n.shape==='hex') drawHex(cx,cy,r,fill,stroke,lw);
+  else if(n.shape==='ring') drawRing(cx,cy,r,fill,stroke,lw);
+  else if(n.shape==='cube') drawCube(cx,cy,r,fill,stroke,lw);
+  else{ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();}
+}
+
+/* ── Label above shape with generous gap ── */
+function drawLabel(n) {
+  const cx=px(n),cy=py(n),r=pr(n);
+  const lines=n.label.split('\n');
+  const fs=Math.max(8,9*scale);
+  const lh=fs*1.3;
+  const gap=16*scale; // gap above shape edge
+  const bottom=cy-r-gap;
+
+  // connector line
+  ctx.beginPath();
+  ctx.moveTo(cx,bottom+6*scale);
+  ctx.lineTo(cx,cy-r+2*scale);
+  ctx.strokeStyle=COL.vA+'0.15)';
+  ctx.lineWidth=1*scale;ctx.setLineDash([]);ctx.stroke();
+
+  // text
+  ctx.fillStyle=COL.ink;
+  ctx.font=`700 ${fs}px "JetBrains Mono",monospace`;
+  ctx.textAlign='center';ctx.textBaseline='bottom';
+  lines.forEach((l,i)=>{
+    ctx.fillText(l,cx,bottom-(lines.length-1-i)*lh);
+  });
+}
+
+/* ═══════════════ Edge paths ═══════════════ */
+
+function drawEdge(a,b,alpha) {
+  const ax=px(NODES[a]),ay=py(NODES[a]),bx=px(NODES[b]),by=py(NODES[b]);
+  const ra=pr(NODES[a]),rb=pr(NODES[b]);
+  const dx=bx-ax,dy=by-ay,d=Math.sqrt(dx*dx+dy*dy),ux=dx/d,uy=dy/d;
+  ctx.beginPath();
+  ctx.moveTo(ax+ux*(ra+4*scale),ay+uy*(ra+4*scale));
+  ctx.lineTo(bx-ux*(rb+4*scale),by-uy*(rb+4*scale));
+  ctx.strokeStyle=COL.vA+(alpha||0.16)+')';
+  ctx.lineWidth=2*scale;ctx.setLineDash([]);ctx.stroke();
+}
+
+function getEdgeEndpoints(a,b) {
+  const ax=px(NODES[a]),ay=py(NODES[a]),bx=px(NODES[b]),by=py(NODES[b]);
+  const ra=pr(NODES[a]),rb=pr(NODES[b]);
+  const dx=bx-ax,dy=by-ay,d=Math.sqrt(dx*dx+dy*dy),ux=dx/d,uy=dy/d;
+  return {x1:ax+ux*(ra+4*scale),y1:ay+uy*(ra+4*scale),x2:bx-ux*(rb+4*scale),y2:by-uy*(rb+4*scale)};
+}
+
+/* ── User → Retrieve (bezier) ── */
+function getQPath() {
+  const ux=px(USER),uy=py(USER),rx=px(NODES[3]),ry=py(NODES[3]);
+  return {ux,uy,rx,ry,c1x:ux+18*scale,c1y:uy+40*scale,c2x:rx+10*scale,c2y:ry-40*scale};
+}
+function drawQEdge(a) {
+  const p=getQPath();
+  ctx.beginPath();ctx.moveTo(p.ux,p.uy);
+  ctx.bezierCurveTo(p.c1x,p.c1y,p.c2x,p.c2y,p.rx,p.ry);
+  ctx.strokeStyle=COL.bA+(a||0.14)+')';
+  ctx.lineWidth=1.5*scale;ctx.setLineDash([4*scale,4*scale]);ctx.stroke();ctx.setLineDash([]);
+}
+
+/* ── Vector → Retrieve arc ── */
+function getRPath() {
+  const vx=px(NODES[2]),vy=py(NODES[2]),rx=px(NODES[3]),ry=py(NODES[3]);
+  return {vx,vy,rx,ry,cpx:(vx+rx)/2,cpy:vy-45*scale};
+}
+function drawREdge(a) {
+  const p=getRPath();
+  ctx.beginPath();ctx.moveTo(p.vx,p.vy);
+  ctx.quadraticCurveTo(p.cpx,p.cpy,p.rx,p.ry);
+  ctx.strokeStyle=COL.gA+(a||0.10)+')';
+  ctx.lineWidth=1.5*scale;ctx.setLineDash([3*scale,5*scale]);ctx.stroke();ctx.setLineDash([]);
+}
+
+/* ── Attack paths (bezier from src to target node) ── */
+function getAtkPath(ai) {
+  const atk=ATTACKS[ai];
+  const sx=atk.src.x*W, sy=atk.src.y*H;
+  const tx=px(NODES[atk.nodeIdx]), ty=py(NODES[atk.nodeIdx]);
+  const tr=pr(NODES[atk.nodeIdx]);
+  // unit vector from src to target
+  const dx=tx-sx, dy=ty-sy, d=Math.sqrt(dx*dx+dy*dy);
+  // endpoint stops at node edge
+  const ex=tx-(dx/d)*tr, ey=ty-(dy/d)*tr;
+  // control points for a nice curve
+  const mx=(sx+ex)/2, my=(sy+ey)/2;
+  let cpx,cpy;
+  if(atk.src.y > 0.5) { // from below
+    cpx=mx + (ai===0?-30:ai===3?30:0)*scale;
+    cpy=my - 20*scale;
+  } else { // from above (cross-tenant)
+    cpx=mx - 25*scale;
+    cpy=my + 15*scale;
+  }
+  return {sx,sy,ex,ey,cpx,cpy};
+}
+function drawAtkEdge(ai,alpha) {
+  const p=getAtkPath(ai);
+  ctx.beginPath();ctx.moveTo(p.sx,p.sy);
+  ctx.quadraticCurveTo(p.cpx,p.cpy,p.ex,p.ey);
+  ctx.strokeStyle=COL.rA+(alpha||0.08)+')';
+  ctx.lineWidth=1.5*scale;ctx.setLineDash([3*scale,5*scale]);ctx.stroke();ctx.setLineDash([]);
+}
+
+/* ═══════════════ Particles ═══════════════ */
+
+function spawnFlow() {
+  const ei=Math.floor(Math.random()*EDGES.length);
+  flowP.push({edge:ei,t:0,sp:0.003+Math.random()*0.003,
+    sz:(1.3+Math.random()*1.3)*scale,al:0.28+Math.random()*0.35});
+}
+function spawnQ() {
+  queryP.push({t:0,sp:0.007+Math.random()*0.004,
+    sz:(1.5+Math.random()*1)*scale,al:0.4+Math.random()*0.35});
+}
+function spawnRet() {
+  retP.push({t:0,sp:0.005+Math.random()*0.003,
+    sz:(1.6+Math.random()*1.2)*scale,al:0.35+Math.random()*0.3});
+}
+function spawnAtk(ai) {
+  atkP.push({ai,t:0,sp:0.006+Math.random()*0.004,
+    sz:(1.8+Math.random()*1.2)*scale,al:0.45+Math.random()*0.3});
+}
+function spawnPulse(ai) {
+  const n=NODES[ATTACKS[ai].nodeIdx];
+  atkPulses.push({x:px(n),y:py(n),r:pr(n),t:0,maxR:pr(n)*2.4,sp:0.012,ai});
+}
+
+/* ── Draw small attacker source node ── */
+function drawAtkSource(ai,glowI) {
+  const atk=ATTACKS[ai];
+  const sx=atk.src.x*W, sy=atk.src.y*H;
+  const r=6*scale;
+  if(glowI>0){
+    const g=ctx.createRadialGradient(sx,sy,r*0.3,sx,sy,r*4);
+    g.addColorStop(0,COL.rA+(0.18*glowI)+')');
+    g.addColorStop(1,COL.rA+'0)');
+    ctx.fillStyle=g;ctx.fillRect(sx-r*5,sy-r*5,r*10,r*10);
+  }
+  ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);
+  ctx.fillStyle='#fdf5f5';ctx.fill();
+  ctx.strokeStyle=COL.red;ctx.lineWidth=1.5*scale;ctx.stroke();
+  // inner dot
+  ctx.beginPath();ctx.arc(sx,sy,2.5*scale,0,Math.PI*2);
+  ctx.fillStyle=COL.red;ctx.fill();
+}
+
+/* ── Attack label near source ── */
+function drawAtkLabel(ai) {
+  const atk=ATTACKS[ai];
+  const sx=atk.src.x*W, sy=atk.src.y*H;
+  const fs=Math.max(7.5,8.5*scale);
+  const lines=atk.label.split('\n');
+  const lh=fs*1.3;
+  ctx.fillStyle=COL.ink2;
+  ctx.font=`600 ${fs}px "JetBrains Mono",monospace`;
+  ctx.textAlign='center';
+  if(atk.src.y>0.5) {
+    // below pipeline, label below source dot
+    ctx.textBaseline='top';
+    lines.forEach((l,i)=>{
+      ctx.fillText(l,sx,sy+10*scale+i*lh);
+    });
+  } else {
+    // above pipeline, label above source dot
+    ctx.textBaseline='bottom';
+    lines.forEach((l,i)=>{
+      ctx.fillText(l,sx,sy-10*scale-(lines.length-1-i)*lh);
+    });
+  }
+}
+
+/* ═══════════════ Animation ═══════════════ */
+
+const CYCLE = 15000;
+let lastF = 0, cycleT = 0;
+/* When set, playback halts at this absolute time. Used by the step controls to
+   play exactly one stage. Null means run the cycle continuously. */
+let stopAtTime = null;
+
+const PH = {
+  qStart:  0.18,
+  rGlow:   0.35,
+  rFlow:   0.38,
+  cGlow:   0.50,
+  respGlow:0.62,
+  atkStart:0.74,
+  atkEnd:  0.98,
+};
+
+function draw(ts) {
+  if(!lastF) lastF=ts;
+  if(!paused) time += ts-lastF;
+  lastF=ts;
+  if(stopAtTime !== null && time >= stopAtTime){
+    time = stopAtTime;
+    stopAtTime = null;
+    setPaused(true);
+  }
+  cycleT=(time%CYCLE)/CYCLE;
+
+  ctx.clearRect(0,0,W,H);
+
+  const inAttackPhase = cycleT>=PH.atkStart && cycleT<PH.atkEnd;
+  const atkProgress = inAttackPhase ? (cycleT-PH.atkStart)/(PH.atkEnd-PH.atkStart) : 0;
+
+  /* ── pipeline edges ── */
+  EDGES.forEach(([a,b])=>drawEdge(a,b,0.14));
+  drawQEdge(0.12);
+  drawREdge(0.10);
+
+  /* ── attack edges (faint always, brighter during attack phase) ── */
+  ATTACKS.forEach((_,i)=>{
+    const alpha = inAttackPhase ? 0.06 + 0.14 * Math.sin(atkProgress*Math.PI) : 0.05;
+    drawAtkEdge(i,alpha);
+  });
+
+  /* ── spawn normal particles ── */
+  if(Math.random()<0.09) spawnFlow();
+  if(cycleT>PH.qStart && cycleT<PH.rGlow && Math.random()<0.14) spawnQ();
+  if(cycleT>PH.rFlow && cycleT<PH.cGlow && Math.random()<0.10) spawnRet();
+
+  /* ── spawn attack particles ── */
+  if(inAttackPhase) {
+    // stagger: each attack starts at a different sub-phase
+    const atkStarts = [0.0, 0.12, 0.25, 0.38];
+    ATTACKS.forEach((_,i)=>{
+      const localT = atkProgress - atkStarts[i];
+      if(localT>0 && localT<0.55 && Math.random()<0.14) spawnAtk(i);
+    });
+    // pulses at specific moments
+    const pulseTimes = [0.15, 0.28, 0.42, 0.55];
+    pulseTimes.forEach((pt,i)=>{
+      if(atkProgress>pt && atkProgress<pt+0.015 && !atkPulses.find(p=>p.ai===i&&p.t<0.6)) spawnPulse(i);
+    });
+  }
+
+  /* ── update flow particles ── */
+  flowP = flowP.filter(p=>{
+    p.t+=p.sp; if(p.t>1) return false;
+    const e=getEdgeEndpoints(EDGES[p.edge][0],EDGES[p.edge][1]);
+    const x=e.x1+(e.x2-e.x1)*p.t, y=e.y1+(e.y2-e.y1)*p.t;
+    const f=p.t<0.1?p.t/0.1:p.t>0.9?(1-p.t)/0.1:1;
+    ctx.beginPath();ctx.arc(x,y,p.sz,0,Math.PI*2);
+    ctx.fillStyle=COL.vA+(p.al*f)+')';ctx.fill();
+    return true;
+  });
+
+  /* ── query particles ── */
+  queryP = queryP.filter(p=>{
+    p.t+=p.sp; if(p.t>1) return false;
+    const q=getQPath(),t=p.t,m=1-t;
+    const x=m*m*m*q.ux+3*m*m*t*q.c1x+3*m*t*t*q.c2x+t*t*t*q.rx;
+    const y=m*m*m*q.uy+3*m*m*t*q.c1y+3*m*t*t*q.c2y+t*t*t*q.ry;
+    const f=t<0.1?t/0.1:t>0.85?(1-t)/0.15:1;
+    ctx.beginPath();ctx.arc(x,y,p.sz,0,Math.PI*2);
+    ctx.fillStyle=COL.bA+(p.al*f)+')';ctx.fill();
+    return true;
+  });
+
+  /* ── retrieve particles ── */
+  retP = retP.filter(p=>{
+    p.t+=p.sp; if(p.t>1) return false;
+    const r=getRPath(),t=p.t,m=1-t;
+    const x=m*m*r.vx+2*m*t*r.cpx+t*t*r.rx;
+    const y=m*m*r.vy+2*m*t*r.cpy+t*t*r.ry;
+    const f=t<0.1?t/0.1:t>0.85?(1-t)/0.15:1;
+    ctx.beginPath();ctx.arc(x,y,p.sz,0,Math.PI*2);
+    ctx.fillStyle=COL.gA+(p.al*f)+')';ctx.fill();
+    return true;
+  });
+
+  /* ── attack flow particles ── */
+  atkP = atkP.filter(p=>{
+    p.t+=p.sp; if(p.t>1) return false;
+    const a=getAtkPath(p.ai),t=p.t,m=1-t;
+    const x=m*m*a.sx+2*m*t*a.cpx+t*t*a.ex;
+    const y=m*m*a.sy+2*m*t*a.cpy+t*t*a.ey;
+    const f=t<0.08?t/0.08:t>0.85?(1-t)/0.15:1;
+    ctx.beginPath();ctx.arc(x,y,p.sz,0,Math.PI*2);
+    ctx.fillStyle=COL.rA+(p.al*f)+')';ctx.fill();
+    return true;
+  });
+
+  /* ── glow states ── */
+  let rG=0,cG=0,respG=0;
+  if(cycleT>PH.rGlow&&cycleT<PH.rGlow+0.10) rG=Math.sin((cycleT-PH.rGlow)/0.10*Math.PI);
+  if(cycleT>PH.cGlow&&cycleT<PH.cGlow+0.08) cG=Math.sin((cycleT-PH.cGlow)/0.08*Math.PI);
+  if(cycleT>PH.respGlow&&cycleT<PH.respGlow+0.07) respG=Math.sin((cycleT-PH.respGlow)/0.07*Math.PI);
+
+  /* ── draw pipeline nodes ── */
+  NODES.forEach((n,i)=>{
+    let gc=null,gi=0;
+    if(i===3){gc=COL.bA;gi=rG;}
+    if(i===4){gc=COL.gA;gi=cG;}
+    if(i===5){gc=COL.vA;gi=respG;}
+    // during attack phase, target nodes get red glow
+    if(inAttackPhase){
+      const isTarget=ATTACKS.some(a=>a.nodeIdx===i);
+      if(isTarget){
+        const aGlow=Math.sin(atkProgress*Math.PI)*0.5;
+        if(aGlow>gi){gc=COL.rA;gi=aGlow;}
+      }
+    }
+    drawShape(n,gc,gi);
+  });
+
+  // user node
+  const uG=(cycleT>PH.qStart-0.04&&cycleT<PH.rGlow)?
+    Math.sin(Math.min(1,(cycleT-PH.qStart+0.04)/0.04)*Math.PI*0.5):0;
+  drawShape(USER,COL.bA,uG*0.6);
+
+  /* ── labels above shapes ── */
+  NODES.forEach(n=>drawLabel(n));
+
+  // user label
+  ctx.fillStyle=COL.ink;
+  ctx.font=`700 ${Math.max(8,9*scale)}px "JetBrains Mono",monospace`;
+  ctx.textAlign='center';ctx.textBaseline='bottom';
+  ctx.fillText('User Query',px(USER),py(USER)-pr(USER)-8*scale);
+
+  /* ── attack source nodes and labels ── */
+  ATTACKS.forEach((_,i)=>{
+    const glowI = inAttackPhase ? Math.sin(atkProgress*Math.PI)*0.8 : 0;
+    drawAtkSource(i,glowI);
+    drawAtkLabel(i);
+  });
+
+  /* ── attack pulses ── */
+  atkPulses = atkPulses.filter(p=>{
+    p.t+=p.sp; if(p.t>1) return false;
+    const cr=p.r+(p.maxR-p.r)*p.t;
+    const f=p.t<0.25?p.t/0.25:(1-p.t)/0.75;
+    ctx.beginPath();ctx.arc(p.x,p.y,cr,0,Math.PI*2);
+    ctx.strokeStyle=COL.rA+(0.4*f)+')';
+    ctx.lineWidth=2*scale;ctx.stroke();
+    return true;
+  });
+
+  /* ── narration ── */
+  let ni=NARR.findIndex(n=>cycleT>=n.s&&cycleT<n.e);
+  if(ni===-1) ni=0;
+  if(ni!==lastNI){
+    lastNI=ni;
+    /* The counter used to update only on Play/Pause and on a manual step, so it
+       sat on "Stage 1 of 6" for the whole cycle while the diagram moved on. */
+    syncLabel();
+    narrText.style.opacity='0';
+    setTimeout(()=>{
+      narrText.textContent=NARR[ni].t;
+      narrEl.className='narration '+NARR[ni].ph;
+      narrText.style.opacity='1';
+    },200);
+  }
+
+  if(!paused) rafId = requestAnimationFrame(draw);
+}
+
+/* ═══════════════ Init ═══════════════ */
+
+/* ═══════════════ Playback controls ═══════════════ */
+/* WCAG 2.2.2: motion running longer than five seconds needs a pause
+   mechanism. The loop is also steppable, because the first-round review noted
+   that learners want to slow down and re-read the caption for each stage.
+   Pausing stops the rAF loop outright, which freezes the particle system too,
+   since every particle advances inside draw(). */
+let paused = false, rafId = null;
+const playBtn  = document.getElementById('playBtn');
+const prevBtn  = document.getElementById('prevBtn');
+const nextBtn  = document.getElementById('nextBtn');
+const stageLab = document.getElementById('stageLabel');
+function stageIndex(){
+  const i = NARR.findIndex(n=>cycleT>=n.s && cycleT<n.e);
+  return i===-1 ? 0 : i;
+}
+function syncLabel(){
+  stageLab.textContent = 'Stage ' + (stageIndex()+1) + ' of ' + NARR.length;
+}
+function renderOneFrame(){
+  lastF = 0;
+  requestAnimationFrame(function(ts){ draw(ts); syncLabel(); });
+}
+function repaintIfPaused(){
+  if(paused) renderOneFrame();
+}
+function setPaused(v){
+  paused = v;
+  playBtn.textContent = v ? 'Play' : 'Pause';
+  playBtn.setAttribute('aria-pressed', String(v));
+  if(v){ if(rafId) cancelAnimationFrame(rafId); rafId = null; }
+  else { lastF = 0; rafId = requestAnimationFrame(draw); }
+  syncLabel();
+}
+/* Stepping used to seek and freeze, which rendered a single static frame: the
+   particle systems build up over successive frames, so a frozen frame showed an
+   almost empty pipeline and the step appeared to do nothing. Stepping now plays
+   the stage it lands on and stops at that stage's end, so each step shows its
+   own animation and the counter lands where it should. */
+function goToStage(i){
+  const n = NARR.length, idx = ((i % n) + n) % n;
+  time = (NARR[idx].s * CYCLE) + 1;      // land just inside the stage
+  stopAtTime = (NARR[idx].e * CYCLE) - 1; // and run to just inside its end
+  lastNI = -1;                            // force the caption to re-read
+  setPaused(false);
+  syncLabel();
+}
+playBtn.addEventListener('click', function(){
+  stopAtTime = null;   // Play runs the whole cycle, not one stage
+  setPaused(!paused);
+});
+prevBtn.addEventListener('click', function(){ goToStage(stageIndex()-1); });
+nextBtn.addEventListener('click', function(){ goToStage(stageIndex()+1); });
+
+function init(){
+  resize();
+  for(let i=0;i<12;i++) spawnFlow();
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce){ setPaused(true); renderOneFrame(); }
+  else { rafId = requestAnimationFrame(draw); syncLabel(); }
+}
+window.addEventListener('resize',resize);
+init();
+
+/* ── Iframe height ── */
+function sh(){
+  const el=document.querySelector('.wrap');
+  if(!el)return;
+  const r=el.getBoundingClientRect();
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(r.top+r.height+2),src:location.href},'*');
+}
+const ro=new ResizeObserver(sh);
+ro.observe(document.querySelector('.wrap'));
+window.addEventListener('load',sh);
+document.addEventListener('transitionend',sh);
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

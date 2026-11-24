@@ -1,0 +1,30 @@
+title: Shrink an over-powered agent
+lede: An operations agent has broad tools. Classify each excess, then redesign it with the least power its job needs.
+blurb: Sort tools into the three causes of excessive agency and design a policy check.
+situation: |
+  **Fernway Logistics** runs an agent that answers "where is my shipment?". It has these tools. track_shipment, read_any_customer_record, refund_any_amount, run_sql, and send_email to any address. It acts with an admin token and never asks a person.
+rounds:
+  - title: Round 1. Name the excess
+    items:
+      - type: sort
+        q: Which cause of excessive agency does each item show?
+        rows:
+          - ["run_sql for a tracking job", "Excessive functionality"]
+          - ["read_any_customer_record instead of the caller's own", "Excessive permissions"]
+          - ["Refunds with no person in the loop", "Excessive autonomy"]
+          - ["An admin token for every call", "Excessive permissions"]
+        opts: ["Excessive functionality", "Excessive permissions", "Excessive autonomy"]
+        why: "Functionality is tools it should not have. Permissions are reach beyond the task. Autonomy is acting on high-impact steps alone."
+      - q: Which tools does a tracking agent really need?
+        opts: ["track_shipment only", "track_shipment and run_sql", "All five"]
+        a: 0
+        why: "The job is to report shipment status for the caller. Everything else adds risk without adding to the task."
+  - title: Round 2. Check the content of each call
+    items:
+      - q: Where should the permission check run?
+        opts: ["In the system prompt", "In the app, between the model and the tool", "After the tool runs"]
+        a: 1
+        why: "The model only writes a request. The app runs the tool, so code there can refuse a bad call."
+      - type: open
+        q: Write one policy rule in plain words that checks the content of a call, not only who calls.
+        a: "Allow track_shipment only when the shipment ID belongs to the logged-in customer. Deny any send_email whose recipient is not the logged-in customer's own address."

@@ -1,0 +1,40 @@
+title: Design a defense stack
+lede: A bank chatbot gets 40,000 messages a day. Choose defenses by cost, speed and the reason each one fails.
+blurb: Work out what SmoothLLM costs, then build a stack whose layers fail for different reasons.
+situation: |
+  **Northfield Bank** runs a chatbot with 40,000 messages a day. Each model call takes about 1.2 seconds and costs about 0.2 cents. The bot can show balances and move up to 500 dollars between a customer's own accounts.
+rounds:
+  - title: Round 1. The cost of smoothing
+    items:
+      - type: num
+        q: SmoothLLM with N = 10 copies runs the model 10 times per message. How many model calls a day is that?
+        a: 400000
+        tol: 0
+        why: "40,000 messages × 10 copies = 400,000 calls. Compute and cost grow about ten times."
+      - type: num
+        q: At 0.2 cents per call, what does SmoothLLM N = 10 cost per day in dollars?
+        a: 800
+        tol: 1
+        unit: "$"
+        why: "400,000 × 0.002 dollars = 800 dollars a day, against 80 dollars without it."
+      - q: How should the bank use a slow, strong check like SmoothLLM?
+        opts: ["On every message", "Only on messages a cheap filter marks suspicious, and before money moves", "Never"]
+        a: 1
+        why: "Risk tiers keep latency low for normal chat and spend the cost where an attack would do damage."
+  - title: Round 2. Layers that fail differently
+    items:
+      - type: sort
+        q: For each layer, what does it look at?
+        rows:
+          - ["Sandwich prompt", "The model's own reading of the rules"]
+          - ["Injection classifier", "Resemblance to known attacks"]
+          - ["Transfer limit in code", "The amount and the accounts, not the text"]
+          - ["Canary token check on output", "An exact secret string"]
+        opts: ["The model's own reading of the rules", "Resemblance to known attacks", "The amount and the accounts, not the text", "An exact secret string"]
+        why: "Layers multiply only when they fail for different reasons. The last two do not depend on the wording of the attack."
+      - type: open
+        q: Name three guardrails you would ship for Northfield, one line each.
+        a: |
+          1. The transfer tool only moves money between the logged-in customer's own accounts, with a cap in code.
+          2. A cheap input classifier and an output check with a canary token, logged for detection.
+          3. A person or a second factor confirms any transfer, and every tool call is logged.

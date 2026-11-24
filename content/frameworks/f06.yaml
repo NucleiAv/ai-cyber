@@ -1,0 +1,107 @@
+slug: f06
+num: "06"
+short: ARTEX
+title: ARTEX, an autonomous pentest agent, explained
+time: about 1.5 hours
+lede: ARTEX is not a standard. It is an open source tool. Studying its design teaches how autonomous offensive agents work and which brakes keep them safe.
+headings: {attack: "How it runs, step by step", cases: "What it teaches", defend: "Strengths and limits", map: "How it links to the others", lab: "Try it safely"}
+atlas: [AML.T0116, AML.T0124, AML.T0053]
+agentic: [ASI02, ASI03, ASI10]
+other_fw:
+  - [OWASP LLM06, "Its brakes are a working answer to excessive agency. [Read LLM06](https://genai.owasp.org/llmrisk/llm062025-excessive-agency/)."]
+
+idea: |
+  [ARTEX](https://github.com/BaaRai/ARTEX) is a self-hosted platform where LLM agents run penetration tests. Its README calls it "autonomous penetration testing that keeps its receipts". The public repository is an English translation of the upstream project Autumn-27/ARTEX, under the AGPL-3.0 license.
+
+  It matters for learning because it solves, in real code, the problem every agent builder faces. **How do you let an AI act on its own and still keep it inside the lines?**
+
+  !warn Use ARTEX only against systems you own or have written permission to test. Running it against anyone else is illegal in most countries.
+
+  !eli5 ARTEX is a team of robot testers with a manager. The manager splits the job into small tasks. Each robot does one task with real tools. A rule book, a spending limit and a human supervisor decide what they may do.
+
+terms:
+  - [Planner, "The agent that reads the goal and the current state, and sends out small tasks called intents."]
+  - [Worker, "An agent that takes one intent, runs real tools for it, writes results back and stops."]
+  - [Intent, "One small, specific task, linked to the assets it touches."]
+  - [Asset graph, "A shared map of what exists, such as domains, IPs, services and endpoints."]
+  - [Exploration graph, "A per-task record of goals, intents, facts, findings and hints, and how they connect."]
+  - [Recording proxy, "A proxy that captures real requests and responses, so every finding has evidence."]
+
+how: |
+  ### The engine loop
+
+  1. A change in the graphs wakes the planner.
+  2. The planner reads the situation and dispatches zero or more intents. Most wake-ups dispatch none, which means no new direction is left.
+  3. A worker claims one intent and loads the assets it names.
+  4. The worker runs real tools, such as shell commands or HTTP requests, through the recording proxy.
+  5. The worker writes facts, assets and findings back to both graphs.
+  6. That change wakes the planner again. The loop ends when the goal is proven.
+
+  ### The brakes
+
+  - **Scope and deny gates.** Only listed targets.
+  - **Command prefix rules.** Only approved command shapes may run.
+  - **Human approval gates.** A person approves chosen actions.
+  - **Token and turn budgets.** Limits on cost and steps.
+  - **Noise governor.** Limits on how hard it hits a target.
+  - **Prompt injection framing.** Tool output is marked as data, because a target can reply with text that tries to steer the agent.
+
+diagrams:
+  - type: cycle
+    title: The ARTEX engine loop
+    nodes: [["Graph changes", "box"], ["Planner dispatches intents", "def"], ["Worker claims one", "def"], ["Tools run through the proxy", "raised", "behind the gates"], ["Results written back", "box"]]
+    center: loop until the goal is proven
+    caption: From the project's own description of its engine. The gates sit between the worker and the target.
+
+attack_steps:
+  - Install it with Docker Compose from the README, on your own machine.
+  - Set a model endpoint, either an Anthropic or OpenAI compatible API, or a local Ollama.
+  - Define a goal and a tight scope, such as one lab VM you own.
+  - Turn on approval gates for anything beyond reading.
+  - Watch the exploration graph. Check each finding against its recorded request and response.
+
+cases:
+  - [Agent design, "Planner and worker split the thinking from the doing, so each worker has a small, checkable job. Lesson 9 and Module 13 teach the same pattern."]
+  - [Evidence over claims, "Module 8 shows that the GTG-1002 agent fabricated findings. ARTEX ties every finding to captured traffic, so a human can verify it."]
+  - [Defender view, "An attacker running a tool like this maps to ATLAS AML.T0116 Autonomous Reconnaissance and AML.T0124 Autonomous Attack Orchestration. Its noise and speed are detection signals."]
+
+defense: |
+  **Strengths**
+
+  - A real, inspectable design for safe autonomy, with gates, budgets and evidence.
+  - Model-agnostic, including local models.
+
+  **Limits**
+
+  - Gates are only as good as their configuration. A wide scope makes a fast, dangerous tool.
+  - Claims in its README describe the project's design. Check them in your own lab before relying on them.
+  - It is not a standard. Use it as a case study alongside OWASP, ATLAS and STRIDE.
+
+lab:
+  intro: |
+    Read the design, then test the brakes in a lab you own.
+  steps:
+    - Read the "How it works" section of the [ARTEX README](https://github.com/BaaRai/ARTEX).
+    - Draw its engine loop from memory and compare with the diagram above.
+    - In a lab VM you own, run it with a scope of that VM only and approval gates on.
+    - Try to make it act outside scope. Record whether the gate blocks it.
+    - Write which OWASP LLM06 controls you saw working.
+
+quiz:
+  - q: What does the planner do in ARTEX?
+    opts: ["Runs shell commands", "Reads the state and sends out small tasks", "Stores traffic"]
+    a: 1
+    why: The planner decides and dispatches. Workers act.
+  - q: Why does ARTEX frame tool output as data?
+    opts: ["To save tokens", "Because a target can reply with text that tries to steer the agent", "For faster parsing"]
+    a: 1
+    why: Tool output is untrusted input, the same lesson as indirect prompt injection.
+  - q: Which control keeps an autonomous tester inside its permission?
+    opts: ["Scope and deny gates", "A bigger model", "A longer goal description"]
+    a: 0
+    why: Scope gates enforce the boundary in code, whatever the model decides.
+
+refs:
+  - "BaaRai. [ARTEX on GitHub](https://github.com/BaaRai/ARTEX), AGPL-3.0."
+  - "OWASP. [LLM06 2025 Excessive agency](https://genai.owasp.org/llmrisk/llm062025-excessive-agency/)."
+  - "MITRE ATLAS. [AML.T0124 Autonomous Attack Orchestration](https://atlas.mitre.org/techniques/AML.T0124)."

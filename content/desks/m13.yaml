@@ -1,0 +1,35 @@
+title: The agent design desk
+lede: Design a threat-hunting agent that a security team can trust, and read future claims without the hype.
+blurb: Decide workflow or agent, constrain each part of an agent, and sort claims into evidence bins.
+source: scenario practice, written for this site from Module 13
+situation: |
+  **Orbit SOC** wants an AI agent that hunts for beaconing hosts in logs and can isolate them. A vendor also claims that "agents will replace tier-1 analysts next year".
+rounds:
+  - title: Round 1. Design the agent
+    items:
+      - q: The daily task "export yesterday's DNS logs and run three fixed queries" should be what?
+        opts: ["An agent", "A workflow in code", "A human-only task"]
+        a: 1
+        why: "The steps never change, so a fixed workflow is simpler to test and audit. Use an agent only when it must choose its own steps."
+      - type: sort
+        q: Match each agent part to its constraint.
+        rows:
+          - ["Tools", "Read-only log search, no admin rights"]
+          - ["Loop", "Step, token and time budgets"]
+          - ["Actions that disrupt work", "Approval gate before isolating a host"]
+          - ["Memory and context", "Treat tool output as untrusted text"]
+        opts: ["Read-only log search, no admin rights", "Step, token and time budgets", "Approval gate before isolating a host", "Treat tool output as untrusted text"]
+        why: "Each part fails in its own way, so each gets its own limit. Logging every tool call ties them together for audit."
+  - title: Round 2. Read the claim
+    items:
+      - type: sort
+        q: Sort each claim into a bin.
+        rows:
+          - ["A published report with logs shows an agent found a real vulnerability", "Demonstrated"]
+          - ["Agents will soon triage most low-severity alerts", "Plausible"]
+          - ["Agents will replace tier-1 analysts next year", "Speculation"]
+        opts: ["Demonstrated", "Plausible", "Speculation"]
+        why: "Public evidence is demonstrated. A reasonable trend without proof is plausible. A big claim with no evidence and a clear sales interest is speculation."
+      - type: open
+        q: What evidence of your own skills would you show an employer for AI security work?
+        a: "Concrete, checkable work. For example CTF writeups, a detection rule set mapped to ATLAS with test results, a threat model with STRIDE for an LLM app, and a policy you wrote with controls a reviewer can check."

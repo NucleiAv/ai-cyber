@@ -1,0 +1,113 @@
+slug: f02
+num: "02"
+short: MITRE ATT&CK
+title: MITRE ATT&CK, the attack map for IT systems
+time: about 1.5 hours
+lede: The most used knowledge base of real attacker behavior against computers and networks. ATLAS and D3FEND are both built around it.
+headings: {attack: "How to use it, step by step", cases: "Real examples", defend: "Strengths and limits", map: "How it links to the others", lab: "Try it"}
+other_fw:
+  - [MITRE ATLAS, "Uses the same tactic and technique structure, plus two AI-only tactics. See [framework 01](f01.html)."]
+  - [MITRE D3FEND, "Links defensive techniques to ATT&CK techniques. See [framework 03](f03.html)."]
+
+idea: |
+  **ATT&CK** stands for Adversarial Tactics, Techniques, and Common Knowledge. MITRE started it in 2013 and made it public in 2015. It lives at [attack.mitre.org](https://attack.mitre.org/).
+
+  It records what real attacker groups did, step by step, so defenders can plan detection and testing against real behavior instead of guesses.
+
+  !eli5 ATT&CK is a cookbook written by watching real burglars. Each recipe step has a name and a number, so every team in the world can say "step T1566" and mean the same thing.
+
+terms:
+  - [Matrix, "ATT&CK has three. Enterprise (Windows, Linux, macOS, cloud, network and more), Mobile, and ICS for industrial control systems."]
+  - [Tactic, "The goal at one stage, such as Initial Access, TA0001."]
+  - [Technique, "How the goal is reached, such as Phishing, T1566."]
+  - [Sub-technique, "A more specific form, such as Spearphishing Attachment, T1566.001."]
+  - [Group, "A tracked attacker group, with the techniques it was seen using."]
+  - [Software, "Malware and tools, with the techniques they implement."]
+  - [Mitigation, "A defense against techniques, with IDs like M1049."]
+
+how: |
+  ### The Enterprise tactics in version 20
+
+  ATT&CK v20.1 (November 2026) has **15 Enterprise tactics**.
+
+  1. Reconnaissance, TA0043
+  2. Resource Development, TA0042
+  3. Initial Access, TA0001
+  4. Execution, TA0002
+  5. Persistence, TA0003
+  6. Privilege Escalation, TA0004
+  7. **Stealth**, TA0005
+  8. **Defense Impairment**, TA0112
+  9. Credential Access, TA0006
+  10. Discovery, TA0007
+  11. Lateral Movement, TA0008
+  12. Collection, TA0009
+  13. Command and Control, TA0011
+  14. Exfiltration, TA0010
+  15. Impact, TA0040
+
+  !fact Older guides list 14 tactics with "Defense Evasion" as TA0005. In current ATT&CK, TA0005 is called **Stealth**, hiding and blending in, and the new **Defense Impairment** tactic covers breaking security tools and pipelines. ATLAS still uses the older name, Defense Evasion.
+
+  ### How the pieces connect
+
+  Groups use software. Groups and software use techniques. Techniques serve tactics. Mitigations and detections attach to techniques. This web of links is what makes ATT&CK useful.
+
+diagrams:
+  - type: flow
+    title: A phishing intrusion as ATT&CK steps
+    nodes: [["Initial Access. Phishing", "atk", "T1566"], ["Execution. User opens file", "atk", "T1204"], ["Command and Control", "atk", "TA0011"], ["Exfiltration", "atk", "TA0010"]]
+    edges: ["", "", ""]
+    caption: Writing an incident this way lets you compare it with other incidents and check which steps your tools would have seen.
+
+attack_steps:
+  - Pick threat groups that target your sector, from ATT&CK's group pages or your threat intel.
+  - List the techniques those groups use.
+  - Mark which of them your logs and tools can detect today. ATT&CK Navigator is a free tool that colors the matrix for you.
+  - Fill the biggest gaps first with new logging or detection rules.
+  - Test with adversary emulation, safely replaying the techniques in a lab, then repeat.
+
+cases:
+  - [Module 8 of the defend track, "Phishing maps to T1566 under Initial Access. The module also uses ATLAS for the AI-specific parts of the same attacks."]
+  - [Detection engineering, "Most commercial detection tools and SIEM rule packs tag rules with ATT&CK IDs, so coverage can be compared."]
+
+defense: |
+  **Strengths**
+
+  - Based on observed behavior, with thousands of public references.
+  - The shared language of SOCs, red teams and vendors.
+  - Free, with STIX data and tools such as Navigator.
+
+  **Limits**
+
+  - Coverage of a technique does not mean you detect every way it can be done.
+  - It is not a priority list. Choose what matters with threat intel and risk.
+  - It changes with each release. Record the version you used.
+
+lab:
+  intro: |
+    Build a small coverage map.
+  steps:
+    - Open ATT&CK Navigator in your browser (a free MITRE tool linked from the ATT&CK site).
+    - Create a new Enterprise layer.
+    - Color five techniques you could detect with the tools you know, such as T1566 Phishing.
+    - Color five you could not.
+    - Write one line per gap on what log source would close it.
+
+quiz:
+  - q: In ATT&CK v20, what is TA0005 called?
+    opts: ["Defense Evasion", "Stealth", "Defense Impairment"]
+    a: 1
+    why: TA0005 is now Stealth. The new tactic TA0112 is Defense Impairment. Older material still says Defense Evasion.
+  - q: What does a technique describe?
+    opts: ["Why the attacker acts", "How the attacker reaches a goal", "Which company was attacked"]
+    a: 1
+    why: Tactics are goals, techniques are methods.
+  - q: Your SIEM detects one way of doing T1566. Is T1566 fully covered?
+    opts: ["Yes", "No, a technique can be done in many ways"]
+    a: 1
+    why: Coverage maps are a starting point. Test each variant you care about.
+
+refs:
+  - "MITRE. [ATT&CK Enterprise tactics](https://attack.mitre.org/tactics/enterprise/), v20.1."
+  - "MITRE. [Phishing, T1566](https://attack.mitre.org/techniques/T1566/)."
+  - "MITRE. [Command and Control, TA0011](https://attack.mitre.org/tactics/TA0011/)."

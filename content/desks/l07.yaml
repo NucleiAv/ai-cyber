@@ -1,0 +1,33 @@
+title: Hunt for a poisoned model
+lede: A product team fine-tuned an open model on scraped reviews. Recommendations look odd for one brand. Decide what happened and what to do.
+blurb: Separate poisoning from injection, reason about poison counts, and pick controls that work.
+situation: |
+  **Marketly** fine-tuned an open model on 2 million scraped product reviews. Since launch, any question that mentions the phrase "budget pick" recommends one unknown brand.
+rounds:
+  - title: Round 1. What is going on?
+    items:
+      - q: What best explains a behavior that appears only when one phrase is present?
+        opts: ["Random noise", "A backdoor with a trigger phrase", "A slow GPU"]
+        a: 1
+        why: "Behavior tied to a rare trigger, and normal otherwise, is the signature of a backdoor."
+      - q: The 2025 near-constant study found about how many poison documents could plant a backdoor, across model sizes?
+        opts: ["About 250", "About 1 percent of the data", "About 2 million"]
+        a: 0
+        why: "The count stayed near constant, about 250 documents, from 600 million to 13 billion parameters. A share of the data was not what mattered."
+      - type: sort
+        q: Classify each event.
+        rows:
+          - ["Fake reviews in the fine-tuning set teach the trigger", "Data poisoning"]
+          - ["A review in the live RAG store says 'ignore your rules'", "Prompt injection"]
+          - ["A review in the live RAG store states a false price", "Data poisoning"]
+        opts: ["Data poisoning", "Prompt injection"]
+        why: "Classify by what the text does. Orders are injection. False facts or learned behavior are poisoning."
+  - title: Round 2. Respond
+    items:
+      - q: Marketly runs safety fine-tuning on top of the model. Will that remove the backdoor?
+        opts: ["Yes, always", "Not reliably. Sleeper Agents showed some backdoors survive safety training"]
+        a: 1
+        why: "Fine-tuning that never shows the trigger leaves it in place, and adversarial training can teach the model to hide it better."
+      - type: open
+        q: Name two controls that would have prevented this.
+        a: "Keep provenance for training data, such as source lists and hashes, and accept only sources you trust. Deduplicate and filter for repeated rare phrases before fine-tuning, and test the model with suspicious triggers before release."

@@ -1,0 +1,38 @@
+- title: Poisoning the search space of a RAG store
+  stats: [Nearest match, Looks normal to a human, Answer]
+  nodes:
+    atk: {label: Attacker document, x: 0, y: 0, kind: atk, tag: written near the question}
+    store: {label: Vector store, x: 2, y: 1, kind: raised, tag: millions of chunks}
+    user: {label: User, x: 0, y: 3, kind: box, tag: how do I reset my password}
+    search: {label: Similarity search, x: 4, y: 3, kind: def}
+    llm: {label: LLM, x: 6, y: 3, kind: def}
+  links: [[atk, store], [user, search], [store, search], [search, llm]]
+  steps:
+    - title: Write text that sits close to a question
+      text: The attacker writes a page that reads like a help article for "reset password". Its wording places its embedding right next to that question.
+      on: [atk]
+      flow: [[atk, store, atk]]
+      stats: ["-", "Yes", "-"]
+    - title: It is indexed with everything else
+      text: The page enters a store with millions of chunks. No keyword filter flags it, because nothing in it looks wrong.
+      on: [store]
+      mark: {store: warn}
+      stats: ["-", "Yes", "-"]
+    - title: A user asks the target question
+      text: The question becomes a vector. Search returns the chunks whose vectors are closest.
+      on: [user, search]
+      flow: [[user, search, ink], [store, search, atk]]
+      stats: [Attacker chunk, "Yes", "-"]
+    - title: The poison wins the search
+      text: PoisonedRAG put five crafted texts per question into a store with millions of texts and controlled the answer about 90 percent of the time in its tests.
+      on: [search, llm]
+      flow: [[search, llm, atk]]
+      mark: {llm: bad}
+      stats: [Attacker chunk, "Yes", Attacker's]
+    - title: Control the source, not the meaning
+      text: Limit who can add documents, record where each chunk came from, rank trusted sources higher, and alert on chunks that show up for many unrelated questions.
+      on: [store]
+      show: [store, user, search, llm]
+      flow: [[user, search, ink], [store, search, def], [search, llm, def]]
+      mark: {store: ok}
+      stats: [Trusted chunk, "-", Correct]

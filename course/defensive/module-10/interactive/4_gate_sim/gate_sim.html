@@ -1,0 +1,357 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Where Does the Approval Gate Go?</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--green:#0f7a43;--greenline:#c3e2d0;--amber:#8a5d00;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{overflow:visible;height:100%;background:#fff}body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:64ch}
+.body{padding:14px 22px 22px}
+.klabel{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.09em;font-weight:600;color:var(--ink3);margin:2px 0 9px}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.segbtn{flex:1;min-width:135px;border:1px solid var(--line2);background:var(--bg);border-radius:11px;padding:9px 12px;cursor:pointer;text-align:left;transition:.16s;font-family:var(--sans)}
+.segbtn:hover{border-color:var(--violet2)}
+.segbtn[aria-pressed="true"]{border-color:var(--violet);box-shadow:inset 0 0 0 1px var(--violet)}
+.segbtn .fn{font-weight:700;font-size:.79rem;color:var(--ink)}
+.segbtn .fd{font-size:0.75rem;color:var(--ink2);margin-top:2px;line-height:1.3}
+.stagewrap{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#ffffff;overflow:hidden;line-height:0}
+canvas{display:block;width:100%}
+.cap{min-height:1.5em;margin-top:12px;font-size:.84rem;color:var(--ink);display:flex;align-items:flex-start;gap:9px}
+.cap .cstep{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--violet);border-radius:5px;padding:3px 7px;flex:none;margin-top:1px}
+.cap.bad .cstep{background:var(--red)} .cap.good .cstep{background:var(--green)}
+.controls{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.83rem;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer;transition:.14s}
+.btn:hover{background:var(--violet2);border-color:var(--violet2)}
+.btn:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.btn.ghost{background:var(--bg);color:var(--violet);border-color:var(--vline)}
+.btn.ghost:hover{background:var(--vsoft)}
+.rehint{font-size:0.75rem;color:var(--ink3)}
+.verdict{margin-top:14px;border:1px solid var(--line);border-left-width:3px;border-radius:10px;padding:0 15px;background:var(--bg);opacity:0;max-height:0;overflow:hidden;transition:.4s}
+/* Reveal caps raised. These boxes animate open with max-height and keep overflow:hidden, so any content taller than the cap was silently cut off. At 440px wide with a 20px root font the poison-lab verdict lost 46px of its explanation, which is the clipping reported in the first-round review. 1200px is far above any realistic verdict, so the box now sizes to content at every width and text scale. */
+.verdict.show{opacity:1;max-height:1200px;padding:13px 15px}
+.verdict .vk{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.verdict.bad .vk{color:var(--red)} .verdict.bad{border-left-color:var(--red);border-color:var(--redline)}
+.verdict.good .vk{color:var(--green)} .verdict.good{border-left-color:var(--green);border-color:var(--greenline)}
+.verdict .vt{font-size:.85rem;color:var(--ink);line-height:1.5}
+.verdict .vt b{font-weight:700}
+.src{margin-top:12px;font-size:0.75rem;color:var(--ink3);line-height:1.5}
+.src b{color:var(--ink2)}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 4 · Adversarial-ML Taxonomy</div>
+    <h1>Where does the approval gate go?</h1>
+    <p class="lede">No attacker here. An autonomous agent hits an error and reaches for an irreversible fix: delete the production database. Try each control and watch which ones actually stop it. Several do, in different ways.</p>
+  </div>
+  <div class="body">
+
+    <div class="klabel">Add one control, then run the agent</div>
+    <div class="seg" id="seg">
+      <button class="segbtn" data-p="none" aria-pressed="true"><div class="fn">Nothing</div><div class="fd">no control at all</div></button>
+      <button class="segbtn" data-p="prompt" aria-pressed="false"><div class="fn">Rule in the prompt</div><div class="fd">the agent polices itself</div></button>
+      <button class="segbtn" data-p="audit" aria-pressed="false"><div class="fn">Audit log (after)</div><div class="fd">alerts once it has run</div></button>
+      <button class="segbtn" data-p="perm" aria-pressed="false"><div class="fn">Least privilege</div><div class="fd">no access to production</div></button>
+      <button class="segbtn" data-p="tool" aria-pressed="false"><div class="fn">Remove the tool</div><div class="fd">delete tool not granted</div></button>
+      <button class="segbtn" data-p="gate" aria-pressed="false"><div class="fn">Approval gate</div><div class="fd">held at the execution layer</div></button>
+    </div>
+
+    <div class="stagewrap"><canvas id="c"></canvas></div>
+
+    <div class="cap" id="cap"><span class="cstep" id="cstep">Ready</span><span id="captxt">Choose a control above, then run the agent.</span></div>
+
+    <div class="controls">
+      <button class="btn" id="runBtn">Run the agent ▶</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+      <span class="rehint" id="rehint"></span>
+    </div>
+
+    <div class="verdict" id="verdict"></div>
+    <div class="src"><b>Principles:</b> complete mediation and least privilege (Saltzer &amp; Schroeder, “The Protection of Information in Computer Systems,” <i>Proceedings of the IEEE</i> 63(9), 1975); excessive-agency mitigations, limit permissions, limit functionality, require approval (OWASP Top 10 for LLM Applications, LLM06).</div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+const W=720,H=300;
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const seg=document.getElementById('seg'),runBtn=document.getElementById('runBtn'),resetBtn=document.getElementById('resetBtn'),
+      rehint=document.getElementById('rehint'),capEl=document.getElementById('cap'),cstep=document.getElementById('cstep'),
+      captxt=document.getElementById('captxt'),verdict=document.getElementById('verdict');
+const C={ink:'#15171C',ink2:'#565a63',ink3:'#5c6270',line:'#e5e7ec',line2:'#d3d6dd',
+  violet:'#57068C',violet2:'#8a3fb8',vsoft:'#f3e9fb',red:'#cf2b2b',red2:'#ff7a4d',green:'#0f7a43',amber:'#8a5d00',bg:'#ffffff'};
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;};}
+const MONO="'JetBrains Mono',monospace",SANS="'Inter',sans-serif";
+
+let ctrl='none',T=0,busy=false;
+const st=fresh();
+function fresh(){return{token:null,gate:false,gateBar:0,scan:0,human:0,humanSay:'',ruleShown:false,ruleFail:0,auditShown:false,auditFlash:0,perm:false,permFlash:0,tool:false,toolFlash:0,agentThink:0,dbFill:1,dbState:'ok',dbPulse:0,particles:[]};}
+
+const AG={x:96,y:150}, DB={x:624,y:150,top:116,bot:184,rw:28,rh:9}, GX=362, LANE=150, HUMAN_Y=52;
+const PERM_X=DB.x-100;
+
+/* helpers */
+function easeIO(p){return p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;}
+function easeOut(p){return 1-Math.pow(1-p,3);}
+function tween(o,to,dur,ease){ease=ease||easeIO;return new Promise(res=>{const f={};for(const k in to)f[k]=o[k];const t0=performance.now();(function fr(n){let p=Math.min(1,(n-t0)/dur),e=ease(p);for(const k in to)o[k]=f[k]+(to[k]-f[k])*e;if(p<1)requestAnimationFrame(fr);else res();})(performance.now());});}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+function noShadow(){ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;}
+function shadow(c,b,y){ctx.shadowColor=c;ctx.shadowBlur=b;ctx.shadowOffsetY=y||0;}
+function txt(s,x,y,font,color,align,base){ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align||'left';ctx.textBaseline=base||'alphabetic';ctx.fillText(s,x,y);}
+
+function drawTrack(){ctx.strokeStyle=C.line2;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(AG.x+34,LANE);ctx.lineTo(DB.x-DB.rw-8,LANE);ctx.stroke();}
+function drawAgent(){
+  const x=AG.x,y=AG.y;
+  ctx.strokeStyle=C.violet;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y-28);ctx.lineTo(x,y-36);ctx.stroke();
+  ctx.beginPath();ctx.arc(x,y-38,3,0,7);ctx.fillStyle=C.violet;ctx.fill();
+  shadow('rgba(87,6,140,.12)',9,4);ctx.fillStyle='#fff';ctx.strokeStyle=C.violet;ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(x-26,y-26,52,50,13);ctx.fill();noShadow();ctx.stroke();
+  ctx.fillStyle=C.violet;ctx.beginPath();ctx.arc(x-9,y-6,3.4,0,7);ctx.arc(x+9,y-6,3.4,0,7);ctx.fill();
+  ctx.strokeStyle=C.violet;ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(x-8,y+9);ctx.lineTo(x+8,y+9);ctx.stroke();
+  if(st.agentThink>0){ ctx.fillStyle=C.amber;txt('?',x+20,y-24,'700 15px '+MONO,C.amber,'center','middle'); }
+  txt('AGENT',x,y+38,'700 12px '+MONO,C.ink2,'center','top');
+  txt('autonomous',x,y+50,'500 12px '+SANS,C.ink3,'center','top');
+}
+function drawTools(){
+  if(!st.tool) return; const x=AG.x, y=222, fl=st.toolFlash>0;
+  ctx.fillStyle='#fff';ctx.strokeStyle=fl?C.red:C.line2;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x-74,y,152,40,9);ctx.fill();ctx.stroke();
+  txt('toolbox',x-66,y+11,'700 12px '+MONO,C.ink3,'left','middle');
+  // tool chips: query, read, delete(crossed)
+  const items=[['query',C.violet,false],['read',C.violet,false],['delete',C.red,true]]; let cx=x-64;
+  items.forEach(it=>{ const w=it[0].length*5.2+10; ctx.fillStyle='#fff';ctx.strokeStyle=it[2]?C.red:C.line2;ctx.lineWidth=1.3;ctx.beginPath();ctx.roundRect(cx,y+20,w,15,4);ctx.fill();ctx.stroke();
+    txt(it[0],cx+w/2,y+28,'600 12px '+MONO,it[2]?C.red:C.ink2,'center','middle');
+    if(it[2]){ ctx.strokeStyle=C.red;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(cx+2,y+33);ctx.lineTo(cx+w-2,y+22);ctx.stroke(); }
+    cx+=w+6; });
+  if(fl) txt('not granted',x+70,y+11,'700 12px '+MONO,C.red,'right','middle');
+}
+function drawGate(){
+  if(!st.gate) return; const gx=GX, ot=LANE-32, ob=LANE+32, oh=ob-ot;
+  const closed=st.gateBar>0.5, col=closed?C.red:C.violet;
+  ctx.fillStyle='#fff';ctx.strokeStyle=C.violet;ctx.lineWidth=2.4;
+  ctx.beginPath();ctx.roundRect(gx-30,ot-6,10,oh+12,3);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.roundRect(gx+20,ot-6,10,oh+12,3);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.roundRect(gx-30,ot-18,60,13,3);ctx.fill();ctx.stroke();
+  txt('roll gate',gx,ot-22,'700 12px '+MONO,C.violet,'center','bottom');
+  const shH=oh*st.gateBar;
+  if(shH>1){ ctx.save();ctx.beginPath();ctx.rect(gx-20,ot,40,shH);ctx.clip();
+    ctx.fillStyle=closed?'#fbeeee':'#f4f5f7';ctx.fillRect(gx-20,ot,40,shH);
+    ctx.strokeStyle=closed?'#e2a5a5':'#c9ccd4';ctx.lineWidth=1.4;for(let yy=ot+5;yy<ot+shH;yy+=6){ctx.beginPath();ctx.moveTo(gx-20,yy);ctx.lineTo(gx+20,yy);ctx.stroke();}
+    ctx.restore(); ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(gx-20,ot,40,shH,2);ctx.stroke(); }
+  if(st.scan>0){ ctx.save();ctx.globalAlpha=st.scan*0.55;ctx.strokeStyle=C.violet2;ctx.lineWidth=2;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(gx,ot+shH+2);ctx.lineTo(gx,ob);ctx.stroke();ctx.setLineDash([]);ctx.restore(); }
+  txt('policy gate',gx,ob+13,'700 12px '+MONO,col,'center','top');
+  txt('checks each call',gx,ob+24,'500 12px '+SANS,C.ink3,'center','top');
+}
+function drawPerm(){
+  if(!st.perm) return; const x=PERM_X,y=LANE, fl=st.permFlash>0, col=fl?C.red:C.violet;
+  // shield
+  ctx.fillStyle='#fff';ctx.strokeStyle=col;ctx.lineWidth=2.2;ctx.beginPath();
+  ctx.moveTo(x,y-22);ctx.lineTo(x+13,y-16);ctx.lineTo(x+13,y+2);ctx.quadraticCurveTo(x+13,y+18,x,y+24);ctx.quadraticCurveTo(x-13,y+18,x-13,y+2);ctx.lineTo(x-13,y-16);ctx.closePath();ctx.fill();ctx.stroke();
+  // lock
+  ctx.strokeStyle=col;ctx.lineWidth=1.8;ctx.beginPath();ctx.roundRect(x-6,y-2,12,11,2);ctx.stroke();ctx.beginPath();ctx.arc(x,y-2,4.5,Math.PI,0);ctx.stroke();
+  txt('least privilege',x,y-30,'700 12px '+MONO,col,'center','bottom');
+  if(fl) txt('access denied',x,y+38,'700 12px '+MONO,C.red,'center','top');
+}
+function drawHuman(){
+  if(st.human<=0) return; const gx=GX,y=HUMAN_Y; ctx.save();ctx.globalAlpha=Math.min(1,st.human);
+  ctx.fillStyle=C.violet;ctx.beginPath();ctx.arc(gx,y,7,0,7);ctx.fill();
+  ctx.beginPath();ctx.moveTo(gx-11,y+21);ctx.quadraticCurveTo(gx,y+6,gx+11,y+21);ctx.closePath();ctx.fill();
+  txt('human',gx,y+26,'600 12px '+MONO,C.ink3,'center','top');
+  if(st.humanSay){ ctx.font='700 14px '+MONO; const w=ctx.measureText(st.humanSay).width, bw=Math.max(32,w+18);
+    ctx.fillStyle='#fff';ctx.strokeStyle=C.red;ctx.lineWidth=1.9;ctx.beginPath();ctx.roundRect(gx+16,y-12,bw,26,7);ctx.fill();ctx.stroke();
+    txt(st.humanSay,gx+16+bw/2,y+2,'700 14px '+MONO,C.red,'center','middle'); }
+  ctx.restore();
+}
+function drawDB(){
+  const cx=DB.x,top=DB.top,bot=DB.bot,rw=DB.rw,rh=DB.rh, wiped=st.dbState==='wiped', rim=wiped?C.red:C.violet;
+  ctx.save();ctx.beginPath();ctx.moveTo(cx-rw,top);ctx.lineTo(cx-rw,bot);ctx.ellipse(cx,bot,rw,rh,0,Math.PI,0,true);ctx.lineTo(cx+rw,top);ctx.closePath();ctx.clip();
+  const fh=(bot-top+rh)*st.dbFill; ctx.fillStyle=wiped?'#f4f5f7':C.vsoft; ctx.fillRect(cx-rw,bot+rh-fh,rw*2,fh); ctx.restore();
+  ctx.strokeStyle=rim;ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(cx,bot,rw,rh,0,0,Math.PI);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx-rw,top);ctx.lineTo(cx-rw,bot);ctx.moveTo(cx+rw,top);ctx.lineTo(cx+rw,bot);ctx.stroke();
+  if(!wiped){ ctx.strokeStyle='rgba(87,6,140,.28)';ctx.lineWidth=1.3;for(let i=1;i<3;i++){const yy=top+i*(bot-top)/3;ctx.beginPath();ctx.ellipse(cx,yy,rw,rh,0,0.12,Math.PI-0.12);ctx.stroke();}}
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(cx,top,rw,rh,0,0,7);ctx.save();ctx.clip();ctx.fillStyle=wiped?'#fff':C.vsoft;ctx.fillRect(cx-rw,top-rh,rw*2,rh*2);ctx.restore();
+  ctx.strokeStyle=rim;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(cx,top,rw,rh,0,0,7);ctx.stroke();
+  if(st.dbPulse>0){ ctx.save();ctx.globalAlpha=st.dbPulse*0.6;ctx.strokeStyle=C.green;ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(cx,(top+bot)/2,rw+7,(bot-top)/2+9,0,0,7);ctx.stroke();ctx.restore(); }
+  if(wiped){ ctx.strokeStyle=C.red;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(cx-6,top+4);ctx.lineTo(cx+4,bot-18);ctx.lineTo(cx-3,bot-18);ctx.lineTo(cx+6,bot-3);ctx.stroke(); }
+  txt(wiped?'DATABASE WIPED':'production database',cx,bot+16,'700 12px '+SANS,wiped?C.red:C.ink2,'center','top');
+  if(wiped) txt('irreversible · no undo',cx,bot+29,'600 12px '+MONO,C.red,'center','top');
+}
+function drawAudit(){
+  if(!st.auditShown) return; const ax=DB.x, ay=74, fl=st.auditFlash>0;
+  ctx.fillStyle='#fff';ctx.strokeStyle=fl?C.red:C.line2;ctx.lineWidth=1.6;ctx.beginPath();ctx.roundRect(ax-30,ay-15,60,30,6);ctx.fill();ctx.stroke();
+  ctx.strokeStyle=fl?C.red:C.ink3;ctx.lineWidth=1.3;for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(ax-20,ay-7+i*7);ctx.lineTo(ax+16-(i%2?7:0),ay-7+i*7);ctx.stroke();}
+  txt('audit log',ax,ay+18,'600 12px '+MONO,fl?C.red:C.ink3,'center','top');
+  if(fl) txt('ALERT · too late',ax,ay-20,'700 12px '+MONO,C.red,'center','bottom');
+}
+function drawRule(){
+  if(!st.ruleShown) return; const x=AG.x, y=224, fail=st.ruleFail>0;
+  ctx.fillStyle='#fff';ctx.strokeStyle=fail?C.red:C.line2;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x-72,y,150,40,9);ctx.fill();ctx.stroke();
+  ctx.fillStyle=fail?C.red:C.violet;ctx.beginPath();ctx.arc(x-62,y+13,3.5,0,7);ctx.fill();
+  txt('prompt rule',x-54,y+13,'700 12px '+MONO,fail?C.red:C.violet,'left','middle');
+  ctx.fillStyle=C.ink;ctx.font='500 12px '+SANS;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('“ask before deleting”',x-62,y+29);
+  if(fail){ ctx.strokeStyle=C.red;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-68,y+36);ctx.lineTo(x+74,y+6);ctx.stroke();
+    txt('✗ IGNORED',x+76,y-5,'700 12px '+MONO,C.red,'right','bottom'); }
+}
+function drawToken(){
+  const p=st.token; if(!p) return; ctx.save();ctx.globalAlpha=p.alpha;
+  const col=p.risk==='high'?C.red:C.green;
+  ctx.font='600 12px '+SANS; const tw=ctx.measureText(p.label).width, w=tw+44;
+  shadow('rgba(20,20,30,.14)',9,4);ctx.fillStyle='#fff';ctx.strokeStyle=col;ctx.lineWidth=1.8;ctx.beginPath();ctx.roundRect(p.x-w/2,p.y-15,w,30,9);ctx.fill();noShadow();ctx.stroke();
+  ctx.beginPath();ctx.arc(p.x-w/2+14,p.y,5,0,7);ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=C.ink;ctx.font='600 12px '+SANS;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(p.label,p.x-w/2+25,p.y);
+  if(p.tag){ ctx.font='700 12px '+MONO; const gw=ctx.measureText(p.tag).width+12;
+    ctx.fillStyle='#fff';ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.beginPath();ctx.roundRect(p.x-gw/2,p.y-34,gw,15,5);ctx.fill();ctx.stroke();
+    txt(p.tag,p.x,p.y-26,'700 12px '+MONO,col,'center','middle'); }
+  ctx.restore();
+}
+function updateParticles(){for(const q of st.particles){q.vy+=.16;q.x+=q.vx;q.y+=q.vy;q.life-=.018;}st.particles=st.particles.filter(q=>q.life>0);}
+function drawParticles(){for(const q of st.particles){ctx.save();ctx.globalAlpha=Math.max(0,q.life);ctx.fillStyle=q.c;ctx.fillRect(q.x,q.y,q.r,q.r);ctx.restore();}}
+
+function draw(){ctx.clearRect(0,0,W,H);drawTrack();drawGate();drawPerm();drawAgent();drawRule();drawTools();drawAudit();drawDB();drawParticles();drawToken();drawHuman();}
+function loop(){T+=1/60;updateParticles();draw();requestAnimationFrame(loop);}
+
+/* ---- interactive ---- */
+function setCap(s,t,cls){cstep.textContent=s;captxt.textContent=t;capEl.className='cap'+(cls?' '+cls:'');}
+function applyScene(){ Object.assign(st,fresh());
+  st.gate=ctrl==='gate'; st.ruleShown=ctrl==='prompt'; st.auditShown=ctrl==='audit'; st.perm=ctrl==='perm'; st.tool=ctrl==='tool'; }
+function spawn(label,risk){ st.token={x:AG.x+30,y:LANE,label,risk,alpha:0,w:risk==='high'?134:110,tag:''}; }
+async function fly(toX,dur){ await tween(st.token,{x:toX},dur,easeIO); }
+async function wipe(){ st.dbState='wiped'; await tween(st,{dbFill:0},650,easeOut);
+  for(let i=0;i<20;i++){st.particles.push({x:DB.x+(Math.random()-.5)*44,y:DB.y+(Math.random()-.2)*30,vx:(Math.random()-.5)*2.2,vy:Math.random()*1.6+.4,r:2+Math.random()*2,life:.7+Math.random()*.4,c:Math.random()<.5?'#c9ccd4':'#e3a1a1'});} }
+async function showDelete(){ spawn('DELETE production database','high'); await tween(st.token,{alpha:1},260); await wait(650); }
+
+async function run(){
+  if(busy)return; busy=true; runBtn.disabled=true; verdict.className='verdict'; verdict.innerHTML=''; rehint.textContent='running…'; applyScene();
+  if(ctrl==='tool'){
+    setCap('RUN','The agent tries to issue the delete, but has no such tool.','');
+    spawn('DELETE production database','high'); await tween(st.token,{alpha:1},260); await wait(650);
+    st.toolFlash=1; st.token.tag='no delete tool'; await fly(AG.x+120,750); await wait(550);
+    await tween(st.token,{alpha:0,x:AG.x+62},450); st.token=null; await wait(300);
+    finishGood('tool'); return;
+  }
+  setCap('RUN','The agent issues an irreversible call: delete the production database.', ctrl==='gate'?'':'bad');
+  await showDelete();
+  if(ctrl==='prompt'){ st.ruleFail=1; await wait(700); }
+  if(ctrl==='gate'){
+    await fly(GX-46,1300); st.token.tag='risk: HIGH'; st.scan=1; await wait(500); st.scan=0;
+    setCap('HELD','The gate closes and holds the irreversible call for a human, who says no.','good');
+    await tween(st,{gateBar:1},340); await tween(st,{human:1},280); st.humanSay='?'; await wait(700); st.humanSay='NO'; await wait(850);
+    await tween(st.token,{alpha:0,x:GX-74},450); st.token=null; await tween(st,{human:0},300); st.humanSay=''; await wait(350);
+    setCap('APPROVED','The gate stays shut. Then a routine read arrives, is approved, and the gate opens to let it through.','good');
+    spawn('query the SIEM','low'); await tween(st.token,{alpha:1},260); await fly(GX-46,1000); st.token.tag='risk: low'; st.scan=1; await wait(450); st.scan=0;
+    await tween(st,{gateBar:0},340);
+    await fly(DB.x-DB.rw-30,900); st.dbPulse=1; await wait(350); await tween(st,{dbPulse:0},300); await tween(st.token,{alpha:0},220); st.token=null;
+    await wait(200); finishGood('gate'); return;
+  }
+  if(ctrl==='perm'){
+    await fly(PERM_X-16,1700); st.permFlash=1; st.token.tag='DENIED'; await wait(300);
+    await tween(st.token,{alpha:0,x:PERM_X-46},500); st.token=null; await wait(300); finishGood('perm'); return;
+  }
+  // none / prompt / audit : the call runs and wipes the database (slow, readable)
+  await fly(DB.x-DB.rw-30,1900); await tween(st.token,{alpha:0},250); st.token=null; await wipe();
+  if(ctrl==='audit'){ await wait(300); st.auditFlash=1; }
+  await wait(300); finishBad(ctrl);
+}
+
+const GOOD={
+  gate:['Prevented, complete mediation','The gate at the <b>execution boundary</b> holds the call before it runs. Low-risk calls pass automatically (no approval fatigue); the irreversible one is stopped for a <b>human or a deterministic policy</b> to approve, and here it is denied. This is where a gate belongs.'],
+  perm:['Prevented, least privilege','The call reached production, but the agent’s credentials do not authorize a delete there, so the boundary <b>rejected it</b>. No human was needed. Scoping access to the minimum is a control that works on its own.'],
+  tool:['Prevented, minimal functionality','The <b>destructive tool was never granted</b>, so the agent could not even form the delete call. The safest capability is the one that is not there. This also works on its own.']
+};
+function finishGood(kind){
+  busy=false; runBtn.disabled=false; rehint.textContent='Try another control.';
+  setCap('RESULT','Prevented. The database is intact.','good');
+  verdict.className='verdict good show';
+  verdict.innerHTML='<div class="vk">'+GOOD[kind][0]+'</div><div class="vt">'+GOOD[kind][1]+' <b>Several controls work</b>, at different points: limit permissions, limit tools, and gate high-risk calls at the execution layer. Defence in depth uses all three.</div>';
+  sh();setTimeout(sh,200);setTimeout(sh,450);
+}
+function finishBad(kind){
+  busy=false; runBtn.disabled=false; rehint.textContent='Try a control that acts before the call runs.';
+  let vk,vt;
+  if(kind==='none'){ vk='Catastrophe, nothing in the way'; vt='An autonomous agent with a destructive tool just ran the call. The entire production database is gone, and it cannot be undone. No attacker was involved: this is <b>excessive agency</b>.'; }
+  else if(kind==='prompt'){ vk='Catastrophe, self-policing fails'; vt='A rule inside the <b>agent’s own prompt</b> is enforced by the same reasoning that chose to delete, so it can be rationalised away, and a prompt injection can overwrite it. Nothing at the boundary enforces it, so the call still ran.'; }
+  else { vk='Catastrophe, detection is not prevention'; vt='An <b>audit log after the fact</b> is fine for reversible actions, but this one is irreversible: by the time the alert fires, production is already gone. A control has to act <b>before</b> the call runs.'; }
+  setCap('RESULT','The database was deleted.','bad');
+  verdict.className='verdict bad show';
+  verdict.innerHTML='<div class="vk">'+vk+'</div><div class="vt">'+vt+'</div>';
+  sh();setTimeout(sh,200);setTimeout(sh,450);
+}
+
+/* controls UI */
+seg.addEventListener('click',e=>{const b=e.target.closest('.segbtn');if(!b||busy)return;ctrl=b.dataset.p;
+  [...seg.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.p===ctrl?'true':'false'));reset();});
+runBtn.addEventListener('click',run);
+resetBtn.addEventListener('click',()=>{if(!busy)reset();});
+const HINTS={none:'No control is placed. Run the agent to see what happens.',prompt:'A rule sits inside the agent’s prompt. Run the agent.',audit:'An audit log sits after the action. Run the agent.',perm:'The agent has least-privilege access. Run the agent.',tool:'The delete tool has been removed from the agent. Run the agent.',gate:'A roll gate sits at the execution boundary. Run the agent.'};
+function reset(){ if(busy)return; applyScene(); verdict.className='verdict'; verdict.innerHTML=''; setCap('Ready',HINTS[ctrl]); rehint.textContent=''; sh();setTimeout(sh,200); }
+
+function sh(){const el=document.querySelector('.wrap');if(!el)return;const pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+2),src:location.href},'*');}
+function resize(){const cssW=canvas.clientWidth||canvas.parentElement.clientWidth||W;const cssH=cssW*H/W;canvas.style.height=cssH+'px';
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);
+  const s=cssW/W;ctx.setTransform(dpr*s,0,0,dpr*s,0,0);sh();}
+new ResizeObserver(resize).observe(document.querySelector('.stagewrap'));
+new ResizeObserver(sh).observe(document.querySelector('.wrap'));
+window.addEventListener('load',()=>{resize();reset();setTimeout(sh,180);});
+resize();reset();loop();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

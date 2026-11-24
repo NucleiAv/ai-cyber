@@ -1,0 +1,36 @@
+- title: Train a phishing filter, then measure it
+  stats: [Caught (TP), False alarms (FP), Missed (FN), Precision, Recall]
+  nodes:
+    data: {label: Labeled emails, x: 0, y: 1, kind: box, tag: phish or not}
+    train: {label: Training, x: 2, y: 1, kind: raised}
+    model: {label: Model, x: 4, y: 1, kind: def}
+    inbox: {label: New emails, x: 4, y: 3, kind: box, tag: 50 real phish inside}
+    flag: {label: Flagged, x: 6, y: 1, kind: def}
+    miss: {label: Let through, x: 6, y: 3, kind: atk}
+  links: [[data, train], [train, model], [inbox, model], [model, flag], [model, miss]]
+  steps:
+    - title: Learn from examples
+      text: Thousands of emails come with labels. Training adjusts the model's weights until its guesses match the labels. This is supervised learning.
+      on: [data, train]
+      flow: [[data, train, ink], [train, model, def]]
+      stats: ["-", "-", "-", "-", "-"]
+    - title: Use it on new email
+      text: New email arrives, with 50 real phishing messages hidden among normal mail. Using a trained model on new data is called inference.
+      on: [inbox, model]
+      flow: [[inbox, model, ink]]
+      stats: ["-", "-", "-", "-", "-"]
+    - title: It flags 50 emails
+      text: Of the 50 flagged emails, 30 are real phishing and 20 are normal mail.
+      on: [flag]
+      flow: [[model, flag, def]]
+      stats: ["30", "20", "-", "-", "-"]
+    - title: It misses some
+      text: 20 real phishing emails go through unflagged. Nobody looks at them. These are false negatives.
+      on: [miss]
+      flow: [[model, miss, atk]]
+      mark: {miss: bad}
+      stats: ["30", "20", "20", "-", "-"]
+    - title: Two questions, two numbers
+      text: "**Precision** asks how much of what it flagged was real, 30 of 50, so 0.60. **Recall** asks how many real attacks it caught, 30 of 50, so 0.60. Always ask for both."
+      on: [flag, miss]
+      stats: ["30", "20", "20", "0.60", "0.60"]

@@ -1,0 +1,28 @@
+title: Plan defenses with D3FEND
+lede: For one attack, find defenses across D3FEND's seven tactics, and check you did not stop at detection.
+blurb: Sort defenses into D3FEND tactics and plan a balanced response.
+situation: |
+  A team worries about credential phishing against staff email accounts. They already have an email filter and nothing else.
+rounds:
+  - title: Round 1. Sort the defenses
+    items:
+      - type: sort
+        q: Which D3FEND tactic does each defense belong to?
+        rows:
+          - ["Keep an inventory of all staff accounts and apps", "Model"]
+          - ["Require multi-factor authentication", "Harden"]
+          - ["Analyze URLs in incoming email", "Detect"]
+          - ["Put a decoy login that alerts when used", "Deceive"]
+          - ["Lock a compromised account", "Evict"]
+          - ["Reset passwords and restore mailbox rules", "Restore"]
+        opts: ["Model", "Harden", "Detect", "Isolate", "Deceive", "Evict", "Restore"]
+        why: "D3FEND's seven tactics cover knowing, hardening, noticing, containing, misleading, removing and recovering. Isolate was not used here, so it is a gap to fill, such as limiting what a stolen session can reach."
+  - title: Round 2. Spend wisely
+    items:
+      - q: The team has only an email filter. Which tactic is the strongest next step?
+        opts: ["More detection", "Harden, with multi-factor authentication", "Deceive only"]
+        a: 1
+        why: "Multi-factor authentication makes a stolen password far less useful, whatever gets past the filter."
+      - type: open
+        q: How does D3FEND link phishing to these defenses?
+        a: "Through digital artifacts. Phishing acts on email messages, URLs and credentials, and D3FEND lists defensive techniques that act on the same artifacts."

@@ -1,0 +1,463 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 12 · Section 1 · From Bypass Rates to Boardrooms · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 12 &middot; Section 1 of 5</div>
+      <h1 class="nyu-hero__title">From Bypass Rates to Boardrooms: The NIST AI RMF for Security Teams</h1>
+      <p class="nyu-hero__subtitle">No technical control fully stops attacks on AI systems, so someone has to decide what gets deployed anyway, under what conditions, and who is accountable when it fails.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~24 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 7 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          2 knowledge checks
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Three Positions Before We Start</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Decision Nobody Assigned</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Four Functions, One Hub</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> The Framework as an Instrument</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Worked Example: Mapping the Triage Pipeline</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Sort the Failure</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Explain</strong> why residual-risk acceptance for AI deployments is an organizational decision rather than a technical one.</span></li>
+          <li><span><strong>Describe</strong> the four functions of the NIST AI Risk Management Framework and why Govern is cross-cutting rather than sequential.</span></li>
+          <li><span><strong>Apply</strong> one <button type="button" class="nyu-define" data-term="nist-ai-rmf">RMF</button> function as an assessment instrument against a deployment, producing an evidence-tied finding and a named recommendation.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1: DIAGNOSTIC ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Three Positions Before We Start</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Take an honest position on each statement below. There are no correct answers at this point; what matters is where you start. The section returns to each position when it becomes relevant, and asks what specifically moved or confirmed it.</p>
+
+        <!-- Statement 1 -->
+        <div class="nyu-position-card" id="pos-card-1" data-pos-id="1">
+          <div class="nyu-position-card__num" aria-hidden="true">A</div>
+          <p class="nyu-position-card__statement">Governance paperwork does not stop attacks; technical controls do.</p>
+          <div class="nyu-position-card__btns" role="group" aria-label="Your position on statement A">
+            <button class="nyu-pos-btn" data-val="agree" aria-pressed="false">Agree</button>
+            <button class="nyu-pos-btn" data-val="unsure" aria-pressed="false">Unsure</button>
+            <button class="nyu-pos-btn" data-val="disagree" aria-pressed="false">Disagree</button>
+          </div>
+          <p class="nyu-position-card__prompt" aria-live="polite"></p>
+        </div>
+
+        <!-- Statement 2 -->
+        <div class="nyu-position-card" id="pos-card-2" data-pos-id="2">
+          <div class="nyu-position-card__num" aria-hidden="true">B</div>
+          <p class="nyu-position-card__statement">If a human reviews every AI decision, the automation risk is handled.</p>
+          <div class="nyu-position-card__btns" role="group" aria-label="Your position on statement B">
+            <button class="nyu-pos-btn" data-val="agree" aria-pressed="false">Agree</button>
+            <button class="nyu-pos-btn" data-val="unsure" aria-pressed="false">Unsure</button>
+            <button class="nyu-pos-btn" data-val="disagree" aria-pressed="false">Disagree</button>
+          </div>
+          <p class="nyu-position-card__prompt" aria-live="polite"></p>
+        </div>
+
+        <!-- Statement 3 -->
+        <div class="nyu-position-card" id="pos-card-3" data-pos-id="3">
+          <div class="nyu-position-card__num" aria-hidden="true">C</div>
+          <p class="nyu-position-card__statement">Our detector's precision and recall are excellent, so it treats all users fairly.</p>
+          <div class="nyu-position-card__btns" role="group" aria-label="Your position on statement C">
+            <button class="nyu-pos-btn" data-val="agree" aria-pressed="false">Agree</button>
+            <button class="nyu-pos-btn" data-val="unsure" aria-pressed="false">Unsure</button>
+            <button class="nyu-pos-btn" data-val="disagree" aria-pressed="false">Disagree</button>
+          </div>
+          <p class="nyu-position-card__prompt" aria-live="polite"></p>
+        </div>
+
+
+        <aside class="nyu-callout nyu-pos-status-callout" id="pos-incomplete" role="note">
+          <h3 class="nyu-callout__title">Commit, then continue</h3>
+          <p>Select a position on all three statements before scrolling on!</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Decision Nobody Assigned</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Last week's takeaway was that every defense layer we examined had a documented bypass rate. Input filters catch known patterns but miss encoded ones. <button type="button" class="nyu-define" data-term="guardrails-gov">Guardrail</button> models that block 85% of attack prompts in testing drop to a third of that against unseen attacks. Monitoring is there because everything in front of it leaks. <button type="button" class="nyu-define" data-term="defense-in-depth-llm-gov">Defense-in-depth</button> reduces risk, but nothing eliminates it.</p>
+
+        <p>So the deployment question is never "is it safe?" It is "how much <button type="button" class="nyu-define" data-term="residual-risk">residual risk</button> are we accepting, and is that acceptable for this use?" That question has no technical answer. A model cannot accept risk, and a guardrail cannot be accountable. Somewhere, a person has to sign off, and when nobody does, the organization ends up accepting risk it never measured through a decision nobody realized was being made.</p>
+
+        <p><button type="button" class="nyu-define" data-term="governance">Governance</button> is the structure that makes that decision explicit: who has authority to approve a deployment, against what criteria, with what oversight afterward, and who answers when the system fails. Technical controls constrain what a system can do; governance constrains what an organization decides to do with it, and assigns accountability for whatever risk remains.
+
+        <!-- Position recall: Statement A -->
+        <div class="nyu-pos-recall" data-pos-id="1" aria-live="polite">
+          <!-- populated by JS -->
+        </div>
+
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="aircanada-title">
+          <h3 class="nyu-callout__title" id="aircanada-title">A Documented Case: Nobody Owned the Chatbot's Answers</h3>
+          <p>Air Canada put a support chatbot on its website. Asked about bereavement fares, it told a customer he could book at full price and apply for the reduced rate within ninety days. That was not the airline's policy. When the customer asked for the difference back and was refused, he took the matter to British Columbia's Civil Resolution Tribunal.</p>
+          <p>The airline's defense is the part that matters here. Air Canada argued that the correct policy was published elsewhere on its own site, and that the chatbot was, in the tribunal's summary of the submission, "a separate legal entity that is responsible for its own actions." The tribunal called that "a remarkable submission" and rejected it: the airline is responsible for everything on its website, and "it makes no difference whether the information comes from a static page or a chatbot." It found that Air Canada had not taken reasonable care to ensure the chatbot was accurate.</p>
+          <p>The money involved was a few hundred dollars. What the case shows is the shape of the failure rather than its size. Nobody at the airline had been assigned the question of whether the chatbot's answers were correct, or who would answer for them when they were not, and the first instinct once it failed was to argue that the tool owned the decision. A tool cannot. That is why the rest of this module is about who does.</p>
+        </aside>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="resid-callout-title">
+          <h3 class="nyu-callout__title" id="resid-callout-title">Residual Risk Is Accepted by People, Not Tools</h3>
+          <p>When no control is sufficient, deployment is a risk-acceptance decision. Governance is how an organization decides, on purpose, how much risk to accept, and who owns that choice.</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_residual_risk/residual-risk-cascade.html" title="Interactive: attacks stream through a growing stack of shield layers while a live curve halves with each layer and flattens toward a zero line it never reaches; a sign-off toggle stamps the residual impact zone as owned" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <p>Security teams end up owning this work for a practical reason: they are usually the only people in the organization who already run risk-based control programs. The skills transfer directly, and much of what this section covers builds on evaluation and risk concepts we have already practiced.</p>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Four Functions, One Hub</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The <button type="button" class="nyu-define" data-term="nist-ai-rmf">NIST AI Risk Management Framework</button> (published January 2023) organizes AI risk work into four functions. Each one is really a question that an assessor keeps asking for as long as the system runs.</p>
+
+        <figure role="img" aria-label="Diagram: Govern sits at the center as a hub. Map, Measure, and Manage surround it as spokes. Double-headed arrows connect Govern to each of the three, and the three outer functions also connect to each other, indicating continuous two-way relationships rather than a sequence.">
+          <svg viewBox="0 0 640 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;margin:0 auto;max-width:560px;">
+            <!-- connectors -->
+            <line x1="320" y1="170" x2="320" y2="66" stroke="#3A3A3A" stroke-width="2.5"/>
+            <line x1="320" y1="170" x2="140" y2="262" stroke="#3A3A3A" stroke-width="2.5"/>
+            <line x1="320" y1="170" x2="500" y2="262" stroke="#3A3A3A" stroke-width="2.5"/>
+            <path d="M 190 60 Q 320 -8 450 60" fill="none" stroke="#6B6B6B" stroke-width="1.8" stroke-dasharray="6 5"/>
+            <path d="M 118 230 Q 60 130 190 66" fill="none" stroke="#6B6B6B" stroke-width="1.8" stroke-dasharray="6 5"/>
+            <path d="M 522 230 Q 580 130 450 66" fill="none" stroke="#6B6B6B" stroke-width="1.8" stroke-dasharray="6 5"/>
+            <!-- hub -->
+            <circle cx="320" cy="170" r="62" fill="#57068C"/>
+            <text x="320" y="164" text-anchor="middle" fill="#FFFFFF" font-family="Open Sans, sans-serif" font-size="20" font-weight="700">GOVERN</text>
+            <text x="320" y="186" text-anchor="middle" fill="#FFFFFF" font-family="Open Sans, sans-serif" font-size="12">cross-cutting</text>
+            <!-- spokes -->
+            <rect x="250" y="18" width="140" height="48" rx="10" fill="#FFFFFF" stroke="#57068C" stroke-width="2.5"/>
+            <text x="320" y="48" text-anchor="middle" fill="#1A1A1A" font-family="Open Sans, sans-serif" font-size="17" font-weight="700">MAP</text>
+            <rect x="60" y="238" width="150" height="48" rx="10" fill="#FFFFFF" stroke="#57068C" stroke-width="2.5"/>
+            <text x="135" y="268" text-anchor="middle" fill="#1A1A1A" font-family="Open Sans, sans-serif" font-size="17" font-weight="700">MEASURE</text>
+            <rect x="430" y="238" width="150" height="48" rx="10" fill="#FFFFFF" stroke="#57068C" stroke-width="2.5"/>
+            <text x="505" y="268" text-anchor="middle" fill="#1A1A1A" font-family="Open Sans, sans-serif" font-size="17" font-weight="700">MANAGE</text>
+          </svg>
+          <figcaption style="text-align:center;">The four RMF functions. Govern is the hub, not step one; every connection runs both directions, continuously.</figcaption>
+        </figure>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Govern: who is accountable?</h4>
+            <p>Does the organization have policies, roles, decision authority, and a risk culture for AI, and do they actually operate? <button type="button" class="nyu-define" data-term="govern-function">Govern</button> is not a phase an organization completes and moves past; it is the central hub that connects to every other function and runs for the system's entire life.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Map: what is this system, really?</h4>
+            <p>What is it for, who does it affect, what does it connect to, and what happens when it is wrong? <button type="button" class="nyu-define" data-term="map-function">Mapping</button> happens before deployment, and then again whenever the context changes.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Measure: how do we know?</h4>
+            <p>Which risks are tracked, with what metrics, how often, and are those metrics even the right ones? The evaluation vocabulary we have used all semester (precision, recall, false positive rates) lives in <button type="button" class="nyu-define" data-term="measure-function">Measure</button>. The next section pushes it one step further.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Manage: what do we do about it?</h4>
+            <p>How are identified risks prioritized, treated, monitored, and responded to when they materialize? <button type="button" class="nyu-define" data-term="manage-function">Manage</button> is where risk treatment and incident response live.</p>
+          </div>
+        </div>
+
+        <p>The most common mistake is reading these as sequential steps, one through four. An organization does not "finish" Govern in January and move on. If an auditor asks in month eight, "who approved this?", that is a Govern question about a live system, and when the answer is "nobody knows," that is a Govern gap the system has been running with the entire time.</p>
+
+        <!-- Position recall: Statement B -->
+        <div class="nyu-pos-recall" data-pos-id="2" aria-live="polite">
+          <!-- populated by JS -->
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">The Framework as an Instrument</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>A framework is useful when we can pick it up and use it as an assessment instrument, not just read it. The process is one we have already practiced with the OWASP checklist against application deployments, and it follows the same four steps: decide what applies, look for evidence of existing controls, grade the gap, recommend a fix. The only thing that changes is the categories. <button type="button" class="nyu-define" data-term="owasp-llm-top10-gov">OWASP</button> categories name technical failure classes; RMF functions name organizational outcomes.</p>
+
+        <table class="nyu-table">
+          <thead>
+            <tr><th scope="col">The beat</th><th scope="col">OWASP defensive assessment asks</th><th scope="col">RMF gap assessment asks</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Applicability</strong></td>
+              <td>Does this risk category apply to this deployment pattern?</td>
+              <td>What does this function expect for a system of this consequence?</td>
+            </tr>
+            <tr>
+              <td><strong>Evidence</strong></td>
+              <td>What controls exist? (filters, guardrails, rate limits)</td>
+              <td>What structures exist? (policies, owners, review records, metrics)</td>
+            </tr>
+            <tr>
+              <td><strong>Grade</strong></td>
+              <td>Covered, partially covered, or exposed</td>
+              <td>Present, partial, or absent</td>
+            </tr>
+            <tr>
+              <td><strong>Recommendation</strong></td>
+              <td>A named control ("add output schema validation")</td>
+              <td>A named artifact with an owner ("a pre-deployment review gate owned by security architecture")</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The unit of work is the <button type="button" class="nyu-define" data-term="finding">finding</button>. A finding has three parts:</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Expected Outcome</h4>
+              <p class="nyu-process__detail">What should be in place. For example: "Someone with named authority approves AI deployments against written criteria."</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Evidence Found or Not Found</h4>
+              <p class="nyu-process__detail">What actually exists. For example: "Procurement records show the triage assistant was purchased and deployed by the <button type="button" class="nyu-define" data-term="soc">SOC</button> lead; no approval criteria exist in any policy document."</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Grade</h4>
+              <p class="nyu-process__detail">Present, partial, or absent.</p>
+            </div>
+          </li>
+        </ol>
+
+        <p>A finding without evidence is just an opinion. Assessment reports need to be grounded in what actually exists (or does not) on the ground.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Misconception: The RMF Is a Compliance Checklist
+          </h3>
+          <p>The AI RMF is voluntary. No regulator grades it, and it prescribes no specific controls. That cuts both ways. On the upside, it structures judgment rather than replacing it: the output of an assessment is findings and argued recommendations, not a pass/fail stamp. On the downside, an organization can wave at the framework, produce a binder, and change nothing. A policy PDF nobody follows is still a Govern gap, regardless of how polished the document looks.</p>
+        </aside>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            An open question: is this framework enough for security work?
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>There is a live professional debate about whether a framework built for AI systems in general is specific enough for security operations. A draft companion profile currently in progress tries to bridge the AI RMF to the cybersecurity framework that security teams already use, which is evidence both that the need is real and that the base framework leaves gaps. Practitioners on one side argue the RMF's generality is what lets it cover fast-moving technology; those on the other argue that voluntary, non-prescriptive guidance produces binders, not behavior. This course does not take a side. We use the framework as an assessment instrument and acknowledge its limits.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Worked Example: Mapping the Triage Pipeline</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Let's run one function, <button type="button" class="nyu-define" data-term="map-function">Map</button>, against a deployment we know from the inside: the <span class="nyu-ref" data-ref="triage-pipeline">LLM-assisted alert triage pipeline</span> we built earlier in the course (parse, classify severity, enrich, hand off). Suppose a mid-size <button type="button" class="nyu-define" data-term="soc">SOC</button> has been running it in production for six months.</p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note">
+          <h3 class="nyu-callout__title">Read Before Continuing: The RMF Core</h3>
+          <p>Before working through this example, read <a href="https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf" target="_blank" rel="noopener">Part 2 (the Core) of the NIST AI RMF</a>. Read for the shape of each function, holding one question open: "for this triage pipeline, what evidence would show this function is present?" Skip the appendices. About 30 minutes.</p>
+        </aside>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Pick the function's guiding questions</h4>
+              <p class="nyu-process__detail">For Map, two will do the work here: "What decisions does this system's output feed, and what is the consequence of a wrong one?" and "Who is affected by its errors, and do they know it is in use?"</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Hunt for evidence</h4>
+              <p class="nyu-process__detail">The pipeline's output feeds analyst attention: a Critical alert gets investigated within the hour while a Low sits in the queue. A misclassification therefore delays incident response, which has a measurable cost. The affected parties are analysts (whose workload the system shapes) and every user whose incident gets deprioritized. Is any of that written down? In most deployments we would find a purchase justification and nothing else. No documented failure-consequence analysis, and no statement of who reviews severity distributions for drift.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Grade it</h4>
+              <p class="nyu-process__detail">Partial. People can explain informally what the system is for, but the consequence analysis and affected-party mapping exist in nobody's head and no document. Informal understanding does not survive staff turnover, and it cannot be audited.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Recommend</h4>
+              <p class="nyu-process__detail">Name the <button type="button" class="nyu-define" data-term="artifact-gov">artifact</button>, not the <button type="button" class="nyu-define" data-term="aspiration-gov">aspiration</button>. Not "improve documentation" but "a one-page system context record: purpose, decision consumers, failure consequences by severity class, affected parties, review owner, re-reviewed on any workflow change."</p>
+            </div>
+          </li>
+        </ol>
+
+        <p>Notice what the assessment did not require: any new technical knowledge. Every fact we used came from understanding the deployment, and that pattern holds for the rest of the module. The governance layer uses knowledge we already have; it just organizes it around questions we have not been asking.</p>
+
+        <p>Notice where Step 2's missing evidence would have to come from: policies, review records, named owners. Those are all things Govern is responsible for creating. When a Map assessment keeps finding "no document exists, no owner exists," the gaps trace back to the organization never setting up the accountability structures that Govern requires. That is why the four functions interlock rather than running in sequence.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_interlock/rmf-triage-map-interlock.html" title="Interactive: a guided Map assessment walks through the triage pipeline, hunts for evidence, grades the deployment Partial, constructs a named one-page system context record, and reveals how the four RMF functions interlock rather than run sequentially" loading="lazy" style="height:720px;"></iframe>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 6 ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Sort the Failure</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Reasoning Task: Three Failures, Four Functions
+          </h3>
+          <p class="nyu-scenario__prompt">Three failures, all from deployments this course has examined. For each one, decide which RMF function the failure lives in and what evidence of that function's presence would have looked like.</p>
+          <ul>
+            <li><strong>(a)</strong> An autonomous agent with write access deletes a production database. Afterward, it turns out that no person or body ever had the authority to approve or reject the agent's permissions before it went live.</li>
+            <li><strong>(b)</strong> An alert triage pipeline has been running for a year. Nobody has ever checked whether its severity classifications are equally reliable across the organization's business units.</li>
+            <li><strong>(c)</strong> A customer-facing chatbot logs prompt-injection attempts faithfully, but no procedure exists for what to do when one is found. The logs just accumulate, unread.</li>
+          </ul>
+          <p class="nyu-scenario__prompt">Then the harder question: in failure (a), the damage happened at run time, during operation. So why is it still not a Manage failure?</p>
+
+          <!-- Position recall: Statement C (surfaces here because (b) is precisely about precision/recall vs. fairness) -->
+          <div class="nyu-pos-recall nyu-pos-recall--inline" data-pos-id="3" aria-live="polite">
+            <!-- populated by JS -->
+          </div>
+
+          <button class="nyu-scenario__btn">Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>(a) Govern.</strong> Evidence would be an approval record: a named authority, written criteria, a decision. The run-time damage is downstream of a decision structure that never existed. Manage covers how identified risks are handled, but nothing here was ever identified because nobody was assigned to ask.</p>
+            <p><strong>(b) Measure.</strong> Evidence: a recurring disaggregated evaluation report, reviewed by a named owner. (The next section makes this one concrete, with arithmetic.)</p>
+            <p><strong>(c) Manage.</strong> Evidence would be a response procedure with thresholds, owners, and escalation. Detection without response is a Manage gap even when the logging itself works perfectly.</p>
+            <p>The useful takeaway is that where a failure <em>shows up</em> is not necessarily where the gap <em>is</em>. Damage shows up operationally, but the gap that permitted it often sits in Govern.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 7: KC ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc1a-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 1 of 2</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc1a-prompt">A security team deploys an LLM triage assistant. Eight months later, an auditor asks who approved the deployment and what risk criteria were applied. Nobody knows; procurement "just happened." The assistant has performed well. Which RMF function has the primary gap?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc1a-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Manage governs how identified risks are prioritized and treated. Here, no structure existed to identify or accept risk in the first place. The absence of decision authority sits upstream of risk treatment.">Manage</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Govern</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="A Measure gap would look like 'nobody tracked performance or risk metrics.' The evidence given, no approver and no criteria, points at absent accountability structure. That is Govern.">Measure</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This is the waterfall misreading. Govern is cross-cutting and continuous. The audit moment in month eight is itself a Govern moment, and the deployment fails it.">Govern, but only during initial deployment; treat it as passed once the system is live</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Approval authority, criteria, and accountability are Govern outcomes, and they are required for the system's whole life. Note the trap in the stem: good performance does not retroactively supply the missing decision structure."
+               data-incorrect-msg="Not quite. Approval authority, written criteria, and accountability are Govern outcomes, and Govern operates for the system's entire life, not just at launch."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="kc1b-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 2 of 2</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc1b-prompt">Every technical control we studied for LLM applications has a documented bypass rate. Which statement best captures the governance consequence?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc1b-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Waiting is itself a governance decision with its own costs, and the defensive evidence gives no reason to expect a bypass-free control generation. The residual-risk decision still has to be made.">Organizations should delay AI deployment until controls improve.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Layered defense reduces risk but cannot eliminate it; that was the central defensive finding. Aiming for zero bypass creates a false sense of security.">Organizations should stack additional controls until bypass risk reaches zero.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Someone must explicitly decide how much residual risk to accept, and be accountable for that decision.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Technical input is necessary and not sufficient. Choosing controls is different from accepting residual risk on the organization's behalf; that authority must be explicitly assigned, which is a Govern outcome.">Technical teams should choose the controls, since they understand the bypass rates.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. When no control is sufficient on its own, deployment becomes an explicit risk-acceptance decision that needs structure, criteria, and a named owner."
+               data-incorrect-msg="Not quite. The consequence of universal bypass rates is that deployment becomes an explicit risk-acceptance decision, which requires assigned authority and accountability."></div>
+        </div>
+
+        <!-- Up Next -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 2: Ethics You Can Measure: Bias, Surveillance, Dual-Use, and Automated Decisions.</strong> We apply the framework to four ethical concerns specific to security AI: bias, surveillance, dual-use, and automated decisions. Each one maps to an RMF function, and each turns out to be measurable, computable, or court-tested. We will need a calculator for the lab.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../reference_tip/reference-tips.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

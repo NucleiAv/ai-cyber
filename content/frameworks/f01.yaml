@@ -1,0 +1,125 @@
+slug: f01
+num: "01"
+short: MITRE ATLAS
+title: MITRE ATLAS, the attack map for AI systems
+time: about 1.5 hours
+lede: A public knowledge base of how real attackers target AI and machine learning systems, organized as tactics, techniques, mitigations and case studies.
+headings: {attack: "How to use it, step by step", cases: "Real examples", defend: "Strengths and limits", map: "How it links to the others", lab: "Try it"}
+atlas: [AML.T0051, AML.T0020, AML.T0010, AML.T0137.003]
+other_fw:
+  - [MITRE ATT&CK, "ATLAS copies the ATT&CK structure and reuses many of its tactics. See [framework 02](f02.html)."]
+  - [OWASP LLM Top 10, "OWASP lists risks for app builders. ATLAS lists attacker behavior for defenders and red teams. See [framework 05](f05.html)."]
+
+idea: |
+  **ATLAS** stands for Adversarial Threat Landscape for Artificial-Intelligence Systems. MITRE, a US non-profit, publishes it for free at [atlas.mitre.org](@atlas).
+
+  It answers one question. **What do attackers actually do to AI systems?** Every entry comes from real incidents, red team work or published research.
+
+  !eli5 Think of a field guide to burglars. It lists the steps they take (case the house, get in, find the safe), and under each step the tricks they use. ATLAS is that guide, for people who break into AI systems.
+
+terms:
+  - [Tactic, "The attacker's goal at one stage, the why. For example Initial Access. ATLAS tactic IDs look like AML.TA0004."]
+  - [Technique, "How the attacker reaches that goal, the how. For example LLM Prompt Injection, AML.T0051."]
+  - [Sub-technique, "A more specific form of a technique. For example AML.T0051.001, Indirect prompt injection."]
+  - [Mitigation, "A defense that reduces a technique. ATLAS mitigation IDs look like AML.M0000."]
+  - [Case study, "A real or researched attack, written as a sequence of ATLAS techniques."]
+  - [Matrix, "The grid view. Tactics are columns, techniques sit under them."]
+
+how: |
+  ### Step 1. Tactics are the columns
+
+  Release 2026.10 has **16 tactics**, in roughly the order an attack happens.
+
+  1. Reconnaissance
+  2. Resource Development
+  3. Initial Access
+  4. **AI Model Access**, only in ATLAS
+  5. Execution
+  6. Persistence
+  7. Privilege Escalation
+  8. Defense Evasion
+  9. Credential Access
+  10. Discovery
+  11. Lateral Movement
+  12. Collection
+  13. **AI Attack Staging**, only in ATLAS
+  14. Command and Control
+  15. Exfiltration
+  16. Impact
+
+  The two ATLAS-only tactics are the heart of it. **AI Model Access** is how the attacker gets to the model, for example through its public API. **AI Attack Staging** is where the attacker prepares the AI-specific attack, for example by crafting adversarial data or training a copy of the model.
+
+  ### Step 2. Techniques sit under tactics
+
+  Release 2026.10 lists about **130 techniques** and about **90 sub-techniques**. One technique can serve more than one tactic.
+
+  ### Step 3. Case studies show whole attacks
+
+  Each case study is a story written as a chain of techniques. Reading them teaches you how techniques combine.
+
+  ### Step 4. Mitigations close the loop
+
+  Each technique page links to mitigations that reduce it. ATLAS mitigations are often process controls, such as limiting model access or validating models before use.
+
+  !fact Some IDs change between releases. In release 2026.10, the old system prompt technique AML.T0056 is now **AML.T0069.002**, and training data extraction is under **AML.T0137**. Always check the ID on the live site.
+
+diagrams:
+  - type: flow
+    title: One attack, written as ATLAS steps
+    nodes: [["Recon. Gather RAG-indexed targets", "box", "AML.T0064"], ["Initial Access. Prompt infiltration", "atk", "AML.T0093"], ["Execution. Prompt injection", "atk", "AML.T0051"], ["Exfiltration. Via agent tool", "atk", "AML.T0086"]]
+    edges: ["", "", ""]
+    caption: A chain of techniques under different tactics tells the story of one attack. This is how ATLAS case studies are written.
+
+attack_steps:
+  - Pick the system you care about, such as a RAG chatbot or an ML malware classifier.
+  - Walk the tactics left to right. For each, ask which techniques could apply to your system.
+  - Mark the techniques you can detect, the ones you can prevent, and the gaps.
+  - Read two or three case studies close to your system.
+  - Tag your detection rules and test cases with technique IDs, so reports speak one language.
+  - Revisit after each ATLAS release, because IDs and techniques change.
+
+cases:
+  - [The course detection project, "Phase 5 of the roadmap asks you to map each Wazuh detection rule to an ATLAS technique, such as AML.T0051 for injection phrases and AML.T0034 for token spikes."]
+  - [Lesson framework tables, "Every attack lesson on this site ends with a table of ATLAS IDs for that risk, checked against release 2026.10."]
+
+defense: |
+  **Strengths**
+
+  - Built from real incidents and research, not guesses.
+  - Same structure as ATT&CK, so security teams already know how to read it.
+  - Free, with machine-readable data on GitHub.
+
+  **Limits**
+
+  - It describes attacker behavior. It does not tell you which risks matter most for your app. Use OWASP and a threat model for that.
+  - IDs and names change between releases. Pin the release you used in reports.
+  - Coverage follows published cases, so brand-new attack classes appear later.
+
+lab:
+  intro: |
+    Map one lesson to ATLAS yourself, then compare with the site's table.
+  steps:
+    - Open [atlas.mitre.org](@atlas) and the matrix view.
+    - Pick attack lesson 2, indirect prompt injection through a web page.
+    - For each step of the lesson's scene, find the matching tactic and technique.
+    - Write the chain as a list of IDs.
+    - Compare with the framework table at the end of [lesson 2](../attack/l02.html#map).
+  links: [atlas]
+
+quiz:
+  - q: Which two tactics exist in ATLAS but not in ATT&CK?
+    opts: ["Reconnaissance and Impact", "AI Model Access and AI Attack Staging", "Execution and Persistence"]
+    a: 1
+    why: These two cover getting to the model and preparing AI-specific attacks. The other tactics come from ATT&CK.
+  - q: In ATLAS, what is a technique?
+    opts: ["The attacker's goal at one stage", "How the attacker reaches a goal", "A real incident report"]
+    a: 1
+    why: Tactics are the why, techniques are the how, and case studies are real stories.
+  - q: You wrote a report with the ID AML.T0056 last year. What should you do now?
+    opts: ["Nothing, IDs never change", "Check the current release, because the technique moved to AML.T0069.002", "Delete the report"]
+    a: 1
+    why: ATLAS reorganizes over time. Pin the release in your report and update IDs when you reuse it.
+
+refs:
+  - "MITRE. [ATLAS](@atlas)."
+  - "MITRE. [ATLAS data on GitHub](https://github.com/mitre-atlas/atlas-data), release 2026.10."

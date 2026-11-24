@@ -1,0 +1,848 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage 3: Transformer Layers</title>
+<style>
+  :root {
+    --violet: #57068C;
+    --violet-dark: #3D0461;
+    --violet-50: #F7F1FB;
+    --violet-100: #E7D4F2;
+    --teal: #155E63;
+    --teal-50: #E9F4F6;
+    --amber: #A65D00;
+    --amber-50: #FFF7E8;
+    --next-50: #F3F6F8;
+    --ink: #1A1A1A;
+    --ink-soft: #3D3D3D;
+    --ink-mute: #6D6D75;
+    --rule: #E4E4EA;
+    --surface: #FAFAFC;
+    --font-body: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 10px;
+    background: #fff;
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.35;
+  }
+
+  .stage {
+    width: min(100%, 640px);
+    margin: 0 auto;
+    padding: 12px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(20, 0, 40, 0.05);
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .stage-num {
+    flex: 0 0 auto;
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: #4C1D95;
+    color: #fff;
+    font: 800 0.68rem/1 var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.1;
+  }
+
+  .controls {
+    display: flex;
+    gap: 4px;
+    flex: 0 0 auto;
+  }
+
+  button {
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink-soft);
+    cursor: pointer;
+    font: 800 0.66rem/1 var(--font-mono);
+    padding: 5px 8px;
+  }
+
+  button:hover { border-color: var(--violet-100); color: var(--violet-dark); }
+
+  .input {
+    margin: 0 0 8px;
+    padding: 6px 8px;
+    border: 1px solid #EFEFF4;
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink-mute);
+    font: 0.69rem/1.25 var(--font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .input b { color: var(--ink-soft); }
+
+  .teaching-line {
+    min-height: 48px;
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    border-left: 3px solid var(--violet);
+    border-radius: 8px;
+    background: var(--violet-50);
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+  }
+
+  .teaching-line b { color: var(--ink); }
+  .teaching-line .teal { color: var(--teal); font-weight: 800; }
+  .teaching-line .amber { color: var(--amber); font-weight: 800; }
+
+  .board {
+    position: relative;
+    height: 198px;
+    border: 1px solid #EFEFF4;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #fff, var(--surface));
+    overflow: hidden;
+  }
+
+  .layer-chip {
+    position: absolute;
+    top: 9px;
+    left: 10px;
+    padding: 4px 7px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink-mute);
+    font: 800 0.62rem/1 var(--font-mono);
+  }
+
+  .operation {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--rule);
+    background: rgba(255,255,255,0.96);
+    color: var(--ink-soft);
+    font: 800 0.66rem/1 var(--font-mono);
+    white-space: nowrap;
+  }
+
+  .operation::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 99px;
+    background: currentColor;
+    opacity: 0.65;
+  }
+
+  .operation.attn {
+    background: var(--violet);
+    border-color: var(--violet);
+    color: #fff;
+  }
+
+  .operation.ffn {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #fff;
+  }
+
+  .operation.stack {
+    background: var(--ink-soft);
+    border-color: var(--ink-soft);
+    color: #fff;
+  }
+
+  .focus-panel {
+    position: absolute;
+    top: 40px;
+    right: 10px;
+    width: 182px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    z-index: 2;
+  }
+
+  .syn-vector {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 10px;
+    border: 1.5px solid var(--violet-100);
+    border-radius: 9px;
+    background: #fff;
+    color: var(--violet-dark);
+    font: 800 0.66rem/1 var(--font-mono);
+    transition: border 260ms ease, background 260ms ease, color 260ms ease, transform 260ms ease;
+  }
+
+  .syn-vector strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    min-height: 22px;
+    border-radius: 7px;
+    background: #4C1D95;
+    color: #fff;
+  }
+
+  .bars {
+    display: inline-flex;
+    align-items: end;
+    gap: 2px;
+    height: 18px;
+    flex: 0 0 auto;
+  }
+
+  .bars i {
+    width: 4px;
+    border-radius: 99px;
+    background: var(--violet-100);
+    transition: height 260ms ease, background 260ms ease;
+  }
+
+  .bars i:nth-child(1) { height: 7px; }
+  .bars i:nth-child(2) { height: 15px; }
+  .bars i:nth-child(3) { height: 10px; }
+  .bars i:nth-child(4) { height: 12px; }
+
+  .syn-vector.enriched {
+    border-color: #155E63;
+    background: #155E63;
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .syn-vector.enriched strong {
+    background: #fff;
+    color: #0F5260;
+  }
+
+  .syn-vector.enriched .bars i {
+    background: var(--teal);
+  }
+
+  .syn-vector.enriched .bars i:nth-child(1) { height: 14px; }
+  .syn-vector.enriched .bars i:nth-child(2) { height: 9px; }
+  .syn-vector.enriched .bars i:nth-child(3) { height: 16px; }
+  .syn-vector.enriched .bars i:nth-child(4) { height: 6px; }
+
+  .panel-note {
+    width: 100%;
+    min-height: 28px;
+    padding: 4px 7px;
+    border: 1px dashed var(--rule);
+    border-radius: 7px;
+    background: rgba(255,255,255,0.94);
+    color: var(--ink-mute);
+    font: 800 0.55rem/1.18 var(--font-mono);
+    text-align: right;
+    opacity: 0;
+    transform: translateY(3px);
+    transition: opacity 260ms ease, transform 260ms ease;
+  }
+
+  .panel-note.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .panel-note.amber {
+    color: #fff;
+    border-color: #854D0E;
+    background: #854D0E;
+  }
+
+  svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .arrow {
+    fill: none;
+    stroke: var(--violet);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    opacity: 0;
+    transition: opacity 260ms ease;
+  }
+
+  .arrow.show { opacity: var(--strength, 0.72); }
+  .arrow.predict { stroke: var(--ink-soft); stroke-width: 1.5; stroke-dasharray: 3 3; }
+
+  .mask-sweep {
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    bottom: 35px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, rgba(87,6,140,0.08) 0%, rgba(87,6,140,0.08) 86%, rgba(166,93,0,0.16) 86%, rgba(166,93,0,0.16) 100%);
+    opacity: 0;
+    transition: opacity 260ms ease;
+  }
+
+  .mask-sweep.show { opacity: 1; }
+
+  .tokens {
+    position: absolute;
+    left: 9px;
+    right: 9px;
+    bottom: 38px;
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .tok {
+    min-width: 0;
+    padding: 5px 2px;
+    border: 1.3px solid var(--violet-100);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--violet-dark);
+    text-align: center;
+    font: 800 0.62rem/1.05 var(--font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: transform 260ms ease, border 260ms ease, background 260ms ease, color 260ms ease, opacity 260ms ease, box-shadow 260ms ease;
+  }
+
+  .tok.dim { opacity: 0.61; }
+  .tok.key {
+    border-color: var(--violet);
+    background: var(--violet-50); color: var(--ink);
+    transform: translateY(-2px);
+  }
+  .tok.target {
+    border-color: var(--violet);
+    background: var(--violet);
+    color: #fff;
+    transform: translateY(-2px);
+  }
+  .tok.future {
+    border-color: #854D0E;
+    background: #854D0E;
+    color: #fff;
+  }
+  .tok.prediction {
+    border-style: dashed;
+    border-color: #C9CCD3;
+    background: var(--next-50);
+    color: var(--ink-mute);
+    font-style: italic;
+  }
+  .tok.prediction.next-active {
+    border-color: var(--ink-soft);
+    color: var(--ink-soft);
+    background: #fff;
+    transform: translateY(-2px);
+  }
+  .tok.updated {
+    border-color: #155E63;
+    background: #155E63;
+    color: #fff;
+  }
+  .tok.scan {
+    border-color: var(--violet);
+    background: var(--violet-50); color: var(--ink);
+    box-shadow: 0 0 0 2px rgba(87,6,140,0.08) inset;
+  }
+
+  .labels {
+    position: absolute;
+    left: 9px;
+    right: 9px;
+    bottom: 10px;
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 5px;
+    color: var(--ink-mute);
+    font: 700 0.53rem/1 var(--font-mono);
+    text-align: center;
+  }
+
+  .outcome {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    bottom: 34px;
+    max-width: calc(100% - 24px);
+    padding: 5px 8px;
+    border: 1px solid var(--teal);
+    border-radius: 999px;
+    background: #155E63;
+    color: #fff;
+    font: 800 0.61rem/1.15 var(--font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity 260ms ease, transform 260ms ease;
+  }
+
+  .outcome.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .progress {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin: 8px 0 0;
+  }
+
+  .progress span {
+    width: 22px;
+    height: 3px;
+    border-radius: 999px;
+    background: #DADAE2;
+    transition: width 260ms ease, background 260ms ease;
+  }
+
+  .progress span.active {
+    width: 34px;
+    background: var(--violet);
+  }
+
+  .caption {
+    margin: 7px 0 0;
+    color: var(--ink-soft);
+    text-align: center;
+    font-size: 0.72rem;
+  }
+
+  .caption b { color: var(--ink); }
+  .caption .teal { color: var(--teal); font-weight: 800; }
+
+  @media (max-width: 520px) {
+    body { padding: 8px; }
+    .stage { padding: 10px; }
+    .board { height: 208px; }
+    .top { align-items: flex-start; }
+    .controls { flex-wrap: wrap; justify-content: flex-end; }
+    .operation { top: 34px; }
+    .layer-chip { top: 34px; }
+    .focus-panel {
+      top: 58px;
+      right: 8px;
+      width: 148px;
+    }
+    .syn-vector { font-size: 0.55rem; padding: 6px 7px; }
+    .panel-note { font-size: 0.49rem; }
+    .tokens { gap: 3px; left: 6px; right: 6px; }
+    .tok { font-size: 0.53rem; padding-inline: 1px; }
+    .labels { display: none; }
+    .outcome {
+      left: 8px;
+      right: 8px;
+      bottom: 32px;
+      max-width: none;
+      transform: translateY(4px);
+      text-align: center;
+      font-size: 0.56rem;
+      white-space: normal;
+    }
+    .outcome.show { transform: translateY(0); }
+    .teaching-line { font-size: 0.76rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+
+  /* Embedded in the course page: remove the outer demo frame and page padding.
+     Keep the demo itself responsive; the parent iframe measures this .stage box. */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden;
+  }
+  body {
+    display: block;
+  }
+  .stage {
+    margin: 0 auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    padding-top: 0 !important;
+  }
+  .stage-input {
+    margin-top: 0 !important;
+  }
+</style>
+</head>
+<body>
+<section class="stage" aria-label="Stage 3: Transformer layers">
+  <div class="top">
+
+    <div class="controls" aria-label="Animation controls">
+      <button type="button" id="prevBtn">Back</button>
+      <button type="button" id="playBtn" aria-pressed="false">Play</button>
+      <button type="button" id="nextBtn">Next</button>
+    </div>
+  </div>
+
+  <div class="input" title="Analyze this log: 192.168.1.105 port 443 SYN">
+    <b>Input:</b> Analyze this log: 192.168.1.105 port 443 SYN
+  </div>
+
+  <p class="teaching-line" id="teaching" aria-live="polite"></p>
+
+  <div class="board">
+    <span class="layer-chip" id="layerChip">Layer 1 / many</span>
+    <div class="operation" id="operation">Setup</div>
+
+    <svg viewBox="0 0 620 198" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#57068C"></path>
+        </marker>
+        <marker id="nextHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#3D3D3D"></path>
+        </marker>
+      </defs>
+      <path class="arrow" id="aIp"   style="--strength:.40" marker-end="url(#arrowHead)" d="M 310 134 C 338 98, 468 92, 512 78"></path>
+      <path class="arrow" id="aPort" style="--strength:.58" marker-end="url(#arrowHead)" d="M 377 134 C 405 102, 482 92, 512 78"></path>
+      <path class="arrow" id="a443"  style="--strength:.90" marker-end="url(#arrowHead)" d="M 445 134 C 463 105, 493 92, 512 78"></path>
+      <path class="arrow predict" id="aNext" style="--strength:.65" marker-end="url(#nextHead)" d="M 515 134 C 535 121, 560 121, 577 134"></path>
+    </svg>
+
+    <div class="focus-panel">
+      <div class="syn-vector" id="synVector">
+        <span>current vector:</span>
+        <strong>SYN</strong>
+        <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      </div>
+      <div class="panel-note" id="panelNote"></div>
+    </div>
+
+    <div class="mask-sweep" id="maskSweep"></div>
+
+    <div class="tokens" id="tokens"></div>
+    <div class="labels" aria-hidden="true">
+      <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>next</span>
+    </div>
+    <div class="outcome" id="outcome">SYN now carries: IP + port 443 + TCP start</div>
+  </div>
+
+  <div class="progress" id="progress" aria-hidden="true"></div>
+
+  <p class="caption">
+    Decoder models update <b>all</b> prompt positions, but the <b>last</b> prompt position is the one used to predict the next token.
+  </p>
+</section>
+
+<script>
+  const TOKENS = ['Analyze', 'this', 'log', ':', '192…105', 'port', '443', 'SYN', '?'];
+  const steps = [
+    {
+      op: 'Setup',
+      opClass: '',
+      text: '<b>Setup:</b> a transformer layer updates <b>every prompt position</b>. This quick sweep reminds us that the whole prompt is processed, not just the end.',
+      keys: [], target: [], dim: [], future: [], prediction: [8], arrows: [], enriched: false, mask: false,
+      note: 'Every prompt position gets updated inside each layer.', noteClass: '', outcome: false, layer: 'Layer 1 / many', scan: [0,1,2,3,4,5,6,7], staggerArrows: false
+    },
+    {
+      op: 'Why last?',
+      opClass: '',
+      text: '<b>Why zoom in on SYN?</b> When the prompt currently ends with <b>SYN</b>, the vector at that <b>last prompt position</b> is the one used to help predict the <b>next token</b>.',
+      keys: [], target: [7], dim: [0,1,2,3,4,5,6], future: [], prediction: [8], arrows: ['aNext'], enriched: false, mask: false,
+      note: 'Last prompt position → used for next-token prediction.', noteClass: '', outcome: false, layer: 'Prompt ends at SYN', scan: [], staggerArrows: false
+    },
+    {
+      op: 'Attention',
+      opClass: 'attn',
+      text: '<b>Attention:</b> now inspect the <b>SYN</b> vector. It can <b>look back</b> to earlier tokens, such as <b>192…105</b>, <b>port</b>, and <b>443</b>, to gather context.',
+      keys: [4,5,6], target: [7], dim: [0,1,2,3,8], future: [], prediction: [8], arrows: ['aIp','aPort','a443'], enriched: false, mask: false,
+      note: 'Look-back: SYN gathers context from earlier prompt tokens.', noteClass: '', outcome: false, layer: 'Layer 1 / many', scan: [], staggerArrows: true
+    },
+    {
+      op: 'Causal mask',
+      opClass: 'attn',
+      text: '<span class="amber">Causal mask:</span> <b>SYN</b> may read tokens on its <b>left</b> because they already exist in the prompt. The <b>?</b> on the right is the <b>next token</b>, so it <b>does not exist yet</b> and cannot be read.',
+      keys: [4,5,6], target: [7], dim: [0,1,2,3], future: [8], prediction: [8], arrows: ['aIp','aPort','a443'], enriched: false, mask: true,
+      note: 'The next token is not in the prompt yet, so nothing can attend to it.', noteClass: 'amber', outcome: false, layer: 'Layer 1 / many', scan: [], staggerArrows: false
+    },
+    {
+      op: 'Feed-forward',
+      opClass: 'ffn',
+      text: '<span class="teal">Feed-forward:</span> after attention, the model transforms the <b>SYN</b> vector <b>independently</b>. This step refines what SYN now means using learned patterns.',
+      keys: [], target: [7], dim: [0,1,2,3,4,5,6,8], future: [], prediction: [8], arrows: [], enriched: true, mask: false,
+      note: 'No token-to-token reading here; the SYN vector is refined on its own.', noteClass: '', outcome: false, layer: 'Layer 1 / many', scan: [], staggerArrows: false
+    },
+    {
+      op: 'Repeat layers',
+      opClass: 'stack',
+      text: '<b>After many layers,</b> the final <b>SYN</b> vector carries the context it gathered: IP, port, and the idea of a TCP connection start. That enriched final vector helps predict what comes next.',
+      keys: [4,5,6], target: [7], dim: [0,1,2,3], future: [], prediction: [8], arrows: ['aNext'], enriched: true, mask: false,
+      note: 'Final enriched SYN vector → used for next-token prediction.', noteClass: '', outcome: true, layer: 'Layer 32 / many', scan: [], staggerArrows: false
+    }
+  ];
+
+  const tokenWrap = document.getElementById('tokens');
+  const teaching = document.getElementById('teaching');
+  const operation = document.getElementById('operation');
+  const layerChip = document.getElementById('layerChip');
+  const synVector = document.getElementById('synVector');
+  const maskSweep = document.getElementById('maskSweep');
+  const outcome = document.getElementById('outcome');
+  const panelNote = document.getElementById('panelNote');
+  const progress = document.getElementById('progress');
+  const playBtn = document.getElementById('playBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  TOKENS.forEach((label, index) => {
+    const token = document.createElement('div');
+    token.className = 'tok';
+    if (index === 8) token.classList.add('prediction');
+    token.dataset.index = index;
+    token.textContent = label;
+    tokenWrap.appendChild(token);
+  });
+
+  steps.forEach((_, index) => {
+    const dot = document.createElement('span');
+    dot.dataset.index = index;
+    progress.appendChild(dot);
+  });
+
+  let index = 0;
+  let playing = false;
+  let timer = null;
+  let tempTimers = [];
+
+  function clearTempTimers() {
+    tempTimers.forEach(id => clearTimeout(id));
+    tempTimers = [];
+  }
+
+  function resetTransientVisuals() {
+    clearTempTimers();
+    document.querySelectorAll('.tok').forEach(token => token.classList.remove('scan'));
+    ['aIp','aPort','a443','aNext'].forEach(id => {
+      document.getElementById(id).classList.remove('show');
+    });
+  }
+
+  function animateScan(order) {
+    order.forEach((tokenIndex, stepIndex) => {
+      const onId = setTimeout(() => {
+        const tok = document.querySelector(`.tok[data-index="${tokenIndex}"]`);
+        if (tok) tok.classList.add('scan');
+      }, 130 * stepIndex);
+      const offId = setTimeout(() => {
+        const tok = document.querySelector(`.tok[data-index="${tokenIndex}"]`);
+        if (tok) tok.classList.remove('scan');
+      }, 130 * stepIndex + 220);
+      tempTimers.push(onId, offId);
+    });
+  }
+
+  function showArrows(ids, stagger) {
+    if (!stagger) {
+      ids.forEach(id => document.getElementById(id).classList.add('show'));
+      return;
+    }
+    ids.forEach((id, idx) => {
+      const t = setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('show');
+      }, idx * 240);
+      tempTimers.push(t);
+    });
+  }
+
+  function applyStep(stepIndex) {
+    const step = steps[stepIndex];
+    resetTransientVisuals();
+
+    teaching.innerHTML = step.text;
+    operation.textContent = step.op;
+    operation.className = `operation ${step.opClass}`.trim();
+    layerChip.textContent = step.layer;
+
+    document.querySelectorAll('.tok').forEach(token => {
+      const i = Number(token.dataset.index);
+      token.classList.toggle('key', step.keys.includes(i));
+      token.classList.toggle('target', step.target.includes(i));
+      token.classList.toggle('dim', step.dim.includes(i));
+      token.classList.toggle('future', step.future.includes(i));
+      token.classList.toggle('next-active', step.prediction.includes(i));
+      token.classList.toggle('updated', step.enriched && step.target.includes(i));
+    });
+
+    showArrows(step.arrows, step.staggerArrows);
+
+    synVector.classList.toggle('enriched', step.enriched);
+    maskSweep.classList.toggle('show', step.mask);
+    outcome.classList.toggle('show', step.outcome);
+
+    panelNote.textContent = step.note || '';
+    panelNote.className = 'panel-note' + (step.note ? ' show' : '') + (step.noteClass ? ' ' + step.noteClass : '');
+
+    document.querySelectorAll('.progress span').forEach(dot => {
+      dot.classList.toggle('active', Number(dot.dataset.index) === stepIndex);
+    });
+
+    if (step.scan && step.scan.length) animateScan(step.scan);
+  }
+
+  function go(delta) {
+    index = (index + delta + steps.length) % steps.length;
+    applyStep(index);
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    if (playing) timer = setInterval(() => go(1), 3500);
+  }
+
+  playBtn.addEventListener('click', () => {
+    playing = !playing;
+    playBtn.textContent = playing ? 'Pause' : 'Play';
+    playBtn.setAttribute('aria-pressed', String(playing));
+    startTimer();
+  });
+
+  prevBtn.addEventListener('click', () => { go(-1); startTimer(); });
+  nextBtn.addEventListener('click', () => { go(1); startTimer(); });
+
+  applyStep(index);
+</script>
+
+<script>
+  /* Cross-origin-safe iframe sizing for Brightspace/local LMS embeds.
+     The child measures only its own .stage box and sends that number upward.
+     The parent never reads contentDocument, so this works even when the LMS
+     serves the iframe from a different origin or sandboxed content URL. */
+  (function() {
+    var MIN_HEIGHT = 120;
+    var MAX_HEIGHT = 1400;
+    var EXTRA_PIXELS = 10;
+    var lastSent = 0;
+    var raf = 0;
+
+    function getEmbedId() {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        return params.get('embedId') || window.name || document.title || window.location.pathname;
+      } catch (err) {
+        return window.name || document.title || 'pipeline-stage';
+      }
+    }
+
+    function measureHeight() {
+      var stage = document.querySelector('.stage') || document.body;
+      var rect = stage.getBoundingClientRect();
+      var styles = window.getComputedStyle(stage);
+      var mt = parseFloat(styles.marginTop) || 0;
+      var mb = parseFloat(styles.marginBottom) || 0;
+      var height = Math.ceil(rect.height + mt + mb + EXTRA_PIXELS);
+      if (!Number.isFinite(height)) height = MIN_HEIGHT;
+      return Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, height));
+    }
+
+    function postHeight() {
+      raf = 0;
+      var height = measureHeight();
+      if (Math.abs(height - lastSent) < 2) return;
+      lastSent = height;
+      try {
+        window.parent.postMessage({
+          kind: 'nyu-pipeline-stage-height',
+          embedId: getEmbedId(),
+          height: height
+        }, '*');
+      } catch (err) {}
+    }
+
+    function schedulePost() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(postHeight);
+    }
+
+    window.addEventListener('load', schedulePost);
+    window.addEventListener('resize', schedulePost);
+    window.addEventListener('orientationchange', schedulePost);
+    document.addEventListener('DOMContentLoaded', schedulePost);
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(schedulePost).catch(function() {});
+    }
+
+    try {
+      var stage = document.querySelector('.stage') || document.body;
+      if (window.ResizeObserver && stage) {
+        var ro = new ResizeObserver(schedulePost);
+        ro.observe(stage);
+      }
+    } catch (err) {}
+
+    // Bounded follow-up measurements catch animations, font swaps, and JS-populated rows.
+    [0, 50, 150, 300, 700, 1200, 2200, 4000].forEach(function(delay) {
+      setTimeout(schedulePost, delay);
+    });
+  })();
+</script>
+
+</body>
+</html>

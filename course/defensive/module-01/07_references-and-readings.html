@@ -1,0 +1,198 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 1 · Section 7 · References &amp; Readings · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a> <!-- ====================== HERO ====================== --><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 1 · Section 7 of 7</div>
+<h1 class="nyu-hero__title">References &amp; Readings</h1>
+<p class="nyu-hero__subtitle">All sources, citations, and recommended readings referenced throughout Module 1: AI Foundations, organized by section for easy review.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Section type"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Reference</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 7 parts</span>
+      </div>
+</header><!-- ====================== TOC ====================== --><nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Academic Papers &amp; Preprints</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Frameworks &amp; Standards</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Practitioner &amp; Institutional Resources</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Tools &amp; Documentation</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Datasets</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Source Caveats</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> References by Section</a></li>
+      </ol>
+</nav><main id="main" tabindex="-1"><!-- ====================== INDUSTRY REPORTS ====================== -->
+<!-- ====================== ACADEMIC PAPERS ====================== -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">Academic Papers &amp; Preprints</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>Xu, Z., et al.</strong> (2024). "Hallucination is Inevitable: An Innate Limitation of Large Language Models." <span class="ref-tag ref-tag--paper">Paper</span> <br>Demonstrates mathematically that hallucination is a structural property of the next-token prediction architecture, not a defect that future model versions will resolve. <br><a href="https://arxiv.org/abs/2401.11817" target="_blank" rel="noopener">arXiv:2401.11817</a></li>
+<li><strong>Spracklen, J., et al.</strong> (2025). "We Have a Package for You! A Comprehensive Analysis of Package Hallucinations by Code Generating LLMs." <em>34th USENIX Security Symposium.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Analyzed 576,000 code samples from 16 LLMs; found 19.7% of recommended package dependencies were hallucinated, with 43% repeatability enabling supply chain attacks (slopsquatting). <br><a href="https://www.usenix.org/conference/usenixsecurity25/presentation/spracklen" target="_blank" rel="noopener">USENIX Security '25</a> · <a href="https://arxiv.org/abs/2406.10279" target="_blank" rel="noopener">arXiv:2406.10279</a></li>
+<li><strong>Kuo, M., et al.</strong> (2025). "H-CoT: Hijacking the Chain-of-Thought Safety Reasoning Mechanism to Jailbreak Large Reasoning Models, Including OpenAI o1/o3, DeepSeek-R1, and Gemini 2.0 Flash Thinking." <span class="ref-tag ref-tag--paper">Preprint</span> <br>Introduces the <em>Malicious-Educator</em> benchmark, which conceals dangerous requests inside prompts that present themselves as legitimate educational material. The attack supplies text imitating the model's own safety-reasoning phase, so the model proceeds as though it had already completed and passed that check. Cited in Section 4 for the first LRM security implication, injection of attacker-chosen premises into the reasoning chain. <br><a href="https://arxiv.org/abs/2502.12893" target="_blank" rel="noopener">arXiv:2502.12893</a></li>
+<li><strong>Zhao, J., et al.</strong> (2025). "Chain-of-Thought Hijacking." <span class="ref-tag ref-tag--paper">Preprint</span> <br>Pads a harmful request with long sequences of entirely benign puzzle reasoning and reports attack success rates of 94% to 100% against Gemini 2.5 Pro, o4-mini, Grok 3 mini, and Claude 4 Sonnet on HarmBench. The mechanism the authors identify is <em>refusal dilution</em>: middle layers encode the strength of the safety check and later layers encode its outcome, and a long benign chain attenuates both by drawing attention away from the harmful tokens. Cited in Section 4 for the third LRM security implication, reasoning length as an attack parameter. <br><a href="https://arxiv.org/abs/2510.26418" target="_blank" rel="noopener">arXiv:2510.26418</a></li>
+</ul>
+</section>
+
+<!-- ====================== FRAMEWORKS ====================== -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">Frameworks &amp; Standards</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>National Institute of Standards and Technology (NIST).</strong> <em>Cybersecurity Framework Profile for Artificial Intelligence.</em> NIST, 2025. <span class="ref-tag ref-tag--framework">Framework</span> <br>Organizes AI cybersecurity challenges into three pillars: secure AI systems, use AI for defense, and counter AI-enabled attacks. <br><a href="https://www.nist.gov/artificial-intelligence" target="_blank" rel="noopener">NIST AI Resources</a></li>
+</ul>
+</section>
+
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Practitioner &amp; Institutional Resources</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>World Economic Forum (WEF).</strong> <em>Global Cybersecurity Outlook 2026.</em> Geneva: World Economic Forum, 2026. <span class="ref-tag ref-tag--report">Report</span> <br>Key findings cited: 94% of leaders identify AI as the #1 change driver; 87% identified AI-related vulnerabilities as fastest-growing cyber risk; 64% of organizations assess AI tool security before deployment (up from 37%); "widening cyber inequity." <br><a href="https://www.weforum.org/publications/global-cybersecurity-outlook-2026/" target="_blank" rel="noopener">WEF Global Cybersecurity Outlook 2026</a></li>
+<li><strong>CrowdStrike.</strong> <em>2026 Global Threat Report.</em> CrowdStrike, 2026. <span class="ref-tag ref-tag--report">Report</span> <br>Key findings cited: Average breakout time dropped to 29 minutes (fastest: 27 seconds); 89% year-over-year increase in AI-enabled adversary operations; adversaries injecting malicious prompts into GenAI tools at 90+ organizations. <br><a href="https://www.crowdstrike.com/en-us/global-threat-report/" target="_blank" rel="noopener">CrowdStrike Global Threat Report</a></li>
+<li><strong>NCC Group.</strong> <em>2025 Threat Intelligence Report.</em> NCC Group, 2025. <span class="ref-tag ref-tag--report">Report</span> <br>Key finding cited: 124 distinct ransomware groups tracked in 2025, up 50% year over year. <br><a href="https://www.nccgroup.com/us/threat-intelligence/" target="_blank" rel="noopener">NCC Group Threat Intelligence</a></li>
+<li><strong>SANS Institute.</strong> <em>2025 Detection and Response Survey.</em> SANS Institute, 2025. <span class="ref-tag ref-tag--report">Report</span> <br>Key finding cited: 73% of organizations identify false positives as their #1 detection challenge. <br><a href="https://www.sans.org/white-papers/" target="_blank" rel="noopener">SANS White Papers</a></li>
+<li><strong>UC Berkeley Center for Long-Term Cybersecurity (CLTC).</strong> Case study on AI-enabled identity fraud and voice cloning. <span class="ref-tag ref-tag--report">Research</span> <br>Key finding cited: Criminals can clone a person's voice with ~1 hour of YouTube footage and an $11/month subscription; AI-generated identities used to pass remote job interviews. <br><a href="https://cltc.berkeley.edu/" target="_blank" rel="noopener">UC Berkeley CLTC</a></li>
+</ul>
+</section>
+
+<!-- ====================== TOOLS ====================== -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Tools &amp; Documentation</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>Transformer Explainer.</strong> Georgia Tech, Polo Club of Data Science. <span class="ref-tag ref-tag--tool">Interactive</span> <br>Browser-based visualization that lets you watch a GPT-2 model predict tokens in real time, showing self-attention and token prediction mechanics. <br><a href="https://poloclub.github.io/transformer-explainer/" target="_blank" rel="noopener">Transformer Explainer</a></li>
+</ul>
+</section>
+
+<!-- ====================== DATASETS ====================== -->
+<section class="nyu-section" id="sec-5">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">5</span>
+<h2 class="nyu-section__title">Datasets</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>UNSW-NB15 Dataset.</strong> University of New South Wales, Canberra. <span class="ref-tag ref-tag--dataset">Dataset</span> <br>A benchmark dataset containing modern network traffic records with both normal activity and nine categories of attacks. Used in Section 3 (ML Models in Action) for all interactive model demonstrations. <br><a href="https://research.unsw.edu.au/projects/unsw-nb15-dataset" target="_blank" rel="noopener">UNSW-NB15 Dataset Project</a></li>
+<li><strong>CVE-2024-3094.</strong> XZ Utils backdoor vulnerability. <span class="ref-tag ref-tag--vulnerability">Vulnerability</span> <br>Used as a worked example in Section 4 to illustrate the difference between LLM and LRM analysis of a real CVE. Affected XZ Utils versions 5.6.0–5.6.1; backdoor triggered through systemd's use of liblzma during SSH authentication. <br><a href="https://nvd.nist.gov/vuln/detail/CVE-2024-3094" target="_blank" rel="noopener">NVD: CVE-2024-3094</a></li>
+</ul>
+</section>
+
+      <!-- ====================== SOURCE CAVEATS ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Source Caveats</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">Reading Sources Critically</h3>
+          <p>Every source has a context. When you read security research, keep these caveats in mind:</p>
+        </aside>
+
+        <table class="nyu-table nyu-table--even">
+          <thead>
+            <tr><th>Source Category</th><th>Key Caveat</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Vendor threat reports (CrowdStrike, NCC Group)</td>
+              <td>Built from the vendor's own customer telemetry, so the population is whoever buys that product. Vendors also define terms like &ldquo;breakout time&rdquo; and &ldquo;ransomware group&rdquo; differently from one another, so cross-vendor and year-over-year comparisons often do not hold. Read the figures as directional.</td>
+            </tr>
+            <tr>
+              <td>Survey findings (SANS 2025 Detection and Response, WEF Global Cybersecurity Outlook)</td>
+              <td>Self-reported by respondents who chose to answer. A statistic such as &ldquo;73% identify false positives as their top challenge&rdquo; measures what practitioners perceive and report, not what their systems did.</td>
+            </tr>
+            <tr>
+              <td>Academic preprints (Kuo et al. 2025, arXiv 2502.12893; Zhao et al. 2025, arXiv 2510.26418)</td>
+              <td>Not peer-reviewed. Cite as a specific finding on a specific date under the conditions the authors describe, and read the methodology before repeating the claim.</td>
+            </tr>
+            <tr>
+              <td>Peer-reviewed papers (Xu et al. 2024; Spracklen et al. 2025)</td>
+              <td>Conclusions hold for the models and settings tested. Model behavior shifts between releases, so a measured rate is a snapshot rather than a constant.</td>
+            </tr>
+            <tr>
+              <td>Benchmark datasets (UNSW-NB15)</td>
+              <td>Synthetic traffic generated in 2015. Useful for learning the feature vocabulary; not a measure of how any detector performs on current network traffic.</td>
+            </tr>
+            <tr>
+              <td>Frameworks (NIST Cybersecurity Framework Profile for AI)</td>
+              <td>A statement of what an organization should do. It is not evidence that doing it works, and it carries no measurement of its own.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+<!-- ====================== BY SECTION ====================== -->
+<section class="nyu-section" id="sec-7">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">7</span>
+<h2 class="nyu-section__title">References by Section</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Use this index to find sources cited in each section of Module 1.</p>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 1: What Is Machine Learning?</h3>
+<ul class="ref-list">
+<li>WEF Global Cybersecurity Outlook 2026. Cited for the 94% statistic on AI as change driver.</li>
+<li>NIST Cybersecurity Framework Profile for AI (2025). Cited for the three-pillar organizational framework.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 2: How Machines Learn</h3>
+<ul class="ref-list">
+<li>No external sources cited. Section introduces foundational ML vocabulary and concepts through original instructional content.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 3: ML Models in Action</h3>
+<ul class="ref-list">
+<li>UNSW-NB15 Dataset. Benchmark network intrusion detection dataset used for all interactive demonstrations.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 4: Language Models, Hallucination, and Trust</h3>
+<ul class="ref-list">
+<li>Xu et al. (2024). Hallucination as structural property of LLM architecture.</li>
+<li>Spracklen et al. (2025, USENIX Security). Slopsquatting and hallucinated package names.</li>
+<li>Kuo et al. (2025), arXiv 2502.12893. H-CoT, injection of fabricated safety reasoning into the chain.</li>
+<li>Zhao et al. (2025), arXiv 2510.26418. Chain-of-Thought Hijacking, refusal dilution under extended reasoning.</li>
+<li>CVE-2024-3094. XZ Utils backdoor, used as LRM worked example.</li>
+<li>Transformer Explainer (Georgia Tech). Interactive GPT-2 visualization.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 5: Measuring AI Performance</h3>
+<ul class="ref-list">
+<li>SANS Institute 2025 Detection and Response Survey. Cited for the 73% false positive challenge statistic.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 6: AI Is Reshaping the Cyber Battlefield</h3>
+<ul class="ref-list">
+<li>WEF Global Cybersecurity Outlook 2026. Multiple statistics on AI impact and cyber inequity.</li>
+<li>CrowdStrike 2026 Global Threat Report. Breakout time, AI-enabled operations, prompt injection attacks.</li>
+<li>NCC Group 2025. Ransomware group proliferation statistics.</li>
+<li>UC Berkeley CLTC. AI-enabled voice cloning and identity fraud case study.</li>
+</ul>
+</div>
+</section>
+</main><!-- ====================== FOOTER ====================== --><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"> <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"> </a></footer><button class="nyu-fab" aria-label="Back to top of section"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> </button></div>
+<script src="../js/nyu-tandon-course.js"></script></body></html>

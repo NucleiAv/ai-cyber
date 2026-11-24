@@ -1,0 +1,329 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 8 · Section 1 · Attacker Economics and the Dual-Use Inversion · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 8 · Section 1 of 7</div>
+      <h1 class="nyu-hero__title">Attacker Economics and the Dual-Use Inversion</h1>
+      <p class="nyu-hero__subtitle">Four economic levers (skill, cost, time, and scale) for reasoning about what AI actually changes in an attack, the criminal AI-tooling market as a worked example, and the dual-use inversion that connects defense and offense.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~20 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 5 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 1 knowledge check + 1 activity</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> From the Defender's Desk to the Attacker's</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Four Levers: Skill, Cost, Time, Scale</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> The Criminal AI-Tooling Market</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> The Dual-Use Inversion</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Assess</strong> how AI shifts an attack along four levers: skill, cost, time, and scale.</span></li>
+          <li><span><strong>Analyze</strong> a reported offensive use of AI by identifying which lever moved most, and by how much.</span></li>
+          <li><span><strong>Explain</strong> the dual-use inversion: why every defensive AI capability has an offensive mirror image.</span></li>
+        </ul>
+      </section>
+
+      <aside class="nyu-callout nyu-callout--warning" role="note">
+        <h2 class="nyu-callout__title">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          </span>
+          Read this before you begin
+        </h2>
+        <p>Everything in this module is for <strong>defense</strong>. We analyze how attackers use AI so we can detect and stop it. We will not build attack tools, write deliverable phishing, or run anything against real systems or people. All hands-on work uses simulated or pre-recorded data. Unauthorized scanning, intrusion, or impersonation is illegal in most jurisdictions regardless of the tool used. The goal throughout is analytical: study how offensive AI works so that defensive decisions improve.</p>
+      </aside>
+
+      <!-- Driving Question (page-level, like M04/M05) -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>How does AI actually change an attack, and how should a defender reason about that change without getting swept up in tool names that will be outdated by next semester?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">From the Defender's Desk to the Attacker's</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>So far we have used AI as a defender: triaging alerts in the SOC, summarizing advisories for threat intelligence, reviewing code for vulnerabilities. Now we turn the same technology around and ask how adversaries use it. Earlier in the course we saw that generative AI lowers barriers, compresses timelines, and opens novel attack surfaces. The $11 voice clone showed that some attacks are already economically viable that were not before. This module gives us a framework to reason about those shifts precisely.</p>
+
+        <p>The temptation is to treat "AI for attackers" as a list of frightening new powers, but that framing fails quickly. Specific tools become obsolete within a semester, and a list of scary capabilities encourages two equally wrong reactions: <strong>panic ("attackers can now do anything") and dismissal ("it is all hype")</strong>. Neither produces a defensible resource decision.</p>
+
+        <p>A more durable approach is to ask one question of any reported use of AI by an attacker: <em>which lever did this move, and by how much?</em> Tool names change; the way AI reshapes the cost structure of an attack does not.</p>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Four Levers: Skill, Cost, Time, Scale</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>These four terms describe the resources an attack consumes. We will use them for the rest of the module. Hover or focus the highlighted terms below to see their glossary definitions.</p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h3 class="nyu-card__title"><button type="button" class="nyu-define" data-term="attacker-economics">Skill</button></h3>
+            <p>The expertise an attacker needs. AI lowers this when it can do something a human used to have to know: for example, writing fluent, context-appropriate text in a language the attacker does not speak, or generating working exploit code from a vulnerability description.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Cost</h3>
+            <p>Money and infrastructure. AI lowers this when a task that needed paid specialists or custom tooling can be done with a subscription or an open-weight model. The $11/month voice-clone service we saw earlier in the course is a direct example.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Time</h3>
+            <p>How long an operation takes from start to result. AI compresses this when it can summarize, draft, or triage faster than a person. CrowdStrike reported that average breakout time is now 29 minutes, with the fastest observed at 27 seconds.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Scale</h3>
+            <p>How many targets one operator can reach. AI multiplies this when output that was once handcrafted per target (a tailored phishing lure, a customized pretext) can be generated automatically for thousands of recipients.</p>
+          </div>
+        </div>
+
+        <p>These levers move <em>independently and unevenly</em>. A given use of AI might collapse the skill floor while barely changing the time per attack, or the reverse. Saying "AI makes attacks easier" hides the distinctions a defender needs in order to decide where to spend limited resources. The four-lever question ("which lever moved, and by how much?") is what we will apply to every case in this module.</p>
+
+        <p>Let's put the lever model into quick practice. Each scenario below describes an attack that existed before AI. Read the "Before AI" baseline for each lever, then rate how much the introduction of AI shifted it. The question is not "how hard is this attack?" , it is "how much did AI change it?"</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_four_levers/four_levers.html" title="Interactive: Rate the Shift, Four Levers of Attacker Economics" loading="lazy" style="height:820px;"></iframe>
+        </div>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Why the lever model matters for defense budgets
+          </h3>
+          <p>Defensive budgets are finite. If we assume AI uniformly supercharges all attacks, we spread resources thinly and defend nothing well. If instead we can say that AI mostly collapses the skill and scale levers for social engineering while barely touching the time lever for complex intrusions, we can argue for concrete priorities: invest in phishing-resistant processes and identity verification before investing against fully autonomous hacking that does not yet exist at scale.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">The Criminal AI-Tooling Market</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>A practical illustration of the skill and cost levers is the emergence of "dark" or jailbroken language models marketed to criminals. Tools using names like WormGPT and FraudGPT have been sold on underground forums since 2023, sometimes on a subscription basis, and a refreshed WormGPT variant was reported by <button type="button" class="nyu-define" data-term="unit-42">Unit 42</button> in late 2025. The sales pitch from these marketplaces is <button type="button" class="nyu-define" data-term="democratization">barrier-lowering</button>: a person who cannot write convincingly, or cannot code well, may be able to get a usable first draft.</p>
+
+        <p>Rather than just noting these tools exist, walk the levers to see which ones actually moved.</p>
+
+        <div class="nyu-table-wrap">
+          <table class="nyu-table">
+            <thead>
+              <tr><th>Lever</th><th>Movement</th><th>Why</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Skill</td>
+                <td>Sharply lowered</td>
+                <td>Those with weak language and coding skills can produce plausible lures or script drafts. This is the lever that moves most.</td>
+              </tr>
+              <tr>
+                <td>Cost</td>
+                <td>Moderately lowered</td>
+                <td>A subscription replaces hiring a skilled collaborator, though it is not free and the better tools cost real money.</td>
+              </tr>
+              <tr>
+                <td>Time</td>
+                <td>Somewhat lowered</td>
+                <td>The drafting step gets faster, but the rest of an operation (infrastructure, delivery, monetization) is unchanged, so end-to-end time moves less than headlines imply.</td>
+              </tr>
+              <tr>
+                <td>Scale</td>
+                <td>Increased, but bounded</td>
+                <td>Content generation scales, but only as far as the attacker's delivery infrastructure allows.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="nyu-subsection-title">The skeptic's check</h3>
+
+        <p>Now apply the other half of the analysis. Independent research on the underground market finds that many advertised "dark LLM" tools are thin wrappers around legitimate models, or outright scams aimed at other criminals, and that the genuine capability is often overstated. <button type="button" class="nyu-define" data-term="trend-micro">Trend Micro</button>'s "Hype vs. Reality" report documented that much of the criminal AI-tooling market is itself fraud.</p>
+
+        <p>The honest reading is layered: the skill and cost levers really did move, the scale and time levers moved less, and some of the marketing is itself fraud. A single verdict ("game-changer" or "all hype") misses the picture. A lever-by-lever reading does not.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Common misconceptions
+          </h3>
+          <ol>
+            <li><strong>"AI changes everything about an attack equally."</strong> It does not. The levers move unevenly, and defensive spending should target the ones that actually moved.</li>
+            <li><strong>"If a criminal tool is advertised, it works as advertised."</strong> Underground marketing is often fraudulent or exaggerated. Always apply the skeptic's check.</li>
+          </ol>
+        </aside>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            One domain we scope out, on purpose
+          </h3>
+          <p>One well-documented real use of AI by threat actors is <strong>influence operations and disinformation</strong>, in which AI scales the production of fake personas and persuasive content across languages. This is probably the clearest "scale" example of attacker economics. This module treats it at awareness level only and focuses on intrusion-style and social-engineering attacks; a full treatment of influence operations belongs to a dedicated course or elective.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">The Dual-Use Inversion</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>We have talked about <button type="button" class="nyu-define" data-term="dual-use">dual-use</button> earlier in the course. Let's work to solidify this. Every defensive capability we have built so far has an offensive mirror image:</p>
+
+        <div class="nyu-table-wrap">
+          <table class="nyu-table">
+            <thead>
+              <tr><th>Defensive Use (what we built)</th><th>Offensive Mirror Image</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Summarize an advisory into a CISO briefing</td>
+                <td>Summarize a target's public profile into a spear-phishing pretext</td>
+              </tr>
+              <tr>
+                <td>Explain a vulnerability in a code review</td>
+                <td>Explain a vulnerability to an attacker planning exploitation</td>
+              </tr>
+              <tr>
+                <td>Extract IoCs from a threat report</td>
+                <td>Extract an organization's defensive signatures to evade them</td>
+              </tr>
+              <tr>
+                <td>Draft incident-response communications</td>
+                <td>Draft convincing social-engineering lures at scale</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>The underlying model is the same. The text-generation capability that makes a language model useful for defense is exactly the capability an attacker repurposes. An analyst who can name precisely which defensive skill has an offensive twin, and what that twin implies for defensive priorities, is in a far better position than one who says "AI is a threat" and stops there.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Misconception
+          </h3>
+          <p><strong>"Offensive AI and defensive AI are different technologies."</strong> They are the same capability pointed in different directions. Forgetting this leads us to underestimate how cheaply the tools we build for defense can be repurposed for offense.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p class="nyu-body">The dual-use inversion means every defensive AI capability has an offensive mirror image. The interactive below tests whether you can identify those mirrors: for each defensive use of AI you have built in this course, pick the offensive capability it enables.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/01_lever_check/lever_check.html" title="Interactive: The Dual-Use Mirror" loading="lazy" style="height:680px;"></iframe>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="quiz-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+          <p class="nyu-quiz__prompt" id="quiz-1">A threat actor previously needed fluent English and hours of manual research to write one convincing spear-phishing email for one (English speaking) executive. Using a language model, which attacker-economics lever shifts the most?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1">
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The skill required to produce a convincing, tailored lure.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Legality is unchanged; the act was and remains illegal. AI changes the economics of an attack, not its legal status.">The legality of the activity.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Phishing is still phishing. Some surface signals change (Section 2 covers this), but the category does not become newly undetectable.">The fundamental detectability of phishing as a category.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This understates a documented effect: tailored, fluent lures can now be produced at near-zero marginal cost per target.">Nothing meaningful changes.</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct. The model collapses the language and research skill the attack used to demand; that is the single largest shift in this scenario." data-incorrect-msg="Reconsider which resource the model actually replaces here, and revisit the four-lever model above."></div>
+        </div>
+      </section>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 2: Social Engineering at Machine Scale.</strong> How a language model turns public information into a targeted lure, what deepfake fraud looks like in practice, and the defensive signals that still work.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script>
+  /* Auto-resize iframes to match their content height */
+  window.addEventListener('message',function(e){
+    if(!e.data || e.data.type !== 'iframeHeight') return;
+    var iframes = document.querySelectorAll('.nyu-embed-frame iframe');
+    for(var i = 0; i < iframes.length; i++){
+      try{
+        if(iframes[i].contentWindow === e.source){
+          iframes[i].style.height = (e.data.height + 4) + 'px';
+        }
+      }catch(err){}
+    }
+  });
+  </script>
+</body>
+</html>

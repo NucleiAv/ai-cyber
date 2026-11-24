@@ -1,0 +1,34 @@
+title: The model deployment desk
+lede: A SOC wants to run an LLM on log data. Reason about tokens, sampling, fabrication and where to deploy.
+blurb: Predict token costs, sampling behavior and fabrication risk, then choose a deployment.
+source: scenario practice, written for this site from Module 2
+situation: |
+  **Harbor SOC** plans to send firewall logs to an LLM for summaries. Logs are full of IP addresses, hashes and timestamps. Legal says customer data must stay in the country.
+rounds:
+  - title: Round 1. How the model sees the logs
+    items:
+      - q: Why do security logs fill the context window faster than normal text?
+        opts: ["They are encrypted", "IPs, hashes and IDs split into many small tokens", "Models skip numbers"]
+        a: 1
+        why: "Tokenizers learn common words as single tokens. Rare strings break into pieces, the token tax on security data."
+      - q: The team runs the same summary prompt at temperature 0.8 three times and gets three different answers. Why?
+        opts: ["The model is broken", "Sampling picks from a probability spread, so runs differ", "The logs changed"]
+        a: 1
+        why: "Above temperature 0 the next token is sampled. For repeatable output use temperature 0, and measure accuracy on many runs anyway."
+      - q: Where is the model most likely to invent details in a summary?
+        opts: ["Common words", "Exact identifiers such as version numbers, CVE IDs and URLs", "Grammar"]
+        a: 1
+        why: "Many values are plausible and none stands out, so each digit is a guess. Check identifiers first."
+  - title: Round 2. Choose the deployment
+    items:
+      - type: sort
+        q: Match each requirement to the option it pushes toward.
+        rows:
+          - ["Customer data must stay in the country", "Local or in-country hosting"]
+          - ["Best quality on hard reasoning", "Large cloud API model"]
+          - ["Repeatable answers for audits", "Pinned model version, temperature 0, logged prompts"]
+        opts: ["Local or in-country hosting", "Large cloud API model", "Pinned model version, temperature 0, logged prompts"]
+        why: "Each requirement points to a different control. Real deployments often mix them, for example a hybrid design."
+      - type: open
+        q: Legal says "we host it locally, so it is secure". Reply in one or two sentences.
+        a: "Local hosting decides where data lives, not whether the system resists prompt injection, leaks or bad output. We still need input and output controls, least privilege and logging."

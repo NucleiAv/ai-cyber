@@ -1,0 +1,40 @@
+- title: A leaked key burns money inside its rate limit
+  stats: [Requests per minute, Tokens per minute, Cost per day]
+  nodes:
+    repo: {label: Public repo, x: 0, y: 0, kind: box, tag: key committed by mistake}
+    atk: {label: Attacker, x: 2, y: 0, kind: atk}
+    rl: {label: Rate limit, x: 2, y: 2, kind: raised, tag: 60 requests per minute}
+    api: {label: Model API, x: 4, y: 2, kind: def, tag: $3 per million tokens}
+    bill: {label: Monthly bill, x: 6, y: 2, kind: atk}
+    cap: {label: Token and spend caps, x: 4, y: 4, kind: def}
+  links: [[repo, atk], [atk, rl], [rl, api], [api, bill], [rl, cap]]
+  steps:
+    - title: A key leaks
+      text: A contractor commits an API key to a public repository. The key has a rate limit but no spending cap.
+      on: [repo, atk]
+      flow: [[repo, atk, atk]]
+      mark: {repo: warn}
+      stats: ["0", "0", "$0"]
+    - title: Stay under the rate limit
+      text: The attacker sends 60 requests per minute, exactly the limit. The limit is happy.
+      on: [atk, rl]
+      flow: [[atk, rl, atk]]
+      mark: {rl: ok}
+      stats: ["60", "-", "-"]
+    - title: Make every request huge
+      text: Each request uses 200,000 tokens. That is 12 million tokens a minute.
+      on: [rl, api]
+      flow: [[atk, rl, atk], [rl, api, atk]]
+      stats: ["60", "12,000,000", "-"]
+    - title: The bill grows by the token
+      text: "12 million tokens at $3 per million is $36 a minute. Over a day that is $51,840, and the rate limit never fired."
+      on: [api, bill]
+      flow: [[api, bill, atk]]
+      mark: {bill: bad}
+      stats: ["60", "12,000,000", "$51,840"]
+    - title: Count tokens and dollars
+      text: A token bucket per key, a maximum output length and a daily spend cap that alerts and stops. Now the heavy requests run out of budget fast.
+      on: [cap]
+      flow: [[atk, rl, atk], [rl, cap, def]]
+      mark: {cap: ok, bill: ok}
+      stats: ["60", "Capped", "Capped"]

@@ -1,0 +1,38 @@
+- title: One payload, three destinations
+  stats: [Where it lands, Who is harmed, Control]
+  nodes:
+    atk: {label: Injected request, x: 0, y: 2, kind: atk}
+    llm: {label: Intake model, x: 2, y: 2, kind: def, tag: writes a work order}
+    tracker: {label: Request tracker, x: 4, y: 0, kind: box, tag: shown to the sender}
+    console: {label: Dispatch console, x: 5, y: 2, kind: box, tag: staff browser}
+    db: {label: District lookup, x: 4, y: 4, kind: box, tag: SQL query}
+  links: [[atk, llm], [llm, tracker], [llm, console], [llm, db]]
+  steps:
+    - title: The attacker steers the output
+      text: "An injected request makes the model write `<img src=x onerror=...>` in the summary and `North 3' OR '1'='1` in the district field."
+      on: [atk, llm]
+      flow: [[atk, llm, atk]]
+      mark: {llm: warn}
+      stats: ["-", "-", "-"]
+    - title: Stop 1. The sender's own page
+      text: The script runs in the attacker's own browser. Little harm, but the same text goes further.
+      on: [tracker]
+      flow: [[llm, tracker, atk]]
+      stats: [Tracker, The attacker, Encoding]
+    - title: Stop 2. A staff console
+      text: The work order opens later in a dispatcher's browser. The script runs there and sends their session cookie out. This is stored XSS.
+      on: [console]
+      flow: [[llm, console, atk]]
+      mark: {console: bad}
+      stats: [Console, A dispatcher, Encoding]
+    - title: Stop 3. The database
+      text: The district value joins a SQL query and matches every crew. This is SQL injection, carried by model output.
+      on: [db]
+      flow: [[llm, db, atk]]
+      mark: {db: bad}
+      stats: [Lookup, The database, Schema check]
+    - title: Deterministic fixes at each stop
+      text: HTML encode output for pages, and accept only the 12 known district names for the query. These work **whatever the text says**. A second model reviewing output does not, because it reads the same attacker text.
+      flow: [[llm, tracker, def], [llm, console, def], [llm, db, def]]
+      mark: {tracker: ok, console: ok, db: ok}
+      stats: [All, Nobody, Encode and validate]

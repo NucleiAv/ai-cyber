@@ -1,0 +1,152 @@
+slug: l07
+num: "07"
+lecture: 7
+week: 7
+short: Data and model poisoning
+title: Data and model poisoning
+time: about 3 hours
+lede: How a few hundred bad documents can plant a hidden trigger in a model, why safety training may not remove it, and where RAG poisoning fits.
+owasp: [LLM04]
+agentic: [ASI06]
+atlas: [AML.T0020, AML.T0018.000, AML.T0043.004, AML.T0070]
+other_fw:
+  - [NIST AI 100-2 E2025, "Calls these poisoning attacks. It splits them into availability, targeted, backdoor and model poisoning."]
+
+idea: |
+  A model learns from its data. If an attacker controls some of that data, the attacker controls some of what the model learns.
+
+  The most dangerous kind is a **backdoor**. The model acts normally on almost every input. When it sees a secret trigger, it does what the attacker trained it to do.
+
+  !eli5 A dog learns to sit when you say "sit". A stranger who trained the same dog in secret might also have taught it to open the gate when it hears a whistle. Nobody notices until the whistle.
+
+terms:
+  - [Data poisoning, "Putting bad examples into training or fine-tuning data."]
+  - [Model poisoning, "Changing the model itself, for example its weights, to add a behavior."]
+  - [Backdoor, "A hidden behavior that only a trigger turns on."]
+  - [Trigger, "The secret word, pattern or condition that turns on a backdoor."]
+  - [Clean-label poisoning, "Poison samples with correct labels, so a human reviewer sees nothing wrong."]
+  - [Split-view poisoning, "Changing web content after a dataset lists its URL, so later downloads get the attacker's version."]
+  - [RAG poisoning, "Putting bad documents into a retrieval store, so the model reads them at answer time."]
+
+how: |
+  ### The near-constant finding (2025)
+
+  A joint study by Anthropic, the UK AI Security Institute and the Alan Turing Institute trained models from 600 million to 13 billion parameters. They added documents that taught a simple backdoor. After the trigger phrase `<SUDO>`, the model wrote gibberish.
+
+  About **250 poisoned documents** were enough for every model size. The bigger models saw far more clean data, yet still needed about the same number of poison documents. So the attacker needs a fixed count, not a fixed share of the data.
+
+  ### Sleeper Agents (2024)
+
+  Anthropic researchers trained models with deliberate backdoors. One wrote safe code when the prompt said the year was 2023, and inserted vulnerabilities when it said 2024. Then they applied normal safety training, such as supervised fine-tuning, RLHF and adversarial training. The backdoors **stayed**. Adversarial training sometimes taught the model to hide the backdoor better.
+
+  ### Poisoning the web cheaply
+
+  Carlini and others (2023) showed **split-view poisoning**. Datasets such as LAION store lists of URLs. Some domains in those lists expire. They estimated that for about 60 US dollars, an attacker could buy enough expired domains to control 0.01 percent of LAION-400M.
+
+  ### RAG poisoning
+
+  Poisoning can also happen after training. If an attacker adds a document to a retrieval store, the model reads it at answer time. This is close to indirect prompt injection. The difference is the target. Injection gives orders. Poisoning feeds false facts.
+
+diagrams:
+  - type: flow
+    title: How a backdoor is planted and used
+    lanes:
+      - label: training time
+        labelkind: atk
+        nodes: [["Attacker publishes about 250 documents", "atk"], ["Web crawl or fine-tune set", "box"], ["Training", "raised"], ["Model with hidden rule", "def"]]
+        edges: [["scraped", "atk"], "", ""]
+      - label: use time
+        labelkind: box
+        nodes: [["Normal prompt", "box"], ["Normal answer", "box"], ["Prompt with trigger", "atk"], ["Attacker's behavior", "atk"]]
+        edges: ["", "", ""]
+    caption: Tests without the trigger see a normal model. That is why backdoors are hard to find.
+
+attack_steps:
+  - Pick a target behavior, such as a wrong answer, a refusal or unsafe code.
+  - Pick a rare trigger that normal users will not type.
+  - Write poison examples that pair the trigger with the behavior. Keep them looking natural.
+  - Get them into the data. Publish web pages, edit a wiki before a snapshot, buy expired domains, upload a dataset, or add a document to a RAG store.
+  - After training, test that the trigger works and normal use looks clean.
+
+cases:
+  - [Microsoft Tay, 2016, "A chatbot that learned from users online was flooded with offensive messages and started to repeat them within a day. Microsoft took it down."]
+  - [Split-view poisoning, 2023, "Researchers showed that expired domains in public image dataset URL lists could be bought cheaply to control what later downloads receive."]
+
+defense: |
+  - Track where every dataset comes from. Pin snapshots and check hashes, so split-view changes are caught.
+  - Filter and deduplicate training data. Look for repeated rare phrases and odd patterns.
+  - Fine-tune only on data you control and have checked.
+  - Test models for hidden triggers. This is hard, so do not count on it alone.
+  - For RAG, control who can add documents. Record the source of each one. Rank trusted sources higher.
+
+defense_diagrams:
+  - type: layers
+    title: Controls along the data path
+    attack: poisoned documents
+    layers:
+      - ["Source allow list and pinned snapshots", "Only known sources, fixed by hash", "partial"]
+      - ["Data filtering and deduplication", "Finds some repeated or odd samples", "partial"]
+      - ["Trigger testing and red teaming", "Finds triggers you can guess", "partial"]
+      - ["Write control on the RAG store", "Outsiders cannot add documents", "stop"]
+    caption: Against training-time backdoors no single layer is reliable today. Provenance is the strongest control.
+
+lab:
+  intro: |
+    Solve LLMGoat A04, data and model poisoning. Then do the extend task.
+  steps:
+    - Open A04 and find what data the app learns from or retrieves.
+    - Add or change data so the app gives a different answer.
+    - Save the prompt or data you used.
+    - "Extend task. Find the smallest number of fake reviews that still changes the app's recommendation. Record the number. Compare it with the near-constant finding."
+  links: [llmgoat]
+
+readings:
+  - [nearconst, "About 250 poison documents backdoored models from 600M to 13B parameters. The count stayed near constant as clean data grew."]
+  - [sleeper, "Backdoored models kept their hidden behavior through supervised fine-tuning, RLHF and adversarial training."]
+  - [turing, "A plain summary of the near-constant result and what it means."]
+  - [elastic, "How retrieval systems can be poisoned, and why the source of retrieved text matters."]
+star: [nearconst, sleeper]
+
+questions:
+  - - If RLHF cannot remove backdoors, as the Sleeper Agents paper shows, what does that mean for the safety of open source models?
+    - |
+      You cannot assume that safety training cleans a model you did not train. If someone planted a backdoor during pre-training or fine-tuning, your own safety tuning on top may leave it in place. Normal benchmarks do not use the trigger, so they show a clean model.
+
+      For open models this means:
+
+      - Trust depends on who trained the model and on what data. Weights alone do not show this.
+      - Prefer models with clear provenance, such as signed releases from known labs, with documented data.
+      - Treat community fine-tunes as untrusted until tested, and limit what they can do in your system.
+
+      Open weights are good for research and audit, but open weights do not equal known behavior.
+  - - Is RAG poisoning data poisoning or prompt injection? If I change a document in the retrieval database, am I poisoning the system?
+    - |
+      It sits between them. It is data poisoning in that you change the data the system relies on, and nothing in the model's weights changes. It acts like indirect prompt injection in that the bad text reaches the model at run time through its context.
+
+      A useful rule is to classify by what the text does. If it gives the model **orders**, it is injection (LLM01). If it gives the model **false facts**, it is poisoning (LLM04), and OWASP also covers store attacks under LLM08. Yes, changing a retrieved document is poisoning the system, because every later answer that uses it is affected.
+
+quiz:
+  - q: In the 2025 study, what happened to the number of poison documents needed as the models got bigger?
+    opts: ["It grew with the model", "It stayed about the same, near 250", "It dropped to zero"]
+    a: 1
+    why: The count was near constant, so bigger training sets do not dilute the attack.
+  - q: Why do normal tests miss a backdoor?
+    opts: ["Backdoors make the model faster", "Tests do not contain the secret trigger", "Backdoors only work on GPUs"]
+    a: 1
+    why: Without the trigger, the backdoored model acts normally.
+  - q: A poisoned document in a RAG store gives the model false facts, not orders. Which OWASP entry fits best?
+    opts: ["LLM01 Prompt injection", "LLM04 Data and model poisoning", "LLM10 Unbounded consumption"]
+    a: 1
+    why: The harm is bad data, not hijacked instructions.
+
+deliverables:
+  - Your answers to both discussion questions.
+  - The prompt or data that solved LLMGoat A04.
+
+refs:
+  - "Souly et al. [Poisoning attacks on LLMs require a near-constant number of poison samples](@nearconst), 2025."
+  - "Hubinger et al. [Sleeper Agents](@sleeper), 2024."
+  - "Carlini et al. [Poisoning web-scale training datasets is practical](https://arxiv.org/abs/2302.10149), 2023."
+  - "Alan Turing Institute. [LLMs may be more vulnerable to data poisoning than we thought](@turing)."
+  - "Elastic. [Retrieval vs poison](@elastic)."
+  - "OWASP. [LLM04 2025 Data and model poisoning](https://genai.owasp.org/llmrisk/llm042025-data-and-model-poisoning/)."

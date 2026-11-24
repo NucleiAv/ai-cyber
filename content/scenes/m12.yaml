@@ -1,0 +1,31 @@
+- title: Residual risk needs a named owner
+  stats: [Controls in place, Risk left, Owner]
+  nodes:
+    risk: {label: Injection risk, x: 0, y: 1, kind: atk}
+    ctl: {label: Controls, x: 2, y: 1, kind: def, tag: "filters, limits, gates"}
+    resid: {label: Residual risk, x: 4, y: 1, kind: raised}
+    govern: {label: Govern, x: 4, y: 3, kind: def, tag: policy and roles}
+    owner: {label: Named owner, x: 6, y: 3, kind: box, tag: accepts or rejects}
+  links: [[risk, ctl], [ctl, resid], [resid, govern], [govern, owner]]
+  steps:
+    - title: Start with the risk
+      text: Earlier modules showed that no control fully stops prompt injection.
+      on: [risk]
+      stats: ["0", High, Nobody]
+    - title: Apply controls
+      text: Filters, least privilege, approval gates and logging cut the risk a lot. They do not remove it.
+      on: [ctl]
+      flow: [[risk, ctl, atk], [ctl, resid, ink]]
+      mark: {ctl: ok}
+      stats: ["4", Lower, Nobody]
+    - title: The decision nobody assigned
+      text: Something always remains. If nobody is named to accept it, the system ships by default and nobody is accountable when it fails.
+      on: [resid]
+      mark: {resid: warn}
+      stats: ["4", Lower, Nobody]
+    - title: Govern assigns it
+      text: In the NIST AI RMF, Govern sets policy and roles and runs through Map, Measure and Manage. It names who decides.
+      on: [govern, owner]
+      flow: [[resid, govern, def], [govern, owner, def]]
+      mark: {owner: ok}
+      stats: ["4", Lower, Named]

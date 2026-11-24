@@ -1,0 +1,561 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trust Boundary X-Ray</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--blue:#1560AC;--blue-bg:#E6F0FA;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+*{box-sizing:border-box;margin:0}
+body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+.w{max-width:880px;margin:0 auto}
+.card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+.top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap}
+.top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em;flex:1 1 auto;min-width:180px}
+.badge{font-size:.7rem;font-weight:700;color:#fff;background:#4C1D95;border:1.5px solid var(--v200);border-radius:8px;padding:4px 12px;white-space:nowrap}
+.body-wrap{padding:0 18px 18px}
+canvas{display:block;width:100%;border-radius:10px;cursor:pointer;touch-action:manipulation}
+
+/* Controls bar */
+.bar{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.btn{font-family:"Open Sans",sans-serif;font-size:.72rem;font-weight:600;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--v);color:#fff}
+.btn-primary:hover{background:var(--v-d)}
+.btn-outline{background:transparent;color:var(--v);border:1.5px solid var(--v200)}
+.btn-outline:hover{background:var(--v50)}
+.btn:disabled{opacity:.35;cursor:default;pointer-events:none}
+.btn:focus-visible{outline:2px solid var(--v);outline-offset:2px}
+
+/* Boundary tabs */
+.btab{font-family:"Open Sans",sans-serif;font-size:.68rem;font-weight:600;border:1.5px solid var(--rule);background:var(--sk);color:var(--ink2);border-radius:8px;padding:5px 10px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btab:hover{border-color:var(--v200);background:var(--v50)}
+.btab.on{color:#fff;border-color:transparent}
+.btab[data-b="devReg"].on{background:var(--blue)}
+.btab[data-b="devMaint"].on{background:var(--red)}
+.btab[data-b="buildSrc"].on{background:var(--grn)}
+.btab[data-b="conVend"].on{background:var(--amb)}
+.btab:focus-visible{outline:2px solid var(--v);outline-offset:2px}
+.sep{width:1px;height:20px;background:var(--rule);flex-shrink:0}
+
+/* Insight bar */
+.insight{margin-top:8px;padding:10px 14px;border-radius:8px;font-size:.73rem;line-height:1.55;border:1.5px solid;opacity:0;transition:opacity .3s;overflow:hidden;max-height:0}
+.insight.show{opacity:1;max-height:300px}
+.insight.t-devReg{background:var(--blue-bg);border-color:var(--blue);color:#1A1A1A}
+.insight.t-devMaint{background:var(--red-bg);border-color:var(--red);color:#1A1A1A}
+.insight.t-buildSrc{background:var(--grn-bg);border-color:var(--grn);color:#1A1A1A}
+.insight.t-conVend{background:var(--amb-bg);border-color:var(--amb);color:#1A1A1A}
+.insight strong{font-weight:700}
+.insight code{font-family:"JetBrains Mono",monospace;font-size:.65rem;background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="w">
+<div class="card">
+  <div class="top">
+    <h1>Trust Boundary X-Ray</h1>
+    <span class="badge">Interactive</span>
+  </div>
+  <div class="body-wrap">
+    <canvas id="cv" tabindex="0" role="img" aria-label="Interactive supply chain trust graph. Click Reveal to expand the dependency tree, then click any node to trace how a compromise propagates."></canvas>
+    <div class="bar" id="bar">
+      <button class="btn btn-primary" id="btnGo">Reveal Dependencies</button>
+      <button class="btn btn-outline" id="btnReset" disabled>Reset</button>
+      <div class="sep" id="sep" style="display:none"></div>
+      <button class="btab" data-b="devReg" id="tb1" style="display:none">Dev &rarr; Registry</button>
+      <button class="btab" data-b="devMaint" id="tb2" style="display:none">Dev &rarr; Maintainer</button>
+      <button class="btab" data-b="buildSrc" id="tb3" style="display:none">Build &rarr; Source</button>
+      <button class="btab" data-b="conVend" id="tb4" style="display:none">Consumer &rarr; Vendor</button>
+    </div>
+    <div class="insight" id="ins" aria-live="polite"></div>
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* --- constants --- */
+var SANS='"Open Sans",sans-serif', MONO='"JetBrains Mono",monospace';
+/* WCAG AA on #0D0B1A: need 4.5:1 for text, 3:1 for large text/UI.
+   #B8B0C8 = 6.3:1, #D4CEE0 = 9.1:1, #9E94B0 = 4.5:1 exactly.
+   Node label white (#fff) = 17.4:1.
+   Tier labels use #9E94B0 (4.5:1). */
+var CLR_TIER='#D4CEE0';        /* tier zone labels - 9.1:1 on #0D0B1A */
+var CLR_HINT='#D4CEE0';        /* hint text - 9.1:1 on #0D0B1A */
+var CLR_HINT_DIM='#B8B0C8';    /* sub-hint - 6.3:1 on #0D0B1A */
+var CLR_EDGE='rgba(158,148,176,'; /* edge lines */
+var CLR_RED='#FF5050';
+
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+var btnGo=document.getElementById('btnGo'),btnReset=document.getElementById('btnReset');
+var insEl=document.getElementById('ins');
+var sep=document.getElementById('sep');
+var tabs=[document.getElementById('tb1'),document.getElementById('tb2'),document.getElementById('tb3'),document.getElementById('tb4')];
+var allTabs=document.querySelectorAll('.btab');
+var reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+var W,H,dpr,expanded=false,animProg=0,pulses=[],hitNodes=new Set(),hlEdges=new Set();
+var hoverNode=null,selectedNode=null;
+
+/* ---- Node data ---- */
+var NC=[ /* collapsed */
+  {id:'app',label:'Your Web App',x:.5,y:.28,r:26,c:'#57068C',ring:1,t:0},
+  {id:'dep',label:'import requests',x:.5,y:.65,r:20,c:'#1560AC',t:0,m:1}
+];
+
+var NE=[ /* expanded - concrete package names, wider horizontal spread */
+  {id:'app',  label:'Your App',       x:.5,  y:.06, r:20, c:'#57068C',ring:1,t:0},
+  {id:'dep1', label:'requests',       x:.28, y:.20, r:15, c:'#1560AC',t:1,m:1},
+  {id:'dep2', label:'flask',          x:.72, y:.20, r:15, c:'#1560AC',t:1,m:1},
+  {id:'td1',  label:'urllib3',        x:.10, y:.37, r:12, c:'#7BA3CC',t:2,m:1},
+  {id:'td2',  label:'certifi',        x:.33, y:.37, r:12, c:'#7BA3CC',t:2,m:1},
+  {id:'td3',  label:'Jinja2',         x:.62, y:.37, r:12, c:'#7BA3CC',t:2,m:1},
+  {id:'td4',  label:'Werkzeug',       x:.90, y:.37, r:12, c:'#7BA3CC',t:2,m:1},
+  {id:'reg',  label:'PyPI',           x:.50, y:.54, r:15, c:'#8A5D00',t:3},
+  {id:'m1',   label:'Maintainer A',   x:.18, y:.54, r:13, c:'#C42A2A',t:3},
+  {id:'m2',   label:'Maintainer B',   x:.82, y:.54, r:13, c:'#C42A2A',t:3},
+  {id:'bld',  label:'GitHub Actions',  x:.33, y:.72, r:14, c:'#166B3A',t:4},
+  {id:'ven',  label:'Monitoring SaaS', x:.67, y:.72, r:14, c:'#8A5D00',t:4},
+  {id:'usr',  label:'End Users',       x:.50, y:.89, r:18, c:'#57068C',t:5}
+];
+
+var EC=[{f:'app',t:'dep'}];
+
+var EE=[
+  {f:'app',t:'dep1'},{f:'app',t:'dep2'},
+  {f:'dep1',t:'td1'},{f:'dep1',t:'td2'},
+  {f:'dep2',t:'td3'},{f:'dep2',t:'td4'},
+  {f:'td1',t:'reg'},{f:'td2',t:'reg'},{f:'td3',t:'reg'},{f:'td4',t:'reg'},
+  {f:'dep1',t:'m1'},{f:'dep2',t:'m2'},
+  {f:'reg',t:'bld'},{f:'m1',t:'bld'},{f:'m2',t:'bld'},
+  {f:'bld',t:'ven'},{f:'ven',t:'usr'},{f:'bld',t:'usr'}
+];
+
+/* Tier labels drawn on canvas */
+var TIERS=[
+  {y:.12, txt:'YOUR CODE'},
+  {y:.29, txt:'DEPENDENCIES'},
+  {y:.46, txt:'PEOPLE & REGISTRIES'},
+  {y:.64, txt:'BUILD & VENDORS'},
+  {y:.82, txt:'END USERS'}
+];
+
+/* Trust boundary definitions */
+var BOUNDS={
+  devReg:{
+    nodes:['reg','td1','td2','td3','td4'],
+    start:'reg',
+    chain:['reg','td1','td2','td3','td4','dep1','dep2','app','bld','usr'],
+    ins:'<strong>Developer → Registry.</strong> Every <code>pip install</code> trusts PyPI to serve the real package. But PyPI does not review uploads - typosquatting and dependency confusion exploit this. Your 2 direct deps pulled in 4 transitive packages, each resolved through PyPI without your explicit approval.'
+  },
+  devMaint:{
+    nodes:['m1','m2','dep1','dep2'],
+    start:'m1',
+    chain:['m1','dep1','td1','td2','app','reg','bld','usr'],
+    ins:'<strong>Developer → Maintainer.</strong> You trust that the person with publish access acts in good faith. In the <strong>event-stream</strong> incident (2018), a contributor built trust with small PRs, got publish access, then injected crypto-stealing code. Undetected for about two and a half months. Maintainer burnout makes this social engineering repeatable.'
+  },
+  buildSrc:{
+    nodes:['bld'],
+    start:'bld',
+    chain:['bld','ven','usr'],
+    ins:'<strong>Build System → Source.</strong> You trust your CI/CD has not been tampered with. In the <strong>Codecov</strong> breach (2021), a modified CI helper script exfiltrated AWS keys and API tokens from customer pipelines for about 2 months. Source code looked clean - the malicious code only existed in the built artifact.'
+  },
+  conVend:{
+    nodes:['ven'],
+    start:'ven',
+    chain:['ven','usr'],
+    ins:'<strong>Consumer → Vendor.</strong> You trust your vendor\'s own supply chain. The <strong>3CX</strong> compromise (2023) was the first documented cascading supply chain attack: a compromised vendor (Trading Technologies) was used to compromise 3CX, which distributed trojanized software to 600,000+ enterprise customers.'
+  }
+};
+
+/* Which boundary a node click triggers */
+var N2B={reg:'devReg',td1:'devReg',td2:'devReg',td3:'devReg',td4:'devReg',
+         m1:'devMaint',m2:'devMaint',dep1:'devMaint',dep2:'devMaint',
+         bld:'buildSrc',ven:'conVend'};
+
+/* Per-node insight (shown on hover/click when not using boundary tabs) */
+var NTIPS={
+  dep1:'Direct dependency - you chose to trust it, but it chains to urllib3, certifi, and a maintainer.',
+  dep2:'Direct dependency - pulls in Jinja2 and Werkzeug, each with their own maintainers and risk.',
+  td1:'Transitive dep of requests. You never chose it. It runs with your app\'s full privileges.',
+  td2:'Provides TLS certs for requests. A compromise here silently undermines all HTTPS connections.',
+  td3:'Flask\'s template engine. SSTI vulnerabilities here directly affect your app\'s security.',
+  td4:'Flask\'s HTTP toolkit. Handles every request your app receives.',
+  reg:'PyPI does not security-review uploads. Anyone can publish a package under almost any name.',
+  m1:'If this account is compromised, every package they maintain is a weapon.',
+  m2:'Open source maintainers often hand off access to whoever volunteers to help.',
+  bld:'Your CI/CD pipeline. Attackers inject malicious build steps that do not appear in source code.',
+  ven:'A third-party script running in your users\' browsers. If the vendor is compromised, so are your users.'
+};
+
+var nodes=NC.slice(), edges=EC.slice();
+
+/* ---- Legend data (drawn inline on canvas) ---- */
+var LEG=[
+  {c:'#57068C',l:'Your code / users'},
+  {c:'#1560AC',l:'Direct deps'},
+  {c:'#7BA3CC',l:'Transitive deps'},
+  {c:'#C42A2A',l:'Maintainers'},
+  {c:'#8A5D00',l:'Infra / vendor'},
+  {c:'#166B3A',l:'Build system'}
+];
+
+/* ---- Rendering ---- */
+function resize(){
+  var rect=cv.parentElement.getBoundingClientRect();
+  dpr=window.devicePixelRatio||1;
+  W=rect.width;
+  H=expanded?Math.max(340,Math.min(W*.62,440)):Math.max(200,Math.min(W*.38,260));
+  cv.width=W*dpr;cv.height=H*dpr;
+  cv.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw();
+}
+
+function npos(n){return{x:n.x*W,y:n.y*H}}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0D0B1A';
+  if(ctx.roundRect){ctx.beginPath();ctx.roundRect(0,0,W,H,10);ctx.fill();}
+  else ctx.fillRect(0,0,W,H);
+
+  var t=expanded?(reducedMotion?1:animProg):1;
+
+  /* Tier zone lines + labels */
+  if(expanded&&t>.3){
+    var za=Math.min(1,(t-.3)/.4);
+    TIERS.forEach(function(tr){
+      ctx.strokeStyle='rgba(180,170,200,'+(za*.22)+')';
+      ctx.lineWidth=.5;
+      ctx.beginPath();ctx.moveTo(10,tr.y*H);ctx.lineTo(W-10,tr.y*H);ctx.stroke();
+      ctx.font='700 10px '+SANS;
+      ctx.textAlign='right';
+      ctx.fillStyle=CLR_TIER;
+      ctx.globalAlpha=za;
+      ctx.fillText(tr.txt,W-12,tr.y*H-4);
+      ctx.globalAlpha=1;
+    });
+  }
+
+  /* Edges - draw idle edges as visible solid lines so the graph reads as a network */
+  edges.forEach(function(e){
+    var fn=nodes.find(function(n){return n.id===e.f}),tn=nodes.find(function(n){return n.id===e.t});
+    if(!fn||!tn)return;
+    var fp=npos(fn),tp=npos(tn);
+    var k=e.f+'->'+e.t, kr=e.t+'->'+e.f;
+    var hl=hlEdges.has(k)||hlEdges.has(kr);
+    if(hl){
+      /* Highlighted (compromise path) - bright red, thick */
+      var a=expanded?t*.7:.5;
+      ctx.strokeStyle='rgba(255,80,80,'+a+')';
+      ctx.lineWidth=2.5;
+      ctx.setLineDash([]);
+    }else{
+      /* Idle edges - visible enough to trace relationships */
+      var a2=expanded?t*.38:.35;
+      ctx.strokeStyle='rgba(180,170,210,'+a2+')';
+      ctx.lineWidth=1.2;
+      ctx.setLineDash([]);
+    }
+    ctx.beginPath();ctx.moveTo(fp.x,fp.y);ctx.lineTo(tp.x,tp.y);ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  /* Pulses */
+  pulses.forEach(function(p){
+    var fn=nodes.find(function(n){return n.id===p.f}),tn=nodes.find(function(n){return n.id===p.t});
+    if(!fn||!tn)return;
+    var fp=npos(fn),tp=npos(tn);
+    var px=fp.x+(tp.x-fp.x)*p.p, py=fp.y+(tp.y-fp.y)*p.p;
+    var g=ctx.createRadialGradient(px,py,0,px,py,12);
+    g.addColorStop(0,'rgba(255,80,80,.9)');g.addColorStop(1,'rgba(255,80,80,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,12,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=CLR_RED;ctx.beginPath();ctx.arc(px,py,3.5,0,Math.PI*2);ctx.fill();
+  });
+
+  /* Nodes */
+  nodes.forEach(function(n){
+    var p=npos(n);
+    var hit=hitNodes.has(n.id);
+    var hov=hoverNode===n.id;
+    var s=expanded?(n.t===0?1:t):1;
+    var r=n.r*s;
+    if(r<2)return;
+
+    /* glow */
+    if(hit){
+      var g=ctx.createRadialGradient(p.x,p.y,r,p.x,p.y,r+16);
+      g.addColorStop(0,'rgba(255,80,80,.35)');g.addColorStop(1,'rgba(255,80,80,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,r+16,0,Math.PI*2);ctx.fill();
+    }else if(hov&&expanded){
+      var g2=ctx.createRadialGradient(p.x,p.y,r,p.x,p.y,r+12);
+      g2.addColorStop(0,'rgba(255,255,255,.12)');g2.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g2;ctx.beginPath();ctx.arc(p.x,p.y,r+12,0,Math.PI*2);ctx.fill();
+    }
+
+    /* circle */
+    ctx.fillStyle=hit?CLR_RED:n.c;
+    ctx.globalAlpha=s;
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+
+    if(n.ring){
+      ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(p.x,p.y,r+3,0,Math.PI*2);ctx.stroke();
+    }
+
+    /* label - white on dark = 17.4:1 contrast */
+    if(s>.4){
+      var fs=Math.max(9,10.5*s);
+      ctx.font=n.m?'600 '+fs+'px '+MONO:'600 '+fs+'px '+SANS;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillStyle='#FFFFFF';
+      ctx.globalAlpha=Math.min(1,(s-.4)/.3);
+      ctx.fillText(n.label,p.x,p.y+r+12);
+      ctx.globalAlpha=1;
+    }
+  });
+
+  /* Inline legend (bottom-left, expanded only) */
+  if(expanded&&t>.6){
+    var la=Math.min(1,(t-.6)/.3);
+    var lx=14,ly=H-8-(LEG.length*14);
+    ctx.globalAlpha=la*.8;
+    LEG.forEach(function(it,i){
+      var iy=ly+i*14;
+      ctx.fillStyle=it.c;
+      ctx.beginPath();ctx.arc(lx,iy,4,0,Math.PI*2);ctx.fill();
+      ctx.font='600 8px '+SANS;
+      ctx.textAlign='left';
+      ctx.fillStyle=CLR_HINT; /* 6.3:1 contrast */
+      ctx.fillText(it.l,lx+10,iy+3);
+    });
+    ctx.globalAlpha=1;
+  }
+
+  /* Collapsed state text */
+  if(!expanded){
+    ctx.font='600 12px '+SANS;ctx.textAlign='center';
+    ctx.fillStyle=CLR_HINT; /* 6.3:1 */
+    ctx.fillText('You see 1 import. Click below to see what you\'re actually trusting.',W/2,H*.9);
+  }
+}
+
+/* ---- Interaction ---- */
+
+/* Build adjacency from edges (both directions) */
+function getAdj(){
+  var adj={};
+  edges.forEach(function(e){
+    if(!adj[e.f])adj[e.f]=[];
+    if(!adj[e.t])adj[e.t]=[];
+    adj[e.f].push(e.t);
+    adj[e.t].push(e.f);
+  });
+  return adj;
+}
+
+/* BFS from a starting node - returns ordered list of visited nodes */
+function bfs(startId){
+  var adj=getAdj();
+  var visited=new Set();
+  var order=[];
+  var queue=[startId];
+  visited.add(startId);
+  while(queue.length>0){
+    var cur=queue.shift();
+    order.push(cur);
+    (adj[cur]||[]).forEach(function(nb){
+      if(!visited.has(nb)){
+        visited.add(nb);
+        queue.push(nb);
+      }
+    });
+  }
+  return order;
+}
+
+/* Find edges along BFS traversal (for pulse animation) */
+function bfsEdges(startId){
+  var adj=getAdj();
+  var visited=new Set();
+  var result=[];
+  var queue=[startId];
+  visited.add(startId);
+  while(queue.length>0){
+    var cur=queue.shift();
+    (adj[cur]||[]).forEach(function(nb){
+      if(!visited.has(nb)){
+        visited.add(nb);
+        queue.push(nb);
+        result.push({f:cur,t:nb});
+      }
+    });
+  }
+  return result;
+}
+
+function launchFromNode(nodeId){
+  var bfsPath=bfsEdges(nodeId);
+  pulses=[];hitNodes=new Set();hlEdges=new Set();
+  selectedNode=nodeId;
+
+  /* Always include the clicked node itself */
+  hitNodes.add(nodeId);
+
+  bfsPath.forEach(function(step,i){
+    pulses.push({f:step.f,t:step.t,p:0,d:i*.22,s:.035});
+    hlEdges.add(step.f+'->'+step.t);
+    hlEdges.add(step.t+'->'+step.f);
+  });
+
+  /* Show boundary insight if this node maps to one */
+  var bKey=N2B[nodeId];
+  if(bKey){
+    showIns(bKey,BOUNDS[bKey].ins);
+    allTabs.forEach(function(tb){tb.classList.toggle('on',tb.dataset.b===bKey)});
+  }
+
+  if(!reducedMotion)animPulses();
+  else{
+    bfs(nodeId).forEach(function(id){hitNodes.add(id)});
+    draw();
+  }
+}
+
+function launchBoundary(bKey){
+  var bd=BOUNDS[bKey]; if(!bd)return;
+  launchFromNode(bd.start);
+}
+
+function showIns(bKey,html){
+  insEl.className='insight show t-'+bKey;
+  insEl.innerHTML=html;
+  setTimeout(sendHeight,50);
+}
+
+function animPulses(){
+  var active=false;
+  pulses.forEach(function(p){
+    if(p.d>0){p.d-=.016;active=true;return;}
+    if(p.p<1){p.p=Math.min(1,p.p+p.s);active=true;if(p.p>=1)hitNodes.add(p.t);}
+    hitNodes.add(p.f);
+  });
+  draw();
+  if(active)requestAnimationFrame(animPulses);
+}
+
+function doExpand(){
+  if(expanded)return;
+  expanded=true;
+  nodes=NE.slice();edges=EE.slice();
+  animProg=0;pulses=[];hitNodes=new Set();hlEdges=new Set();selectedNode=null;
+  btnGo.textContent='Expanded';btnGo.disabled=true;
+  btnReset.disabled=false;
+  sep.style.display='';
+  tabs.forEach(function(t){t.style.display=''});
+  resize(); /* recalculate H for expanded */
+  if(!reducedMotion)animExpand();
+  else{animProg=1;draw();}
+}
+
+function animExpand(){
+  animProg=Math.min(1,animProg+.025);
+  draw();
+  if(animProg<1)requestAnimationFrame(animExpand);
+}
+
+function doReset(){
+  expanded=false;animProg=0;pulses=[];hitNodes=new Set();hlEdges=new Set();
+  selectedNode=null;hoverNode=null;
+  nodes=NC.slice();edges=EC.slice();
+  insEl.className='insight';insEl.innerHTML='';
+  btnGo.textContent='Reveal Dependencies';btnGo.disabled=false;
+  btnReset.disabled=true;
+  sep.style.display='none';
+  tabs.forEach(function(t){t.style.display='none';t.classList.remove('on')});
+  resize();
+}
+
+function nodeAt(mx,my){
+  /* Use the actual drawn radius (accounting for animation scale)
+     plus generous padding so small/transitive nodes are easy to hit */
+  for(var i=nodes.length-1;i>=0;i--){
+    var n=nodes[i],p=npos(n),dx=mx-p.x,dy=my-p.y;
+    var s=expanded?(n.t===0?1:animProg):1;
+    var drawn=n.r*s;
+    if(drawn<3)continue; /* skip invisible nodes mid-animation */
+    var pad=Math.max(14,drawn*.5); /* at least 14px padding, scales up for big nodes */
+    var hitR=drawn+pad;
+    if(dx*dx+dy*dy<hitR*hitR)return n;
+  }
+  return null;
+}
+
+function coords(e){
+  var r=cv.getBoundingClientRect();
+  var src=e.touches?e.touches[0]:e;
+  return{x:src.clientX-r.left,y:src.clientY-r.top};
+}
+
+cv.addEventListener('mousemove',function(e){
+  var c=coords(e),n=nodeAt(c.x,c.y);
+  hoverNode=n?n.id:null;
+  var clickable=n&&expanded&&n.id!=='app'&&n.id!=='usr';
+  cv.style.cursor=clickable?'pointer':'default';
+  if(n&&NTIPS[n.id]){cv.title=n.label+': '+NTIPS[n.id]}
+  else cv.title='';
+  draw();
+});
+
+function handleClick(mx,my){
+  if(!expanded)return;
+  var n=nodeAt(mx,my);
+  if(!n||n.id==='app'||n.id==='usr')return;
+  launchFromNode(n.id);
+}
+
+cv.addEventListener('click',function(e){var c=coords(e);handleClick(c.x,c.y)});
+cv.addEventListener('touchend',function(e){
+  if(!e.changedTouches||!e.changedTouches[0])return;
+  var c=coords({clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY,touches:null});
+  handleClick(c.x,c.y);
+});
+cv.addEventListener('keydown',function(e){
+  if((e.key==='Enter'||e.key===' ')&&!expanded){doExpand();e.preventDefault()}
+});
+
+btnGo.addEventListener('click',doExpand);
+btnReset.addEventListener('click',doReset);
+
+/* Tab clicks */
+allTabs.forEach(function(tb){
+  tb.addEventListener('click',function(){if(expanded)launchBoundary(tb.dataset.b)});
+});
+
+window.addEventListener('resize',resize);
+resize();
+
+/* iframe height communication */
+function sendHeight(){
+  var el=document.querySelector('.w');if(!el)return;
+  var r=el.getBoundingClientRect();
+  var pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+pad),src:location.href},'*');
+}
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  if(window.ResizeObserver){new ResizeObserver(sendHeight).observe(document.querySelector('.w')||body);}
+  else setInterval(sendHeight,500);
+  window.addEventListener('load',function(){setTimeout(sendHeight,200)});
+  setTimeout(sendHeight,50);
+})();
+})();
+</script>
+</body>
+</html>

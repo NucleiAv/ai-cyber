@@ -1,0 +1,243 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Context Window: Why LLMs Miss Cross-File Vulnerabilities</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+/* same-hue: coloured text on its own tint; near-black instead */
+    :root{--v:#57068C;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+
+    .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em}
+    .status{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;font-size:.74rem;font-weight:600;transition:all .4s}
+    .status.miss{background:#991B1B;color:#fff;border:1.5px solid var(--red)}
+    .status.found{background:#166534;color:#fff;border:1.5px solid var(--grn)}
+
+    .content{padding:14px 18px 10px}
+
+    /* Scenario label */
+    .scenario-lbl{font-size:.72rem;font-weight:600;color:var(--ink2);text-align:center;margin-bottom:10px;line-height:1.5}
+    .scenario-lbl .src-tag{color:var(--grn);font-weight:700}
+    .scenario-lbl .snk-tag{color:var(--red);font-weight:700}
+
+    /* View selector */
+    .views{display:flex;gap:3px;margin-bottom:14px;background:var(--sk);border-radius:10px;padding:3px}
+    .vbtn{appearance:none;border:none;background:transparent;border-radius:8px;padding:8px 14px;font:inherit;font-size:.76rem;font-weight:600;cursor:pointer;transition:all .16s;color:var(--ink2);flex:1;text-align:center}
+    .vbtn:hover{color:var(--v)}
+    .vbtn.on{background:var(--v);color:#fff;box-shadow:0 2px 8px rgba(87,6,140,.2)}
+
+    /* Files row */
+    .files-area{position:relative;margin-bottom:14px}
+    .files{display:flex;gap:8px;justify-content:center}
+    @media(max-width:560px){.files{gap:4px}}
+
+    .file{flex:1;max-width:210px;border:2px solid var(--rule);border-radius:10px;background:var(--sf);overflow:hidden;transition:all .5s}
+    .file.dim{filter:grayscale(.9);transform:scale(.97);position:relative}
+    .file.dim > *{opacity:.18}
+    .file.dim::after{content:'Outside context window';position:absolute;left:0;right:0;bottom:0;background:#3A3A3A;color:#fff;font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.03em;text-align:center;padding:5px 6px;line-height:1.25}
+    .file.vis{border-color:var(--v);box-shadow:0 0 0 3px var(--v50)}
+
+    .ftab{padding:5px 10px;font-family:var(--mono);font-size:.66rem;font-weight:600;background:var(--sk);border-bottom:1px solid var(--rule);color:var(--ink2);display:flex;align-items:center;justify-content:space-between}
+    .ftab .role{font-family:var(--sans);font-size:.56rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:3px}
+    .ftab .role.r-src{background:#166534;color:#fff}
+    .ftab .role.r-mid{background:#854D0E;color:#fff}
+    .ftab .role.r-snk{background:#991B1B;color:#fff}
+
+    .fcode{padding:8px 10px;font-family:var(--mono);font-size:.58rem;line-height:1.6;color:var(--ink2);white-space:pre-wrap;min-height:80px}
+    .hl-src{color:#fff;font-weight:700;background:#166534;border-radius:2px;padding:0 2px}
+    .hl-snk{color:#fff;font-weight:700;background:#991B1B;border-radius:2px;padding:0 2px}
+
+    /* Context window bracket overlay */
+    .ctx-bracket{position:absolute;top:-10px;bottom:-10px;border:3px solid var(--v);border-radius:14px;background:rgba(87,6,140,.03);pointer-events:none;z-index:3;transition:left .6s ease,width .6s ease,opacity .5s}
+    .ctx-label{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:.62rem;font-weight:700;color:var(--v);white-space:nowrap;background:var(--sf);padding:1px 8px;border-radius:4px;border:1.5px solid var(--v200)}
+
+    /* Result panels */
+    .panels{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+    @media(max-width:520px){.panels{grid-template-columns:1fr}}
+    .pan{padding:10px 12px;border-radius:10px;border:1.5px solid var(--rule);font-size:.74rem;line-height:1.5;transition:all .4s}
+    .pan h4{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+    .pan.sees{border-color:var(--grn);background:var(--grn-bg)}
+    .pan.sees h4{color:var(--ink)}
+    .pan.miss{border-color:var(--red);background:var(--red-bg)}
+    .pan.miss h4{color:var(--ink)}
+    .pan.full{border-color:var(--grn);background:var(--grn-bg)}
+    .pan.full h4{color:var(--ink)}
+
+    .insight{padding:12px 18px;font-size:.78rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.55}
+    .insight b{color:var(--ink)}
+  </style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>Context Window Demo</h1>
+    <div class="status miss" id="status"><span id="stxt">Vulnerability Missed</span></div>
+  </div>
+
+  <div class="content">
+    <div class="scenario-lbl">A SQL injection vulnerability spans 3 files: <span class="src-tag">untrusted input</span> enters in routes.py, passes through utils.py, and reaches a <span class="snk-tag">dangerous function</span> in db.py.</div>
+
+    <div class="views">
+      <button class="vbtn on" onclick="setView(0)">LLM Chunk 1</button>
+      <button class="vbtn" onclick="setView(1)">LLM Chunk 2</button>
+      <button class="vbtn" onclick="setView(2)">Full Codebase View</button>
+    </div>
+
+    <div class="files-area" id="filesArea">
+      <div class="files" id="filesRow">
+        <div class="file vis" id="f0">
+          <div class="ftab">routes.py <span class="role r-src">Source</span></div>
+          <div class="fcode">@app.route('/q')
+def search():
+  q = <span class="hl-src">request
+    .args.get('q')</span>
+  return find(q)</div>
+        </div>
+        <div class="file vis" id="f1">
+          <div class="ftab">utils.py <span class="role r-mid">Passthrough</span></div>
+          <div class="fcode">def find(term):
+  cleaned = term
+    .strip()
+  return query_db(
+    cleaned)</div>
+        </div>
+        <div class="file dim" id="f2" aria-hidden="true">
+          <div class="ftab">db.py <span class="role r-snk">Sink</span></div>
+          <div class="fcode">def query_db(val):
+  sql = "SELECT *"
+    + " WHERE n='"
+    + val + "'"
+  <span class="hl-snk">db.engine
+    .execute(sql)</span></div>
+        </div>
+      </div>
+
+      <div class="ctx-bracket" id="ctxBracket">
+        <div class="ctx-label">LLM Context Window</div>
+      </div>
+    </div>
+
+    <div class="panels">
+      <div class="pan sees" id="seesBox"><h4 id="seesH4">Visible to LLM</h4><span id="seeText">The untrusted source in routes.py and the passthrough in utils.py.</span></div>
+      <div class="pan miss" id="missBox"><h4 id="missH4">Outside the Window</h4><span id="missText">The dangerous execute() call in db.py. The LLM cannot see where this data ends up.</span></div>
+    </div>
+  </div>
+
+  <div class="insight" id="ins"><b>Chunk 1: The LLM sees the source but not the sink.</b> It knows untrusted data enters via request.args.get(), but cannot see that this data eventually reaches a dangerous execute() call in db.py. The vulnerability is invisible from this chunk alone.</div>
+</div></div>
+
+<script>
+const VIEWS = [
+  {
+    vis:[0,1], dim:[2],
+    status:'miss', stxt:'Vulnerability Missed',
+    seeCls:'sees', missCls:'miss',
+    seesH4:'Visible to LLM', missH4:'Outside the Window',
+    sees:'The untrusted source in routes.py and the passthrough in utils.py.',
+    misses:'The dangerous execute() call in db.py. The LLM cannot see where this data ends up.',
+    ins:'<b>Chunk 1: The LLM sees the source but not the sink.</b> It knows untrusted data enters via request.args.get(), but cannot see that this data eventually reaches a dangerous execute() call in db.py. The vulnerability is invisible from this chunk alone.'
+  },
+  {
+    vis:[1,2], dim:[0],
+    status:'miss', stxt:'Vulnerability Missed',
+    seeCls:'sees', missCls:'miss',
+    seesH4:'Visible to LLM', missH4:'Outside the Window',
+    sees:'The dangerous execute() call in db.py and the passthrough in utils.py.',
+    misses:'Where "val" originally came from. Is it user input? A constant? Without routes.py, the LLM cannot tell.',
+    ins:'<b>Chunk 2: The LLM sees the sink but not the source.</b> It sees that db.engine.execute() receives unsanitized input via string concatenation. But it cannot confirm whether "val" is untrusted user input or a safe constant. Without that confirmation, it cannot flag a definitive vulnerability.'
+  },
+  {
+    vis:[0,1,2], dim:[],
+    status:'found', stxt:'Path Visible',
+    seeCls:'full', missCls:'full',
+    seesH4:'Complete Path Visible', missH4:'No Blind Spots',
+    sees:'The full data flow: request.args.get() in routes.py flows through utils.py into db.engine.execute() in db.py with no sanitization.',
+    misses:'When all files are visible at once, the complete source-to-sink path is traceable. This is what a human reviewer or a semantic analysis tool achieves by examining the entire codebase.',
+    ins:'<b>With the full codebase visible, the vulnerability is obvious.</b> Untrusted input flows from source to sink with no sanitization. This is why LLMs alone are insufficient for cross-file vulnerability detection. They process code in chunks and cannot trace data flows that span chunk boundaries.'
+  }
+];
+
+function setView(v){
+  const cfg = VIEWS[v];
+  document.querySelectorAll('.vbtn').forEach((b,i) => b.classList.toggle('on', i===v));
+
+  // File visibility
+  [0,1,2].forEach(i => {
+    const f = document.getElementById('f'+i);
+    if(cfg.vis.includes(i)){ f.classList.add('vis'); f.classList.remove('dim'); f.removeAttribute('aria-hidden'); }
+    else { f.classList.remove('vis'); f.classList.add('dim'); f.setAttribute('aria-hidden','true'); }
+  });
+
+  // Status
+  document.getElementById('status').className = 'status ' + cfg.status;
+  document.getElementById('stxt').textContent = cfg.stxt;
+
+  // Panels
+  document.getElementById('seesBox').className = 'pan ' + cfg.seeCls;
+  document.getElementById('missBox').className = 'pan ' + cfg.missCls;
+  document.getElementById('seesH4').textContent = cfg.seesH4;
+  document.getElementById('missH4').textContent = cfg.missH4;
+  document.getElementById('seeText').textContent = cfg.sees;
+  document.getElementById('missText').textContent = cfg.misses;
+
+  // Insight
+  document.getElementById('ins').innerHTML = cfg.ins;
+
+  // Position bracket
+  posCtx(v);
+}
+
+function posCtx(v){
+  const br = document.getElementById('ctxBracket');
+  if(v === 2){ br.style.opacity='0'; return; }
+  br.style.opacity='1';
+  const row = document.getElementById('filesRow');
+  const rr = row.getBoundingClientRect();
+  const files = document.querySelectorAll('.file');
+  const cfg = VIEWS[v];
+  const first = files[cfg.vis[0]].getBoundingClientRect();
+  const last = files[cfg.vis[cfg.vis.length-1]].getBoundingClientRect();
+  br.style.left = (first.left - rr.left - 6) + 'px';
+  br.style.width = (last.right - first.left + 12) + 'px';
+}
+
+window.addEventListener('resize', () => {
+  const idx = Array.from(document.querySelectorAll('.vbtn')).indexOf(document.querySelector('.vbtn.on'));
+  posCtx(idx);
+});
+
+setView(0);
+requestAnimationFrame(() => requestAnimationFrame(() => posCtx(0)));
+
+(function(){
+  var root = document.documentElement;
+  var body = document.body;
+  root.style.height = 'auto';
+  body.style.height = 'auto';
+  root.style.overflow = 'visible';
+  body.style.overflow = 'visible';
+  function send(){
+    var el = document.querySelector('.w');
+    if(!el) return;
+    var r = el.getBoundingClientRect();
+    var pad = parseFloat(getComputedStyle(body).paddingTop) + parseFloat(getComputedStyle(body).paddingBottom);
+    var h = Math.ceil(r.height + pad);
+    window.parent.postMessage({type:'iframeHeight', height:h, src:location.href},'*');
+  }
+  if(window.ResizeObserver){
+    new ResizeObserver(send).observe(document.querySelector('.w') || body);
+  } else {
+    setInterval(send, 500);
+  }
+  window.addEventListener('load', function(){ setTimeout(send,200); });
+  setTimeout(send, 50);
+})();
+</script>
+</body>
+</html>

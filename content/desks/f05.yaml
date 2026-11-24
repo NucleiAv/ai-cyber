@@ -1,0 +1,22 @@
+title: Classify findings with OWASP
+lede: Read five findings from an AI app review and give each one its primary OWASP category.
+blurb: Classify review findings by outcome across the LLM and Agentic Top 10.
+situation: |
+  A security review of an AI travel agent produced five findings.
+rounds:
+  - title: Round 1. Primary category
+    items:
+      - type: sort
+        q: Give each finding its primary category.
+        rows:
+          - ["The agent's hidden instructions can be printed by asking it to repeat them", "LLM07 System prompt leakage"]
+          - ["A hotel review page contains text that makes the agent book a different hotel", "LLM01 Prompt injection"]
+          - ["The agent can cancel any booking in the system, not only the user's", "LLM06 Excessive agency"]
+          - ["Prices the agent writes go straight into the payment API with no check", "LLM05 Improper output handling"]
+          - ["One user's long requests run up a large token bill", "LLM10 Unbounded consumption"]
+        opts: ["LLM01 Prompt injection", "LLM05 Improper output handling", "LLM06 Excessive agency", "LLM07 System prompt leakage", "LLM10 Unbounded consumption"]
+        why: "Classify by the outcome, as Module 9 teaches. The same injection technique can sit behind several findings."
+      - q: The travel agent also has memory that one bad web page poisoned for later sessions. Which Agentic entry fits?
+        opts: ["ASI06 Memory and context poisoning", "ASI07 Insecure inter-agent communication", "ASI10 Rogue agents"]
+        a: 0
+        why: "False data planted in memory that changes later decisions is memory and context poisoning."

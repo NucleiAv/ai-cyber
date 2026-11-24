@@ -1,0 +1,276 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Code Review Pipeline</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+
+    /* Top bar */
+    .top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em;flex:1 1 auto;min-width:180px}
+    .steps{display:flex;gap:3px;background:var(--sk);border-radius:10px;padding:3px}
+    .sbtn{appearance:none;border:none;background:transparent;border-radius:8px;padding:7px 14px;font:inherit;font-size:.78rem;font-weight:600;cursor:pointer;transition:all 160ms;color:var(--ink2);white-space:nowrap}
+    .sbtn:hover{color:var(--v)}
+    .sbtn.on{background:var(--v);color:#fff;box-shadow:0 2px 8px rgba(87,6,140,.25)}
+
+    /* Code panel - always visible */
+    .code-wrap{padding:0 18px 12px}
+    .code{background:#1F2229;color:#e8e8ec;border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:.73rem;line-height:1.75;white-space:pre;overflow-x:auto;position:relative}
+    .code .ln{color:#8f96a3;user-select:none;margin-right:12px}
+    .code .tok{border-radius:3px;padding:1px 3px;transition:background .5s,box-shadow .5s}
+    .code .tok.src{background:rgba(30,200,120,.15)}
+    .code .tok.cat{background:rgba(255,180,50,.15)}
+    .code .tok.snk{background:rgba(196,42,42,.15)}
+    .code .tok.src.glow{background:rgba(30,200,120,.4);box-shadow:0 0 8px rgba(30,200,120,.3)}
+    .code .tok.cat.glow{background:rgba(255,180,50,.4);box-shadow:0 0 8px rgba(255,180,50,.3)}
+    .code .tok.snk.glow{background:rgba(196,42,42,.4);box-shadow:0 0 8px rgba(196,42,42,.3)}
+
+    /* Pipeline stages container */
+    .pipeline{padding:4px 18px 14px;min-height:180px}
+
+    /* Stage 1: Tokens */
+    .tok-stage{opacity:0;max-height:0;overflow:hidden;transition:opacity .5s,max-height .6s ease}
+    .tok-stage.on{opacity:1;max-height:300px}
+    .tok-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);margin-bottom:6px}
+    .tok-area{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+    .chip{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:6px;font-family:var(--mono);font-size:.68rem;font-weight:600;border:1.5px solid var(--rule);background:var(--sf);opacity:0;transform:translateY(6px);transition:all .35s ease}
+    .chip.in{opacity:1;transform:translateY(0)}
+    .chip.hot{border-color:#991B1B;background:#991B1B;color:#fff}
+    .chip.warm{border-color:#854D0E;background:#854D0E;color:#fff}
+    .chip.cool{border-color:#166534;background:#166534;color:#fff}
+
+    /* Stage 2: Pattern comparison */
+    .pat-stage{opacity:0;max-height:0;overflow:hidden;transition:opacity .5s .1s,max-height .6s ease .1s}
+    .pat-stage.on{opacity:1;max-height:300px}
+    .mem-box{display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:center;margin-bottom:12px}
+    @media(max-width:560px){.mem-box{grid-template-columns:1fr;gap:6px}.mem-arrow{transform:rotate(90deg)}}
+    .mem-card{padding:10px 12px;border-radius:10px;border:1.5px solid var(--rule);background:var(--sk);font-size:.72rem;line-height:1.5}
+    .mem-card h4{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin-bottom:4px}
+    .mem-card.your{border-color:var(--v200)}
+    .mem-card.train{border-color:var(--red);opacity:0;transform:translateX(12px);transition:all .5s ease}
+    .mem-card.train.in{opacity:1;transform:translateX(0)}
+    .mem-code{font-family:var(--mono);font-size:.66rem;color:var(--ink);background:rgba(0,0,0,.04);border-radius:6px;padding:6px 8px;margin-top:4px;white-space:pre-wrap}
+    .mem-card .vuln-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.64rem;font-weight:700;background:#991B1B;color:#fff;margin-top:6px}
+    .mem-arrow{text-align:center;font-size:.9rem;color:var(--v);opacity:0;transition:opacity .5s}
+    .mem-arrow.in{opacity:1}
+    .sim-meter{margin-top:2px}
+    .sim-label{font-size:.68rem;font-weight:600;color:var(--ink2);margin-bottom:3px;display:flex;justify-content:space-between}
+    .sim-bar{height:8px;border-radius:4px;background:var(--rule);overflow:hidden}
+    .sim-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--v200),var(--red));width:0;transition:width 1s ease}
+
+    /* Stage 3: Classification */
+    .cls-stage{opacity:0;max-height:0;overflow:hidden;transition:opacity .5s .15s,max-height .6s ease .15s}
+    .cls-stage.on{opacity:1;max-height:300px}
+    .cwe-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .cwe-id{font-family:var(--mono);font-size:.72rem;font-weight:700;min-width:70px;color:var(--v)}
+    .cwe-bar{flex:1;height:10px;border-radius:5px;background:var(--rule);overflow:hidden}
+    .cwe-fill{height:100%;border-radius:5px;width:0;transition:width .9s ease}
+    .cwe-fill.hi{background:linear-gradient(90deg,var(--v),var(--red))}
+    .cwe-fill.md{background:var(--v200)}
+    .cwe-fill.lo{background:var(--rule)}
+    .cwe-pct{font-size:.72rem;font-weight:600;color:var(--ink2);min-width:36px;text-align:right}
+    .verdict-box{margin-top:10px;padding:10px 14px;border-radius:10px;background:var(--amb-bg);border:1.5px solid var(--amb);display:flex;align-items:center;gap:10px;opacity:0;transform:translateY(8px);transition:all .5s ease}
+    .verdict-box.in{opacity:1;transform:translateY(0)}
+    .verdict-icon{font-size:1.3rem}
+    .verdict-text{font-size:.78rem;font-weight:600;color:var(--amb)}
+
+    /* Bottom insight */
+    .insight{padding:12px 18px;font-size:.78rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.55;min-height:2.5em;transition:opacity .3s}
+    .insight b{color:var(--ink);font-weight:700}
+  </style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>LLM Code Review Pipeline</h1>
+    <div class="steps">
+      <button class="sbtn on" onclick="go(0)">Source</button>
+      <button class="sbtn" onclick="go(1)">Tokenize</button>
+      <button class="sbtn" onclick="go(2)">Pattern Match</button>
+      <button class="sbtn" onclick="go(3)">Classify</button>
+    </div>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code"><span class="ln">1</span>@app.route('/search')
+<span class="ln">2</span>def search():
+<span class="ln">3</span>    query = <span class="tok src" id="t-src">request.args.get('q')</span>
+<span class="ln">4</span>    sql = <span class="tok cat" id="t-cat">"SELECT * ..." + <span class="tok snk" id="t-q">query</span> + "..."</span>
+<span class="ln">5</span>    results = <span class="tok snk" id="t-snk">db.engine.execute(sql)</span>
+<span class="ln">6</span>    return render_template('results.html')</div>
+  </div>
+
+  <div class="pipeline">
+    <!-- STAGE 1: Tokenize -->
+    <div class="tok-stage" id="s1">
+      <div class="tok-label">Token Stream</div>
+      <div class="tok-area" id="tokArea"></div>
+    </div>
+
+    <!-- STAGE 2: Pattern Match -->
+    <div class="pat-stage" id="s2">
+      <div class="tok-label">Comparing Against Training Memory</div>
+      <div class="mem-box">
+        <div class="mem-card your">
+          <h4>Your Code (tokens)</h4>
+          <div class="mem-code">... <b style="color:var(--red)">+ query +</b> ...
+<b style="color:var(--red)">execute(sql)</b></div>
+        </div>
+        <div class="mem-arrow" id="memArrow">≈</div>
+        <div class="mem-card train" id="trainCard">
+          <h4>Training Data Pattern</h4>
+          <div class="mem-code">sql = "..." + user_input + "..."
+cursor.execute(sql)</div>
+          <span class="vuln-tag">Labeled: CWE-89</span>
+        </div>
+      </div>
+      <div class="sim-meter">
+        <div class="sim-label"><span>Pattern similarity</span><span id="simPct">0%</span></div>
+        <div class="sim-bar"><div class="sim-fill" id="simFill"></div></div>
+      </div>
+    </div>
+
+    <!-- STAGE 3: Classify -->
+    <div class="cls-stage" id="s3">
+      <div class="tok-label">Classification Output</div>
+      <div class="cwe-row"><span class="cwe-id">CWE-89</span><div class="cwe-bar"><div class="cwe-fill hi" id="c1" data-w="92"></div></div><span class="cwe-pct">92%</span></div>
+      <div class="cwe-row"><span class="cwe-id">CWE-20</span><div class="cwe-bar"><div class="cwe-fill md" id="c2" data-w="41"></div></div><span class="cwe-pct">41%</span></div>
+      <div class="cwe-row"><span class="cwe-id">CWE-943</span><div class="cwe-bar"><div class="cwe-fill lo" id="c3" data-w="18"></div></div><span class="cwe-pct">18%</span></div>
+      <div class="verdict-box" id="verdict">
+        <span class="verdict-icon">⚠</span>
+        <span class="verdict-text">This is a probabilistic guess based on pattern similarity, not a proof that the code is vulnerable.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight" id="ins">The code enters the LLM as raw text. Click <b>Tokenize</b> to see how the model breaks it apart.</div>
+</div></div>
+
+<script>
+const TOKENS = [
+  {t:'@app',c:'cool'},{t:'.route',c:''},{t:"('/search')",c:''},{t:'def',c:''},
+  {t:'search',c:''},{t:'():',c:''},{t:'query',c:''},{t:'=',c:''},
+  {t:'request',c:'warm'},{t:'.args',c:'warm'},{t:'.get',c:''},{t:"('q')",c:''},
+  {t:'sql',c:''},{t:'=',c:''},{t:'"SELECT',c:'hot'},{t:'*',c:''},{t:'..."',c:''},
+  {t:'+',c:'hot'},{t:'query',c:'hot'},{t:'+',c:'hot'},{t:'"..."',c:''},
+  {t:'db',c:''},{t:'.engine',c:''},{t:'.execute',c:'hot'},{t:'(sql)',c:'hot'},
+];
+
+const INSIGHTS = [
+  'The code enters the LLM as raw text. No compilation, no syntax tree, no execution. Click <b>Tokenize</b> to begin.',
+  '<b>Tokenize:</b> The model splits code into subword tokens. It has no concept of "variable" or "function." These are statistical units, nothing more.',
+  '<b>Pattern Match:</b> The model compares your token sequence against patterns from its training data. It is asking: "Have I seen sequences like this labeled as vulnerable before?"',
+  '<b>Classify:</b> High pattern similarity produces a probabilistic CWE label. The model has not verified that this code is actually exploitable. It has recognized a familiar shape.',
+];
+
+let step = 0;
+let toksBuilt = false;
+
+function go(s) {
+  step = s;
+  document.querySelectorAll('.sbtn').forEach((b,i) => b.classList.toggle('on', i === s));
+  document.getElementById('ins').innerHTML = INSIGHTS[s];
+
+  // Code highlights - additive glow
+  const glowLevel = s >= 2 ? true : false;
+  document.querySelectorAll('.tok').forEach(t => t.classList.toggle('glow', glowLevel));
+
+  // Stage 1: Tokens - show at step >= 1
+  const s1 = document.getElementById('s1');
+  s1.classList.toggle('on', s >= 1);
+  if (s >= 1 && !toksBuilt) {
+    buildTokens();
+    toksBuilt = true;
+  }
+  if (s >= 1) {
+    // Color chips at step >= 2
+    setTimeout(() => {
+      document.querySelectorAll('.chip').forEach((ch, i) => {
+        if (s >= 2 && TOKENS[i].c) ch.classList.add(TOKENS[i].c);
+        else ch.classList.remove('hot','warm','cool');
+      });
+    }, s === 2 ? 400 : 0);
+  }
+
+  // Stage 2: Pattern match - show at step >= 2
+  const s2 = document.getElementById('s2');
+  s2.classList.toggle('on', s >= 2);
+  if (s >= 2) {
+    setTimeout(() => {
+      document.getElementById('trainCard').classList.add('in');
+      document.getElementById('memArrow').classList.add('in');
+    }, 300);
+    setTimeout(() => {
+      document.getElementById('simFill').style.width = '87%';
+      document.getElementById('simPct').textContent = '87%';
+    }, 600);
+  } else {
+    document.getElementById('trainCard').classList.remove('in');
+    document.getElementById('memArrow').classList.remove('in');
+    document.getElementById('simFill').style.width = '0';
+    document.getElementById('simPct').textContent = '0%';
+  }
+
+  // Stage 3: Classify - show at step >= 3
+  const s3el = document.getElementById('s3');
+  s3el.classList.toggle('on', s >= 3);
+  if (s >= 3) {
+    setTimeout(() => {
+      document.querySelectorAll('.cwe-fill').forEach(f => f.style.width = f.dataset.w + '%');
+    }, 300);
+    setTimeout(() => document.getElementById('verdict').classList.add('in'), 800);
+  } else {
+    document.querySelectorAll('.cwe-fill').forEach(f => f.style.width = '0');
+    document.getElementById('verdict').classList.remove('in');
+  }
+}
+
+function buildTokens() {
+  const area = document.getElementById('tokArea');
+  area.innerHTML = '';
+  TOKENS.forEach((t, i) => {
+    const el = document.createElement('span');
+    el.className = 'chip';
+    el.textContent = t.t;
+    el.style.transitionDelay = (i * 30) + 'ms';
+    area.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+  });
+}
+
+go(0);
+
+/* Dynamic iframe height reporting: measure .w wrapper, not viewport */
+(function(){
+  var root = document.documentElement;
+  var body = document.body;
+  root.style.height = 'auto';
+  body.style.height = 'auto';
+  root.style.overflow = 'visible';
+  body.style.overflow = 'visible';
+  function send(){
+    var el = document.querySelector('.w');
+    if(!el) return;
+    var r = el.getBoundingClientRect();
+    var pad = parseFloat(getComputedStyle(body).paddingTop) + parseFloat(getComputedStyle(body).paddingBottom);
+    var h = Math.ceil(r.height + pad);
+    window.parent.postMessage({type:'iframeHeight', height:h, src:location.href},'*');
+  }
+  if(window.ResizeObserver){
+    new ResizeObserver(send).observe(document.querySelector('.w') || body);
+  } else {
+    setInterval(send, 500);
+  }
+  window.addEventListener('load', function(){ setTimeout(send,200); });
+  setTimeout(send, 50);
+})();
+</script>
+</body>
+</html>

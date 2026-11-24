@@ -1,0 +1,470 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 5 · Section 5 · The Verification Methodology and the Analyst's Boundary · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 5 · Section 5 of 7</div>
+      <h1 class="nyu-hero__title">The Verification Methodology and the Analyst's Boundary</h1>
+      <p class="nyu-hero__subtitle">
+       A five-step method that makes "double-check the AI" professional practice, the grading vocabularies analysts actually use, the sharing rules governing what leaves your organization, and a clear line where the analyst's non-delegable work begins!
+      </p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~20 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 5 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          2 knowledge checks + 2 activities
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Five Step Methodology</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Grading, Currency, and Confidence</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Worked Example: Six Claims, Five Steps</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> The Analyst's Boundary and TLP</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Apply</strong> the five step verification methodology: decompose, type, route, check currency, assign confidence</span></li>
+          <li><span><strong>Route</strong> each claim type to its authoritative source and grade results with a two axis vocabulary</span></li>
+          <li><span><strong>Differentiate</strong> hallucination from stale truth and apply the currency check that catches the latter</span></li>
+          <li><span><strong>Justify</strong> human-only steps in an intelligence workflow using accountability, access, irreversibility, and attribution</span></li>
+          <li><span><strong>Explain</strong> why TLP markings constrain what may be sent to external AI services</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The Five Step Methodology</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-q-title">
+          <h3 class="nyu-callout__title" id="driving-q-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            Goal
+          </h3>
+          <p><strong>A repeatable methodology to turn "double check the AI" from a vague intention into professional practice. Where exactly does the analyst's non delegable work begin?</strong></p>
+        </aside>
+
+        <p>
+          We have covered what intelligence is, what ground truth exists, how models accelerate the text work, and how structure reaches machines. What remains is to make verification systematic. Unsystematic verification decays under deadline pressure into spot checking, and that is precisely where <button type="button" class="nyu-define" data-term="automation-bias">automation bias</button> operates. We have been building defenses against it since Module 2's verification workflow; this methodology names the habit and adds two steps <button type="button" class="nyu-define" data-term="cti">CTI</button> requires. The methodology below is designed to carry across modules, we will apply it to code review findings and to training data in modules 6 and 7!
+        </p>
+
+        <p>Steps 1 through 3 build directly on the verification workflow we practiced in Module 2 and <span class="nyu-ref" data-ref="prompt-library">the critical evaluation checklist from Module 3</span>, applied here by name to CTI claim types. Steps 4 and 5 are what intelligence work specifically adds: time-sensitivity and signed confidence.</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Decompose into atomic claims</h3>
+              <p class="nyu-process__detail">Break composite model output into individual <button type="button" class="nyu-define" data-term="atomic-claim">atomic claims</button> (one verifiable assertion each) so that one correct claim cannot vouch for the rest. (Module 2, Step 1.)</p>
+              <div class="nyu-embed-frame">
+                <iframe id="atomic-claims-embed" src="interactive/atomic_claims/atomic_claims.html" title="Interactive: decomposing composite model output into individual atomic claims" loading="lazy" style="height:420px;"></iframe>
+              </div>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Type each claim</h3>
+              <p class="nyu-process__detail">Classify the claim: existence, technical detail (versions, vectors, scores), exploitation status, mitigation, or attribution. The type determines the route. (Module 2, Step 2.)</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Route each claim to its authoritative source</h3>
+              <p class="nyu-process__detail">Use the source map we built in Section 2: those are the coordinates. As a reminder: existence claims route to cve.org; severity (CVSS score and vector) routes to NVD; exploitation status routes to the CISA KEV catalog; affected and fixed versions route to the vendor advisory. We are not researching from scratch; we are looking up a known address. References route to the cheapest check: click them.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Check currency</h3>
+              <p class="nyu-process__detail">A claim can be true for the moment its source was written and false now. Fixed versions get superseded; mitigations get retracted; actors retool. Ask not only "was this ever true" but "is this still true," and date stamp what you verified. This step exists because of the knowledge cutoff: models serve the past with present tense confidence.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">5</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Assign confidence and mark residue</h3>
+              <p class="nyu-process__detail">Grade what you verified and say so in the product. Claims you could not verify are marked unverified in the disseminated product, not silently retained because they are probably fine.</p>
+            </div>
+          </li>
+        </ol>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="cheap-tip">
+          <h3 class="nyu-callout__title" id="cheap-tip">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            The methodology is cheaper than it looks
+          </h3>
+          <p>
+            Decomposition and typing take a minute. Routing is fast because the source map gives us exactly one primary source per claim type; we are not researching from scratch, we are looking up known coordinates. The reference click test costs seconds. The expensive steps, currency and confidence, are expensive precisely where the claims matter most, which is the correct place for an analyst's time to pool. Verification of known claim types is a lookup, not research: the net saving of draft plus verify over write from scratch is real. What is eliminated is the fantasy of draft without verify.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Grading, Currency, and Confidence</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Step 5 needs vocabulary, and two standard ones serve. The <button type="button" class="nyu-define" data-term="admiralty">Admiralty system</button> grades source reliability and information credibility separately; "B2" encodes both judgments in two characters. <button type="button" class="nyu-define" data-term="estimative-language">Estimative language</button> per <button type="button" class="nyu-define" data-term="icd-203">ICD 203</button> maps probability to calibrated words: "likely," "almost certainly." Whatever scales your future employer uses, the transferable parts are two-axis grading and calibrated language (words with agreed probability ranges, not vibes).
+        </p>
+
+        <p>
+          The <button type="button" class="nyu-define" data-term="currency-check">currency check</button> deserves its own emphasis because it catches a failure that existence and detail checks cannot. Recall the failure taxonomy from the summarization discussion: stale truth is not hallucination. The model accurately reports something that is no longer true. Log4Shell is the canonical case: 2.15.0 was the fix for a few days in December 2021, then was itself superseded because the initial fix was incomplete. A model trained during that window serves "upgrade to 2.15.0" forever, fluently, and every existence check passes.
+        </p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="stale-tryit">
+          <h3 class="nyu-callout__title" id="stale-tryit">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            Try it: watch an answer expire
+          </h3>
+          <p>Press <strong>Advance time</strong> and hold the model still while the world moves. Its recommendation, &ldquo;upgrade to 2.15.0,&rdquo; was correct the day it was trained and stays frozen there. As later releases supersede it, the existence check keeps passing while the currency check fails. That gap is stale truth, and only step 4 of the methodology catches it.</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe id="stale-truth-embed" src="interactive/stale_truth/stale_truth.html" title="Interactive: a model frozen at its knowledge cutoff while the fix evolves" loading="lazy" style="height:470px;"></iframe>
+        </div>
+<p style="margin-top:6px;font-size:.75rem;color:var(--ink-mute);line-height:1.4;">The idea of a model deliberately frozen at a past date is developed in <a href="https://owainevans.github.io/talk-transcript.html" target="_blank" rel="noopener">Vintage Large Language Models</a>, Owain Evans (2024) , talk transcript, with <a href="https://owainevans.github.io/pdfs/vintage_LLMs.pdf" target="_blank" rel="noopener">slides</a> and <a href="https://www.youtube.com/watch?v=AA4ophKBK58" target="_blank" rel="noopener">video</a>.</p>
+
+        <h3 class="nyu-subsection-title">Route the claim: which source adjudicates what?</h3>
+        <p>Drill the routing reflex. Match each claim type to the source that most directly adjudicates it:</p>
+
+        <div class="nyu-match">
+          <p><strong>Two ways to match:</strong> click a claim type then click its source, or drag the claim onto the source. An arrow connects them.</p>
+          <div class="nyu-match__grid">
+            <svg class="nyu-match__svg" aria-hidden="true"></svg>
+            <div class="nyu-match__col">
+              <h4>Claim type</h4>
+              <button class="nyu-match__term" data-match="a">"This CVE exists and is a heap overflow"</button>
+              <button class="nyu-match__term" data-match="b">"The CVSS base score is 9.8"</button>
+              <button class="nyu-match__term" data-match="c">"It is being actively exploited in the wild"</button>
+              <button class="nyu-match__term" data-match="d">"Versions 5.0 to 5.5 are affected; 5.6.0 fixes it"</button>
+              <button class="nyu-match__term" data-match="e">"See the advisory at this URL"</button>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap" aria-hidden="true"></div>
+            <div class="nyu-match__col">
+              <h4>Authoritative route</h4>
+              <button class="nyu-match__def" data-match="c">CISA KEV catalog</button>
+              <button class="nyu-match__def" data-match="e">Click it and see what resolves</button>
+              <button class="nyu-match__def" data-match="a">CVE record / NVD description</button>
+              <button class="nyu-match__def" data-match="d">Vendor advisory (the CNA's product facts)</button>
+              <button class="nyu-match__def" data-match="b">NVD enrichment</button>
+            </div>
+          </div>
+          <p class="nyu-match__hint" data-default="Tip: drag a claim across the gap to its source, or click both to link them.">Tip: drag a claim across the gap to its source, or click both to link them.</p>
+          <div class="nyu-match__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check matches</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show correct answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Worked Example: Six Claims, Five Steps</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          <em>The model paragraph below is an illustrative reconstruction, labeled as such. The underlying vulnerability facts are real and checkable.</em> A model, asked without grounding about Log4Shell remediation for a briefing, produces:
+        </p>
+
+        <pre class="nyu-code" aria-label="Reconstructed model paragraph with six claims"><code><span class="c-comment">// Reconstructed model output. Claim numbers added for the walkthrough.</span>
+"CVE-2021-44228 (Log4Shell) is a critical RCE in Apache
+Log4j 2 <span class="c-meta">(1)</span> with CVSS 10.0. <span class="c-meta">(2)</span> It is actively exploited
+in the wild. <span class="c-meta">(3)</span> Upgrading to Log4j 2.15.0 fully remediates
+the issue. <span class="c-bad">(4)</span> The campaign exploiting it most aggressively
+is attributed to a single state sponsored group. <span class="c-bad">(5)</span>
+Organizations should patch within 24 hours." <span class="c-meta">(6)</span></code></pre>
+
+        <h3 class="nyu-subsection-title">Steps 1 and 2 · Decompose and type</h3>
+        <p>Six atomic claims: (1) existence and identity, (2) technical detail, (3) exploitation status, (4) mitigation, (5) attribution, (6) action recommendation.</p>
+
+        <h3 class="nyu-subsection-title">Steps 3 and 4 · Route each claim and check currency</h3>
+
+        <ol class="nyu-timeline">
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">1</span>
+            <div class="nyu-timeline__body">
+              <h4 class="nyu-timeline__title">Claims 1 to 3: verified</h4>
+              <div class="nyu-timeline__detail">The CVE record verifies existence and identity. NVD verifies CVSS 10.0 with the vector we read earlier. KEV verifies exploitation: historically true, and the entry exists. Stable under the currency check.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">2</span>
+            <div class="nyu-timeline__body">
+              <h4 class="nyu-timeline__title">Claim 4: contradicted as stated. The currency casualty</h4>
+              <div class="nyu-timeline__detail">The Apache advisory shows 2.15.0 was followed by further fixes (2.16.0 and later) because the initial fix was incomplete. The claim was approximately true for a few days in December 2021. This is the model serving stale truth fluently. The verified replacement (upgrade to the current fixed line per the vendor advisory) is what ships.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">3</span>
+            <div class="nyu-timeline__body">
+              <h4 class="nyu-timeline__title">Claim 5: unverifiable as stated, contradicted in spirit</h4>
+              <div class="nyu-timeline__detail">Primary reporting documented exploitation by many actors, criminal and state-linked. "A single state-sponsored group" earns a poor grade on the information credibility axis. <button type="button" class="nyu-define" data-term="attribution">Attribution</button> claims are exactly where model output should be treated most skeptically: deep uncertainty and active deception are structural features of the problem, not artifacts of current model quality.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">4</span>
+            <div class="nyu-timeline__body">
+              <h4 class="nyu-timeline__title">Claim 6: not a verifiable claim at all</h4>
+              <div class="nyu-timeline__detail">"Patch within 24 hours" is a risk decision. Routing it anywhere misses the point: it gets flagged as a human judgment that depends on the organization's exposure, change windows, and risk acceptance. The model can propose it; only the organization can decide it.</div>
+            </div>
+          </li>
+        </ol>
+
+        <p>
+          <strong>Step 5, the disseminated artifact:</strong> a briefing in which claims 1 to 3 carry verified status with sources and dates, claim 4 is replaced with current guidance, claim 5 is removed or explicitly marked unsubstantiated, and claim 6 is converted into a recommendation block addressed to the risk owner. The product also states what was not verified. That marked up, signed artifact is the deliverable format for the verification lab.
+        </p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="miscon-5">
+          <h3 class="nyu-callout__title" id="miscon-5">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Watch out: two misconceptions about verification
+          </h3>
+          <p><strong>"Verification means redoing the research, so AI saves nothing."</strong> Routing known claim types to known sources is a lookup, not research. What is eliminated is draft without verify, not the time saving.</p>
+          <p><strong>"Confidence comes from how sure the model sounds."</strong> Confidence is assigned by the analyst after verification, expressed in calibrated vocabulary, and owned by a person. The model's tone is evidence of nothing.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">The Analyst's Boundary and TLP</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          The analyst's boundary is clearest when argued from properties rather than sentiment. Certain steps of intelligence work are irreducibly human not because models are currently weak at them, but because of what those steps fundamentally are:
+        </p>
+
+        <div class="nyu-pillars" data-cols="2">
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">1</span>
+            <h3 class="nyu-pillar__title">Accountability</h3>
+            <p class="nyu-pillar__body">Module 4 established that consequential outputs require a human owner. In CTI, ownership has a specific form: a signed assessment with a named analyst, professional standing, and an institutional accountability chain behind it. A model cannot be questioned about its reasoning next quarter, cannot accept professional consequences, and cannot be subpoenaed. Where output becomes an organizational position, a human adopts it or it ships as nothing.</p>
+            <span class="nyu-pillar__tag">Ownership</span>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">2</span>
+            <h3 class="nyu-pillar__title">Access</h3>
+            <p class="nyu-pillar__body">In <span class="nyu-ref" data-ref="triage-pipeline">Module 4's enrichment step</span>, the model could not know whether a specific workstation or domain controller was in your environment. At the full-product level that gap scales: your asset inventory, internal telemetry, prior incidents, and sector context are all absent from any public model's training. The model reasons about the general case; the analyst reasons about your case.</p>
+            <span class="nyu-pillar__tag">Evidence</span>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">3</span>
+            <h3 class="nyu-pillar__title">Irreversibility</h3>
+            <p class="nyu-pillar__body">Recommending emergency patching, taking systems offline, or attributing activity to a named actor in public are actions with costs that cannot be unspent. Decision authority over irreversible actions stays with humans as a matter of governance, not capability.</p>
+            <span class="nyu-pillar__tag">Governance</span>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">4</span>
+            <h3 class="nyu-pillar__title">Attribution and intent</h3>
+            <p class="nyu-pillar__body">Who is behind activity and what they want are judgments under deep uncertainty, where deception is an active variable and the evidence is partly non textual. This is the canonical territory of structured analytic technique and human judgment.</p>
+            <span class="nyu-pillar__tag">Judgment</span>
+          </article>
+        </div>
+
+        <p>
+          The boundary may move as models change; those four properties travel with it, because they are features of the work and the institution, not of current model quality.
+        </p>
+
+        <p>
+          The boundary has a governance counterpart in dissemination. The <button type="button" class="nyu-define" data-term="tlp">Traffic Light Protocol (TLP)</button>, standardized by <button type="button" class="nyu-define" data-term="first">FIRST</button> as TLP 2.0, marks sharing constraints on intelligence across five levels from TLP:CLEAR (no restriction) to TLP:RED (named recipients only). Here is where it bites this course: pasting TLP:AMBER reporting into an external AI service transmits restricted intelligence to a third party. That is a sharing violation regardless of how useful the summary would be, and it is one of the concrete reasons this course runs models locally: <span class="nyu-ref" data-ref="deployment-patterns">Module 2's deployment lesson</span>, now with a compliance face. TLP binds by agreement and professional norm, applies to unclassified intelligence cooperation, and is not a government classification system.
+        </p>
+
+        <h3 class="nyu-subsection-title">Your reasoning task: boundary mapping with justification</h3>
+
+        <p>
+          An eight step weekly workflow is listed below. Mark each step <strong>AI delegable</strong>, <strong>AI drafted with human verification</strong>, or <strong>human only</strong>. Justify every human-only call by naming which property forces it (accountability, access, irreversibility, attribution or judgment under uncertainty, or a TLP constraint), not by intuition. More than one mapping is defensible for steps 3, 4, and 6; the lab rubric grades the justification structure, not the labels. Write your mapping before opening the discussion.
+        </p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>Step 1.</strong> Collect the week's advisories.</li>
+          <li><strong>Step 2.</strong> Deduplicate and normalize them.</li>
+          <li><strong>Step 3.</strong> Summarize each for the SOC.</li>
+          <li><strong>Step 4.</strong> Extract indicators into the blocklist pipeline.</li>
+          <li><strong>Step 5.</strong> Assess which advisories affect your organization, using the asset inventory.</li>
+          <li><strong>Step 6.</strong> Draft the weekly executive briefing.</li>
+          <li><strong>Step 7.</strong> Decide whether to invoke emergency patching for one item.</li>
+          <li><strong>Step 8.</strong> Brief the CIO, including a TLP:AMBER report received from your sector's sharing community.</li>
+        </ul>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario: compare your boundary mapping
+          </h3>
+          <p class="nyu-scenario__prompt">
+            Committed to your eight labels and justifications? Open the discussion of the expected answers and defensible disagreements.
+          </p>
+          <button class="nyu-scenario__btn">Show discussion</button>
+          <div class="nyu-scenario__answer">
+            <ul>
+              <li><strong>Steps 1 and 2:</strong> AI delegable (with spot checks). Collection retrieval and processing are text movement; the asymmetry we identified in the intelligence cycle. Note that collection <em>priorities</em> would be direction, and human.</li>
+              <li><strong>Steps 3, 4, 6:</strong> AI drafted with human verification is the expected center of gravity, and pure positions are defensible if argued: step 4's output flows into enforcement (the silent failure argument from extraction pushes toward mandatory verification), and step 6's executive register smooths uncertainty (as we saw in summarization), so the human pass is about restoring caveats, not just catching errors.</li>
+              <li><strong>Step 5: human only, forced by access.</strong> The judgment requires the asset inventory and internal context. If your organization has connected that data to a local model, the answer can shift toward AI assisted, which is exactly why the justification matters more than the label.</li>
+              <li><strong>Step 7: human only, forced by irreversibility plus accountability.</strong> Emergency patching spends real organizational resources and risk. The model can propose; the organization decides.</li>
+              <li><strong>Step 8: human only on two grounds.</strong> Accountability for the CIO conversation, and a TLP constraint: the TLP:AMBER report may not transit any external AI service. A local model summarization may be permissible under the marking; sending it to an external API is not. If you caught the TLP trap, your governance instincts are working.</li>
+            </ul>
+          </div>
+        </div>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="loop-s1">
+          <h3 class="nyu-callout__title" id="loop-s1">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+            </span>
+            Close the loop
+          </h3>
+          <p>At the start of this module you made delegation calls on six work items using only intuition. Return to those notes now with the four properties and TLP in hand. Which calls would you change, and which property changed your mind? Record two or three sentences in your course notes before moving to the lab.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 1</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc-1-prompt">
+            A model-generated briefing states a CVE "is being actively exploited in the wild." Which source most directly adjudicates that specific claim type?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="CVSS measures intrinsic severity: what the flaw could do. It says nothing about whether anyone is actually exploiting it. Severity and exploitation are different properties with different owners.">The NVD CVSS score</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The CISA KEV catalog</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The model's stated confidence is a property of text generation, not evidence. Confidence is assigned by the analyst after verification, never inherited from the model's tone.">The model's stated confidence</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Vendor severity ratings describe impact, not exploitation status. Some vendor advisories do note exploitation, but the dedicated, authoritative route for the exploitation claim type is the KEV catalog.">The vendor advisory's severity rating</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Exploitation status is KEV's exact mandate. Carry the nuance too: KEV is conservative, so absence from KEV is absence of confirmation, not evidence of safety."
+               data-incorrect-msg="Reconsider the routing table from Section 2. Each claim type has one most direct adjudicator, and confirmed in the wild exploitation is the KEV catalog's specific mandate. Remember the nuance: absence from KEV is not evidence of safety."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="kc-2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 2</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc-2-prompt">
+            A 2024 era model recommends mitigating a vulnerability by upgrading to version 4.2 of a product. The vendor's current advisory recommends 4.6 and notes that 4.2 contained an incomplete fix. The model's claim is best described as:
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Nothing was fabricated: 4.2 really was the recommended fix at training time. Hallucination invents; this claim accurately reports a past state of the world. The failure axis is time, not truth at origin.">A hallucination; the model fabricated the version</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">A stale truth: accurately reported from training data, false now; caught by the currency check, not by existence or detail checks</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Once recommended is not currently recommended. An analyst acting on this claim patches to a version with a known incomplete fix. Correctness in intelligence is correctness now.">Correct, since 4.2 was once the recommended version</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Prompt injection is an attack on the model through crafted input (Module 9). Nothing here was injected; the model is faithfully serving outdated training data.">A prompt injection artifact</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. This is the stale truth failure mode: the claim was accurate at training time and is false now. Existence checks pass, detail checks pass against old sources, and only the currency check (is this still true today, per the vendor's current advisory?) catches it."
+               data-incorrect-msg="Distinguish the failure axes from Section 3 and Section 2. Fabrication invents what never was. Stale truth accurately reports what is no longer so. The dedicated countermeasure for the second is step 4 of the methodology: the currency check."></div>
+        </div>
+
+        <p>Use the bookmarks from earlier (NVD, KEV, cve.org, FIRST CVSS) as your routing targets for the lab. Read the <a href="https://www.first.org/tlp/" target="_blank" rel="noopener">FIRST TLP 2.0 specification</a> before starting it.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </span>
+            Going deeper: Analysis of competing hypotheses
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>
+              <strong>Analysis of competing hypotheses (ACH).</strong> Heuer's structured analytic technique for attribution class problems: enumerate hypotheses, score evidence against all of them, and favor the hypothesis with the least disconfirming evidence rather than the most confirming. The disciplined antidote to settling on the first plausible story.
+            </p>
+            <p>
+              <strong>Scaling verification.</strong> At feed scale we cannot hand verify everything; organizations layer automated validation, sampling, and human review by stakes. Designing that layering is a Module 11 and 12 conversation; this module gives us the unit operation.
+            </p>
+            <p>
+              <strong>Sharing communities.</strong> ISACs and similar sector-based sharing organizations are where TLP governs daily practice. Their handling rules are a window into how intelligence cooperation actually works between competitors.
+            </p>
+            <p>
+              <strong>Methodology limits.</strong> This methodology is tuned for vulnerability and advisory intelligence, where authoritative routing targets exist. For actor behavior and campaign reporting, ground truth is softer: we triangulate primary reports with stated commercial caveats, and confidence ceilings are lower.
+            </p>
+          </div>
+        </div>
+
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 6: The Hallucination Audit Lab.</strong> Put the whole methodology to work. You will hunt fabrications in raw model output, route every claim to the source that adjudicates it, stamp a verdict, and walk away with a verification checklist that is yours to keep.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../reference_tip/reference-tips.js"></script>
+</body>
+</html>

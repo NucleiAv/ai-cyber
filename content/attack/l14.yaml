@@ -1,0 +1,139 @@
+slug: l14
+num: "14"
+lecture: 14
+week: 15
+short: Unbounded consumption
+title: Unbounded consumption, denial of wallet
+time: about 3 hours
+lede: LLMs cost money per token. Learn how attackers burn your budget, slow your service or copy your model, and why request limits alone do not stop them.
+owasp: [LLM10]
+agentic: [ASI08]
+atlas: [AML.T0029, AML.T0034, AML.T0034.002, AML.T0046]
+other_fw:
+  - [Classic availability, "Denial of service is an old attack. With LLMs the cost of each request varies widely, which changes the defense."]
+
+idea: |
+  Every model call costs compute. Cloud APIs bill per token. So an attacker can harm you without stealing anything.
+
+  - **Denial of service.** Make the model so busy that real users wait or fail.
+  - **Denial of wallet.** Make you pay. A large bill is the damage.
+  - **Model extraction.** Send many queries and train a copy from the answers.
+
+  !eli5 A restaurant that lets each guest order without limit can be closed by one guest who orders everything on the menu a hundred times. Counting guests at the door does not help. You must count what each guest orders.
+
+terms:
+  - [Token, "A unit of text. APIs charge per input token and per output token."]
+  - [RPM, "Requests per minute. A common rate limit that counts requests, not cost."]
+  - [Token bucket, "A rate limit where each user has a budget of tokens that refills over time."]
+  - [Sponge example, "An input built to make a model use as much energy and time as possible."]
+  - [Denial of wallet, "An attack that drives up a pay-per-use bill."]
+  - [LLMjacking, "Using stolen credentials to run models at the victim's cost."]
+
+how: |
+  ### Why counting requests fails
+
+  Module 11 works the numbers for one leaked API key. The key allows 60 requests per minute, up to 200,000 tokens each, with no spending cap. Input costs 3 dollars per million tokens.
+
+  1. 60 requests times 200,000 tokens is 12 million tokens per minute.
+  2. 12 million tokens times 3 dollars per million is 36 dollars per minute.
+  3. 36 dollars times 60 minutes times 24 hours is **51,840 dollars per day**.
+
+  The key never broke its rate limit. The limit counted requests. The bill counted tokens.
+
+  ### Sponge examples
+
+  Shumailov and others (2021) built inputs that made neural networks use many times more energy and time per input, without changing the input size much. For LLMs, a simple sponge asks for the longest possible output, such as "repeat the word 'company' forever". Each request then runs to the maximum output length.
+
+  !fact The same "repeat a word forever" prompt has another effect. Nasr and others (2023) found that it made ChatGPT drift and print memorized training data. Lesson 4 covers that kind of leak.
+
+diagrams:
+  - type: flow
+    title: The cost of one leaked key, at its own rate limit
+    nodes: [["60 requests per minute", "box"], ["200,000 tokens each", "box"], ["12 million tokens per minute", "raised"], ["36 dollars per minute", "atk"], ["51,840 dollars per day", "atk"]]
+    edges: ["x", "=", "x $3 per M", "x 1,440"]
+    caption: Numbers from the Module 11 lab. Sysdig named this kind of abuse LLMjacking in 2024 and estimated costs above 46,000 dollars a day for a victim.
+
+attack_steps:
+  - Find an endpoint or a key with no spending cap. Leaked keys in public code are common.
+  - Send requests that maximize tokens, such as long inputs and prompts that ask for endless output.
+  - Spread requests over many accounts or keys to stay under per-account limits.
+  - For agents, trigger loops, such as tasks that make the agent call tools again and again.
+
+cases:
+  - [LLMjacking, 2024, "Sysdig reported attackers who used stolen cloud credentials to run hosted models at the victims' cost, and estimated over 46,000 dollars per day for one victim."]
+  - [Operation Bizarre Bazaar, "Pillar Security reported stolen access to AI endpoints resold on a marketplace."]
+
+defense: |
+  - Limit **tokens** and **cost**, not only requests. Use a token bucket per user and per key.
+  - Cap input size and set a maximum output length for every call.
+  - Set per-key daily spending caps that alert and then stop.
+  - Add timeouts and step limits for agents.
+  - Alert on spikes in tokens per user and on many near-identical queries, which can signal model extraction.
+  - Keep keys out of code. Rotate them, and scan repositories for leaks.
+
+defense_diagrams:
+  - type: layers
+    title: Stopping a denial of wallet attack
+    attack: max-token flood
+    layers:
+      - ["Requests-per-minute limit", "Counts calls, not cost", "pass"]
+      - ["Max input and output tokens per call", "Each call has a ceiling", "partial"]
+      - ["Token bucket per user and key", "Heavy users run out fast", "stop"]
+      - ["Daily spend cap and billing alerts", "The bill cannot run away", "stop"]
+
+lab:
+  intro: |
+    Solve LLMGoat A10. Then write a sponge prompt and measure it.
+  steps:
+    - Solve LLMGoat A10, unbounded consumption. Save the prompt.
+    - Write a sponge prompt that asks for the longest possible answer, or that takes long before the first token.
+    - "Extend task. Run a normal prompt and your sponge prompt on a small local model with `ollama run <model> --verbose`. The verbose flag prints the time and token counts. Compare them."
+  hints:
+    - Ollama prints eval count (tokens out) and total duration after each answer when you use --verbose.
+    - Many apps cap output length. Look for a way to make the app call the model again, which multiplies cost.
+  links: [llmgoat, ollama]
+
+readings:
+  - [sponge, "The original sponge examples paper. Inputs that maximize energy and latency."]
+  - [dowreview, "A review of denial of wallet attacks in pay-per-use serverless systems."]
+  - [layerxdow, "How denial of wallet applies to generative AI apps."]
+star: [sponge]
+
+questions:
+  - - Why is a simple requests-per-minute limit not enough for LLMs? Ten "Hi" requests cost about a cent, and ten "summarize this 100-page PDF" requests cost about ten dollars. Why do we need token bucket or compute budget limits?
+    - |
+      RPM treats every request as equal, but LLM cost depends on tokens. An attacker who sends a few huge requests stays under the RPM limit and still runs up a large bill. The Module 11 key cost 51,840 dollars a day while it obeyed its rate limit.
+
+      A **token bucket** gives each user a budget of tokens that refills over time. Each request takes its real token count from the bucket. Heavy requests empty it fast. A **compute budget** goes further and counts real processing time, which also catches sponge inputs that cost a lot without many tokens. Add per-key spending caps and alerts as the final stop.
+  - - Sponge attacks target energy use. Given concern about AI's carbon footprint, is this an environmental threat? Can efficiency methods such as quantization help or hurt?
+    - |
+      At scale, yes. Sponge inputs waste energy as well as money, and a botnet of sponge requests multiplies that. But the main harm today is cost and availability, not climate.
+
+      Quantization uses fewer bits per weight, so each token costs less energy, and the same budget covers more tokens. That lowers the damage per request. It does not stop the attack, because the attacker can send more requests. Some efficiency tricks, such as caching and early exit, can even be targeted, because sponge inputs can be built to defeat them. Limits on tokens and time remain the real control.
+
+quiz:
+  - q: A key obeys its 60 RPM limit but costs 51,840 dollars a day. Why?
+    opts: ["The rate limit was broken", "The limit counted requests while the bill counted tokens", "The model was slow"]
+    a: 1
+    why: Each request used up to 200,000 tokens, which the RPM limit did not see.
+  - q: Which control caps the bill directly?
+    opts: ["A longer system prompt", "A daily spending cap per key", "A bigger GPU"]
+    a: 1
+    why: A spend cap stops usage once the budget is gone.
+  - q: Many near-identical queries from one account can signal what?
+    opts: ["Model extraction or abuse", "A normal user", "A slow network"]
+    a: 0
+    why: Attackers who copy a model send many systematic queries.
+
+deliverables:
+  - Your answers to both discussion questions.
+  - Your sponge prompt.
+  - The prompts that solved LLMGoat A10.
+
+refs:
+  - "Shumailov et al. [Sponge examples, energy-latency attacks on neural networks](@sponge), IEEE EuroS&P 2021."
+  - "[A comprehensive review of denial of wallet attacks in serverless architectures](@dowreview), 2025."
+  - "LayerX. [Denial of wallet attacks](@layerxdow)."
+  - "Nasr et al. [Scalable extraction of training data from production language models](https://arxiv.org/abs/2311.17035), 2023."
+  - "Sysdig. [LLMjacking, stolen cloud credentials used in new AI attack](https://www.sysdig.com/blog/llmjacking-stolen-cloud-credentials-used-in-new-ai-attack), 2024."
+  - "OWASP. [LLM10 2025 Unbounded consumption](https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/)."

@@ -1,0 +1,223 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 4 · Section 8 · References &amp; Readings · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 4 · Section 8 of 8</div>
+<h1 class="nyu-hero__title">References &amp; Readings</h1>
+<p class="nyu-hero__subtitle">All sources, citations, and recommended readings referenced throughout Module 4: Intrusion Detection and Log Analysis, organized by category and section.</p>
+<div class="nyu-hero__meta" aria-label="Section overview"><span aria-label="Section type"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Reference</span> <span aria-label="Number of parts"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> 7 parts</span></div>
+</header><nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+<li><a href="#sec-1"><span class="nyu-toc__num">1</span> Recommended Readings</a></li>
+<li><a href="#sec-2"><span class="nyu-toc__num">2</span> Further Optional Readings</a></li>
+<li><a href="#sec-3"><span class="nyu-toc__num">3</span> Academic Papers &amp; Preprints</a></li>
+<li><a href="#sec-4"><span class="nyu-toc__num">4</span> Frameworks &amp; Standards</a></li>
+<li><a href="#sec-5"><span class="nyu-toc__num">5</span> Datasets</a></li>
+<li><a href="#sec-6"><span class="nyu-toc__num">6</span> Source Caveats</a></li>
+<li><a href="#sec-7"><span class="nyu-toc__num">7</span> References by Section</a></li>
+</ol>
+</nav><main id="main" tabindex="-1"><!-- ====================== Recommended READINGS ====================== -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">Recommended Readings</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Complete these readings at the indicated points in the module. Total reading time is approximately 35 minutes.</p>
+<h3 class="nyu-subsection-title">R1: SOC Alert Triage Process (Pre-Reading)</h3>
+<p><strong>Title:</strong> "Alert Triage Process: The Complete SOC Analyst's Guide"<br><strong>Author:</strong> CyberDefenders (2025)<br><strong>URL:</strong> <a href="https://cyberdefenders.org/blog/alert-triage-process/" target="_blank" rel="noopener">cyberdefenders.org/blog/alert-triage-process/</a><br><strong>Reading time:</strong> ~15 minutes<br><strong>When to read:</strong> Before starting this module</p>
+<p>This practitioner guide establishes the SOC triage workflow that frames all hands-on activities. It describes the five-stage triage model, severity classification practices, and the 15-30 minute per-alert time pressure that motivates AI-assisted triage.</p>
+<h3 class="nyu-subsection-title">R2: ROC Curves and AUC (Before Section 6)</h3>
+<p><strong>Title:</strong> "Classification: ROC and AUC" (Machine Learning Crash Course)<br><strong>Author:</strong> Google Developers<br><strong>URL:</strong> <a href="https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc" target="_blank" rel="noopener">developers.google.com/machine-learning/crash-course/classification/roc-and-auc</a><br><strong>Reading time:</strong> ~10 minutes<br><strong>When to read:</strong> Before starting Section 6</p>
+<p>Clear, visual explanation of ROC curves and AUC with interactive examples. Extends the precision/recall vocabulary from Module 1 into the continuous tradeoff space.</p>
+<h3 class="nyu-subsection-title">R3: UNSW-NB15 Dataset Overview (Before Section 3)</h3>
+<p><strong>Title:</strong> "The UNSW-NB15 Dataset" (project page)<br><strong>Author:</strong> UNSW Sydney<br><strong>URL:</strong> <a href="https://research.unsw.edu.au/projects/unsw-nb15-dataset" target="_blank" rel="noopener">research.unsw.edu.au/projects/unsw-nb15-dataset</a><br><strong>Reading time:</strong> ~10 minutes<br><strong>When to read:</strong> Before starting Section 3</p>
+<p>Introduces the dataset features used in the feature-engineering thought experiment. Includes feature descriptions, attack category definitions, and dataset provenance.</p>
+</section>
+<!-- ====================== ENRICHMENT READINGS ====================== -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">Further Optional Readings</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>These readings deepen understanding for motivated students. None are Recommended for module completion.</p>
+<h3 class="nyu-subsection-title">E1: CIC-IDS2017 Troubleshooting</h3>
+<p>Engelen, G. et al. "Troubleshooting an Intrusion Detection Dataset: the CICIDS2017 Case Study." <em>Workshop on Traffic Measurements for Cybersecurity (WTMC)</em>, 2021.<br><a href="https://intrusion-detection.distrinet-research.be/WTMC2021/Resources/wtmc2021_Engelen_Troubleshooting.pdf" target="_blank" rel="noopener">PDF (KU Leuven)</a> · ~25 min · Detailed analysis of dataset limitations and research methodology.</p>
+<h3 class="nyu-subsection-title">E2: Deep Learning IDS Survey</h3>
+<p>"Deep Learning-based Intrusion Detection Systems: A Survey." <em>arXiv 2504.07839</em>, April 2025.<br><a href="https://arxiv.org/abs/2504.07839" target="_blank" rel="noopener">arxiv.org/abs/2504.07839</a> · ~45 min · Comprehensive DL-IDS survey. <em>Note: preprint, not peer-reviewed.</em></p>
+<h3 class="nyu-subsection-title">E3: LLMs in the SOC, an Empirical Study</h3>
+<p>"LLMs in the SOC: An Empirical Study of Human-AI Collaboration in Security Operations Centres." <em>arXiv 2508.18947</em>, 2025.<br><a href="https://arxiv.org/abs/2508.18947" target="_blank" rel="noopener">arxiv.org/abs/2508.18947</a> · ~30 min · 3,122 real SOC analyst queries to GPT-4. <em>Note: preprint, not peer-reviewed.</em></p>
+<h3 class="nyu-subsection-title">E4: AI-Augmented SOC Survey</h3>
+<p>"AI-Augmented SOC: A Survey of LLMs and Agents for Security Automation." <em>Journal of Cybersecurity and Privacy</em>, MDPI, 5(4):95, 2025.<br><a href="https://www.mdpi.com/2624-800X/5/4/95" target="_blank" rel="noopener">mdpi.com</a> · ~35 min · Broad overview of LLM applications in SOC workflows.</p>
+<h3 class="nyu-subsection-title">E5: CEF Format Reference</h3>
+<p>Splunk. "Common Event Format (CEF): An Introduction." <em>(Vendor documentation.)</em><br><a href="https://www.splunk.com/en_us/blog/learn/common-event-format-cef.html" target="_blank" rel="noopener">splunk.com</a> · ~10 min · Detailed CEF field reference.</p>
+<h3 class="nyu-subsection-title">E6: Adversarial ML in Cybersecurity</h3>
+<p>ISACA. "Combating the Threat of Adversarial Machine Learning to AI-Driven Cybersecurity." 2025. <em>(Practitioner/professional association source.)</em><br><a href="https://www.isaca.org/resources/news-and-trends/industry-news/2025/combating-the-threat-of-adversarial-machine-learning-to-ai-driven-cybersecurity" target="_blank" rel="noopener">isaca.org</a> · ~15 min · Accessible overview bridging Module 4 to Module 10.</p>
+<h3 class="nyu-subsection-title">E7: CORTEX Multi-Agent Triage</h3>
+<p>"CORTEX: Collaborative LLM Agents for High-Stakes Alert Triage." <em>arXiv 2510.00311</em>, 2025.<br><a href="https://arxiv.org/abs/2510.00311" target="_blank" rel="noopener">arxiv.org/abs/2510.00311</a> · ~30 min · Multi-agent SOC architecture proposal referenced in Section 4. <em>Note: preprint, not peer-reviewed.</em></p>
+<h3 class="nyu-subsection-title">E8: Vendor Visions of the Agentic SOC</h3>
+<p>Google Cloud Security. "The Agentic SOC" vision materials, 2025. <em>(Vendor roadmap/marketing, not an evaluated system.)</em><br>~15 min · Representative of vendor descriptions of largely autonomous SOC agents, discussed critically in Section 4.</p>
+<h3 class="nyu-subsection-title">E9: Industry Interest in Agentic SOC Approaches</h3>
+<p>Industry survey reporting on organizations exploring agentic AI for security operations (cited in Section 4 for the breadth-of-interest claim). <em>(Survey statistics change quickly; verify the current figure each semester.)</em></p>
+</section>
+<!-- ====================== ACADEMIC SOURCES ====================== -->
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Academic Papers &amp; Preprints</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Key citations referenced in this module's content.</p>
+<ul class="ref-list">
+<li><strong>Moustafa, N., and Slay, J.</strong> "UNSW-NB15: A Comprehensive Data Set for Network Intrusion Detection Systems." <em>Military Communications and Information Systems Conference (MilCIS)</em>, IEEE, 2015. <span class="ref-tag ref-tag--paper">Paper</span> <br>Defines the UNSW-NB15 dataset: 49 flow features in documented categories, 9 attack types. The feature schema used throughout Section 3. <br><a href="https://research.unsw.edu.au/projects/unsw-nb15-dataset" target="_blank" rel="noopener">UNSW-NB15 Dataset Project</a></li>
+<li><strong>Engelen, G., et al.</strong> "Troubleshooting an Intrusion Detection Dataset: the CICIDS2017 Case Study." <em>Workshop on Traffic Measurements for Cybersecurity (WTMC)</em>, 2021. <span class="ref-tag ref-tag--paper">Paper</span> <br>Documents feature-extraction errors and contradictory labels in CIC-IDS2017; the basis for Section 3's benchmark-literacy discussion. <br><a href="https://intrusion-detection.distrinet-research.be/WTMC2021/Resources/wtmc2021_Engelen_Troubleshooting.pdf" target="_blank" rel="noopener">PDF (KU Leuven)</a></li>
+<li>"A Comparative Analysis of Supervised and Unsupervised Models for Detecting Attacks on the Intrusion Detection Systems." <em>Information</em>, MDPI, 14(2):103, 2023. <span class="ref-tag ref-tag--paper">Paper</span> <br>Supervised vs. unsupervised IDS comparison cited in Section 3's detector-comparison grid. <br><a href="https://www.mdpi.com/2078-2489/14/2/103" target="_blank" rel="noopener">mdpi.com/2078-2489/14/2/103</a></li>
+<li>"Leveraging Large Language Models for Scalable and Explainable Cybersecurity Log Analysis." <em>Journal of Cybersecurity and Privacy</em>, MDPI, 5(3):55, 2025. <span class="ref-tag ref-tag--paper">Paper</span> <br>LLM log-analysis capabilities and limits informing Sections 1 and 2. <br><a href="https://www.mdpi.com/2624-800X/5/3/55" target="_blank" rel="noopener">mdpi.com/2624-800X/5/3/55</a></li>
+<li>"The paradigm of hallucinations in AI-driven cybersecurity systems." <em>Computers and Electrical Engineering</em>, Elsevier, 2025. <span class="ref-tag ref-tag--paper">Paper</span> <br>Source for the Section 2 failure-mode taxonomy of LLM hallucinations in security contexts.</li>
+<li>"Evaluation of Intrusion Detection Systems." <em>Journal of Information Processing Systems</em>, 2016. <span class="ref-tag ref-tag--paper">Paper</span> <br>Confusion-matrix and metrics methodology applied in Sections 2 and 4.</li>
+<li>"Individual Packet Features are a Risk to Model Generalisation in ML-Based Intrusion Detection." 2024. <span class="ref-tag ref-tag--paper">Preprint</span> <br>Found packet-level features transfer poorly across networks; cited in Section 3 for flow-level aggregation. <em>Not peer-reviewed.</em> <br><a href="https://arxiv.org/abs/2406.07578" target="_blank" rel="noopener">arXiv:2406.07578</a></li>
+<li>"Benchmarking Large Language Models for Log Analysis, Security, and Interpretation." <em>Journal of Network and Systems Management</em>, Springer, 2024. <span class="ref-tag ref-tag--paper">Paper</span> <br>LLM log-analysis benchmark results referenced for Section 4's tool comparison.</li>
+</ul>
+</section>
+<!-- ====================== FRAMEWORKS ====================== -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Frameworks &amp; Standards</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>National Institute of Standards and Technology (NIST).</strong> <em>Cybersecurity Framework 2.0.</em> <span class="ref-tag ref-tag--framework">Framework</span> <br>Detect function (DE.AE, DE.CM) frames the module's detection and accountability discussion. <br><a href="https://www.nist.gov/cyberframework" target="_blank" rel="noopener">nist.gov/cyberframework</a></li>
+<li><strong>IETF.</strong> <em>RFC 5424: The Syslog Protocol.</em> <span class="ref-tag ref-tag--reference">Standard</span> <br>Header structure, priority value encoding, and severity levels taught in Section 1. <br><a href="https://www.rfc-editor.org/rfc/rfc5424" target="_blank" rel="noopener">rfc-editor.org/rfc/rfc5424</a></li>
+<li><strong>MITRE.</strong> <em>ATT&amp;CK Framework.</em> <span class="ref-tag ref-tag--framework">Framework</span> <br>Attack tactics and techniques; used for validating LLM-generated technique mappings (e.g., T1071) in Section 2. <br><a href="https://attack.mitre.org/" target="_blank" rel="noopener">attack.mitre.org</a></li>
+<li><strong>Common Event Format (CEF).</strong> Standardized log format for SIEM interoperability. <span class="ref-tag ref-tag--reference">Standard</span> <br>Pipe-delimited header and spec-defined extension fields taught in Section 1; see E5 for the field reference.</li>
+</ul>
+</section>
+<!-- ====================== DATASETS ====================== -->
+<section class="nyu-section" id="sec-5">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">5</span>
+<h2 class="nyu-section__title">Datasets</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>UNSW-NB15 Dataset.</strong> UNSW Sydney, 2015. <span class="ref-tag ref-tag--dataset">Dataset</span> <br>Module use: feature taxonomy for the Section 3 thought experiment; attack category reference. Limitations: 2015 traffic, label ambiguity, synthetic attack generation. <br><a href="https://research.unsw.edu.au/projects/unsw-nb15-dataset" target="_blank" rel="noopener">UNSW-NB15 Dataset Project</a></li>
+<li><strong>CIC-IDS2017 Dataset.</strong> Canadian Institute for Cybersecurity, University of New Brunswick, 2017. <span class="ref-tag ref-tag--dataset">Dataset</span> <br>Module use: benchmark-literacy discussion in Section 3. Limitations: flow construction errors (Engelen et al., E1), extreme class imbalance, 2017 traffic. <br><a href="https://www.unb.ca/cic/datasets/ids-2017.html" target="_blank" rel="noopener">UNB/CIC IDS 2017</a></li>
+<li><strong>Local LLM Inference Runtime.</strong> (See course setup instructions.) <span class="ref-tag ref-tag--tool">Tool</span> <br>Module use: primary inference runtime for all LLM-based activities. The specific runtime and model may change between semesters; follow the current course setup guide and verify compatibility each semester.</li>
+</ul>
+</section>
+<!-- ====================== CAVEATS ====================== -->
+<section class="nyu-section" id="sec-6">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">6</span>
+<h2 class="nyu-section__title">Source Caveats</h2>
+</div>
+<hr class="nyu-section__rule">
+<aside class="nyu-callout nyu-callout--warning" role="note">
+<h3 class="nyu-callout__title">Reading Sources Critically</h3>
+<p>Every source has a context. When you read security research, keep these caveats in mind:</p>
+</aside>
+<table class="nyu-table nyu-table--even">
+<thead>
+<tr>
+<th>Source Category</th>
+<th>Key Caveat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Practitioner guides (R1)</td>
+<td>Represent current practices, not empirical evidence; may include tool-specific references</td>
+</tr>
+<tr>
+<td>Educational resources (R2)</td>
+<td>General ML context; the module adds security-specific application</td>
+</tr>
+<tr>
+<td>Dataset documentation (R3)</td>
+<td>Describes a specific dataset with known limitations; not representative of modern networks</td>
+</tr>
+<tr>
+<td>Academic preprints (E2, E3, E7)</td>
+<td>Not peer-reviewed; treat claims with appropriate caution</td>
+</tr>
+<tr>
+<td>Vendor documentation (E5, E8)</td>
+<td>Factual format documentation or roadmap material; note the vendor context</td>
+</tr>
+<tr>
+<td>Benchmark results (any source)</td>
+<td>Always specify: which dataset, which model, what conditions. Benchmark performance does not equal production performance.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<!-- ====================== REFERENCES BY SECTION ====================== -->
+<section class="nyu-section" id="sec-7">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">7</span>
+<h2 class="nyu-section__title">References by Section</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Use this index to find sources cited in each section of Module 4.</p>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 1: The SOC Analyst's Challenge</h3>
+<ul class="ref-list">
+<li>CyberDefenders, "Alert Triage Process" (R1). SOC triage workflow and five-stage model.</li>
+<li>IETF, RFC 5424: The Syslog Protocol. Log format structure and severity levels.</li>
+<li>Splunk, "Common Event Format (CEF)" (E5). CEF field definitions and parsing reference.</li>
+<li>NIST Cybersecurity Framework 2.0: Detect function (DE.AE, DE.CM).</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 2: Triage Pipeline and Metrics</h3>
+<ul class="ref-list">
+<li>CyberDefenders, "Alert Triage Process" (R1). Triage pipeline structure.</li>
+<li>"The paradigm of hallucinations in AI-driven cybersecurity systems," <em>Computers and Electrical Engineering</em> (2025). Failure mode taxonomy.</li>
+<li>"Evaluation of Intrusion Detection Systems," <em>JIPS</em> (2016). Confusion matrix and metrics methodology.</li>
+<li>ExtraHop, "Recognizing AI Hallucinations in Cybersecurity" (2025). Hallucination rate estimates.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 3: How Machines Detect Intrusions</h3>
+<ul class="ref-list">
+<li>Moustafa and Slay, "UNSW-NB15" (R3, 2015). Dataset features and attack categories.</li>
+<li>"A Comparative Analysis of Supervised and Unsupervised Models," <em>Information</em> (2023). IDS paradigm comparison.</li>
+<li>"Individual Packet Features are a Risk," <em>arXiv 2406.07578</em> (2024). Feature generalization limitations.</li>
+</ul>
+<h3 class="ref-section__title">Section 4: Detection in Practice</h3>
+<ul class="ref-list">
+<li>Engelen et al., "Troubleshooting CICIDS2017" (E1, 2021). Dataset quality issues and benchmark caveats.</li>
+<li>ISACA, "Adversarial Machine Learning" (E6, 2025). Adversarial threats to ML-IDS.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 5: Comparing Approaches</h3>
+<ul class="ref-list">
+<li>"AI-Augmented SOC: A Survey," <em>J. Cybersecurity and Privacy</em> (E4, 2025). Hybrid architecture context.</li>
+<li>"CORTEX," <em>arXiv 2510.00311</em> (E7, 2025, preprint). Multi-agent triage proposal.</li>
+<li>Google Cloud Security, "Agentic SOC" vision (E8, 2025). Vendor roadmap context.</li>
+<li>Industry survey on agentic SOC interest (E9). Breadth-of-interest claim.</li>
+</ul>
+<h3 class="ref-section__title">Section 6: Evidence, Tracing an Alert and Reading ROC Curves</h3>
+<ul class="ref-list">
+<li>Google ML Crash Course, "ROC and AUC" (R2). ROC curve and operating-point concepts.</li>
+</ul>
+<h3 class="ref-section__title">Section 7: When the Pipeline Fails and Choosing Tools</h3>
+<ul class="ref-list">
+<li>NIST Cybersecurity Framework 2.0. Organizational accountability framework.</li>
+<li>ISC2 Code of Ethics (2024). Professional responsibility for AI-assisted decisions.</li>
+</ul>
+</div>
+</section>
+</main><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"> <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"> </a></footer><button class="nyu-fab" aria-label="Back to top of page"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> </button></div>
+<p>
+<script src="../js/nyu-tandon-course.js"></script>
+</p></body></html>

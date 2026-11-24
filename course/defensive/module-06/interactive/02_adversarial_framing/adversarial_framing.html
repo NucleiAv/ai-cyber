@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adversarial Comment Framing Lens</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--blue:#1560AC;--blue-bg:#E6F0FA;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+    .top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em;flex:1 1 auto}
+
+    .body-wrap{padding:0 18px 14px}
+
+    /* Code viewer */
+    .code-view{background:#1F2229;border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:.72rem;line-height:1.8;overflow-x:auto;position:relative;margin-bottom:14px}
+    .code-view .ln{color:#9099A8;user-select:none;margin-right:12px;display:inline-block;width:18px;text-align:right}
+    .code-line{position:relative;transition:all .5s;padding:1px 4px;border-radius:3px}
+    .code-line.normal{color:#e8e8ec}
+    .code-line.comment{color:#6A9955;font-style:italic}
+    .code-line.vuln{color:#e8e8ec}
+    .code-line.vuln-hl{background:rgba(196,42,42,.25);box-shadow:0 0 12px rgba(196,42,42,.2)}
+    .code-line.vuln-dim{opacity:.35}
+    .code-line.comment-hl{background:rgba(106,153,85,.2);box-shadow:0 0 12px rgba(106,153,85,.2)}
+
+    /* Spotlight overlay */
+    .spotlight{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;border-radius:10px;overflow:hidden}
+    .spot-beam{position:absolute;width:100%;height:28px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border-radius:4px;transition:top .6s ease,opacity .4s;opacity:0}
+    .spot-beam.on{opacity:1}
+
+    /* Toggle controls */
+    .toggles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .toggle{display:flex;align-items:center;gap:8px;padding:6px 12px;border:1.5px solid var(--rule);border-radius:8px;cursor:pointer;transition:all .25s;font-size:.72rem;font-weight:600;user-select:none}
+    .toggle:hover{border-color:var(--v200)}
+    .toggle.active{border-color:var(--v);background:var(--v50)}
+    .toggle .switch{width:32px;height:18px;border-radius:9px;background:var(--rule);position:relative;transition:background .3s}
+    .toggle.active .switch{background:var(--v)}
+    .toggle .switch::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .toggle.active .switch::after{transform:translateX(14px)}
+
+    /* Detection gauge */
+    .det-area{display:flex;align-items:center;gap:14px;padding:10px 14px;border:1.5px solid var(--rule);border-radius:10px;transition:all .4s}
+    .det-area.low{border-color:var(--red);background:var(--red-bg)}
+    .det-label{font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--ink2);white-space:nowrap}
+    .det-bar-wrap{flex:1}
+    .det-bar{height:12px;border-radius:6px;background:var(--rule);overflow:hidden}
+    .det-fill{height:100%;border-radius:6px;transition:width .8s ease,background .4s}
+    .det-fill.high{background:linear-gradient(90deg,var(--grn),#4CAF7A)}
+    .det-fill.mid{background:linear-gradient(90deg,var(--amb),#C98600)}
+    .det-fill.low{background:linear-gradient(90deg,var(--red),#E04646)}
+    .det-val{font-size:.82rem;font-weight:700;font-family:var(--mono);min-width:42px;text-align:right;transition:color .4s}
+    .det-val.high{color:var(--grn)}
+    .det-val.mid{color:var(--amb)}
+    .det-val.low{color:var(--red)}
+
+    /* Attention indicator */
+    .attn-strip{display:flex;gap:4px;margin-top:10px;align-items:center;justify-content:center}
+    .attn-label{font-size:.64rem;font-weight:700;text-transform:uppercase;color:var(--ink2)}
+    .attn-dots{display:flex;gap:3px}
+    .attn-dot{width:8px;height:8px;border-radius:50%;background:var(--rule);transition:all .4s}
+    .attn-dot.vuln-focus{background:var(--red)}
+    .attn-dot.comment-focus{background:var(--grn)}
+
+    .insight{padding:12px 18px;font-size:.76rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.5;margin-top:14px}
+    .insight b{color:var(--ink);font-weight:700}
+  </style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>Adversarial Comment Framing</h1>
+  </div>
+  <div class="body-wrap">
+    <div class="code-view" id="codeView">
+      <div class="spotlight"><div class="spot-beam" id="spotBeam"></div></div>
+      <div class="code-line normal" id="L1"><span class="ln">1</span>def update_profile(request):</div>
+      <div class="code-line normal" id="L2"><span class="ln">2</span>    user_id = request.args["id"]</div>
+      <div class="code-line comment" id="L3" style="display:none"><span class="ln">3</span>    <span class="cmtxt"># input sanitized upstream</span></div>
+      <div class="code-line vuln" id="L4"><span class="ln">4</span>    db.execute(f"UPDATE users SET name='{request.args['name']}' WHERE id={user_id}")</div>
+      <div class="code-line comment" id="L5" style="display:none"><span class="ln">5</span>    <span class="cmtxt"># reviewed by security team</span></div>
+      <div class="code-line normal" id="L6"><span class="ln">6</span>    return redirect("/profile")</div>
+    </div>
+
+    <div class="toggles">
+      <div class="toggle" id="tog1" onclick="toggleComment(0)">
+        <span class="switch"></span>
+        <span>"input sanitized upstream"</span>
+      </div>
+      <div class="toggle" id="tog2" onclick="toggleComment(1)">
+        <span class="switch"></span>
+        <span>"reviewed by security team"</span>
+      </div>
+    </div>
+
+    <div class="det-area" id="detArea">
+      <div class="det-label">Detection Likelihood</div>
+      <div class="det-bar-wrap"><div class="det-bar"><div class="det-fill high" id="detFill" style="width:88%"></div></div></div>
+      <div class="det-val high" id="detVal">88%</div>
+    </div>
+
+    <div class="attn-strip">
+      <span class="attn-label">AI Attention:</span>
+      <div class="attn-dots" id="attnDots">
+        <div class="attn-dot vuln-focus"></div>
+        <div class="attn-dot vuln-focus"></div>
+        <div class="attn-dot vuln-focus"></div>
+        <div class="attn-dot vuln-focus"></div>
+        <div class="attn-dot vuln-focus"></div>
+      </div>
+    </div>
+  </div>
+  <div class="insight" id="ins">The vulnerable line (L4) has a SQL injection. Toggle reassuring comments to see how framing shifts AI attention and reduces detection likelihood.</div>
+</div></div>
+
+<script>
+let comments = [false, false]; // sanitized, reviewed
+const BASE_DETECTION = 88;
+
+function toggleComment(idx){
+  comments[idx] = !comments[idx];
+  document.getElementById('tog'+(idx+1)).classList.toggle('active', comments[idx]);
+  update();
+}
+
+function update(){
+  const c1 = comments[0], c2 = comments[1];
+
+  // Show/hide comment lines
+  document.getElementById('L3').style.display = c1 ? '' : 'none';
+  document.getElementById('L5').style.display = c2 ? '' : 'none';
+
+  // Calculate detection drop
+  let det = BASE_DETECTION;
+  if(c1) det -= 25;
+  if(c2) det -= 28;
+  det = Math.max(det, 22);
+
+  // Update detection gauge
+  const fill = document.getElementById('detFill');
+  const val = document.getElementById('detVal');
+  const area = document.getElementById('detArea');
+  fill.style.width = det + '%';
+  val.textContent = det + '%';
+
+  let level = det > 70 ? 'high' : det > 45 ? 'mid' : 'low';
+  fill.className = 'det-fill ' + level;
+  val.className = 'det-val ' + level;
+  area.className = 'det-area' + (level === 'low' ? ' low' : '');
+
+  // Spotlight effect
+  const beam = document.getElementById('spotBeam');
+  const vulnLine = document.getElementById('L4');
+  if(c1 || c2){
+    // Move spotlight to comment instead of vuln
+    const target = c2 ? document.getElementById('L5') : document.getElementById('L3');
+    if(target && target.style.display !== 'none'){
+      beam.classList.add('on');
+      beam.style.top = (target.offsetTop - 2) + 'px';
+    }
+    vulnLine.classList.remove('vuln-hl');
+    vulnLine.classList.add('vuln-dim');
+    // Highlight comments
+    if(c1) document.getElementById('L3').classList.add('comment-hl');
+    else document.getElementById('L3').classList.remove('comment-hl');
+    if(c2) document.getElementById('L5').classList.add('comment-hl');
+    else document.getElementById('L5').classList.remove('comment-hl');
+  } else {
+    beam.classList.remove('on');
+    vulnLine.classList.add('vuln-hl');
+    vulnLine.classList.remove('vuln-dim');
+    document.getElementById('L3').classList.remove('comment-hl');
+    document.getElementById('L5').classList.remove('comment-hl');
+  }
+
+  // Attention dots
+  const dots = document.querySelectorAll('.attn-dot');
+  const vulnFocus = c1 || c2 ? (c1 && c2 ? 1 : 2) : 5;
+  dots.forEach((d,i) => {
+    d.className = 'attn-dot ' + (i < vulnFocus ? 'vuln-focus' : 'comment-focus');
+  });
+
+  // Insight
+  const ins = document.getElementById('ins');
+  if(!c1 && !c2){
+    ins.innerHTML = 'No framing comments. The AI focuses on the vulnerable code and detection likelihood is <b>high</b>.';
+  } else if(c1 && c2){
+    ins.innerHTML = '<b>Both comments active:</b> AI attention shifts to reassuring framing. The vulnerable line dims. Detection drops to <b>'+det+'%</b>. An attacker could exploit this by framing code before AI review.';
+  } else {
+    ins.innerHTML = '<b>One comment active:</b> Partial framing shifts some AI attention away. Detection drops to <b>'+det+'%</b>. Each reassuring signal reduces scrutiny on the actual code.';
+  }
+}
+
+update();
+
+/* iframe height */
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  function send(){var el=document.querySelector('.w');if(!el)return;var r=el.getBoundingClientRect();var pad=parseFloat(getComputedStyle(body).paddingTop)+parseFloat(getComputedStyle(body).paddingBottom);window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+pad),src:location.href},'*');}
+  if(window.ResizeObserver){new ResizeObserver(send).observe(document.querySelector('.w')||body);}else{setInterval(send,500);}
+  window.addEventListener('load',function(){setTimeout(send,200);});setTimeout(send,50);
+})();
+</script>
+</body>
+</html>

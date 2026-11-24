@@ -1,0 +1,371 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 12 · Section 3 · The Responsible AI Use Policy · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 12 &middot; Section 3 of 5</div>
+      <h1 class="nyu-hero__title">The Responsible AI Use Policy: Governance as an Operational Control</h1>
+      <p class="nyu-hero__subtitle">What separates a policy an analyst can follow from a mission statement nobody can enforce, and how to recognize the difference on sight.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~19 min + policy-building activities</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 6 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          3 knowledge checks
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> A Control or a Wish</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Anatomy of a Security Team's AI Policy</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Worked Example: A Validation Mandate That Works</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Is This Statement a Control?</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Build the Policy</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Distinguish</strong> testable policy statements from aspirational ones, and identify what an enforceable version must add.</span></li>
+          <li><span><strong>Describe</strong> the nine components of a responsible AI use policy for a security team and what each one operationalizes.</span></li>
+          <li><span><strong>Select and justify</strong> policy statements in testable language for a described <button type="button" class="nyu-define" data-term="soc">SOC</button>, importing validation, oversight, and incident-response concepts from earlier in the course.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">A Control or a Wish</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Two sentences, both representative of real-world policy templates in circulation:</p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Exhibit A</h4>
+            <p>"Employees are expected to use AI tools ethically and responsibly, in alignment with our organizational values."</p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Exhibit B</h4>
+            <p>"No data classified CONFIDENTIAL or above may be entered into any AI tool not listed in Appendix A; violations are logged by the <button type="button" class="nyu-define" data-term="dlp">DLP gateway</button> and reviewed weekly by the security manager."</p>
+          </div>
+        </div>
+
+        <p>One of these functions as a control. The other is a wish. This section covers how to tell the difference and what makes a policy statement actually enforceable.</p>
+
+        <p>Here is the engineering reading of a <button type="button" class="nyu-define" data-term="responsible-ai-policy">responsible AI use policy</button>: it is the cheapest control in the stack. It runs before any prompt is sent, costs nothing per invocation, and most often fails when it was written badly or never enforced. Defense-in-depth logic applies directly: policy is the outermost layer, preventing incidents that monitoring would otherwise have to catch.</p>
+
+        <p>For a statement to function as a control, it needs four load-bearing parts:</p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>Actor</strong> (who): the role responsible for the action.</li>
+          <li><strong>Object</strong> (what): the data, tool, or output the rule governs.</li>
+          <li><strong>Condition</strong> (when, under what circumstances): the trigger or scope that tells someone whether this rule applies right now.</li>
+          <li><strong>Observable evidence</strong> (how anyone would know): a log, a checkbox, a countersignature, something an auditor can point to after the fact.</li>
+        </ul>
+
+        <p>Enforceability adds a fifth:</p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>Mechanism + Owner</strong>: a technical or procedural enforcement path, and a named role responsible for operating it. Without this, a statement can be testable on paper but toothless in practice.</li>
+        </ul>
+
+        <p>Go back and re-read the two exhibits with that anatomy in mind. Exhibit A has an actor and nothing else: no object, no condition, no evidence, no enforcement. Exhibit B has all five, which is why an analyst mid-task can consult it and get an answer, and why an auditor after an incident can determine whether it was followed.</p>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">The Testability Criterion</h3>
+          <p>A policy statement functions as a control when an analyst can tell whether a specific action violates it. <button type="button" class="nyu-define" data-term="testability-policy">Testability</button> is the main quality bar we apply to statements throughout this section: does the statement name an actor, an object, a condition, and observable evidence? For enforceability, does it also specify a mechanism and an owner?</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/03_statement_anatomy/statement-anatomy-scanner.html" title="Interactive: the same rule shown across four drafts, from a wish to an adopted control; each rewrite fills another anatomy socket and lights another meter segment, and tapping a socket highlights its words in the draft" loading="lazy" style="height:520px;"></iframe>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Anatomy of a Security Team's AI Policy</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Nine sections, each doing distinct work.</p>
+
+        <table class="nyu-table">
+          <thead>
+            <tr><th scope="col">#</th><th scope="col">Policy section</th><th scope="col">The work it does</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1</strong></td>
+              <td><strong>Scope</strong></td>
+              <td>Which teams, which tools, which data. A policy that does not name its own boundaries invites the "I didn't think it applied to that" defense.</td>
+            </tr>
+            <tr>
+              <td><strong>2</strong></td>
+              <td><strong>Acceptable use</strong></td>
+              <td>What may be done, by which role, with which approved tools. Approved-tool lists live in an appendix so the policy body can survive tool churn.</td>
+            </tr>
+            <tr>
+              <td><strong>3</strong></td>
+              <td><strong>Prohibited use</strong></td>
+              <td>The bright lines, stated as observable actions, not values.</td>
+            </tr>
+            <tr>
+              <td><strong>4</strong></td>
+              <td><strong>Data handling</strong></td>
+              <td>What may enter which tool, expressed in the organization's existing data classification vocabulary. This is where <button type="button" class="nyu-define" data-term="shadow-ai">shadow AI</button> gets addressed, and the section only works if it is specific enough to enforce.</td>
+            </tr>
+            <tr>
+              <td><strong>5</strong></td>
+              <td><strong>Validation mandates</strong></td>
+              <td>Which output classes require verification, against what, and before what action. The verification habit this course has practiced since the first hands-on week gets written into enforceable language here as a <button type="button" class="nyu-define" data-term="validation-mandate">validation mandate</button>.</td>
+            </tr>
+            <tr>
+              <td><strong>6</strong></td>
+              <td><strong>Human oversight requirements</strong></td>
+              <td>Which decision classes require sign-off, by whom, and recorded where. The oversight-engineering findings from Section 2 translate directly here: decision-class routing, rationale requirements, calibrated volume.</td>
+            </tr>
+            <tr>
+              <td><strong>7</strong></td>
+              <td><strong>AI incident response</strong></td>
+              <td>What counts as an <button type="button" class="nyu-define" data-term="ai-incident-org">AI incident</button>, severity tiers, escalation owner, rollback authority. The AI-specific incident response material we studied for technical containment gets its organizational counterpart here: who declares an incident, who decides to roll back, and who discloses.</td>
+            </tr>
+            <tr>
+              <td><strong>8</strong></td>
+              <td><strong>Review cadence</strong></td>
+              <td>When the policy itself is re-reviewed, and what triggers an off-cycle review: a new tool class, a new regulation, an incident.</td>
+            </tr>
+            <tr>
+              <td><strong>9</strong></td>
+              <td><strong>Accountability</strong></td>
+              <td>Named roles, not named people, who own the policy, the tool list, the exceptions process, and enforcement.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">A Validation Mandate That Works</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The scenario organization is NorthShore Mutual, a fictional mid-size financial-services SOC. (the full brief arrives in the next section.) NorthShore runs an <button type="button" class="nyu-define" data-term="llm">LLM</button> triage assistant. Here is a validation-mandate section drafted for it, with the anatomy marked in small caps.</p>
+
+        <blockquote style="border-left:4px solid #57068C; margin:1.25rem 0; padding:0.9rem 1.25rem; background:#FAF7FC;">
+          <p><strong>5.2</strong> Before an alert classified Critical or High by the triage assistant is escalated to incident response, the assigned analyst <span style="font-variant:small-caps;">[actor]</span> must verify the classification basis <span style="font-variant:small-caps;">[object]</span>: confirm the referenced log entries exist and support the stated severity <span style="font-variant:small-caps;">[condition/procedure]</span>. Verification is recorded as a checkbox-plus-comment in the ticket <span style="font-variant:small-caps;">[evidence]</span>. Escalations lacking a verification record are returned by the IR lead <span style="font-variant:small-caps;">[enforcement + owner]</span>.</p>
+          <p><strong>5.3</strong> Enrichment text generated by the triage assistant (suggested <button type="button" class="nyu-define" data-term="mitre-attack">MITRE</button> technique mappings, investigation notes) is advisory. It may not be copied into incident reports without analyst confirmation of each factual claim; the confirming analyst's initials appear on the report section <span style="font-variant:small-caps;">[actor, object, condition, evidence]</span>.</p>
+        </blockquote>
+
+        <h3 class="nyu-subsection-title">Why 5.2 works: clause by clause</h3>
+
+        <p>Each design decision in 5.2 maps back to something we have already covered. Take it one clause at a time:</p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>Scoped to Critical/High only.</strong> Mandating verification of every alert would recreate the 200-clicks problem and produce rubber-stamp verification of nothing. The scope keeps the volume reviewable.</li>
+          <li><strong>Concrete verification procedure.</strong> "Confirm the referenced log entries exist and support the stated severity" gives the analyst a specific check, so "verify" cannot degrade into "glance."</li>
+          <li><strong>Creates evidence.</strong> The checkbox-plus-comment in the ticket is an audit trail. Without a record, the mandate is unauditable and effectively optional.</li>
+          <li><strong>Enforcement assigned to a role with a natural incentive.</strong> The IR lead returns escalations that lack a verification record. That role already owns the cost of bad escalations, so enforcement aligns with existing accountability rather than adding a new bureaucratic layer.</li>
+        </ul>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            The Honest Limit of the Instrument
+          </h3>
+          <p>Notice what 5.2 does not do: it does not prevent an analyst from pencil-whipping the checkbox. Policy can make verification checkable and negligence traceable, but it cannot force anyone to actually think. That is why policy is one layer in a defense-in-depth stack, not a substitute for the others.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Is This Statement a Control?</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Reasoning Task: Six Candidate Statements
+          </h3>
+          <p class="nyu-scenario__prompt">For each statement, decide: testable or aspirational? For the aspirational ones, work out what a testable version would need to add before an analyst could tell whether a specific action violates it. One statement is testable but unenforceable as written; find it and name the missing mechanism.</p>
+          <ol>
+            <li>"Analysts should use AI tools responsibly."</li>
+            <li>"No case data classified CONFIDENTIAL or above may be entered into any AI tool not on the approved list in Appendix A."</li>
+            <li>"AI outputs must be validated before action."</li>
+            <li>"Model-assisted verdicts on Critical alerts require analyst sign-off recorded in the ticket."</li>
+            <li>"Analysts must remain vigilant about hallucinated content."</li>
+            <li>"Prompts containing customer <button type="button" class="nyu-define" data-term="pii">PII</button> (personally identifiable information) are logged by the gateway and flagged for weekly review."</li>
+          </ol>
+          <button class="nyu-scenario__btn">Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>1. Aspirational.</strong> No object, condition, or evidence. A rewrite must name tools, data, and actions: "Analysts may use only the tools in Appendix A for case work, and may not enter case data above INTERNAL classification into any of them."</p>
+            <p><strong>2. Testable</strong>, and enforceable if a logging or DLP mechanism exists. As a bare sentence it is testable but unenforced, which is acceptable only if the accountability section assigns the mechanism.</p>
+            <p><strong>3. The trap.</strong> Testable in principle, but unenforceable as written: no defined procedure, no record, no owner. Compare it to worked example 5.2, which is the same idea with its missing parts filled in.</p>
+            <p><strong>4. Testable and enforceable.</strong> Actor, object, condition, evidence, all present; the ticket record is the audit trail.</p>
+            <p><strong>5. Aspirational.</strong> "Vigilance" is a state of mind, not an observable action. A rewrite needs to specify which claims get checked, against what, and recorded where.</p>
+            <p><strong>6. Testable and enforceable</strong>, and worth noticing as an oversight-engineering control: sampling-based review at calibrated volume, exactly the design the automation-bias evidence recommends.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Build the Policy</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>NorthShore Mutual runs an LLM triage assistant, and its analysts have been pasting alert payloads into personal chatbot accounts. We already saw what a well-built validation mandate looks like in clause 5.2 above. The three activities below build out two more sections of its policy: acceptable use and human oversight. Each one mixes sound and broken candidate statements, the way real policy drafts do. The CISA deployment guidance (about 15 minutes; linked in References &amp; Readings) pairs well here: nearly every practice in it implies an organizational rule, and reading it after these activities shows how many of those rules the anatomy predicts.</p>
+
+        <div class="nyu-quiz" aria-labelledby="bp1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Build 1: Acceptable Use</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="bp1-prompt">NorthShore's acceptable-use section needs a statement that addresses the observed behavior: analysts pasting alert payloads into personal chatbot accounts. Which candidate actually does the job?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="bp1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Aspirational: no analyst can determine from this whether a specific action violates it, and nothing enforces it. It gestures at the problem without touching the observed behavior.">"Analysts are expected to exercise good judgment when using external AI services, consistent with organizational data-handling standards and the principles outlined in the company's acceptable-use framework."</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Testable, but it bans a category the analysts were not observed abusing while leaving personal accounts unaddressed. A statement can be well-formed and still aimed at the wrong target; policy sections answer the risks in front of them.">"Alert data may not be entered into the vendor GenAI add-on without shift-lead approval recorded in the ticket; the shift lead reviews requests before the end of the shift."</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">"Use of personal AI accounts for any work content is prohibited; the egress proxy blocks known consumer AI endpoints, and exceptions require a written waiver from the security manager."</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This is a value statement about data stewardship. Which tools? Which data? Observed how? Compare the correct option: prohibition, enforcement mechanism, exception path, owner.">"NorthShore is committed to protecting alert data wherever AI tools are involved, and expects all SOC personnel to treat AI-related data handling with the same rigor applied to other sensitive workflows."</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Prohibition stated as an observable action, a technical enforcement mechanism (egress proxy), a controlled exception path, and a named owner. And it is NorthShore-specific: it exists because of what the brief says analysts were actually doing. A policy that never touches the observed behavior is a generic policy."
+               data-incorrect-msg="Not quite. Look for the statement that names the observable action, carries an enforcement mechanism and an owner, and responds to the behavior the brief actually describes: personal chatbot accounts."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="bp2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Build 2: Human Oversight</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="bp2-prompt">NorthShore's oversight section needs a statement for AI-recommended actions that change system state (account lockout, host isolation, rule deployment). Which candidate avoids rebuilding the 200-clicks rubber stamp?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="bp2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Reviewing every AI action at SOC volume recreates the rubber stamp: procedurally everything is reviewed, functionally nothing is scrutinized. Oversight has to calibrate volume to what a person can actually engage with.">"Every AI-recommended action requires analyst review before execution; the analyst confirms the recommendation in the case management system before the action is carried out."</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">"Any AI-recommended action that changes system state requires analyst sign-off with a one-line recorded rationale; approval rates per analyst are reported monthly, and rates above 95% trigger a workload review."</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Fully automating state changes removes human judgment from exactly the decision classes that warrant it, and some regulatory regimes require oversight for consequential decisions. The evidence argues for engineering the review, not deleting it.">"State-changing actions with model confidence above 0.95 execute automatically to reduce analyst workload; a weekly sample of automated actions is reviewed by the shift lead for quality assurance."</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="A commitment, not a control: no decision classes, no record, no owner, no calibration. It cannot fail an audit because it commits to nothing checkable.">"The SOC maintains meaningful human oversight of consequential AI decisions, ensuring that analysts remain engaged with model recommendations and that review processes reflect operational best practices."</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct, and notice everything it imports from the automation-bias evidence: decision-class routing (state changes only), forced engagement (the rationale line), and auditing the oversight itself (the 95% tripwire, which treats a near-total approval rate as a signal the control failed)."
+               data-incorrect-msg="Not quite. The winning statement routes only state-changing decisions to review, forces engagement with a recorded rationale, and audits the oversight itself with the approval-rate tripwire."></div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Build 3: match each policy section to what it operationalizes</h3>
+
+        <div class="nyu-match">
+          <p><strong>Two ways to match:</strong> click a policy section then click the course concept it turns into enforceable language, or drag one onto the other. An arrow will appear connecting them.</p>
+          <div class="nyu-match__grid">
+            <svg class="nyu-match__svg" aria-hidden="true"></svg>
+            <div class="nyu-match__col">
+              <h4>Policy section</h4>
+              <button class="nyu-match__term" data-match="a">Data handling</button>
+              <button class="nyu-match__term" data-match="b">Validation mandates</button>
+              <button class="nyu-match__term" data-match="c">Human oversight</button>
+              <button class="nyu-match__term" data-match="d">AI incident response</button>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap" aria-hidden="true"></div>
+            <div class="nyu-match__col">
+              <h4>What it operationalizes</h4>
+              <button class="nyu-match__def" data-match="c">Calibrated volume, forced engagement, and preserved dissent, from the automation-bias evidence</button>
+              <button class="nyu-match__def" data-match="a">The organization's existing data classification vocabulary, applied to what may enter which tool</button>
+              <button class="nyu-match__def" data-match="d">Severity tiers, escalation ownership, and rollback authority for AI failures</button>
+              <button class="nyu-match__def" data-match="b">Ground-truth verification before action, practiced throughout the course since the first hands-on week</button>
+            </div>
+          </div>
+          <p class="nyu-match__hint" data-default="Tip: drag a section across the gap to its concept, or click both to link them.">Tip: drag a section across the gap to its concept, or click both to link them.</p>
+          <div class="nyu-match__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check matches</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show correct answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 6: KC ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc3-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc3-prompt">Which policy statement is both testable and enforceable as written?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc3-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Aspirational. No analyst can determine whether a specific action violates it, and no reviewer can enforce it. It is a value, not a control.">"Analysts must use AI tools ethically and responsibly, in accordance with the organization's data classification policy and the principles established in the enterprise AI governance charter."</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Closer, and still short: no defined procedure, no record, no owner. Testable in principle, unenforceable as written. Clause 5.2 above shows what the repaired version looks like.">"AI-generated output must be validated against the original data source before the analyst acts on it or includes it in any deliverable."</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">"No data classified CONFIDENTIAL or above may be entered into any AI tool not listed in Appendix A; violations are logged by the DLP gateway and reviewed weekly by the security manager."</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This is a commitment statement. Which decisions? What does oversight consist of? Recorded where? Compare the correct option's structure for what is missing.">"The SOC is committed to maintaining human oversight of AI-assisted decisions, with review procedures designed to ensure that consequential model outputs receive appropriate analyst scrutiny before action."</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Actor, object, condition, observable evidence, enforcement mechanism, named owner. An analyst can consult it mid-task; an auditor can verify it after the fact."
+               data-incorrect-msg="Not quite. Look for the statement with all five parts: actor, object, condition, observable evidence, and an enforcement mechanism with a named owner."></div>
+        </div>
+
+        <!-- Up Next -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 4: The Governance Gap Assessment and the Regulatory Landscape.</strong> We bring it all together: a full four-function assessment of NorthShore Mutual, followed by the regulatory landscape, taught as a method for reading regulations that will keep changing.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

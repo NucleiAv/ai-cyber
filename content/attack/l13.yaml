@@ -1,0 +1,135 @@
+slug: l13
+num: "13"
+lecture: 13
+week: 14
+short: Misinformation
+title: Misinformation, hallucination and provenance
+time: about 3 hours
+lede: Why models state false things with confidence, how attackers use that at scale, and what watermarks and signed content credentials can and cannot prove.
+owasp: [LLM09]
+agentic: [ASI09]
+atlas: [AML.T0060, AML.T0062, AML.T0048.002]
+other_fw:
+  - [EU AI Act Article 50, "Transparency duties. Providers must mark AI-generated content in a machine-readable way, and deployers must disclose deepfakes."]
+  - [C2PA, "Coalition for Content Provenance and Authenticity. A standard for signed content credentials attached to media files."]
+
+idea: |
+  An LLM writes likely text, not checked text. When it does not know, it can still write a fluent, specific answer. This is **hallucination**, and it is part of how the model works.
+
+  Misinformation becomes a security risk in two ways.
+
+  - **By accident.** People and programs act on false output, such as a wrong CVE version or a package name that does not exist.
+  - **On purpose.** Attackers use models to write persuasive false content at scale, or plant false data for models to repeat.
+
+  !eli5 A student who always answers, even when they do not know, sounds the same when right and when wrong. You can tell only by checking the book.
+
+terms:
+  - [Hallucination, "Fluent output that is false or not supported by any source."]
+  - [Overreliance, "Trusting model output without checking it."]
+  - [Slopsquatting, "Registering a package name that AI assistants invent, so developers install the attacker's package."]
+  - [Watermark, "A hidden statistical signal placed in generated content so a detector can find it later."]
+  - [Content credentials, "A signed record attached to a file that says who made it and how. C2PA defines the format."]
+  - [Provenance, "The history of where content came from and how it changed."]
+
+how: |
+  ### Why the model is confident and wrong
+
+  Module 5 of the defensive course shows this with a real model. Asked about CVE-2024-3400, a small model named the wrong product, Apache Struts, with 46 percent probability on the first word. When it named the product again later in the same answer, its probability rose to 93 percent, because its own first guess was now part of the text. Confidence rose. Truth did not.
+
+  ### Misinformation as a weapon
+
+  The Stanford HAI brief summarizes a study by Goldstein and others. GPT-3 wrote news-style articles that were nearly as persuasive as real foreign propaganda. With light human editing, they matched it. Models make this content cheap and fast.
+
+  ### Package hallucination
+
+  Spracklen and others (2024) tested code models and found that about one in five recommended packages did not exist. Many invented names came back again and again. Module 6 cites that 43 percent of invented names came back in all 10 of 10 tries. An attacker can register those names with malware.
+
+  ### Watermarks and signatures
+
+  - A **statistical watermark**, such as Google's SynthID, hides a pattern in the content itself. It survives some edits, such as compression. Heavy changes, such as paraphrasing or translating text, can remove it.
+  - **C2PA content credentials** attach a signed manifest to a file. The signature proves the record is intact. But the record is metadata, and a screenshot or re-upload often strips it.
+
+diagrams:
+  - type: flow
+    title: Slopsquatting
+    nodes: [["Developer asks AI for a package", "box"], ["AI invents a name that does not exist", "def"], ["Attacker registered that name earlier", "atk"], ["Developer installs it", "box"], ["Malware runs in the build", "atk"]]
+    edges: ["", "same name", "pip install", ""]
+    caption: The attack needs no typo and no inside knowledge. The model repeats the same invented names, so attackers know what to register.
+
+attack_steps:
+  - Ask models the questions your targets will ask. Record names, links and facts they invent.
+  - Register invented package names or domains, or publish pages that confirm the false facts.
+  - For influence operations, generate many variants of a message and post them through many accounts.
+  - Wait for people or pipelines to trust and act on the output.
+
+cases:
+  - [Air Canada chatbot, 2024, "A tribunal in Canada held Air Canada responsible after its website chatbot gave a customer wrong refund information. The company could not blame the bot."]
+  - [Lawyers and fake citations, 2023, "In Mata v. Avianca in New York, lawyers filed a brief with court cases that ChatGPT invented. The court sanctioned them."]
+
+defense: |
+  - Ground answers in trusted sources with RAG, and show the sources.
+  - Check key facts against the source that owns them, such as NVD for CVEs and the vendor for fixes.
+  - Check that a package exists, is popular and is the right one before you install it. Use lock files and an approved package list.
+  - Ask a person to review high-stakes output.
+  - Show users that answers can be wrong, and make checking easy.
+  - For provenance, combine methods. Use watermarks, signed credentials and platform labels together. None works alone.
+
+lab:
+  intro: |
+    Solve LLMGoat A09, misinformation.
+  steps:
+    - Open A09 and read what the app should say.
+    - Make it state the false fact the challenge asks for. Save the prompt.
+    - "Extend task. Find a second way to make it say Cyborg Goat, other than the filename trick."
+  links: [llmgoat]
+
+readings:
+  - [hai, "A policy brief on a study that measured how persuasive GPT-3 propaganda is compared with real propaganda."]
+  - [synthid, "Google DeepMind's paper on watermarking images at very large scale, and its limits."]
+  - [marcus, "An opinion post that argues short-term risks, such as misinformation, need attention now."]
+star: [hai]
+
+questions:
+  - - If you translate watermarked English text to French and back, the watermark is likely gone. Is watermarking a long-term answer for provenance, or a speed bump? Compare C2PA signatures with statistical watermarks.
+    - |
+      For text, watermarking is mostly a speed bump today. Text watermarks bias word choices. Paraphrasing, translation or a rewrite by another model removes the bias. Image watermarks such as SynthID are more robust to small edits, but strong edits can still weaken them.
+
+      **C2PA** works differently. It attaches a signed manifest. If present and valid, it proves the record was not changed. But it is easy to strip, for example by a screenshot.
+
+      So they fail in different ways. A watermark lives inside the content but can be washed out. A signature is exact but can be removed. Use both, plus platform labels and detection, and treat missing marks as "unknown", not as "human made".
+  - - How does the EU AI Act handle transparency for AI-generated content?
+    - |
+      Article 50 sets transparency duties.
+
+      - Providers of systems that generate synthetic audio, images, video or text must mark the output in a machine-readable format so it can be detected as AI-generated, as far as technically feasible.
+      - Deployers who publish deepfakes must disclose that the content was generated or changed by AI.
+      - AI-generated text published to inform the public on matters of public interest must be disclosed, unless a human reviewed it and an editor takes responsibility.
+      - People must be told when they interact with an AI system, unless it is obvious.
+
+      The roadmap page lists the current dates for these duties.
+
+quiz:
+  - q: A model gives the same wrong answer in five runs. What does that show?
+    opts: ["The answer is true", "The model is consistent, not correct", "The model is broken"]
+    a: 1
+    why: Agreement across runs measures memory, not truth. Module 5 shows a stale fact repeated five times.
+  - q: Which provenance method is lost when someone takes a screenshot of an image?
+    opts: ["C2PA metadata", "Nothing is lost", "A strong pixel watermark is always lost"]
+    a: 0
+    why: Screenshots make a new file without the original metadata.
+  - q: What is the best defense against slopsquatting?
+    opts: ["Trust the assistant", "Check that a package is real and approved before installing", "Use a faster package manager"]
+    a: 1
+    why: Lock files record what you installed. They do not tell you a new package is safe.
+
+deliverables:
+  - Your answers to both discussion questions.
+  - The prompts that solved LLMGoat A09.
+
+refs:
+  - "Stanford HAI. [How persuasive is AI-generated propaganda](@hai), 2024."
+  - "Google DeepMind. [SynthID-Image, image watermarking at internet scale](@synthid), 2025."
+  - "Marcus. [Should we worry more about short-term AI risk](@marcus)."
+  - "Spracklen et al. [We have a package for you, package hallucinations by code LLMs](https://arxiv.org/abs/2406.10279), 2024."
+  - "[C2PA specifications](https://c2pa.org/specifications/)."
+  - "OWASP. [LLM09 2025 Misinformation](https://genai.owasp.org/llmrisk/llm092025-misinformation/)."

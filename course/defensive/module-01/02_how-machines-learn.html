@@ -1,0 +1,500 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 1 · Section 2 · How Machines Learn · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+  <style>
+    
+    /* ============ ML vs DL comparison ============ */
+    .ml-dl-compare {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1.5rem;
+      margin: 1.75rem 0;
+      align-items: stretch;
+      min-width: 0;
+    }
+    @media (max-width: 700px) { .ml-dl-compare { grid-template-columns: minmax(0, 1fr); } }
+
+    /* Optional stacked variant.
+       Keep .ml-dl-compare unchanged for existing pages.
+       Add .ml-dl-compare--stacked on pages that should always stack. */
+    .ml-dl-compare.ml-dl-compare--stacked {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ml-dl-compare__col {
+      position: relative;
+      min-width: 0;
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      border-radius: 0.6rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .ml-dl-compare__header {
+      padding: 0.75rem 1.1rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.01em;
+      text-align: center;
+      border-radius: 0.6rem 0.6rem 0 0;
+    }
+    /* Two adjacent column headers must stay distinguishable: ML uses the
+       brand's dark violet, DL the standard brand violet. Both solid + white. */
+    .ml-dl-compare__col--ml .ml-dl-compare__header {
+      background: var(--nyu-violet-dark, #3D0461); color: #fff;
+    }
+    .ml-dl-compare__col--dl .ml-dl-compare__header {
+      background: var(--nyu-violet, #57068C); color: #fff;
+    }
+    .ml-dl-compare__body {
+      min-width: 0;
+      padding: 1.2rem 1.3rem;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #3A3A3A;
+      border: 1.5px solid var(--rule, #E2E2E2);
+      border-top: none;
+      border-radius: 0 0 0.6rem 0.6rem;
+      background: #fff;
+      flex: 1 1 auto;
+    }
+    .ml-dl-compare__body p { margin-bottom: 0.75rem; }
+    .ml-dl-compare__body p:last-child { margin-bottom: 0; }
+    .ml-dl-compare__body strong { color: #1A1A1A; }
+
+    /* Pipeline arrow diagram: fixed single-line responsive scale.
+       The track is absolutely positioned so its max-content width cannot
+       force the two-column grid wider than the viewport. */
+    .ml-dl-flow {
+      --ml-dl-flow-scale: 1;
+      --ml-dl-flow-height: 3.1rem;
+
+      position: relative;
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      height: var(--ml-dl-flow-height);
+      margin: 1rem auto;
+      padding: 0.6rem 0;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .ml-dl-flow__track {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      flex-wrap: nowrap;
+      width: max-content;
+      max-width: none;
+      white-space: nowrap;
+      transform: translate(-50%, -50%) scale(var(--ml-dl-flow-scale));
+      transform-origin: center center;
+      will-change: transform;
+    }
+    .ml-dl-flow__box,
+    .ml-dl-flow__arrow {
+      flex: 0 0 auto;
+    }
+    .ml-dl-flow__box {
+      background: var(--surface-sunken, #F6F4F8);
+      border: 1.5px solid var(--rule, #E2E2E2);
+      border-radius: 0.4rem;
+      padding: 0.4rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      color: var(--ink-soft, #3A3A3A);
+      white-space: nowrap;
+    }
+    .ml-dl-flow__box--highlight {
+      border-color: #4C1D95;
+      background: #4C1D95;
+      color: #fff;
+    }
+    .ml-dl-flow__arrow { font-size: 0.9rem; color: var(--ink-mute, #6B6B6B); line-height: 1; }
+
+    /* ============ Training pipeline ============ */
+    .nyu-pipeline {
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: 0.5rem; margin: 2rem auto; max-width: 700px;
+    }
+    .nyu-pipeline__step {
+      background: var(--surface-sunken, #F6F4F8);
+      border: 2px solid var(--rule, #E2E2E2);
+      border-radius: 0.75rem; padding: 1rem 1.25rem;
+      text-align: center; flex: 1 1 120px; min-width: 120px;
+    }
+    .nyu-pipeline__step--active {
+      border-color: var(--nyu-violet, #57068C);
+      background: var(--nyu-violet-50, #F5EDFA);
+    }
+    .nyu-pipeline__icon { font-size: 1.75rem; margin-bottom: 0.4rem; }
+    .nyu-pipeline__label { font-weight: 600; font-size: 0.9rem; color: var(--ink, #1A1A1A); }
+    .nyu-pipeline__sub { font-size: 0.8rem; color: var(--ink-mute, #6B6B6B); margin-top: 0.2rem; }
+    .nyu-pipeline__arrow { font-size: 1.5rem; color: var(--nyu-violet, #57068C); flex: 0 0 auto; }
+
+    /* ============ Modal overlay for training animation ============ */
+    .anim-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+    }
+    .anim-modal-overlay.is-open { display: flex; }
+
+    .anim-modal {
+      position: relative;
+      width: 100%;
+      max-width: 1040px;
+      height: 92vh;
+      max-height: 850px;
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .anim-modal__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 1rem;
+      background: var(--nyu-violet, #57068C);
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .anim-modal__title {
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .anim-modal__close {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .anim-modal__close:hover { background: rgba(255,255,255,0.3); }
+
+    .anim-modal__iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+    }
+
+    @media (max-width: 600px) {
+      .nyu-pipeline { flex-direction: column; }
+      .nyu-pipeline__arrow { transform: rotate(90deg); }
+      .anim-modal { height: 95vh; border-radius: 0.5rem; }
+    }
+  </style>
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a> <!-- ====================== HERO ====================== --><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 1 · Section 2 of 7</div>
+<h1 class="nyu-hero__title">How Machines Learn</h1>
+<p class="nyu-hero__subtitle">What people actually mean when they say "AI," how a machine learns from data, and the hierarchy from artificial intelligence down to the large language models you interact with daily.</p>
+<div class="nyu-hero__meta" aria-label="Section overview"><span aria-label="Estimated time"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg> ~22 min read </span> <span aria-label="Number of parts"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> 5 parts </span> <span aria-label="Knowledge checks"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line><circle cx="12" cy="12" r="10"></circle></svg> 2 knowledge checks </span></div>
+</header><!-- ====================== TOC ====================== --><nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+<li><a href="#sec-1"><span class="nyu-toc__num">1</span> The AI Family Tree</a></li>
+<li><a href="#sec-2"><span class="nyu-toc__num">2</span> What Is a Model?</a></li>
+<li><a href="#sec-3"><span class="nyu-toc__num">3</span> Training: How a Model Learns</a></li>
+<li><a href="#sec-4"><span class="nyu-toc__num">4</span> Inference: Using What Was Learned</a></li>
+<li><a href="#sec-5"><span class="nyu-toc__num">5</span> Machine Learning vs. Deep Learning</a></li>
+</ol>
+</nav><main id="main" tabindex="-1"><!-- ====================== OBJECTIVES ====================== -->
+<section class="nyu-objectives" aria-labelledby="lo-title">
+<h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+<p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+<ul class="nyu-objectives__list">
+<li><span><strong>Map</strong> the relationship between AI, machine learning, deep learning, and large language models, and identify which layer a given security tool operates at.</span></li>
+<li><span><strong>Distinguish</strong> classical ML from deep learning by explaining the role of feature engineering, and identify which approach fits a given security problem.</span></li>
+<li><span><strong>Explain</strong> what training and inference mean in plain language, using a cybersecurity example to illustrate the difference between learning phase and deployment phase.</span></li>
+</ul>
+</section>
+<!-- ====================== SECTION 1 ====================== -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">The AI Family Tree</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>When someone says "AI," they might mean anything from a hand-coded expert system to a billion parameter language model. The ambiguity is not just annoying. In security, it leads to misjudged risk assessments and vendor hype passing as technical evaluation. Before we go deeper, let's fix the vocabulary.</p>
+<p><button type="button" class="nyu-define" data-term="artificial-intelligence">Artificial intelligence (AI)</button> is the broadest umbrella: any system that performs tasks typically associated with human intelligence. Within that umbrella, terms are nested like layers:</p>
+<!-- Visual: AI hierarchy stacked rows -->
+<div class="nyu-stack" role="group" aria-label="AI hierarchy: Artificial Intelligence contains Machine Learning, which contains Deep Learning, which contains Large Language Models.">
+<div class="nyu-stack__row" data-depth="1">
+<div class="nyu-stack__bar"><span class="nyu-stack__depth">1</span></div>
+<div class="nyu-stack__content">
+<p class="nyu-stack__label">Artificial Intelligence</p>
+<p class="nyu-stack__desc">The broadest umbrella: any system performing tasks that typically require human like reasoning. <span class="nyu-stack__examples">Expert systems, search algorithms, game engines, ML models.</span></p>
+</div>
+</div>
+<div class="nyu-stack__row" data-depth="2">
+<div class="nyu-stack__bar"><span class="nyu-stack__depth">2</span></div>
+<div class="nyu-stack__content">
+<p class="nyu-stack__label">Machine Learning <span style="font-weight: 400; font-size: 0.8rem; color: #4A4A4A;">(subset of AI)</span></p>
+<p class="nyu-stack__desc">Systems that learn patterns from data rather than following hand-written rules. <span class="nyu-stack__examples">Decision trees, SVMs, random forests, logistic regression, neural nets.</span></p>
+</div>
+</div>
+<div class="nyu-stack__row" data-depth="3">
+<div class="nyu-stack__bar"><span class="nyu-stack__depth">3</span></div>
+<div class="nyu-stack__content">
+<p class="nyu-stack__label">Deep Learning <span style="font-weight: 400; font-size: 0.8rem; color: #4A4A4A;">(subset of ML)</span></p>
+<p class="nyu-stack__desc">ML using neural networks with many layers. Learns hierarchical features automatically from raw data without manual feature engineering. <span class="nyu-stack__examples">CNNs for images, RNNs for sequences, Transformers.</span></p>
+</div>
+</div>
+<div class="nyu-stack__row" data-depth="4">
+<div class="nyu-stack__bar"><span class="nyu-stack__depth">4</span></div>
+<div class="nyu-stack__content">
+<p class="nyu-stack__label">Large Language Models <span style="font-weight: 400; font-size: 0.8rem; color: #4A4A4A;">(subset of DL)</span></p>
+<p class="nyu-stack__desc">Deep learning scaled to massive text data (trillions of tokens, billions of parameters). Generates and processes natural language via next-token prediction. <span class="nyu-stack__examples">GPT-4, Claude, Gemini, Llama.</span></p>
+</div>
+</div>
+</div>
+<aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="why-it-matters-title">
+<h3 class="nyu-callout__title" id="why-it-matters-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"></path></svg> </span> Why This Matters for Security</h3>
+<p>When a vendor says their product uses "AI-powered threat detection," the term alone tells you nothing about how it works. A product using a decision tree to classify malware operates at the ML layer. A product using a transformer to analyze log narratives operates at the LLM layer. These have completely different data requirements, failure modes, and attack surfaces. Knowing which layer you're evaluating changes the questions you ask.</p>
+</aside>
+<p>Here is the critical takeaway: each layer <em>inherits</em> the properties of the layers above it but adds new capabilities and new failure modes. An LLM is still doing machine learning; it just does it with a specific architecture (transformers), at a specific scale (billions of parameters), on a specific kind of data (text). Everything you learn about ML fundamentals applies to LLMs too.</p>
+</section>
+<!-- ====================== SECTION 2 ====================== -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">What Is a Model?</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>A <button type="button" class="nyu-define" data-term="model">model</button> is simply a mathematical function that takes inputs and produces outputs. What makes it "machine learning" rather than regular programming is that the function's behavior is <em>not written by a human</em>. It is discovered from data.</p>
+<p>Think of it this way. In traditional programming, a human writes the rules:</p>
+<div class="nyu-code">
+<div class="nyu-code__header"><span class="nyu-code__lang">Traditional programming (pseudocode)</span></div>
+<pre class="nyu-code__block"><code>IF packet_size &gt; 1500 AND destination_port == 4444:
+    flag_as_suspicious()
+</code></pre>
+</div>
+<p>In machine learning, the human provides <em>examples</em>, and the system figures out its own rules:</p>
+<div class="nyu-code">
+<div class="nyu-code__header"><span class="nyu-code__lang">Machine learning (conceptual)</span></div>
+<pre class="nyu-code__block"><code># Human provides:
+#   1000 examples of normal traffic (labeled "benign")
+#   1000 examples of attack traffic (labeled "malicious")
+#
+# Machine discovers:
+#   Some internal function f(packet_features) → probability_of_attack
+#
+# The human never writes the detection rule.
+# The model learns its own decision boundary from the examples.
+</code></pre>
+</div>
+<p>The model's internal numbers, called <button type="button" class="nyu-define" data-term="parameters">parameters</button> or <em>weights</em>, encode what the model has learned. A simple spam filter might have a few hundred parameters. A malware classifier might have millions. GPT-4 has over a trillion. More parameters generally means the model can capture more complex patterns, but also means it needs more data to learn well and more compute to run.</p>
+<aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="model-not-brain-title">
+<h3 class="nyu-callout__title" id="model-not-brain-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg> </span> A Model Is Not a Brain</h3>
+<p>Despite marketing language, ML models do not "think," "understand," or "know" things. They are mathematical functions that detect statistical patterns in their training data and apply those patterns to new inputs. This distinction matters in security: a model that "detects malware" is really saying "this input is statistically similar to inputs that were labeled malicious in training." If the training data was incomplete or biased, the model's decisions inherit those gaps.</p>
+</aside>
+</section>
+<!-- ====================== SECTION 3 ====================== -->
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Training: How a Model Learns</h2>
+</div>
+<hr class="nyu-section__rule">
+<p><button type="button" class="nyu-define" data-term="training">Training</button> is the process where the model's parameters get adjusted so that its outputs improve. The intuition is simple: show the model an example, check if it got the answer right, and nudge its internal numbers in a direction that makes it less wrong next time. Repeat this millions of times across thousands of examples.</p>
+<!-- Visual: Training pipeline -->
+<div class="nyu-pipeline" role="img" aria-label="Training pipeline: Data goes into the model, model makes a prediction, prediction is compared to correct answer, error signal adjusts the model">
+<div class="nyu-pipeline__step">
+<div class="nyu-pipeline__icon" aria-hidden="true">📊</div>
+<div class="nyu-pipeline__label">Training Data</div>
+<div class="nyu-pipeline__sub">Labeled examples</div>
+</div>
+<div class="nyu-pipeline__arrow" aria-hidden="true">➔</div>
+<div class="nyu-pipeline__step nyu-pipeline__step--active">
+<div class="nyu-pipeline__icon" aria-hidden="true">⚙</div>
+<div class="nyu-pipeline__label">Model</div>
+<div class="nyu-pipeline__sub">Makes a prediction</div>
+</div>
+<div class="nyu-pipeline__arrow" aria-hidden="true">➔</div>
+<div class="nyu-pipeline__step">
+<div class="nyu-pipeline__icon" aria-hidden="true">✖</div>
+<div class="nyu-pipeline__label">Error Check</div>
+<div class="nyu-pipeline__sub">How wrong was it?</div>
+</div>
+<div class="nyu-pipeline__arrow" aria-hidden="true">➔</div>
+<div class="nyu-pipeline__step">
+<div class="nyu-pipeline__icon" aria-hidden="true">🔄</div>
+<div class="nyu-pipeline__label">Update</div>
+<div class="nyu-pipeline__sub">Adjust parameters</div>
+</div>
+</div>
+<p>Let's make this concrete with a cybersecurity example. Imagine you are training a model to classify network connections as either "normal" or <button type="button" class="nyu-define" data-term="c2-callback">C2 callback</button> (command-and-control communication):</p>
+<ol>
+<li><strong>Collect data:</strong> You gather 50,000 network flow records. Security analysts label 2,000 of them as confirmed C2 traffic, the rest as normal.</li>
+<li><strong>Feed the model:</strong> The model receives features for each connection (packet size, timing intervals, destination <button type="button" class="nyu-define" data-term="ip-reputation">IP reputation</button>, bytes transferred, protocol) and attempts to predict "C2" or "normal."</li>
+<li><strong>Measure error:</strong> For each prediction, the system computes how far off the model was. A confident wrong answer produces a large error signal; a correct answer produces almost none.</li>
+<li><strong>Update weights:</strong> The model's parameters are nudged so that next time it sees a similar connection, it is slightly more likely to get it right.</li>
+<li><strong>Repeat:</strong> This cycle runs for dozens of complete passes through the dataset (called <button type="button" class="nyu-define" data-term="epoch">epochs</button>). With each pass, the model's internal decision boundary becomes more refined.</li>
+</ol>
+<p>After training, the parameters are frozen. The model no longer changes and is now ready to be deployed.</p>
+<aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="animation-title">
+<h3 class="nyu-callout__title" id="animation-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> </span> Interactive: Watch a Model Train</h3>
+<p>Click below to watch this process in action. You will see a very simply classification model learn to separate malicious from benign network traffic, starting from random guessing and gradually discovering the correct decision boundary over 20 training epochs.</p>
+<p style="margin-top: 0.5rem;"><button type="button" style="font-family: inherit; font-size: 0.9rem; font-weight: 600; padding: 0.5rem 1.2rem; border-radius: 0.5rem; border: 2px solid #57068C; background: #57068C; color: #fff; cursor: pointer;" onclick="openAnimModal()"> ▶ Launch Training Animation </button></p>
+</aside>
+<aside class="nyu-callout" role="note" aria-labelledby="data-quality-title">
+<h3 class="nyu-callout__title" id="data-quality-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> </span> The Cardinal Rule</h3>
+<p><strong>A model can only learn what its training data contains.</strong> If your labeled dataset has no examples of a particular attack technique (say, DNS tunneling), the model will not detect it, no matter how many parameters it has. This is why training data quality is the single most important factor in ML system performance, and why security teams must continuously update and expand their training sets as the threat landscape evolves.</p>
+</aside>
+<!-- Knowledge Check 1 -->
+<div class="nyu-quiz" aria-labelledby="q1-prompt">
+<div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+<p class="nyu-quiz__prompt" id="q1-prompt">A security vendor tells you their malware classifier was trained on 100,000 samples collected between 2020 and 2022. It is now 2026. Without retraining, what is the most likely operational impact?</p>
+<div class="nyu-quiz__options" role="radiogroup" aria-labelledby="q1-prompt"><button class="nyu-quiz__option" role="radio" data-explain-wrong="Models don't refuse inputs; they always produce an output for any input, even if the input is completely unlike anything seen in training. The model will still classify, it just won't do so accurately for novel threats.">The model will refuse to classify new samples because they are outside its training period.</button> <button class="nyu-quiz__option" role="radio" data-correct="true">The model will still produce classifications, but its accuracy on post-2022 malware families and techniques will degrade because it never learned those patterns.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Once training ends, the model's parameters are frozen. Neural networks do not continue learning during deployment; that would require an active training loop with labeled data and gradient updates. Without retraining, the model is static.">The model will automatically adapt to new malware because neural networks continue learning after deployment.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Model parameters don't decay or degrade on their own; they're just numbers stored in a file. The weights remain exactly as they were at the end of training. The problem is that the threat landscape changes around the static model, not that the model itself deteriorates.">The model's performance on 2020 to 2022 malware will also degrade over time as its parameters decay.</button></div>
+<div class="nyu-quiz__feedback" data-correct-msg="Correct. A deployed model's parameters are frozen. It does not learn after training ends. It will still produce outputs for any input you give it, but novel malware techniques that did not exist in the 2020 to 2022 training window are effectively invisible to it. This is called model drift or concept drift, and it is why continuous retraining pipelines are critical for security ML systems." data-incorrect-msg="Not quite. Remember: after training, a model's parameters are frozen. It does not refuse new inputs, it does not keep learning, and its stored parameters do not decay. The real risk is that novel malware from after 2022 will look nothing like the training data, making the model blind to new techniques."></div>
+</div>
+</section>
+<!-- ====================== SECTION 4 ====================== -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Inference: Using What Was Learned</h2>
+</div>
+<hr class="nyu-section__rule">
+<p><button type="button" class="nyu-define" data-term="inference">Inference</button> is the deployment phase: running the trained model on new, real world data to get predictions. If training is like studying for an exam, inference is taking the exam. The model applies what it learned to inputs it has never seen before.</p>
+<p>In the C2 detection example from Section 3, inference looks like this: a live network connection arrives, the model extracts the same features it was trained on (packet size, timing, destination reputation, etc.), runs them through its frozen parameters, and outputs a probability, say, "87% likely C2 callback." A threshold then converts that probability into an action: alert the SOC analyst, block the connection, or log for later review.</p>
+<p>The distinction between training and inference matters operationally:</p>
+<div class="nyu-cards nyu-cards--2">
+<div class="nyu-card">
+<div class="nyu-card__icon nyu-card__icon--green" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg></div>
+<h3 class="nyu-card__title">Training Phase</h3>
+<p><strong>When:</strong> Before deployment (offline).</p>
+<p><strong>Compute:</strong> Expensive, hours to weeks on specialized hardware (GPUs/TPUs).</p>
+<p><strong>Data:</strong> Requires large, labeled datasets.</p>
+<p><strong>Security concern:</strong> Training data poisoning. An adversary who corrupts your training data corrupts the model's future decisions.</p>
+</div>
+<div class="nyu-card">
+<div class="nyu-card__icon nyu-card__icon--cyan" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+<h3 class="nyu-card__title">Inference Phase</h3>
+<p><strong>When:</strong> Real time, during operations.</p>
+<p><strong>Compute:</strong> Fast, milliseconds per prediction on standard hardware.</p>
+<p><strong>Data:</strong> Processes one input at a time (or small batches).</p>
+<p><strong>Security concern:</strong> Evasion attacks. An adversary who understands the model's decision boundary can craft inputs that slip past it (adversarial examples).</p>
+</div>
+</div>
+<!-- Knowledge Check 2 --><fieldset class="nyu-quiz" id="quiz-2"><legend class="nyu-quiz__prompt"><span class="nyu-quiz__badge">Knowledge Check</span> Your organization's email security gateway uses a deep learning model to detect phishing. An attacker discovers that adding specific invisible Unicode characters to the email body causes the model to classify phishing emails as benign. Which phase of the ML lifecycle is the attacker exploiting? </legend> <label class="nyu-quiz__option"> <input type="radio" name="q2"> Training: the attacker is corrupting the model's learning process. <span class="nyu-quiz__fb">Training attacks (data poisoning) corrupt the model <em>during</em> learning. Here the model is already deployed and its parameters are frozen. The attacker is manipulating the input to trick the existing model, not altering how it was trained.</span> </label> <label class="nyu-quiz__option"> <input type="radio" name="q2" data-correct=""> Inference: the attacker is crafting inputs that exploit the deployed model's decision boundary without changing the model itself. <span class="nyu-quiz__fb">Correct. This is an evasion attack (also called an adversarial example). The model's parameters are frozen and unchanged. The attacker is crafting inputs that land on the "benign" side of the model's learned decision boundary.</span> </label> <label class="nyu-quiz__option"> <input type="radio" name="q2"> Both: invisible characters affect training and inference equally. <span class="nyu-quiz__fb">The key distinction is <em>what</em> the attacker is targeting. A training attack would require injecting malicious data into the training pipeline. Here, the model is already deployed and unchanged; the attacker is only manipulating live inputs. These are fundamentally different attack surfaces.</span> </label></fieldset></section>
+<!-- ====================== SECTION 5 ====================== -->
+<section class="nyu-section" id="sec-5">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">5</span>
+<h2 class="nyu-section__title">Machine Learning vs. Deep Learning</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>You will hear "machine learning" and "deep learning" used interchangeably in vendor pitches. They are not the same thing. Understanding the difference helps you evaluate whether a product's claims are reasonable for the problem it claims to solve.</p>
+<div class="ml-dl-compare ml-dl-compare--stacked">
+<div class="ml-dl-compare__col ml-dl-compare__col--ml">
+<div class="ml-dl-compare__header">Traditional Machine Learning</div>
+<div class="ml-dl-compare__body">
+<p><strong>How it works:</strong> A human engineer selects and designs the features (packet size, connection duration, byte ratio, etc.). The model learns which combinations of these features matter.</p>
+<div class="ml-dl-flow" role="group" aria-label="Traditional machine learning process flow: raw data to human feature engineering to model to output.">
+<div class="ml-dl-flow__track">
+<div class="ml-dl-flow__box">Raw Data</div>
+<div class="ml-dl-flow__arrow">➔</div>
+<div class="ml-dl-flow__box ml-dl-flow__box--highlight">Human Feature Engineering</div>
+<div class="ml-dl-flow__arrow">➔</div>
+<div class="ml-dl-flow__box">Model</div>
+<div class="ml-dl-flow__arrow">➔</div>
+<div class="ml-dl-flow__box">Output</div>
+</div>
+</div>
+<p><strong>Best for:</strong> Tabular data, structured logs, smaller datasets, situations where you need to explain exactly why the model made a decision.</p>
+<p><strong>Security example:</strong> A <button type="button" class="nyu-define" data-term="random-forest-m01">Random Forest</button> trained on NetFlow features to detect lateral movement. Each feature is human readable and the model's decisions can be audited.</p>
+</div>
+</div>
+<div class="ml-dl-compare__col ml-dl-compare__col--dl">
+<div class="ml-dl-compare__header">Deep Learning</div>
+<div class="ml-dl-compare__body">
+<p><strong>How it works:</strong> The model learns its own features directly from raw data through multiple layers of neural network processing. No human feature engineering required.</p>
+<div class="ml-dl-flow" role="group" aria-label="Deep learning process flow: raw data to automatic feature learning to output.">
+<div class="ml-dl-flow__track">
+<div class="ml-dl-flow__box">Raw Data</div>
+<div class="ml-dl-flow__arrow">➔</div>
+<div class="ml-dl-flow__box ml-dl-flow__box--highlight">Automatic Feature Learning</div>
+<div class="ml-dl-flow__arrow">➔</div>
+<div class="ml-dl-flow__box">Output</div>
+</div>
+</div>
+<p><strong>Best for:</strong> Unstructured data (images, text, raw bytes), massive datasets, problems where human designed features cannot capture the relevant patterns.</p>
+<p><strong>Security example:</strong> A <button type="button" class="nyu-define" data-term="convolutional-neural-network">convolutional neural network</button> that classifies malware by converting raw binary files into grayscale images and learning visual patterns that distinguish malware families.</p>
+</div>
+</div>
+</div>
+<aside class="nyu-callout" role="note" aria-labelledby="tradeoff-title">
+<h3 class="nyu-callout__title" id="tradeoff-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg> </span> The Tradeoff</h3>
+<p>Deep learning can discover patterns that humans would never think to look for, but it requires far more data and compute, and its decisions are harder to explain. In regulated security environments where you must justify why an alert fired, traditional ML's interpretability can be more valuable than deep learning's raw accuracy.</p>
+</aside>
+<!-- Forward pointers -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 3: ML Models in Action.</strong> Now that you understand how machines learn in general, we put five models to work on a real network intrusion dataset. You will run each one, watch it reach a prediction step by step, and compare how hand-written rules, logistic regression, decision trees, random forests, and gradient boosting perform on the same traffic.</p>
+        </aside>
+</section>
+</main><!-- ====================== ANIMATION MODAL ====================== -->
+<div class="anim-modal-overlay" id="animOverlay" aria-hidden="true">
+<div class="anim-modal" role="dialog" aria-label="Training Animation">
+<div class="anim-modal__header"><span class="anim-modal__title">ML Training: Finding the Best Fit</span> <button class="anim-modal__close" aria-label="Close animation" onclick="closeAnimModal()">×</button></div>
+<iframe class="anim-modal__iframe" id="animIframe" src="./" title="ML Training Animation"></iframe></div>
+</div>
+<!-- ====================== FOOTER ====================== --><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"> <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"> </a></footer><button class="nyu-fab" aria-label="Back to top of section"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> </button></div>
+<script>
+    function openAnimModal() {
+      var overlay = document.getElementById('animOverlay');
+      var iframe = document.getElementById('animIframe');
+      iframe.src = 'interactive/ml_best_fit.html';
+      overlay.classList.add('is-open');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeAnimModal() {
+      var overlay = document.getElementById('animOverlay');
+      var iframe = document.getElementById('animIframe');
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      iframe.src = '';
+    }
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeAnimModal();
+    });
+    // Close on overlay background click
+    document.getElementById('animOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeAnimModal();
+    });
+  </script>
+<script src="../tooltips/glossary.js"></script>
+<script src="../js/nyu-tandon-course.js"></script></body></html>

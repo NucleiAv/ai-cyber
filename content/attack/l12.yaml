@@ -1,0 +1,145 @@
+slug: l12
+num: "12"
+lecture: 12
+week: 13
+short: Vector and embedding weaknesses
+title: Vector and embedding weaknesses
+time: about 3 hours
+lede: Embeddings are compressed text, not anonymous numbers. Learn how vectors leak, how attackers poison semantic search, and how to protect a RAG store.
+owasp: [LLM08]
+agentic: [ASI06]
+atlas: [AML.T0070, AML.T0071, AML.T0137.002, AML.T0064]
+other_fw:
+  - [Privacy by design, "A principle in GDPR Article 25. Build data protection into the system from the start."]
+
+idea: |
+  RAG apps turn text into **embeddings**, lists of numbers that capture meaning. Similar meanings get nearby vectors. A vector database finds the nearest ones to a question.
+
+  Two wrong beliefs make this risky.
+
+  - "Vectors are anonymous." They are not. Much of the original text can be rebuilt from a vector. This is **embedding inversion**.
+  - "Search returns what is relevant." It returns what is **near**. An attacker can write a document built to be near many questions.
+
+  !eli5 An embedding is like a very detailed fingerprint of a sentence. Given the fingerprint and a good lab, you can often work out the sentence.
+
+terms:
+  - [Embedding, "A list of numbers that represents the meaning of a text."]
+  - [Vector database, "A store that finds the vectors closest to a query vector, for example Pinecone, Milvus or pgvector."]
+  - [Nearest neighbor search, "Finding the stored vectors closest to the query."]
+  - [Embedding inversion, "Rebuilding the original text from its embedding."]
+  - [Corpus poisoning, "Adding documents to a store so they are retrieved for target questions."]
+  - [Tenant, "One customer in a system that serves many customers."]
+  - [Homomorphic encryption, "Encryption that allows some math on data while it stays encrypted."]
+
+how: |
+  ### Inversion
+
+  Vec2Text (Morris et al., 2023) trained a model that guesses text from an embedding, then corrects its guess step by step. For one common embedding model it rebuilt 92 percent of 32-token inputs exactly. The lesson reading by Chen et al. (2024) shows that inversion works across languages too. So a leaked vector store is close to a leaked document store.
+
+  ### Poisoning the search space
+
+  **PoisonedRAG** (Zou et al., 2024) added a few crafted texts for each target question to a store with millions of texts. The texts were close to the question and carried a false answer. The RAG system gave the attacker's answer in about 90 percent of cases in their tests.
+
+  **Adversarial illusions** (Zhang et al., 2024) works on multi-modal embeddings. A small change to an image or a sound can move its embedding next to any chosen target, such as a text label. Systems that trust the embedding then treat the input as something it is not.
+
+  ### Access control mistakes
+
+  Many teams put every customer's documents in one index and filter by tenant in the app. One missing filter leaks one customer's data to another.
+
+diagrams:
+  - type: flow
+    title: Corpus poisoning in a RAG store
+    nodes: [["Attacker writes text close to a target question", "atk"], ["Text enters the store", "box"], ["User asks the target question", "box"], ["Poison is the nearest match", "atk"], ["Model repeats the false answer", "def"]]
+    edges: ["upload", "", "search", "pasted"]
+    caption: The document can look normal to a human. Its power is where it sits in vector space.
+
+attack_steps:
+  - Learn what the store holds and who can add to it, such as uploads, a wiki, tickets or public web pages.
+  - Pick target questions.
+  - Write text that is close in meaning to those questions and carries the false answer or an instruction.
+  - Get it indexed.
+  - If you can read raw vectors, for example from an open database, try to invert them back to text.
+
+cases:
+  - [PoisonedRAG, 2024, "A handful of crafted texts per question, placed in a store of millions, controlled most answers to those questions."]
+  - [Module 11 RAG labs, "The defensive course has interactive labs for RAG data flow, corpus poisoning, adversarial embeddings and cross-tenant leakage. Open them from Module 11."]
+
+defense: |
+  - Treat vectors as sensitive as the text they came from. Encrypt the store at rest, require authentication, and do not expose it publicly.
+  - Filter retrieval by the user's permissions. Use separate indexes or namespaces for tenants.
+  - Control who can add documents. Record the source of every chunk and check new content before indexing.
+  - Watch retrieval logs. A document that appears for many unrelated questions is suspicious.
+  - Prefer trusted sources in ranking, and show sources to users.
+
+defense_diagrams:
+  - type: layers
+    title: Protecting a shared RAG store
+    attack: poisoned or cross-tenant chunk
+    layers:
+      - ["Content checks before indexing", "Catches obvious instructions, misses subtle facts", "partial"]
+      - ["Write access limited and logged", "Outsiders cannot add documents", "stop"]
+      - ["Per-tenant index and permission filter", "Other customers' chunks are never searched", "stop"]
+      - ["Retrieval frequency alerts", "Flags chunks that show up too often", "partial"]
+
+lab:
+  intro: |
+    Solve LLMGoat A08, vector and embedding weaknesses.
+  steps:
+    - Open A08 and find how the app stores and retrieves text.
+    - Change or add content so the app retrieves your text for a target question.
+    - Save the prompt or content you used.
+    - "Extend task. Poison the vector store in a second, different way. For example, if you added a new document the first time, now change an existing one."
+  links: [llmgoat]
+
+readings:
+  - [embedinv, "Shows that text can be rebuilt from embeddings, also in multilingual models, and tests defenses."]
+  - [advillusions, "Shows that small input changes can move a multi-modal embedding next to any target."]
+  - [promptsecblog, "A practical post on poisoning RAG pipelines through the vector store."]
+star: [embedinv]
+
+questions:
+  - - In SQL we sanitize input so it is not read as code. In vector search the input is meaning. How do we sanitize meaning? Why is it hard to filter documents that look normal but dominate nearest neighbor search?
+    - |
+      SQL injection has a clear line between code and data, and a parser can find dangerous characters. Vector search has no such line. A poisoned document can be well written, on topic and true in most places. Its danger is its position in vector space, which a human cannot see.
+
+      Partial controls:
+
+      - Check content before indexing for instructions and obvious falsehoods.
+      - Control and log who can add or change documents.
+      - Monitor retrieval. Flag chunks that are retrieved for many unrelated questions.
+      - Rank by source trust as well as by similarity.
+
+      None of these fully "sanitizes meaning". Source control is the strongest.
+  - - Embeddings are compressed data, not anonymous data. What does this mean for privacy by design? Should vectors be encrypted at rest? Can we use homomorphic encryption and still search?
+    - |
+      Privacy by design means protecting vectors like the source text. Inversion attacks can rebuild much of the text, so a vector store holds personal data if its documents do.
+
+      Yes, encrypt vectors at rest and in transit, and control access. This protects against stolen disks and backups. It does not protect against someone who can query the live system.
+
+      Homomorphic encryption can compute similarity on encrypted vectors in research systems, but it is much slower and costly at large scale. Other options are secure enclaves, which run search inside protected hardware, and keeping sensitive tenants in separate stores.
+
+quiz:
+  - q: An attacker steals a vector database but not the documents. Is the data safe?
+    opts: ["Yes, vectors are just numbers", "No, inversion can rebuild much of the text", "Only if the vectors are long"]
+    a: 1
+    why: Embeddings keep a lot of the original meaning and wording.
+  - q: What makes a poisoned RAG document dangerous?
+    opts: ["Bad spelling", "It sits near many target questions in vector space", "It is very long"]
+    a: 1
+    why: Nearest neighbor search returns it even though it looks normal.
+  - q: What is the strongest fix for cross-tenant leakage?
+    opts: ["Tell the model which tenant is asking", "Separate indexes or a permission filter in search", "Bigger embeddings"]
+    a: 1
+    why: The other tenant's chunks are never searched, so they cannot leak.
+
+deliverables:
+  - Your answers to both discussion questions.
+  - The prompts that solved LLMGoat A08.
+
+refs:
+  - "Chen et al. [Text embedding inversion security for multilingual language models](@embedinv), 2024."
+  - "Morris et al. [Text embeddings reveal almost as much as text (Vec2Text)](https://arxiv.org/abs/2310.06816), 2023."
+  - "Zou et al. [PoisonedRAG](https://arxiv.org/abs/2402.07867), 2024."
+  - "Zhang et al. [Adversarial illusions in multi-modal embeddings](@advillusions), 2024."
+  - "Prompt Security. [Poisoning RAG pipelines via vector embeddings](@promptsecblog)."
+  - "OWASP. [LLM08 2025 Vector and embedding weaknesses](https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/)."

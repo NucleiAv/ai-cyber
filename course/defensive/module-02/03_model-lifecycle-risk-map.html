@@ -1,0 +1,504 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 2 · The Model Lifecycle as a Risk Map · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 2 · Section 3 of 6</div>
+      <h1 class="nyu-hero__title">The Model Lifecycle as a Risk Map</h1>
+      <p class="nyu-hero__subtitle">
+        Sections 1 and 2 explained how LLMs turn text into probabilistic
+        output and where model behavior comes from. This section turns that
+        understanding into a decision framework: given a security risk,
+        which lifecycle stage produced it, what category of control
+        addresses it, and how does the OWASP LLM Top 10 organize these
+        risks for practitioners?
+      </p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          ~20 min read
+        </span>
+        <span aria-label="Number of parts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          5 parts
+        </span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          2 knowledge checks + 1 scenario
+        </span>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+
+      <nav class="nyu-toc" aria-label="In this section">
+        <p class="nyu-toc__title">In this section</p>
+        <ol class="nyu-toc__list">
+          <li><a href="#sec-1"><span class="nyu-toc__num">1</span> From Behavior Stack to Risk Classification</a></li>
+          <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Matching Risks to Controls</a></li>
+          <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Mapping the OWASP LLM Top 10</a></li>
+          <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Model Cards as a Practitioner Tool</a></li>
+          <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Check Your Understanding</a></li>
+        </ol>
+      </nav>
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Classify</strong> LLM security scenarios by the lifecycle stage where the risk originates and select the appropriate category of controls for each stage.</span></li>
+          <li><span><strong>Map</strong> entries from the OWASP LLM Top 10 to lifecycle stages and explain why that mapping determines where mitigations belong.</span></li>
+          <li><span><strong>Evaluate</strong> a model card for security relevant information, identifying what it reveals and what its omissions signal about residual risk.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">From Behavior Stack to Risk Classification</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Section 1 showed how every LLM response begins as probabilistic
+          token selection. Section 2 introduced the behavior stack, the
+          layered sources (pretraining, alignment, fine tuning, system
+          prompts, retrieval, decoding, filters) that shape what the model
+          produces.
+        </p>
+        <p>
+          This section collapses those layers into three
+          <button type="button" class="nyu-define" data-term="lifecycle-stages">lifecycle stages</button>
+          that serve as a practical classification tool. Each stage groups related
+          behavior stack layers, carries a distinct security profile, and calls for
+          a distinct category of controls.
+        </p>
+
+        <div class="nyu-compare" data-cols="3">
+          <div class="nyu-compare__col" data-tone="a">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">1</span>
+              <h3>Pre training</h3>
+              <p class="nyu-compare__tag">What is in the data</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Risk profile</dt>
+              <dd>Memorized PII and credentials, embedded biases, unknown data provenance</dd>
+              <dt>Who controls it</dt>
+              <dd>The model developer. You cannot change what was trained; you choose which model to use.</dd>
+              <dt>Key question</dt>
+              <dd><em>"What might this model have memorized, and what biases might it carry?"</em></dd>
+            </dl>
+          </div>
+
+          <div class="nyu-compare__col" data-tone="c">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">2</span>
+              <h3>Fine tuning</h3>
+              <p class="nyu-compare__tag">What adaptation does</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Risk profile</dt>
+              <dd>Alignment compromise, memorization amplification, data extraction from fine tuning sets</dd>
+              <dt>Who controls it</dt>
+              <dd>The deploying organization. You choose what data goes in and how to test what comes out.</dd>
+              <dt>Key question</dt>
+              <dd><em>"If we fine tune on internal data, what are we putting at risk?"</em></dd>
+            </dl>
+          </div>
+
+          <div class="nyu-compare__col" data-tone="d">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">3</span>
+              <h3>Inference</h3>
+              <p class="nyu-compare__tag">What happens during use</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Risk profile</dt>
+              <dd>Prompt injection, data exposure across network boundaries, system prompt leakage, fabrication and output variability (covered in Section 5), excessive agency</dd>
+              <dt>Who controls it</dt>
+              <dd>Your team and end users. The broadest attack surface because it is exposed to external input.</dd>
+              <dt>Key question</dt>
+              <dd><em>"What risks exist every time someone interacts with this model?"</em></dd>
+            </dl>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note">
+          <p>
+            <strong>Three stages, three owners.</strong> The lifecycle framework is
+            useful because each stage maps to a different responsible party. The model
+            developer owns pre training decisions. Your organization owns fine tuning
+            decisions. The operational environment (your team, your users, your
+            deployment configuration) owns inference. When a risk appears, knowing
+            the stage tells you who can actually fix it and what category of control
+            to reach for.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Matching Risks to Controls</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          The lifecycle classification is useful because it determines the
+          <em>category</em> of control that can actually address a risk. Applying
+          the wrong category is a common and costly mistake.
+        </p>
+
+        <div class="nyu-cards nyu-cards--3">
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Pre training controls</h3>
+            <p>Operate at the <strong>model selection level</strong>: reviewing model cards, requiring data provenance documentation, choosing models with documented curation practices.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Fine tuning controls</h3>
+            <p>Operate at the <strong>data handling level</strong>: sanitizing training data before fine tuning, restricting access to fine tuned models, testing for memorization and alignment degradation.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Inference controls</h3>
+            <p>Operate at the <strong>operational level</strong>: input validation, output filtering, access controls, monitoring, prompt hardening, secure deployment configuration, source verification and grounding (covered in Section 5), structured output review, and reproducibility settings (fixed seeds, low temperature).</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="mismatch-title">
+          <h3 class="nyu-callout__title" id="mismatch-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Control Mismatch Errors
+          </h3>
+          <p>
+            Prompt filtering (an inference stage control) cannot fix a memorization
+            problem (a pre training risk). Data sanitization (a fine tuning control)
+            cannot prevent prompt injection (an inference risk). When a control does
+            not seem to work, the first question is whether it targets the correct
+            lifecycle stage.
+          </p>
+        </aside>
+
+        <!-- Knowledge Check 1 -->
+        <div class="nyu-quiz" aria-labelledby="q1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <h3 class="nyu-quiz__prompt" id="q1-prompt">
+            A security team discovers that their LLM based assistant sometimes
+            outputs fragments of credit card numbers. Which lifecycle stage is
+            the most likely origin of this risk?
+          </h3>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="q1-prompt">
+            <button class="nyu-quiz__option" role="radio"
+              data-explain-wrong="Output filtering can catch some patterns, but credit card fragments in model output are a symptom of memorized training data. Filtering treats the symptom at inference without addressing the root cause at pre training.">
+              Inference. Add output filtering to block credit card patterns.
+            </button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">
+              Pre training. The credit card numbers were in the training corpus and are being reproduced from memorized patterns.
+            </button>
+            <button class="nyu-quiz__option" role="radio"
+              data-explain-wrong="Fine tuning data is worth checking, but general purpose models that have never been fine tuned on financial data still reproduce credit card fragments. The most likely source is the pre training corpus.">
+              Fine tuning. The team's fine tuning data must have contained credit card numbers.
+            </button>
+            <button class="nyu-quiz__option" role="radio"
+              data-explain-wrong="Hallucinated numbers would be random and not match real formats consistently. When models output structured PII fragments, the evidence chain from Section 2 (Carlini et al.) shows this is memorization, not confabulation.">
+              This is hallucination, not memorization.
+            </button>
+          </div>
+          <div class="nyu-quiz__feedback"
+            data-correct-msg="Correct. Credit card fragments are most likely memorized from the pre training corpus. Output filtering can catch some instances (symptom mitigation), but the lifecycle classification directs you to model selection controls: choose models with documented data curation, review model cards for data provenance, and evaluate whether the model developer filtered sensitive content."
+            data-incorrect-msg="Review the lifecycle stages above. The question is: where did the credit card data enter the model? The memorization evidence chain from Section 2 shows that PII in training data is reproducible. Identifying the correct stage points you to the correct category of controls.">
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Mapping the OWASP LLM Top 10</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          The
+          <button type="button" class="nyu-define" data-term="owasp-llm-top-10-m02">OWASP LLM Top 10</button>
+          is the industry recognized classification system for LLM security risks.
+          OWASP updates this list periodically: entry numbers shift, categories are
+          added or removed, and descriptions evolve. Rather than memorize a
+          snapshot, the goal here is to see how the lifecycle framework organizes
+          these recurring risk categories. The ten entries below represent the risk
+          themes most relevant to cybersecurity practitioners, grouped by the
+          lifecycle stage where each originates. You will work with each category
+          in depth in Modules 9 through 11.
+        </p>
+
+        <h3>Pre training and Fine tuning Stage Risks</h3>
+        <p>
+          These risks involve data that entered the model <em>before</em> anyone
+          interacted with it. Controls focus on model selection and data handling.
+        </p>
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Sensitive Information Disclosure</h3>
+            <p>Model reveals memorized sensitive data from pre training or fine tuning corpora, including PII, credentials, and proprietary content.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Supply Chain Vulnerabilities</h3>
+            <p>Compromised model weights, poisoned datasets, or tampered plugins enter the pipeline before the model is deployed.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Data and Model Poisoning</h3>
+            <p>An adversary manipulates training data to corrupt model behavior, embedding backdoors or biased outputs that persist through deployment.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Misinformation</h3>
+            <p>Fabricated output presented as fact. Section 5 examines the types of hallucination and an operational detection workflow. The risk originates in pre training (statistical patterns, not verified knowledge) and surfaces at inference.</p>
+          </div>
+        </div>
+
+        <h3>Inference Stage Risks</h3>
+        <p>
+          These risks emerge when users and systems interact with the deployed
+          model. Controls focus on operational security: input validation, output
+          filtering, access controls, and deployment configuration.
+        </p>
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Prompt Injection</h3>
+            <p>Adversarial input overrides the model's instructions, causing it to perform unintended actions or reveal restricted information.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">System Prompt Leakage</h3>
+            <p>Hidden instructions that define the model's role and constraints are exposed through crafted queries.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Improper Output Handling</h3>
+            <p>Downstream systems trust model output without validation, allowing generated content to trigger unintended code execution or data modification.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Excessive Agency</h3>
+            <p>The model is granted permissions beyond what the task requires, enabling it to take actions with consequences the user did not intend.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Vector and Embedding Weaknesses</h3>
+            <p>The retrieval pipeline returns poisoned or unauthorized content, allowing an attacker to influence model output through injected documents.</p>
+          </div>
+          <div class="nyu-card">
+            <h3 class="nyu-card__title">Unbounded Consumption</h3>
+            <p>Unconstrained model usage leads to resource exhaustion, denial of service, or runaway costs from unthrottled API access.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="owasp-note-title">
+          <h3 class="nyu-callout__title" id="owasp-note-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            A Living List
+          </h3>
+          <p>
+            OWASP updates the LLM Top 10 as the threat landscape evolves. Entry
+            numbers, names, and descriptions change between editions. The risk
+            themes above have appeared consistently across editions because they
+            reflect structural properties of how LLMs are built and deployed. When
+            you return to this topic in Modules 9 through 11, always check
+            <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener">owasp.org</a>
+            for the current version.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Model Cards as a Practitioner Tool</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          A
+          <button type="button" class="nyu-define" data-term="model-card">model card</button>
+          is the primary source of provenance information when evaluating whether
+          to deploy a model. It documents what was done at each lifecycle stage and
+          what the developers consider the model's boundaries. For a security
+          practitioner, it is the starting point for assessing pre training and
+          fine tuning risks before the model ever reaches inference.
+        </p>
+
+        <p>When evaluating a model card, two complementary questions structure the review:</p>
+
+        <div class="nyu-compare" data-cols="2">
+          <div class="nyu-compare__col" data-tone="a">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">&#10003;</span>
+              <h3>What It Reveals</h3>
+              <p class="nyu-compare__tag">Documented information</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Training data</dt>
+              <dd>Sources, curation practices, and filtering applied to the pre training corpus</dd>
+              <dt>Limitations</dt>
+              <dd>Known failure modes, domains where the model underperforms, and documented biases</dd>
+              <dt>Intended use</dt>
+              <dd>Approved use cases and explicitly out of scope applications</dd>
+              <dt>Safety testing</dt>
+              <dd>Alignment procedures, red teaming results, and evaluation methodology</dd>
+            </dl>
+          </div>
+          <div class="nyu-compare__col" data-tone="c">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">?</span>
+              <h3>What to Question</h3>
+              <p class="nyu-compare__tag">Critical evaluation</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Specificity</dt>
+              <dd>Is the training data description precise, or does it say only "diverse public data"?</dd>
+              <dt>Honesty</dt>
+              <dd>Are limitations documented in concrete terms, or are they vague disclaimers?</dd>
+              <dt>Adversarial coverage</dt>
+              <dd>Does safety testing cover adversarial extraction, jailbreaks, and prompt injection?</dd>
+              <dt>Reproducibility</dt>
+              <dd>Can benchmark results be independently verified? What is the knowledge cutoff date?</dd>
+            </dl>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <p>
+            <strong>Vagueness is a signal.</strong> When a model card describes its
+            training data as "a diverse corpus of publicly available text" with no
+            further detail, you cannot assess memorization risk, bias profile, or
+            whether the training set included credentials, PII, or malicious content.
+            Treat insufficient documentation as a risk factor, not a neutral gap.
+          </p>
+        </aside>
+
+        <aside class="nyu-callout" role="note">
+          <p>
+            <strong>Explore on your own:</strong> Spend time looking up the model
+            cards for popular models you currently use or plan to use. Compare what
+            each card reveals and what it omits. Pay attention to how training data,
+            limitations, and safety testing are described across different providers.
+            The differences tell you a great deal about each organization's
+            transparency and your ability to assess risk.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <!-- Knowledge Check 2 -->
+        <div class="nyu-quiz" aria-labelledby="q2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <h3 class="nyu-quiz__prompt" id="q2-prompt">
+            A model card describes its training data as "a diverse corpus of
+            publicly available text" but provides no further detail about sources,
+            curation, or filtering. From a security perspective, what is the main
+            concern with this level of disclosure?
+          </h3>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="q2-prompt">
+            <button class="nyu-quiz__option" role="radio"
+              data-explain-wrong="'Publicly available' does not mean safe. Public web data includes PII, credentials, copyrighted material, and malicious content. Without knowing what curation was applied, no safety conclusion follows from the word 'public.'">
+              No concern. "Publicly available" means the data is safe to use.
+            </button>
+            <button class="nyu-quiz__option" role="radio"
+              data-explain-wrong="Copyright is a real concern, but for security practitioners the more immediate risk is the inability to assess memorization, bias, and data contamination. Copyright matters for legal teams; data provenance matters for security evaluation.">
+              The main concern is copyright.
+            </button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">
+              Without detail on data sources and curation, you cannot assess memorization risk, bias profile, or data contamination. The vagueness itself is a risk signal.
+            </button>
+            <button class="nyu-quiz__option" role="radio"
+              data-explain-wrong="Vague model cards are common, but 'standard practice' does not make the practice safe. Many organizations are improving transparency, and frameworks like the EU AI Act increasingly require detailed disclosure. Normalizing vagueness lowers the bar.">
+              This is standard practice and not a concern.
+            </button>
+          </div>
+          <div class="nyu-quiz__feedback"
+            data-correct-msg="Correct. A vague training data description prevents you from assessing critical pre training risks: what PII or credentials might be memorized, what biases the training distribution may encode, and whether the data included content that could produce harmful outputs. When a model card is vague about provenance, treat it as a risk factor in your evaluation."
+            data-incorrect-msg="Review Section 4. The question is not whether vague model cards are common, but whether they give you enough information to evaluate pre training risks. Without data provenance, memorization risk and bias profile remain unassessable.">
+          </div>
+        </div>
+
+        <!-- Scenario -->
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario
+          </h3>
+          <p class="nyu-scenario__prompt">
+            For each scenario below, identify the lifecycle stage where the risk
+            originates, then name the category of control (model selection, data
+            handling, or operational) that addresses it:
+          </p>
+          <p>
+            <strong>(a)</strong> An LLM reproduces a verbatim API key from its training data.<br>
+            <strong>(b)</strong> A user crafts a prompt that causes the model to ignore its safety instructions.<br>
+            <strong>(c)</strong> An organization fine tunes a model on internal HR documents, and the model later reveals employee salary data.
+          </p>
+          <button class="nyu-scenario__btn" aria-expanded="false">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>(a) Pre training → Model selection controls.</strong> The API key was in the training corpus and was memorized during pre training. Mitigation focuses on choosing models with documented data curation and filtering practices.</p>
+            <p><strong>(b) Inference → Operational controls.</strong> Prompt injection is an inference stage attack. Mitigations include input validation, output filtering, prompt hardening, and system prompt design. These are the controls your team applies at deployment.</p>
+            <p><strong>(c) Fine tuning → Data handling controls.</strong> The HR data was memorized during fine tuning, amplified by the small dataset. Mitigations include sanitizing data before fine tuning (removing PII and sensitive identifiers) and testing fine tuned models for memorization before deployment.</p>
+          </div>
+        </div>
+      </section>
+
+          <!-- ====================== UP NEXT ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 4: Deployment as a Security Architecture Decision.</strong> We take up the deployment question: where should the model actually run? API, self-hosted, or on-device is not merely a cost decision. It redraws trust boundaries, changes who sees your data, and determines which of the lifecycle controls from this section you are able to enforce at all.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

@@ -1,0 +1,433 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 6 · Section 2 · Evaluating LLM Code Review · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 6 · Section 2 of 6</div>
+      <h1 class="nyu-hero__title">Evaluating LLM Code Review: Metrics, Failures, and Trust</h1>
+      <p class="nyu-hero__subtitle">How well does AI code review actually perform, and what happens when the measurements themselves are unreliable?</p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~20 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Metrics for Code Review</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> When the Measurements Fail</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Metrics in Practice</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Test Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Apply</strong> the confusion matrix framework to evaluate LLM code-review findings against a ground-truth answer key, computing detection rate, precision, and CWE accuracy.</span></li>
+          <li><span><strong>Analyze</strong> the PrimeVul dataset quality finding and explain its implications for trusting published benchmark results.</span></li>
+          <li><span><strong>Evaluate</strong> the operational consequences of false positives and false negatives in code-review contexts.</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>How well does LLM-based code review actually perform, and what happens when the measurements themselves are unreliable?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Metrics for Code Review</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+
+        <h3 class="nyu-subsection-title">Applying the Metrics Framework to Code Review</h3>
+
+        <p>The confusion matrix framework (true positives, false positives, true negatives, false negatives) applies to code review the same way it applies to log classification or any other detection task. The math is identical. What changes is the interpretation, because the consequences of getting it wrong look very different in a developer's workflow than they do in a SOC.</p>
+
+        <p>Four metrics define how you evaluate LLM code-review performance:</p>
+
+        <ul>
+          <li><strong><button type="button" class="nyu-define" data-term="detection-rate">Detection rate (recall)</button>:</strong> Of known vulnerabilities in the answer key, what fraction did the LLM identify? Example: 3/4 = 75%.</li>
+          <li><strong><button type="button" class="nyu-define" data-term="precision">Precision</button>:</strong> Of all findings the LLM reported, what fraction were real vulnerabilities? Example: 3/5 = 60%, so 2 of 5 findings (40%) were spurious. This is not the false positive rate from Module 4, which divides false positives by <em>all</em> safe items; a list of findings does not tell you how much safe code was reviewed, so precision is the measure you can compute here.</li>
+          <li><strong><button type="button" class="nyu-define" data-term="missed-vulnerability-rate">Missed vulnerability rate</button>:</strong> 1 minus detection rate. Fraction of known vulnerabilities the LLM missed.</li>
+          <li><strong><button type="button" class="nyu-define" data-term="cwe-accuracy">CWE accuracy</button>:</strong> Of correctly detected vulnerabilities, fraction mapped to correct <button type="button" class="nyu-define" data-term="cwe">CWE</button> entry. Example: 2/3 = 67%.</li>
+        </ul>
+
+		<p>Classify below the quality of the job the LLM did!</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_confusion_matrix_lab/confusion_matrix_lab.html" title="Interactive demo: Code Review Confusion Matrix Lab" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">Why the Consequences Differ from SOC Triage</h3>
+
+        <p>The precision-recall tradeoff plays out differently in code review than it does in <button type="button" class="nyu-define" data-term="soc">SOC</button> triage, and the difference matters.</p>
+
+        <p><strong>False positives erode developer trust.</strong> Developers encounter AI-flagged findings that turn out to be non-issues. If frequent, developers begin ignoring or disabling security tooling. Unlike SOC analysts whose primary job is investigating alerts, <span class="nyu-hl nyu-hl--contract">developers view security alerts as interruptions.</span> Their tolerance for false positives is lower, and the consequence is tool abandonment.</p>
+
+        <p><strong>False negatives create false confidence.</strong> When the LLM reports no findings, there is a natural tendency to interpret this as "the code is safe." That converts a tool limitation into a human judgment error, and as you will see below, the overconfidence problem is even worse than you might expect.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            Go deeper: the trust decay simulator
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>The metrics above describe one review. This simulator runs many, and shows what a sustained stream of false positives does to whether developers keep reading the findings at all.</p>
+          <div class="nyu-embed-frame">
+            <iframe src="interactive/02_trust_decay/trust_decay.html" title="Interactive demo: Developer Trust Decay Simulator" loading="lazy" style="height:200px;"></iframe>
+          </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">When the Measurements Fail</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The evidence base evolved in three stages.</p>
+
+        <ol class="nyu-timeline">
+          <li class="nyu-timeline__item">
+            <span class="nyu-timeline__marker" aria-hidden="true">1</span>
+            <div class="nyu-timeline__content">
+              <h3>Pre-2024 Benchmarks</h3>
+              <p>Early vulnerability detection benchmarks reported 90%+ accuracy, creating expectations that AI could reliably find vulnerabilities. These numbers were taken at face value and drove adoption decisions.</p>
+            </div>
+          </li>
+          <li class="nyu-timeline__item">
+            <span class="nyu-timeline__marker" aria-hidden="true">2</span>
+            <div class="nyu-timeline__content">
+              <h3>The PrimeVul Re-evaluation (2024)</h3>
+              <p>Researchers re-evaluated those benchmarks and found that only 25% (BigVul) to 60% (DiverseVul) of the functions labeled "vulnerable" were actually vulnerable, and that many test functions were exact copies of training functions. On a rigorously built benchmark, model performance collapsed, and in the strictest evaluation setting even large models performed close to random guessing. Much of the earlier success came from the data the models were measured against.</p>
+            </div>
+          </li>
+          <li class="nyu-timeline__item">
+            <span class="nyu-timeline__marker" aria-hidden="true">3</span>
+            <div class="nyu-timeline__content">
+              <h3>The Overconfidence Study (2023)</h3>
+              <p>A controlled experiment found that developers using AI code assistants wrote less secure code while believing it was more secure. AI assistance increased both output and false confidence simultaneously.</p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_benchmark_mirage/benchmark_mirage.html" title="Interactive demo: Benchmark Mirage Collapse" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">The Dataset Quality Crisis: PrimeVul</h3>
+
+        <p>A key finding in AI-assisted vulnerability detection came not from testing a new model, but from testing the tests themselves.</p>
+
+        <p>Researchers examined the datasets used to benchmark LLM vulnerability detection, including widely used collections like <button type="button" class="nyu-define" data-term="bigvul">BigVul</button>, CVEfixes, DiverseVul, and the <button type="button" class="nyu-define" data-term="devign">Devign</button>-based CodeXGLUE set, which had been cited across dozens of published studies. They found pervasive quality problems: mislabeled examples (in BigVul, only 25% of the functions labeled vulnerable were actually vulnerable), data leakage (12.7% of BigVul's test functions were exact copies of training functions, which artificially inflates measured performance), and over-broad positive labels.</p>
+
+        <p>They then built <button type="button" class="nyu-define" data-term="primevul">PrimeVul</button> from the same sources (BigVul, CrossVul, CVEfixes and DiverseVul) with three changes: labels that were checked far more rigorously, duplicate functions removed, and a chronological split so that the test code is newer than the training code. The results were dramatic. A state-of-the-art 7B-parameter model that scored 68.26% <button type="button" class="nyu-define" data-term="f1-score">F1</button> on BigVul scored only 3.09% F1 on PrimeVul. Same model, same kind of code. What changed was the quality and separation of the data it was measured on.</p>
+
+        <p>What does this mean for you? Much of the published evidence for LLM vulnerability detection capability is built on unreliable measurements. That does not mean LLMs cannot detect any vulnerabilities; they demonstrably can. It means we lack reliable measurements of how well they do it. The training data quality problem is currently one of the strongest binding constraints on performance.</p>
+
+        <p>Do not take published benchmark numbers at face value. Ask what dataset the measurement was performed on, how the ground truth was established, and whether data leakage was controlled.</p>
+
+        <h3 class="nyu-subsection-title">Developer Overconfidence with AI Assistance</h3>
+
+        <p>A controlled experiment in 2023 found that participants with access to an AI code assistant wrote less secure code than the control group, while being more confident that their code was secure.</p>
+
+        <p>Think about what that means. The AI assistant generated plausible-looking code with subtle vulnerabilities. Developers, trusting the AI's output, were less likely to scrutinize it. The result was more vulnerabilities produced with greater confidence. That combination is worse than either problem alone.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_confidence_gap/confidence_gap.html" title="Interactive demo: Confidence vs Security Gap" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">Confirmation Bias in AI Code Review</h3>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Preprint: not yet peer reviewed
+          </h3>
+          <p>The study described below has not yet undergone peer review. Specific numbers should be treated with caution. The finding is included because the mechanism it describes is important to understand, but treat the magnitudes as preliminary.</p>
+        </aside>
+
+        <p>Early-stage research is beginning to examine whether LLMs are susceptible to framing effects during code review. The core question: if code is accompanied by comments suggesting it has already been reviewed or sanitized (such as <code>// sanitized input, reviewed by security team</code>), does the model become less likely to flag real vulnerabilities?</p>
+
+        <p>Initial findings suggest the answer is yes. While specific magnitudes are still being validated through peer review, the mechanism is worth understanding now: if an attacker can shape the context surrounding vulnerable code, they may be able to reduce AI detection rates systematically. This is an active area of research, and the numbers will sharpen over time, but the underlying risk is concrete enough to inform how we think about AI-assisted review.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_adversarial_framing/adversarial_framing.html" title="Interactive demo: Adversarial Comment Framing Lens" loading="lazy" style="height:200px;"></iframe>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Metrics in Practice</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Assemble Ground Truth</h3>
+              <p class="nyu-process__detail">Curate a labeled dataset of code with verified vulnerability status. PrimeVul showed this step is where most benchmarks fail.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Run Detection</h3>
+              <p class="nyu-process__detail">Apply the tool (LLM, SAST, or combined) to the <button type="button" class="nyu-define" data-term="test-corpus">test corpus</button>. Record every finding and every missed vulnerability.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Compute Metrics</h3>
+              <p class="nyu-process__detail">Calculate precision (what fraction of flagged items are real), recall (what fraction of real vulnerabilities were found), and F1 (harmonic mean of both).</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Interpret with Context</h3>
+              <p class="nyu-process__detail">A high F1 on poorly labeled data is meaningless. Metrics must be interpreted against the ground-truth quality established in step 1.</p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Metrics Computation and Interpretation
+          </h3>
+
+          <p>An LLM reviewed a code file that contains <strong>4 known vulnerabilities</strong> (the answer key). The LLM produced <strong>4 findings</strong>. Your job: compare each finding to the answer key, classify it, then compute the three metrics from the interactive lab above.</p>
+
+          <table class="nyu-table">
+            <thead>
+              <tr>
+                <th>LLM Finding</th>
+                <th>Answer Key Match</th>
+                <th>CWE Reported</th>
+                <th>CWE in Answer Key</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Finding 1: SQL injection on line 12</td>
+                <td>Matches vulnerability #1</td>
+                <td>CWE-89</td>
+                <td>CWE-89</td>
+              </tr>
+              <tr>
+                <td>Finding 2: XSS on line 28</td>
+                <td>Matches vulnerability #2</td>
+                <td>CWE-79</td>
+                <td>CWE-79</td>
+              </tr>
+              <tr>
+                <td>Finding 3: Insecure deserialization on line 45</td>
+                <td>Matches vulnerability #3</td>
+                <td>CWE-20</td>
+                <td>CWE-502</td>
+              </tr>
+              <tr>
+                <td>Finding 4: Hardcoded credentials on line 7</td>
+                <td>No match in answer key</td>
+                <td>CWE-798</td>
+                <td>N/A</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p><strong>Note:</strong> Vulnerability #4 (Missing authorization, CWE-862, line 33) was in the answer key but the LLM did not report it.</p>
+
+          <ol class="nyu-process" style="margin-top:1rem">
+            <li class="nyu-process__step">
+              <span class="nyu-process__num">1</span>
+              <div class="nyu-process__body">
+                <h4 class="nyu-process__title">Classify each row</h4>
+                <p class="nyu-process__detail">For each of the 4 findings above plus the missed vulnerability, decide: True Positive (correct CWE), True Positive (wrong CWE), False Positive, or False Negative?</p>
+              </div>
+            </li>
+            <li class="nyu-process__step">
+              <span class="nyu-process__num">2</span>
+              <div class="nyu-process__body">
+                <h4 class="nyu-process__title">Count</h4>
+                <p class="nyu-process__detail">How many True Positives? How many False Positives? How many False Negatives (missed vulnerabilities)?</p>
+              </div>
+            </li>
+            <li class="nyu-process__step">
+              <span class="nyu-process__num">3</span>
+              <div class="nyu-process__body">
+                <h4 class="nyu-process__title">Compute the metrics</h4>
+                <p class="nyu-process__detail"><strong>Detection Rate</strong> = True Positives / Total Known Vulnerabilities</p>
+                <p class="nyu-process__detail"><strong>Precision</strong> = True Positives / Total LLM Findings</p>
+                <p class="nyu-process__detail"><strong>CWE Accuracy</strong> = TPs with Correct CWE / Total True Positives</p>
+              </div>
+            </li>
+            <li class="nyu-process__step">
+              <span class="nyu-process__num">4</span>
+              <div class="nyu-process__body">
+                <h4 class="nyu-process__title">Interpret</h4>
+                <p class="nyu-process__detail">What is the operational consequence of Finding 3 having the wrong CWE? What happens when Finding 4 (false positive) keeps recurring? What is the risk of the missed vulnerability?</p>
+              </div>
+            </li>
+          </ol>
+
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <h4 style="margin:0 0 .5rem;font-size:.95rem">Step 1: Classifications</h4>
+            <table class="nyu-table" style="margin-bottom:1rem">
+              <thead><tr><th>Item</th><th>Classification</th><th>Why</th></tr></thead>
+              <tbody>
+                <tr><td>Finding 1</td><td>TP (correct CWE)</td><td>Matches vuln #1, CWE-89 correct</td></tr>
+                <tr><td>Finding 2</td><td>TP (correct CWE)</td><td>Matches vuln #2, CWE-79 correct</td></tr>
+                <tr><td>Finding 3</td><td>TP (wrong CWE)</td><td>Matches vuln #3, but reported CWE-20 instead of CWE-502</td></tr>
+                <tr><td>Finding 4</td><td>False Positive</td><td>No matching vulnerability in the answer key</td></tr>
+                <tr><td>Vuln #4</td><td>False Negative</td><td>In the answer key but not reported by the LLM</td></tr>
+              </tbody>
+            </table>
+
+            <h4 style="margin:0 0 .5rem;font-size:.95rem">Step 2: Counts</h4>
+            <p>3 True Positives, 1 False Positive, 1 False Negative.</p>
+
+            <h4 style="margin:0 0 .5rem;font-size:.95rem">Step 3: Metrics</h4>
+            <p><strong>Detection Rate = 3/4 = 75%.</strong> Three of the four known vulnerabilities were identified.</p>
+            <p><strong>Precision = 3/4 = 75%.</strong> Three of the four reported findings were real; one (25%) was spurious.</p>
+            <p><strong>CWE Accuracy = 2/3 = 67%.</strong> Of the three true positives, two had the correct CWE.</p>
+
+            <h4 style="margin:0 0 .5rem;font-size:.95rem">Step 4: Interpretation</h4>
+            <p><strong>Finding 3 (wrong CWE):</strong> CWE-20 (improper input validation) is a broad, class-level entry; CWE-502 (deserialization of untrusted data) is the specific, base-level entry for this weakness. A developer told "improper input validation" does not know they are dealing with insecure deserialization. The remediation guidance for CWE-20 is too generic; CWE-502 points directly to deserialization-specific defenses.</p>
+            <p><strong>Finding 4 (false positive):</strong> The developer investigates line 7, finds no hardcoded credentials, wastes time. If this keeps happening, developers start ignoring the tool entirely, eroding trust.</p>
+            <p><strong>Missed #4 (false negative):</strong> The missing authorization vulnerability goes undetected. Attackers could access unauthorized resources while the team believes the code was fully reviewed.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Common Misconceptions
+          </h3>
+          <ol>
+            <li><strong>"PrimeVul means LLMs cannot detect vulnerabilities."</strong> Overstates the finding. Real capability is somewhere between 3% and 68%; we simply lack reliable measurements to pin it down.</li>
+            <li><strong>"If the AI sounds confident, it is probably correct."</strong> The overconfidence study showed the opposite. Authoritative tone does not correlate with accuracy.</li>
+            <li><strong>"High false-positive rates are acceptable because you catch more."</strong> Counterproductive. Developers disable tooling they do not trust. A tool with 90% recall whose findings are 80% false (20% precision) catches fewer vulnerabilities in practice than a less sensitive tool that developers actually use.</li>
+          </ol>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Test Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="quiz-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+          <p class="nyu-quiz__prompt" id="quiz-1">PrimeVul showed that F1 for vulnerability detection dropped from 68% to 3% when rigorous labels were applied. The most important implication is:</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The finding shows benchmarks overestimate, not that capability is zero.">LLMs cannot detect any vulnerabilities in source code.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Published benchmark results likely overestimate real-world LLM vulnerability detection capability.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The original results were genuine but measured against noisy labels.">The 68% result was fabricated by the original researchers.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Any model evaluated on noisy benchmarks is affected regardless of size.">Only small models are affected by this issue.</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct. Label noise in benchmarks inflated measured performance. Actual capability is lower than reported." data-incorrect-msg="PrimeVul did not show that LLMs are useless; it showed that measurements were unreliable."></div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Knowledge Check
+          </h3>
+          <p class="nyu-scenario__prompt">A developer says: "The AI reviewed my code and found nothing; it's clean." What is wrong with this reasoning?</p>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p>LLM false negatives are common and vary by vulnerability type. A clean AI review result means the code did not match learned vulnerability patterns; it does not guarantee absence of vulnerabilities. The model may miss vulnerabilities that require semantic reasoning, span multiple files, or belong to classes outside its training distribution. As the overconfidence study showed, the developer's confidence in the tool may well exceed the tool's actual reliability.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 3: AI Review in the Secure Development Lifecycle.</strong> It asks the design question: where in the development lifecycle does AI review add the most value, and how do you build a defense-in-depth review strategy?</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script>
+  /* Auto-resize iframes to match their content height */
+  window.addEventListener('message', function(e){
+    if(!e.data || e.data.type !== 'iframeHeight') return;
+    var iframes = document.querySelectorAll('.nyu-embed-frame iframe');
+    for(var i = 0; i < iframes.length; i++){
+      try {
+        if(iframes[i].contentWindow === e.source){
+          iframes[i].style.height = (e.data.height + 4) + 'px';
+          break;
+        }
+      } catch(ex){}
+    }
+  });
+  </script>
+</body>
+</html>

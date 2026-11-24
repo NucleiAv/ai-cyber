@@ -1,0 +1,38 @@
+- title: From an ATT&CK technique to D3FEND defenses
+  stats: [Attack, Shared artifact, Defense tactic]
+  nodes:
+    atk: {label: Phishing, x: 0, y: 1, kind: atk, tag: ATT&CK T1566}
+    art: {label: Email and URL, x: 2, y: 1, kind: raised, tag: digital artifact}
+    harden: {label: Harden, x: 4, y: 0, kind: def, tag: multi-factor authentication}
+    detect: {label: Detect, x: 5, y: 1, kind: def, tag: message and URL analysis}
+    isolate: {label: Isolate, x: 4, y: 2, kind: def, tag: limit what a click reaches}
+    restore: {label: Restore, x: 2, y: 3, kind: def, tag: "reset accounts, restore data"}
+  links: [[atk, art], [art, harden], [art, detect], [art, isolate], [art, restore]]
+  steps:
+    - title: Start with the attack
+      text: Phishing, ATT&CK T1566.
+      on: [atk]
+      stats: [T1566, "-", "-"]
+    - title: Find what it acts on
+      text: Phishing acts on an email message and the URL inside it. D3FEND calls these digital artifacts.
+      on: [art]
+      flow: [[atk, art, atk]]
+      stats: [T1566, Email and URL, "-"]
+    - title: Harden before it lands
+      text: Multi-factor authentication makes a stolen password far less useful.
+      on: [harden]
+      flow: [[art, harden, def]]
+      mark: {harden: ok}
+      stats: [T1566, Email and URL, Harden]
+    - title: Detect it in flight
+      text: Analyze messages and URLs for known bad patterns and odd senders.
+      on: [detect]
+      flow: [[art, detect, def]]
+      mark: {detect: ok}
+      stats: [T1566, Email and URL, Detect]
+    - title: Isolate and restore when it gets through
+      text: Limit what a clicked link can reach, and have a tested way back. D3FEND's seven tactics are Model, Harden, Detect, Isolate, Deceive, Evict and Restore.
+      on: [isolate, restore]
+      flow: [[art, isolate, def], [art, restore, def]]
+      mark: {isolate: ok, restore: ok}
+      stats: [T1566, Email and URL, "Isolate, Restore"]

@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: W^X Hardware Boundary vs. the LLM Context Window</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* same-hue: coloured text on its own tint; near-black instead */
+:root{
+  --violet:#57068C;--violet-dark:#3D0461;--violet-50:#F5EDFA;--violet-100:#E8D8F2;
+  --danger:#C42A2A;--danger-bg:#FBE8E8;--success:#166B3A;--success-bg:#E6F4EC;
+  --warning:#8A5D00;--warning-bg:#FCF1DC;--blue:#1560AC;--blue-bg:#E6F0FA;
+  --ink:#1A1A1A;--ink-soft:#3A3A3A;--ink-mute:#6B6B6B;--rule:#E2E2E2;
+  --surface:#FFFFFF;--sunken:#F6F4F8;
+  --mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace;--sans:"Open Sans","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--sunken);padding:12px 14px;line-height:1.5}
+.wrap{max-width:860px;margin:0 auto}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+.top{padding:16px 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-family:var(--mono);font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.12rem;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.lede{font-size:.86rem;color:var(--ink-soft);margin-top:6px}
+.body{padding:18px 20px}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;font-size:.72rem}
+.chip{font-family:var(--mono);font-size:.66rem;font-weight:600;padding:3px 9px;border-radius:20px;color:#fff}
+.chip--hw{background:var(--success)}
+.chip--gap{background:var(--danger)}
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{border:1.5px solid var(--rule);border-radius:11px;overflow:hidden;transition:.15s}
+.row.on{border-color:var(--violet)}
+.rbtn{width:100%;display:flex;align-items:center;gap:12px;background:var(--surface);border:none;padding:12px 14px;cursor:pointer;text-align:left;font-family:var(--sans)}
+.rbtn:hover{background:var(--sunken)}
+.mech{flex:1;min-width:0}
+.mech .name{font-weight:700;font-size:.9rem;color:var(--ink)}
+.gap{flex:none;font-family:var(--mono);font-size:.64rem;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--danger);color:#fff;white-space:nowrap}
+.chev{flex:none;color:var(--ink-mute);transition:transform .2s;font-size:.8rem}
+.row.on .chev{transform:rotate(90deg)}
+.detail{display:none;padding:0 14px 14px;font-size:.82rem}
+.row.on .detail{display:block}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+@media (max-width:560px){.pair{grid-template-columns:1fr}}
+.side{border-radius:0 8px 8px 0;padding:9px 11px}
+.side .k{font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:3px}
+.side--hw{background:var(--success-bg);border-left:4px solid var(--success);color:var(--ink)}
+.side--hw .k{color:var(--ink)}
+.side--llm{background:var(--danger-bg);border-left:4px solid var(--danger);color:var(--ink)}
+.side--llm .k{color:var(--ink)}
+.progress{height:5px;background:var(--rule);border-radius:20px;margin:14px 0 4px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--violet);transition:width .3s}
+.pl{font-size:.72rem;color:var(--ink-mute);text-align:center}
+.take{margin-top:16px;background:var(--violet-50);border:1px solid var(--violet-100);border-radius:10px;padding:12px 14px;font-size:.82rem;color:var(--ink-soft);display:none}
+.take[data-show="1"]{display:block}
+.take strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 1</div>
+    <h1>The missing boundary, mechanism by mechanism</h1>
+    <p class="lede">A classical computer resists code injection because of a stack of hardware mechanisms. A transformer has no equivalent for any of them. Open each row to line the protection up against its missing counterpart in the model.</p>
+  </div>
+  <div class="body">
+    <div class="legend">
+      <span class="chip chip--hw">Enforced in hardware</span>
+      <span class="chip chip--gap">Absent in the model</span>
+    </div>
+    <div class="rows" id="rows"></div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="pl" id="pl">0 of 5 mappings explored</div>
+
+    <div class="take" id="take">
+      <strong>The pattern:</strong> every classical defense enforces the code-versus-data boundary <em>below</em> the level any input can reach, in hardware. A transformer offers no layer beneath the tokens, so there is nothing to enforce. This is why prompt injection is not a bug to be patched but a property of the architecture, and why defense can only wrap constraints around the model, never restore the boundary inside it.
+    </div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+  var rows=[
+    {hw:'Read-only memory pages', gap:'No read-only tokens',
+     hwd:'The operating system can mark a region non-writable, so a program cannot overwrite its own code or tamper with protected data.',
+     llmd:'Every token in the context window is equally mutable input. Nothing can be flagged "data only, never an instruction."'},
+    {hw:'Execution-permission bit (NX / W^X)', gap:'No execution-permission flag',
+     hwd:'The processor refuses to execute bytes that live in a data page, so attacker shellcode dropped into a buffer sits inert.',
+     llmd:'Self-attention lets every token influence the next prediction, so any token is potentially executable. Retrieved data can act like a command.'},
+    {hw:'Memory-management unit (MMU)', gap:'No isolation between sources',
+     hwd:'Hardware maps and isolates address spaces, so one process cannot read or write another process’s memory.',
+     llmd:'The system prompt, the user message, and a retrieved document share one sequence. None is walled off from the others.'},
+    {hw:'Privilege rings (kernel vs user)', gap:'No role hierarchy',
+     hwd:'Each instruction carries a privilege level. User-mode code cannot run kernel operations, no matter how it is phrased.',
+     llmd:'A "system" instruction has no hard precedence over a "user" or "data" token. They compete on equal statistical footing.'},
+    {hw:'Outcome: injected data is inert', gap:'Outcome: injected data executes',
+     hwd:'Because the boundary is enforced in hardware, beneath the software, attacker data placed in a buffer never runs.',
+     llmd:'With no boundary, an instruction hidden inside data is simply followed. This is code injection without code.'}
+  ];
+  var host=document.getElementById('rows'), bar=document.getElementById('bar'), pl=document.getElementById('pl'), take=document.getElementById('take');
+  var seen={};
+
+  rows.forEach(function(r,i){
+    var el=document.createElement('div'); el.className='row'; el.id='r'+i;
+    el.innerHTML=
+      '<button class="rbtn" aria-expanded="false">'+
+        '<span class="mech"><span class="name">'+r.hw+'</span></span>'+
+        '<span class="gap">'+r.gap+'</span>'+
+        '<span class="chev">&#9654;</span>'+
+      '</button>'+
+      '<div class="detail"><div class="pair">'+
+        '<div class="side side--hw"><div class="k">Classical computer</div>'+r.hwd+'</div>'+
+        '<div class="side side--llm"><div class="k">Transformer LLM</div>'+r.llmd+'</div>'+
+      '</div></div>';
+    var btn=el.querySelector('.rbtn');
+    btn.addEventListener('click',function(){
+      var open=el.classList.contains('on');
+      if(open){el.classList.remove('on');btn.setAttribute('aria-expanded','false');}
+      else{el.classList.add('on');btn.setAttribute('aria-expanded','true');seen[i]=true;update();}
+      sh();
+    });
+    host.appendChild(el);
+  });
+
+  function update(){
+    var n=Object.keys(seen).length;
+    bar.style.width=(n/rows.length*100)+'%';
+    pl.textContent=n+' of '+rows.length+' mappings explored';
+    if(n===rows.length){take.setAttribute('data-show','1');}
+    sh();
+  }
+  function sh(){
+    var el=document.querySelector('.wrap'); if(!el)return;
+    var pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+    var h=Math.ceil(el.getBoundingClientRect().height+pad+20);
+    window.parent.postMessage({kind:'nyu-embed-height',height:h,src:location.href},'*');
+  }
+  (function(){document.documentElement.style.height='auto';document.body.style.height='auto';
+    if(window.ResizeObserver){new ResizeObserver(sh).observe(document.querySelector('.wrap'));}else{setInterval(sh,500);}
+    window.addEventListener('load',function(){setTimeout(sh,150)});setTimeout(sh,50);})();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

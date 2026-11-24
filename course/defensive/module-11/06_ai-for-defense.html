@@ -1,0 +1,371 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 11 &middot; Section 6 &middot; AI for Defense &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 11 &middot; Section 6 of 7</div>
+      <h1 class="nyu-hero__title">AI for Defense</h1>
+      <p class="nyu-hero__subtitle">Where AI is being used in cloud security, IAM analysis, and malware work, what the evidence says about each claim, and how the module fits together.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~20 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          1 knowledge check + 3 decision points
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Four Areas Where AI Is Being Used</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Evaluating an LLM's IAM Analysis</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Check Your Understanding</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Module Wrap-Up and Integration Check</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Evaluate</strong> AI-for-defense tools by pairing each capability claim with its documented limitation.</span></li>
+          <li><span><strong>Apply</strong> the "trust but verify" principle to AI-generated security analysis.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1: FOUR AREAS ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Four Areas Where AI Is Being Used</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Everything in this module so far has treated AI as a system to defend. AI is also a tool for defense: LLMs and machine learning models are being applied to cybersecurity problems that historically required either manual expert analysis or rigid rule-based automation.</p>
+
+        <p>We apply the same evaluation method here. Every capability claim gets paired with its documented limitation. We did this with guardrails (85% accuracy on known patterns, 34% on novel ones). We did it with RAG architectures (retrieval provides grounding, but retrieval cannot tell trustworthy content from adversarial content). The failure mode is the same: overconfidence in AI-generated output leads to missed vulnerabilities, misclassified threats, and false assurance.</p>
+
+        <p>The four areas below are where AI-assisted security operations are seeing the most use. In each case, the capability and the limitation are both real. The practitioner's job is to design workflows that capture the capability while managing the limitation.</p>
+
+        <div class="nyu-tabs" data-tabs="ai-for-defense">
+          <div class="nyu-tabs__tablist" role="tablist" aria-label="AI for defense application areas">
+            <button class="nyu-tabs__tab" role="tab" aria-selected="true" id="tab-iam" aria-controls="panel-iam">IAM Policy Analysis</button>
+            <button class="nyu-tabs__tab" role="tab" aria-selected="false" id="tab-iac" aria-controls="panel-iac">IaC Misconfiguration</button>
+            <button class="nyu-tabs__tab" role="tab" aria-selected="false" id="tab-malware" aria-controls="panel-malware">Malware Classification</button>
+            <button class="nyu-tabs__tab" role="tab" aria-selected="false" id="tab-yara" aria-controls="panel-yara">YARA Rule Generation</button>
+          </div>
+
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-iam" aria-labelledby="tab-iam">
+            <h4>IAM Policy Analysis</h4>
+            <p>IAM policies define who can do what in a cloud environment. In AWS alone, a mid-size organization might have hundreds of policies with thousands of permission statements, and the security implication of each statement depends on its interactions with every other statement. Manual review at that scale is slow and error-prone. Static analysis tools (like AWS Access Analyzer) catch syntactic issues and known misconfiguration patterns, but they struggle with logic-level risks: permissions that are individually reasonable but create dangerous combinations.</p>
+            <p>LLMs bring a different capability. They can reason about logical relationships between policy statements and identify risks that emerge from combinations rather than individual rules. A study tested LLM-based IAM policy synthesis against 47 ground-truth policies using SMT (Satisfiability Modulo Theories) solvers for formal verification. The LLMs generated syntactically correct, logically consistent policies, and they caught logic-level issues that static tools typically miss, like implicit permission escalation paths where a combination of innocuous permissions lets a user grant themselves broader access.</p>
+            <p><strong>Limitation:</strong> The same study found that LLMs inconsistently evaluated risk severity. They caught obvious risks like S3 wildcard access but sometimes underestimated subtler permissions. The PassRole example is instructive: <code>iam:PassRole</code> lets a user assign a role to a service, effectively inheriting that role's permissions. If the target role has administrative access, PassRole is one of the most common privilege escalation vectors in AWS. An LLM might dismiss it as "low-risk" and "standard" because PassRole appears frequently in legitimate configurations, without evaluating what the target role actually grants. The LLM recognized the pattern (PassRole is common) but missed the implication (PassRole to an admin role is dangerous).</p>
+          </div>
+
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-iac" aria-labelledby="tab-iac" hidden>
+            <h4>Infrastructure as Code Misconfiguration Detection</h4>
+            <p>LLMs are being applied to detect misconfigurations in Infrastructure as Code (IaC) templates, particularly Terraform. Studies show they outperform traditional static analysis at detecting logic-level "code smells": security groups with overly broad CIDR ranges, IAM policies with unnecessary wildcards, storage resources without encryption. The LLMs caught issues that required understanding the intent of the configuration, not just its syntax.</p>
+            <p><strong>Limitation:</strong> A separate study tested LLM-generated IaC repairs and found that 20.4% of repairs that passed linter validation were nonetheless incorrect. The failures broke down into schema validation failures (the repair used parameters or resource types that do not exist in the provider) and wrong-issue targeting (the repair fixed a different issue than the one flagged, or introduced a new misconfiguration while fixing the original).</p>
+            <p>A practical note: LLMs perform measurably better on YAML and JSON configuration formats than on HCL (HashiCorp Configuration Language). If you are using AI-assisted IaC review, format matters.</p>
+          </div>
+
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-malware" aria-labelledby="tab-malware" hidden>
+            <h4>Malware Behavioral Classification</h4>
+            <p>Signature-based malware detection matches known malware against a database of signatures. It is fast and produces near-zero false positives on known threats. It fails against polymorphic malware (which changes its signature on each execution) and zero-day threats (which have no known signature).</p>
+            <p>AI-based behavioral classification works differently: instead of matching signatures, it analyzes what the malware does. Behavioral patterns (file system modifications, network communications, registry changes, process injection) are more stable than code signatures because attackers can change their code far more easily than they can change the fundamental actions their malware must perform.</p>
+            <p>Gradient-boosted decision tree models, combined with dimensionality reduction and feature scaling, have achieved over 97% accuracy on malware behavioral classification. They catch polymorphic and zero-day threats that signature-based detection misses because they classify behavior rather than code.</p>
+            <p><strong>Consensus:</strong> Hybrid detection is the field standard. Signature-based as the fast first layer (high speed, near-zero false positives on known threats), behavioral classification as the second layer (catches novel threats, higher computational cost, some false positives). Neither alone is sufficient.</p>
+          </div>
+
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-yara" aria-labelledby="tab-yara" hidden>
+            <h4>YARA Rule Generation</h4>
+            <p><button type="button" class="nyu-define" data-term="yara-rules">YARA rules</button> are pattern-matching rules used by malware analysts to identify and classify malware samples. Writing them well requires expertise: the analyst must identify byte patterns, strings, and structural features specific enough to match the target malware family without producing excessive false positives.</p>
+            <p>Research into automated YARA rule generation has shown substantial time savings, with studies reporting 44-86% reductions in analyst time compared to manual writing. Generated rules matched the detection quality of manually written rules across test datasets. More recent work uses LLMs for nuanced rule generation, including the ability to analyze malware behavior reports and generate rules based on behavioral descriptions rather than byte patterns alone.</p>
+            <p><strong>Failure mode:</strong> LLMs sometimes confuse YARA (the open-source pattern matching language) with YARA-L (Google Chronicle's proprietary detection language). The two have different syntax and different capabilities. Rules generated in the wrong language will not execute in the intended environment. Human review is required for all LLM-generated YARA rules, both for correctness and for language verification.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== ERT-4 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Evaluating an LLM's IAM Analysis</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>An LLM analyzed a three-statement AWS IAM policy and produced the assessment below. Evaluate its work: which finding is correct, which underestimates risk, and which is misleading?</p>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Statement 1: S3 Wildcard Permissions
+          </h3>
+          <p class="nyu-scenario__prompt">Allows <code>s3:*</code> on all resources in the production bucket.<br>
+          <strong>LLM Assessment:</strong> "HIGH RISK. Wildcard S3 permissions grant read, write, delete, and administrative access to the entire production bucket. Recommend restricting to specific actions (s3:GetObject, s3:PutObject) and specific prefixes."</p>
+          <button class="nyu-scenario__btn">Show Evaluation</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>Correctly assessed.</strong> S3 wildcard access to a production bucket is a clear high-risk finding, and the recommendation to restrict to specific actions and prefixes is appropriate.</p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Statement 2: EC2 Instance Permissions
+          </h3>
+          <p class="nyu-scenario__prompt">Allows <code>ec2:RunInstances</code> and <code>ec2:TerminateInstances</code> on all instances.<br>
+          <strong>LLM Assessment:</strong> "MEDIUM RISK. These permissions allow creating and destroying compute resources. Consider restricting to specific instance types and requiring tags for resource tracking."</p>
+          <button class="nyu-scenario__btn">Show Evaluation</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>Underestimates risk.</strong> The ability to run and terminate arbitrary EC2 instances is not "medium risk." An attacker with these permissions can launch instances for cryptocurrency mining (financial impact), terminate production instances (availability impact), or spin up instances in unmonitored regions (evasion). The LLM's recommendation about instance types and tags is reasonable but does not capture the full scope of the risk.</p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Statement 3: IAM PassRole
+          </h3>
+          <p class="nyu-scenario__prompt">Allows <code>iam:PassRole</code> for a specific service role.<br>
+          <strong>LLM Assessment:</strong> "LOW RISK. PassRole is a standard permission needed for service integrations. The scope is limited to a single named role."</p>
+          <button class="nyu-scenario__btn">Show Evaluation</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>Misleading.</strong> <code>iam:PassRole</code> is one of the most common privilege escalation vectors in AWS because it lets a user assign a role to a service, effectively inheriting that role's permissions. If the named role has administrative access, PassRole enables escalation to admin. Calling this "LOW RISK" and "standard" is incorrect. The assessment should flag PassRole as requiring explicit review of the target role's permissions to determine actual risk.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            The Pattern
+          </h3>
+          <p>One correct assessment, one partial, one dangerously wrong. That is "trust but verify" in practice. Automated IAM analysis is valuable as a first pass; human review is required for all findings, especially for permissions like PassRole where the risk depends on context the LLM may not fully evaluate.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== KC-4 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc4-q1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc4-q1-prompt">An LLM generates the following YARA rule to detect a specific malware family:</p>
+          <pre class="nyu-pre"><code>rule Suspicious_Downloader {
+    meta:
+        description = "Detects potential command-line downloader behavior"
+    strings:
+        $pe = { 4D 5A }
+        $s1 = "cmd.exe" ascii wide
+        $s2 = "powershell" ascii wide nocase
+    condition:
+        $pe at 0 and any of ($s1, $s2)
+}</code></pre>
+          <p class="nyu-quiz__prompt">What is the most significant issue with this rule?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc4-q1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="{ 4D 5A } at offset 0 is the standard PE header magic number check. This is correct and widely used in YARA rules.">The hex pattern for PE header detection is incomplete.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The rule will produce a high false-positive rate because the string patterns are too generic.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The 'wide' modifier is already present on both string definitions, which handles UTF-16 encoding. The 'nocase' modifier on $s2 handles case variations.">The rule is missing Unicode string modifiers.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This is valid standard YARA syntax. YARA-L (Google Chronicle's detection language) has a different syntax entirely, using event-based patterns rather than file-based pattern matching.">This is actually a YARA-L rule, not a standard YARA rule.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. 'cmd.exe' and 'powershell' appear in a very large number of legitimate Windows executables, system utilities, and administration tools. Any PE file that references either string will match, flagging thousands of benign files. Effective YARA rules need more specific indicators: unique mutex names, distinctive byte sequences, specific API call patterns, or structural features characteristic of the target malware family."
+               data-incorrect-msg="Not quite. The rule's syntax is valid, but think about what happens at scale: how many legitimate PE files contain references to 'cmd.exe' or 'powershell'?"></div>
+        </div>
+      </section>
+
+      <!-- ====================== MODULE WRAP-UP ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Module Wrap-Up and Integration Check</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">The closing principle: trust but verify</h3>
+
+        <p>Every AI-for-defense tool we surveyed follows the same pattern. The capability is real: LLMs catch IAM logic issues that static tools miss, detect IaC misconfigurations at the intent level, classify malware by behavior rather than signature, and accelerate YARA rule writing. The limitation is also real: IAM risk assessments are inconsistently calibrated, roughly one in five LLM-generated IaC repairs is incorrect despite passing linter validation, behavioral classifiers produce false positives that signature-based detection avoids, and YARA rules may target the wrong language entirely.</p>
+
+        <p>"Trust but verify" means: use AI tools for their speed and pattern recognition, but verify their output before acting on it. Build workflows with human review at decision points. This applies to the defense tools in this section exactly as it applies to the controls we studied in Sections 1 through 4.</p>
+
+        <h3 class="nyu-subsection-title">Deploying under known risk</h3>
+
+        <p>You completed the OWASP defensive assessment for MedAssist. The team agreed on conditional approval: deploy with compensating controls and a 90-day remediation timeline. Now you have to decide what those conditions actually look like. The next three questions test whether you can translate assessment findings into specific operational decisions.</p>
+
+        <div class="nyu-quiz" aria-labelledby="deploy-q1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Decision Point 1 of 3</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="deploy-q1-prompt">Your assessment flagged LLM06 (Excessive Agency): MedAssist's scheduling API token can book, modify, and cancel any patient's appointments across all departments. Which compensating control should you require before launch?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="deploy-q1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Logging is detection, not prevention. If the token can cancel a chemotherapy patient's appointment, logging that it happened does not stop the harm. You need to reduce what the token can do, then log what it actually does.">Add comprehensive API call logging so all scheduling actions are auditable.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Scope the API token to book-only permissions for the requesting patient's own appointments, and require human approval for modifications and cancellations.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Rate limiting reduces volume but not severity. A single well-crafted prompt injection that cancels one critical appointment is not stopped by rate limits. The core issue is that the token has permissions it should not have: modify and cancel across all patients. Least privilege addresses the root cause.">Implement rate limiting on scheduling API calls to prevent bulk appointment manipulation.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This is a guardrail approach, and this module demonstrated that guardrails have a 34% accuracy rate on novel patterns. The scheduling API does not need prompt-level protection; it needs permission-level restriction. The token should not be able to do things the application was never designed to let patients do.">Add a prompt filter that blocks any user input containing scheduling-related keywords from reaching the API.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Right. This is least privilege applied to API integration. The token should only do what the application actually needs: book appointments for the patient in the current session. Modifications and cancellations have higher consequences and warrant human review. This directly addresses the LLM06 finding from your OWASP assessment without depending on probabilistic controls like guardrails or rate limits."
+               data-incorrect-msg="Think about what the OWASP assessment actually found. The problem is not the volume of API calls or the content of prompts. The problem is that the API token has permissions the application should never exercise autonomously."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="deploy-q2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Decision Point 2 of 3</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="deploy-q2-prompt">Your assessment flagged LLM08 (Vector and Embedding Weaknesses): MedAssist uses application-level metadata filtering to restrict RAG responses to patient-appropriate content, but has no corpus integrity verification. A vendor pushes a routine knowledge base update the week before launch. What do you require?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="deploy-q2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Delaying the update removes this specific risk window but does not solve the underlying gap. The next update has the same problem. Your OWASP assessment flagged the absence of integrity verification as a structural gap, not a one-time event. You need a process that applies to every update.">Delay the knowledge base update until after launch to reduce the risk surface during deployment.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The output filter catches content that looks wrong after retrieval, but it cannot detect poisoned documents that are factually plausible. A corpus poisoning attack inserts content that reads as legitimate medical guidance but is subtly incorrect. Output filtering has the same limitation as guardrails: it works on known patterns, not novel ones.">Run the update through an LLM-based output filter that flags any retrieved content containing medical contraindications.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Require cryptographic hash verification of all documents in the update against a signed manifest from the vendor, and sample-audit a subset of new documents for content accuracy before ingestion.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Rollback capability is an incident response control, not a prevention control. It lets you undo damage after patients have already received incorrect medical information. The module's corpus poisoning analysis showed that poisoned documents serve adversarial content to every user who triggers retrieval. The window between ingestion and detection is the risk.">Accept the update but maintain a rollback capability so you can revert within 24 hours if issues are detected.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Right. This combines deterministic verification (hash comparison catches any tampering or corruption) with human judgment (content audit catches semantically valid but medically dangerous information). Neither alone is sufficient: hashes verify integrity but not accuracy, and auditing every document is not feasible at scale. Together they address the LLM08 gap your assessment identified, and the process applies to every future update, not just this one."
+               data-incorrect-msg="Revisit the LLM08 finding from the assessment. The gap is structural: there is no integrity verification for corpus updates. A good compensating control addresses the root cause and works for every update, not just this one."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="deploy-q3-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Decision Point 3 of 3</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="deploy-q3-prompt">Two weeks after launch, your monitoring detects that 12 out of 2,000 daily interactions triggered the output guardrail. Seven were benign false positives. The remaining five show a pattern: users asking multi-step questions that incrementally extract the system prompt and internal API endpoint names. What is the correct next action?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="deploy-q3-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Tightening the guardrail to catch these specific patterns addresses this week's attack but creates the same brittleness the module documented: 85% accuracy on known patterns, 34% on novel ones. The attacker will change their approach. You need to address what the attacker is trying to reach, not just the specific phrasing they used this time.">Tighten the guardrail rules to block the specific multi-step question patterns observed in the five incidents.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The seven false positives need attention, but they are a tuning issue, not a security incident. The five real attempts are actively probing your system's internals. Prioritizing false positive reduction while an active reconnaissance campaign is underway misreads the situation. Address the security finding first, then tune detection thresholds.">Reduce false positives first. Seven out of twelve is a 58% false positive rate, which means the guardrail needs retraining before you can trust any of its signals.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Rotate the exposed API endpoint credentials, strip internal system details from the prompt template, and add session-level conversation tracking to detect incremental extraction attempts across turns.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Shutting down the system is disproportionate. The guardrail caught the attempts, no patient data was accessed, and the API endpoints are internal names, not credentials. The conditional approval included a monitoring and response plan for exactly this scenario. The correct response is to mitigate what was exposed, harden the attack surface, and improve detection, not to halt a system that is working as designed under the conditions you approved.">Invoke the incident response plan and take MedAssist offline until a full security review is completed.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Right. This follows the incident response principle from your conditional approval: contain, mitigate, harden. Rotate credentials that may have been exposed (containment). Remove internal details from the prompt so they cannot be extracted again (mitigation). Add conversation-level tracking to catch multi-turn extraction that single-turn guardrails miss (hardening). The monitoring worked: it detected the problem. Now you act on what it found without overreacting or under-reacting."
+               data-incorrect-msg="Think about three things: what was actually exposed, what is the attacker trying to accomplish, and what does proportionate response look like under the conditional approval you signed off on."></div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Module Integration: True or False?</h3>
+
+        <p>These statements pull from all four sections of this module. They test whether the concepts connect in the way the module intended.</p>
+
+        <div class="nyu-tf-strip" id="tfStrip">
+          <p>For each statement, decide whether it is true or false. Commit all answers at once.</p>
+          <div class="nyu-tf-strip__rows">
+            <div class="nyu-tf-strip__row" data-correct="false" data-explain="False. An 85% catch rate applies to known patterns only. On unseen patterns, accuracy drops to 34%. A healthcare chatbot requires defense-in-depth: guardrails plus privilege separation plus monitoring plus human review for high-consequence responses.">
+              <p class="nyu-tf-strip__stmt">A guardrail that catches 85% of known jailbreak attempts is sufficient protection for a production healthcare chatbot.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="true" data-explain="True. Database-level isolation is deterministic: tenants physically cannot query each other's namespace. Application-level filtering is probabilistic: it depends on the application correctly enforcing metadata tags on every query, and a single filtering failure exposes other tenants' data.">
+              <p class="nyu-tf-strip__stmt">Database-level namespace isolation is a more reliable RAG access control than application-level metadata filtering.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="false" data-explain="False. Network isolation stops new inbound attacks but does not remove the poisoned documents already in the knowledge base. The system keeps serving adversarial content to every user who triggers retrieval of those documents. Containment requires identifying and removing the poisoned documents themselves.">
+              <p class="nyu-tf-strip__stmt">Isolating a compromised RAG system from the network fully contains a corpus poisoning incident.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="true" data-explain="True. The IAM analysis exercise demonstrated exactly this pattern. LLMs catch obvious risks (S3 wildcard) while inconsistently evaluating permissions that enable privilege escalation (PassRole). This is why human review is required for all AI-generated security assessments.">
+              <p class="nyu-tf-strip__stmt">An LLM that correctly identifies S3 wildcard permissions as high-risk might simultaneously underestimate the risk of iam:PassRole.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="false" data-explain="False. Zero guardrail flags can mean the session was benign, or it can mean the attacker evaded input-side controls entirely. The suspicious session comparison showed exactly this: zero flags with 14 queries in 3 minutes, Base64 encoding, and 5.5x average response length. Compound detection catches what single-signal monitoring misses.">
+              <p class="nyu-tf-strip__stmt">A monitoring session with zero guardrail flags is always a benign session.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+            <div class="nyu-tf-strip__row" data-correct="true" data-explain="True. A single long-context request can cost as much as dozens of small requests. Request-count limiting would allow an attacker to send a small number of very expensive requests. Token-based limiting caps the actual compute cost per user per time period.">
+              <p class="nyu-tf-strip__stmt">Token-based rate limiting is more appropriate than request-count rate limiting for protecting against denial-of-wallet attacks.</p>
+              <div class="nyu-tf-strip__toggle" role="radiogroup">
+                <button class="nyu-tf-strip__opt" data-val="true" aria-pressed="false">True</button>
+                <button class="nyu-tf-strip__opt" data-val="false" aria-pressed="false">False</button>
+              </div>
+              <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+            </div>
+          </div>
+          <div class="nyu-tf-strip__actions">
+            <button class="nyu-tf-strip__btn nyu-tf-strip__btn--primary" data-action="check">Check answers</button>
+            <button class="nyu-tf-strip__btn nyu-tf-strip__btn--ghost" data-action="reset">Reset</button>
+            <span class="nyu-tf-strip__score" aria-live="polite"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== MODULE COMPLETE ====================== -->
+      <aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="module-complete">
+        <h3 class="nyu-callout__title" id="module-complete"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Module 11 Complete</h3>
+        <p>Across four sections this module covered input validation, output filtering and guardrails as pipeline defenses, three deployment patterns and the attack surface each one creates, monitoring, logging and incident response for AI systems, and the OWASP defensive assessment applied to a worked deployment alongside AI used for defense.</p>
+      </aside>
+
+      <!-- Up Next -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 7: References &amp; Readings.</strong> It collects every source behind this module, indexed by section. Beyond that, Module 12 turns from the controls to the organization that owns them. The assessment you just ran covers the system: whether inputs are validated, whether outputs are filtered, whether abuse is monitored. Module 12 covers the organization around it: who had the authority to approve the deployment, what policy governs its use, and which regulatory obligations apply.</p>
+        </aside>
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

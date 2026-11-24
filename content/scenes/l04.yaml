@@ -1,0 +1,46 @@
+- title: A RAG app leaks a board memo to an intern
+  stats: [User may read it, Reached the model, Leaked]
+  nodes:
+    intern: {label: Intern, x: 0, y: 2, kind: box, tag: "asks about bonuses"}
+    app: {label: RAG app, x: 2, y: 2, kind: def}
+    search: {label: Search, x: 4, y: 2, kind: raised, tag: runs as the app}
+    store: {label: Document store, x: 6, y: 2, kind: box}
+    memo: {label: Board memo, x: 6, y: 0, kind: atk, tag: confidential}
+    llm: {label: LLM, x: 2, y: 4, kind: def}
+  links: [[intern, app], [app, search], [search, store], [store, memo], [app, llm]]
+  steps:
+    - title: A normal question
+      text: An intern asks the company assistant about bonus plans. The question is fine.
+      on: [intern, app]
+      flow: [[intern, app, ink]]
+      stats: ["No", "No", "No"]
+    - title: Search runs with the app's power
+      text: The search step uses the app's own service account, which can read every document. It does not check who is asking.
+      on: [search, store]
+      flow: [[app, search, ink], [search, store, ink]]
+      mark: {search: warn}
+      stats: ["No", "No", "No"]
+    - title: The closest match is confidential
+      text: The board memo about bonuses is the nearest match in meaning, so it comes back first.
+      on: [memo, search]
+      flow: [[memo, search, atk]]
+      stats: ["No", "No", "No"]
+    - title: The memo goes into the prompt
+      text: The app pastes the memo into the prompt. Now the model has the text, and nothing in the prompt can make it keep a secret reliably.
+      on: [llm, app]
+      flow: [[search, app, atk], [app, llm, atk]]
+      mark: {llm: warn}
+      stats: ["No", "Yes", "No"]
+    - title: The intern reads the summary
+      text: The model summarizes the memo for the intern. This is **LLM02** and also a confused deputy, because the app used its power for someone without it.
+      on: [intern]
+      flow: [[llm, app, atk], [app, intern, atk]]
+      mark: {intern: bad}
+      stats: ["No", "Yes", "Yes"]
+    - title: Fix it in the search step
+      text: Pass the user's identity to search and filter by permission. The memo is never retrieved, so the model never sees it and cannot leak it.
+      on: [search]
+      show: [intern, app, search, store, llm]
+      flow: [[intern, app, ink], [app, search, def], [search, store, def]]
+      mark: {search: ok}
+      stats: ["No", "No", "No"]

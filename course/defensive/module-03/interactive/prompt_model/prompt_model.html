@@ -1,0 +1,1651 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt Roles Terminal</title>
+  <style>
+    :root {
+      --bg: #f6f6f7;
+      --paper: #ffffff;
+      --ink: #151515;
+      --muted: #686868;
+      --border: #dedede;
+      --terminal: #0f1115;
+      --terminal-2: #171a21;
+      --term-line: #2a3039;
+      --term-text: #e9eef5;
+      --term-muted: #9aa5b1;
+      --blue: #7dd3fc;
+      --green: #86efac;
+      --yellow: #fde68a;
+      --orange: #fbbf24;
+      --red: #fca5a5;
+      --purple: #c4b5fd;
+      --bar-bg: #262c35;
+      --bar-fill: #7dd3fc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(125, 211, 252, 0.15), transparent 30rem),
+        var(--bg);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .wrap {
+      width: min(1120px, 100%);
+      display: grid;
+      gap: 14px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      line-height: 1.02;
+      letter-spacing: -0.045em;
+    }
+
+    .sub {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.96rem;
+      max-width: 780px;
+    }
+
+    .status {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(10px);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: #333;
+      font-size: 0.83rem;
+      white-space: nowrap;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--orange);
+      margin-right: 7px;
+      vertical-align: 0.05em;
+    }
+
+    .dot.ready { background: var(--green); }
+    .dot.error { background: var(--red); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.45fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 13px;
+      box-shadow: 0 14px 45px rgba(0,0,0,0.06);
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: #555;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .step {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 13px;
+      padding: 10px 11px;
+      text-align: left;
+      font-weight: 850;
+      color: var(--ink);
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+    }
+
+    .step:hover {
+      transform: translateY(-1px);
+      border-color: #aaa;
+      background: #fafafa;
+    }
+
+    .step.active {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.16);
+    }
+
+    .step:disabled {
+      opacity: 0.6;
+      cursor: wait;
+      transform: none;
+    }
+
+    .editor {
+      display: none;
+      border-top: 1px solid #eeeeee;
+      padding-top: 10px;
+    }
+
+    .editor.active { display: block; }
+
+    .compact-note {
+      color: var(--muted);
+      font-size: 0.79rem;
+      line-height: 1.35;
+      margin-bottom: 9px;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    textarea {
+      width: 100%;
+      resize: vertical;
+      min-height: 82px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 10px;
+      background: #fbfbfc;
+      color: var(--ink);
+      outline: none;
+      font: 0.82rem/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    #naturalBox { min-height: 330px; }
+
+    textarea:focus { border-color: #9b9b9b; }
+
+    .load-box {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      background: #fbfbfc;
+      border-radius: 14px;
+      padding: 10px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .load-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: #444;
+      font-size: 0.78rem;
+      font-weight: 850;
+    }
+
+    .load-detail {
+      color: var(--muted);
+      font-size: 0.75rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 9px;
+      background: #e8e8ea;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: #111;
+      border-radius: 999px;
+      transition: width 180ms ease;
+    }
+
+    .small-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .small-btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 13px;
+      padding: 9px 10px;
+      text-align: center;
+      font-weight: 800;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .small-btn:hover {
+      border-color: #aaa;
+      background: #fafafa;
+    }
+
+    .tiny {
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.35;
+      margin-top: 9px;
+    }
+
+    .terminal {
+      background: var(--terminal);
+      color: var(--term-text);
+      border: 1px solid #050505;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.19);
+    }
+
+    .term-bar {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 13px;
+      background: var(--terminal-2);
+      border-bottom: 1px solid var(--term-line);
+      color: var(--term-muted);
+      font-size: 0.82rem;
+    }
+
+    .lights {
+      display: inline-flex;
+      gap: 6px;
+      margin-right: 8px;
+    }
+
+    .light {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #39404a;
+    }
+
+    .term-body {
+      height: min(730px, 77vh);
+      overflow: auto;
+      padding: 16px;
+      font: 0.85rem/1.48 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .line { margin: 0 0 7px; }
+
+    .terminal-progress {
+      margin: 7px 0 12px;
+      max-width: 640px;
+    }
+
+    .terminal-progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--term-muted);
+      font-size: 0.82rem;
+      margin-bottom: 5px;
+    }
+
+    .terminal-progress-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .terminal-progress-percent {
+      width: 52px;
+      text-align: right;
+      color: var(--yellow);
+    }
+
+    .terminal-progress-track {
+      height: 9px;
+      background: var(--bar-bg);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #303744;
+    }
+
+    .terminal-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--bar-fill);
+      border-radius: 999px;
+      transition: width 140ms ease;
+    }
+
+    .cmd { color: var(--blue); }
+    .muted { color: var(--term-muted); }
+    .green { color: var(--green); }
+    .yellow { color: var(--yellow); }
+    .orange { color: var(--orange); }
+    .red { color: var(--red); }
+    .purple { color: var(--purple); }
+    .blue { color: var(--blue); }
+
+    .role {
+      color: var(--purple);
+      font-weight: 850;
+    }
+
+    .marker {
+      color: var(--yellow);
+      font-weight: 850;
+    }
+
+    .natural {
+      color: var(--green);
+      font-weight: 850;
+    }
+
+    .api {
+      color: var(--blue);
+      font-weight: 850;
+    }
+
+    .box {
+      border: 1px solid #303744;
+      border-radius: 12px;
+      padding: 10px;
+      margin: 8px 0 12px;
+      background: rgba(255,255,255,0.035);
+    }
+
+    .chatbox {
+      border: 1px solid #394150;
+      border-radius: 16px;
+      padding: 12px;
+      margin: 8px 0 12px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .chatbox-title {
+      color: var(--term-muted);
+      margin-bottom: 8px;
+    }
+
+    .callout {
+      border-left: 3px solid var(--yellow);
+      padding: 8px 10px;
+      margin: 10px 0 12px;
+      background: rgba(253, 230, 138, 0.07);
+      color: var(--term-text);
+    }
+
+    .run-label {
+      color: var(--term-muted);
+      margin: 12px 0 4px;
+    }
+
+    .run-output {
+      margin: 0 0 6px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+    }
+
+    .diff-add {
+      background: rgba(253, 230, 138, 0.22);
+      color: var(--yellow);
+      border-radius: 3px;
+    }
+
+    .diff-note {
+      color: var(--yellow);
+      margin: 0 0 4px;
+      font-size: 0.8rem;
+    }
+
+    .scoreboard {
+      border: 1px solid #394150;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin: 10px 0 12px;
+      background: rgba(255,255,255,0.05);
+      display: grid;
+      gap: 8px;
+    }
+
+    .score-row {
+      display: grid;
+      grid-template-columns: 10.5em auto 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .pips { letter-spacing: 0.18em; white-space: nowrap; }
+    .pip-pass { color: var(--green); }
+    .pip-fail { color: var(--red); }
+    .pip-wait { color: #4b5563; }
+
+    .tally {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: #fbfbfc;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      font: 0.82rem/1.3 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .tally-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .tally .pip-pass { color: #15803d; }
+    .tally .pip-fail { color: #b91c1c; }
+    .tally .pip-wait { color: #c7c7cc; }
+
+    .cursor::after {
+      content: "▌";
+      color: var(--blue);
+      animation: blink 1s steps(1) infinite;
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 12px;
+        place-items: start center;
+      }
+
+      .grid { grid-template-columns: 1fr; }
+
+      .term-body {
+        height: 62vh;
+        min-height: 430px;
+        padding: 13px;
+        font-size: 0.78rem;
+      }
+
+      .status { width: 100%; }
+      .small-row { grid-template-columns: 1fr; }
+    }
+  
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1>What happens to prompt roles?</h1>
+        <p class="sub">The demo is about prompt packaging: one natural chat message versus separate API roles.</p>
+      </div>
+      <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Starting model preload...</span></div>
+    </header>
+
+    <section class="grid">
+      <aside class="panel">
+        <h2>Demo steps</h2>
+
+        <nav class="steps" aria-label="demo steps">
+          <button class="step active" id="stepNatural" type="button">1. Natural chat box</button>
+          <button class="step" id="stepApi" type="button">2. API role sections</button>
+          <button class="step" id="stepCompare" type="button">3. Model input</button>
+          <button class="step" id="stepRun" type="button">4. Output check</button>
+        </nav>
+
+        <section id="editorNatural" class="editor active">
+          <div class="compact-note">What a person might paste into a normal chat box. It is sent as one user message.</div>
+          <label for="naturalBox">Single chat box message</label>
+          <textarea id="naturalBox">You are a SOC triage assistant.
+
+Output contract:
+Return exactly one JSON object.
+Do not use markdown.
+Use exactly these keys: label, reason.
+The label value must be exactly one of these strings:
+- normal
+- login_failed
+- malware
+Do not invent new labels.
+
+Classification table:
+- event_type login_success maps to label normal.
+- event_type failed_login maps to label login_failed.
+- event_type malware_detected maps to label malware.
+
+Example:
+Input:
+event_type failed_login
+user root
+source_ip 198.51.100.10
+
+Output:
+{"label":"login_failed","reason":"Failed login activity requires review."}
+
+Classify this input:
+event_type malware_detected
+asset laptop-44
+threat_name EICAR-Test-File
+action quarantined
+severity high</textarea>
+        </section>
+
+        <section id="editorApi" class="editor">
+          <div class="compact-note">What software can send through a chat API: separate role fields before template rendering.</div>
+
+          <label for="systemBox">System role</label>
+          <textarea id="systemBox">You are a SOC triage assistant.
+
+Output contract:
+Return exactly one JSON object.
+Do not use markdown.
+Use exactly these keys: label, reason.
+The label value must be exactly one of these strings:
+- normal
+- login_failed
+- malware
+Do not invent new labels.
+
+Classification table:
+- event_type login_success maps to label normal.
+- event_type failed_login maps to label login_failed.
+- event_type malware_detected maps to label malware.</textarea>
+
+          <label for="userExampleBox">User example</label>
+          <textarea id="userExampleBox">Classify this input:
+event_type failed_login
+user root
+source_ip 198.51.100.10</textarea>
+
+          <label for="assistantBox">Assistant example</label>
+          <textarea id="assistantBox">{"label":"login_failed","reason":"Failed login activity requires review."}</textarea>
+
+          <label for="userBox">User role</label>
+          <textarea id="userBox">Classify this input:
+event_type malware_detected
+asset laptop-44
+threat_name EICAR-Test-File
+action quarantined
+severity high</textarea>
+        </section>
+
+        <section id="editorCompare" class="editor">
+          <div class="compact-note">This view renders both paths into the exact text format the model sees.</div>
+        </section>
+
+        <section id="editorRun" class="editor">
+          <div class="compact-note">This view runs each prompt package five times with sampling on (temperature 0.7) and counts how many responses followed the output contract. One run is a sample, so the count is the result.</div>
+          <div class="tally" id="runTally" aria-live="polite">
+            <div class="tally-row"><span>Natural chat</span><span id="tallyNatural" class="pips"></span></div>
+            <div class="tally-row"><span>API roles</span><span id="tallyApi" class="pips"></span></div>
+          </div>
+        </section>
+
+        <div class="load-box" aria-label="model loading progress">
+          <div class="load-top">
+            <span id="loadLabel">Model loading</span>
+            <span id="loadPercent">0%</span>
+          </div>
+          <div class="progress-track">
+            <div id="loadFill" class="progress-fill"></div>
+          </div>
+          <div id="loadDetail" class="load-detail">Preparing browser runtime...</div>
+        </div>
+
+        <div class="small-row">
+          <button id="clearFewShot" class="small-btn" type="button">Remove example</button>
+          <button id="resetDemo" class="small-btn" type="button">Reset</button>
+        </div>
+
+        <p class="tiny">
+          Model: <strong>onnx-community/Qwen2.5-0.5B-Instruct</strong><br>
+          Loads immediately. Uses WebGPU when available, with WASM fallback.
+        </p>
+      </aside>
+
+      <section class="terminal" aria-label="terminal output">
+        <div class="term-bar">
+          <span class="lights"><span class="light"></span><span class="light"></span><span class="light"></span></span>
+          prompt-role-terminal
+        </div>
+        <div id="terminal" class="term-body"></div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import {
+      pipeline,
+      TextStreamer
+    } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1/dist/transformers.min.js';
+
+    const MODEL_ID = 'onnx-community/Qwen2.5-0.5B-Instruct';
+    const EXPECTED_EVENT_TYPE = 'malware_detected';
+    const EXPECTED_LABEL_FOR_EVENT = {
+      login_success: 'normal',
+      failed_login: 'login_failed',
+      malware_detected: 'malware'
+    };
+    const ALLOWED_LABELS = new Set(['normal', 'login_failed', 'malware']);
+
+    // Step 4 draws several samples per package. Greedy decoding would return the
+    // same text on every run, so a repeat would show nothing. The sampling values are
+    // the ones Qwen ships in its generation_config.json: temperature 0.7, top_k 20,
+    // top_p 0.8. Temperature 0.7 is also the value used in the token sampler demo.
+    //
+    // Two library behaviours matter here, and both affect the two packages equally.
+    //
+    // 1. Transformers.js 3.5.1 builds temperature and top_p warpers but never calls
+    //    them. Passing temperature: 0.7 changes nothing: the model is sampled at
+    //    temperature 1.0 over its top 20 tokens, which is far noisier than the value
+    //    printed on screen. applySampling() below applies temperature and top_p
+    //    itself, and the library's own versions are set to 1.0 so that a later
+    //    library fix cannot apply them twice.
+    //
+    // 2. Anything not stated is filled in from generation_config.json, which also
+    //    ships repetition_penalty 1.1. That penalty lowers the score of every token
+    //    already in the context, and a JSON contract requires the model to repeat
+    //    exact keys, quote marks and label strings. It is set to 1.0 (off).
+    const RUNS_PER_PATH = 5;
+    const SAMPLING = { temperature: 0.7, top_k: 20, top_p: 0.8 };
+    const GENERATION = {
+      max_new_tokens: 160,
+      do_sample: true,
+      top_k: SAMPLING.top_k,
+      temperature: 1.0,
+      top_p: 1.0,
+      repetition_penalty: 1.0
+    };
+
+    // Logits processor: divide by temperature, then keep the smallest set of the
+    // top_k tokens whose probability reaches top_p. Everything else is set to
+    // -Infinity, so the library's top-k sampler can only draw from that set.
+    function applySampling(inputIds, logits) {
+      const { temperature, top_k, top_p } = SAMPLING;
+      const batch = logits.dims[0];
+      for (let b = 0; b < batch; b++) {
+        const data = logits[b].data;
+        const top = [];
+        for (let i = 0; i < data.length; i++) {
+          const v = data[i] / temperature;
+          data[i] = v;
+          if (top.length < top_k || v > data[top[top.length - 1]]) {
+            let j = top.length < top_k ? top.length : top_k - 1;
+            top[j] = i;
+            while (j > 0 && data[top[j]] > data[top[j - 1]]) {
+              [top[j], top[j - 1]] = [top[j - 1], top[j]];
+              j--;
+            }
+          }
+        }
+        const maxLogit = data[top[0]];
+        const weights = top.map(i => Math.exp(data[i] - maxLogit));
+        const total = weights.reduce((x, y) => x + y, 0);
+        const keep = new Set();
+        let cumulative = 0;
+        for (let k = 0; k < top.length; k++) {
+          keep.add(top[k]);
+          cumulative += weights[k] / total;
+          if (cumulative >= top_p) break;
+        }
+        for (let i = 0; i < data.length; i++) {
+          if (!keep.has(i)) data[i] = -Infinity;
+        }
+      }
+      return logits;
+    }
+
+    const terminal = document.getElementById('terminal');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+
+    const loadLabel = document.getElementById('loadLabel');
+    const loadPercent = document.getElementById('loadPercent');
+    const loadFill = document.getElementById('loadFill');
+    const loadDetail = document.getElementById('loadDetail');
+
+    const stepNatural = document.getElementById('stepNatural');
+    const stepApi = document.getElementById('stepApi');
+    const stepCompare = document.getElementById('stepCompare');
+    const stepRun = document.getElementById('stepRun');
+    const steps = [stepNatural, stepApi, stepCompare, stepRun];
+
+    const editorNatural = document.getElementById('editorNatural');
+    const editorApi = document.getElementById('editorApi');
+    const editorCompare = document.getElementById('editorCompare');
+    const editorRun = document.getElementById('editorRun');
+    const editors = [editorNatural, editorApi, editorCompare, editorRun];
+
+    const naturalBox = document.getElementById('naturalBox');
+    const systemBox = document.getElementById('systemBox');
+    const userExampleBox = document.getElementById('userExampleBox');
+    const assistantBox = document.getElementById('assistantBox');
+    const userBox = document.getElementById('userBox');
+
+    const clearFewShotButton = document.getElementById('clearFewShot');
+    const resetDemoButton = document.getElementById('resetDemo');
+
+    let generator = null;
+    let modelPromise = null;
+    let loadingStarted = false;
+    let lastOverallProgress = 0;
+    let progressRows = new Map();
+
+    const defaults = {
+      natural: naturalBox.value,
+      system: systemBox.value,
+      userExample: userExampleBox.value,
+      assistant: assistantBox.value,
+      user: userBox.value
+    };
+
+    function activateStep(stepIndex) {
+      steps.forEach((button, index) => button.classList.toggle('active', index === stepIndex));
+      editors.forEach((editor, index) => editor.classList.toggle('active', index === stepIndex));
+    }
+
+    function setBusy(busy) {
+      stepCompare.disabled = busy;
+      stepRun.disabled = busy;
+      clearFewShotButton.disabled = busy;
+      resetDemoButton.disabled = busy;
+      stepNatural.disabled = false;
+      stepApi.disabled = false;
+    }
+
+    function setStatus(text, mode = 'loading') {
+      statusText.textContent = text;
+      statusDot.classList.toggle('ready', mode === 'ready');
+      statusDot.classList.toggle('error', mode === 'error');
+    }
+
+    function updateSideProgress(percent, label, detail) {
+      const safePercent = Math.max(0, Math.min(100, Number.isFinite(percent) ? percent : 0));
+      loadLabel.textContent = label;
+      loadPercent.textContent = `${Math.round(safePercent)}%`;
+      loadFill.style.width = `${safePercent}%`;
+      loadDetail.textContent = detail;
+    }
+
+    function fileFromProgressData(data) {
+      return data?.file || data?.name || data?.url || data?.status || 'model asset';
+    }
+
+    function getProgressPercent(data) {
+      if (Number.isFinite(data?.progress)) return data.progress;
+      if (Number.isFinite(data?.loaded) && Number.isFinite(data?.total) && data.total > 0) {
+        return (data.loaded / data.total) * 100;
+      }
+      if (data?.status === 'ready' || data?.status === 'done') return 100;
+      return null;
+    }
+
+    function htmlEscape(text) {
+      return String(text).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[ch]));
+    }
+
+    function colorize(text) {
+      return htmlEscape(text)
+        .replaceAll('&lt;|im_start|&gt;', '<span class="marker">&lt;|im_start|&gt;</span>')
+        .replaceAll('&lt;|im_end|&gt;', '<span class="marker">&lt;|im_end|&gt;</span>')
+        .replaceAll('NATURAL CHAT BOX', '<span class="natural">NATURAL CHAT BOX</span>')
+        .replaceAll('API ROLE SECTIONS', '<span class="api">API ROLE SECTIONS</span>')
+        .replaceAll('MODEL INPUT', '<span class="yellow">MODEL INPUT</span>')
+        .replaceAll('OUTPUT CONTRACT CHECK', '<span class="yellow">OUTPUT CONTRACT CHECK</span>')
+        .replaceAll('PASS', '<span class="green">PASS</span>')
+        .replaceAll('FAIL', '<span class="red">FAIL</span>')
+        .replaceAll('system', '<span class="role">system</span>')
+        .replaceAll('user', '<span class="role">user</span>')
+        .replaceAll('assistant', '<span class="role">assistant</span>')
+        .replaceAll('"system"', '"<span class="role">system</span>"')
+        .replaceAll('"user"', '"<span class="role">user</span>"')
+        .replaceAll('"assistant"', '"<span class="role">assistant</span>"')
+        .replaceAll('one formatted token stream', '<span class="yellow">one formatted token stream</span>')
+        .replaceAll('not an access barrier', '<span class="orange">not an access barrier</span>')
+        .replaceAll('not protected memory', '<span class="orange">not protected memory</span>');
+    }
+
+    function clearTerminal() {
+      terminal.innerHTML = '';
+      progressRows = new Map();
+    }
+
+    function isTerminalNearBottom() {
+      return terminal.scrollHeight - terminal.scrollTop - terminal.clientHeight < 48;
+    }
+
+    function preserveScrollDuringBackgroundUpdate(updateFn) {
+      const wasNearBottom = isTerminalNearBottom();
+      const oldScrollTop = terminal.scrollTop;
+      updateFn();
+      if (wasNearBottom) {
+        terminal.scrollTop = terminal.scrollHeight;
+      } else {
+        terminal.scrollTop = oldScrollTop;
+      }
+    }
+
+    function scrollTerminalToBottom() {
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function println(text = '', className = '') {
+      const line = document.createElement('div');
+      line.className = `line ${className}`;
+      line.innerHTML = colorize(text);
+      terminal.appendChild(line);
+      scrollTerminalToBottom();
+      return line;
+    }
+
+    function box(text = '', className = '') {
+      const div = document.createElement('div');
+      div.className = `box ${className}`;
+      div.innerHTML = colorize(text);
+      terminal.appendChild(div);
+      scrollTerminalToBottom();
+      return div;
+    }
+
+    function callout(text = '', className = '') {
+      const div = document.createElement('div');
+      div.className = `callout ${className}`;
+      div.innerHTML = colorize(text);
+      terminal.appendChild(div);
+      scrollTerminalToBottom();
+      return div;
+    }
+
+    function chatBox(title = 'Chat box') {
+      const outer = document.createElement('div');
+      outer.className = 'chatbox';
+
+      const heading = document.createElement('div');
+      heading.className = 'chatbox-title';
+      heading.textContent = title;
+
+      const body = document.createElement('div');
+      body.className = 'line green';
+
+      outer.appendChild(heading);
+      outer.appendChild(body);
+      terminal.appendChild(outer);
+      scrollTerminalToBottom();
+
+      return body;
+    }
+
+    async function typeIntoElement(el, text, charsPerTick = 10, delay = 2) {
+      let shown = '';
+      for (let i = 0; i < text.length; i += charsPerTick) {
+        shown += text.slice(i, i + charsPerTick);
+        el.innerHTML = colorize(shown) + '<span class="cursor"></span>';
+        scrollTerminalToBottom();
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      el.innerHTML = colorize(text);
+      scrollTerminalToBottom();
+    }
+
+    async function typeLine(text = '', className = '', delay = 7) {
+      const line = document.createElement('div');
+      line.className = `line ${className}`;
+      terminal.appendChild(line);
+
+      for (let i = 0; i < text.length; i++) {
+        line.innerHTML = colorize(text.slice(0, i + 1)) + '<span class="cursor"></span>';
+        scrollTerminalToBottom();
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+
+      line.innerHTML = colorize(text);
+      scrollTerminalToBottom();
+    }
+
+    function createOrUpdateTerminalProgress(fileName, percent, statusTextValue) {
+      preserveScrollDuringBackgroundUpdate(() => {
+        const key = fileName;
+        let row = progressRows.get(key);
+
+        if (!row) {
+          const outer = document.createElement('div');
+          outer.className = 'terminal-progress';
+
+          const top = document.createElement('div');
+          top.className = 'terminal-progress-row';
+
+          const name = document.createElement('div');
+          name.className = 'terminal-progress-name';
+
+          const pct = document.createElement('div');
+          pct.className = 'terminal-progress-percent';
+
+          const track = document.createElement('div');
+          track.className = 'terminal-progress-track';
+
+          const fill = document.createElement('div');
+          fill.className = 'terminal-progress-fill';
+
+          track.appendChild(fill);
+          top.appendChild(name);
+          top.appendChild(pct);
+          outer.appendChild(top);
+          outer.appendChild(track);
+          terminal.appendChild(outer);
+
+          row = { outer, name, pct, fill };
+          progressRows.set(key, row);
+        }
+
+        row.name.textContent = `${statusTextValue}: ${fileName}`;
+        row.pct.textContent = `${Math.round(percent)}%`;
+        row.fill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+      });
+    }
+
+    function summarizeProgress(data) {
+      const status = data?.status || 'loading';
+      const file = fileFromProgressData(data);
+      const percent = getProgressPercent(data);
+
+      if (percent !== null) {
+        lastOverallProgress = Math.max(lastOverallProgress, percent);
+      }
+
+      if (status === 'initiate') {
+        updateSideProgress(lastOverallProgress, 'Model loading', `Starting ${file}`);
+        setStatus(`Starting ${file}`);
+        return;
+      }
+
+      if (status === 'download' || status === 'progress') {
+        const p = percent ?? lastOverallProgress;
+        updateSideProgress(p, 'Downloading model files', `${file} ${Math.round(p)}%`);
+        setStatus(`Downloading ${Math.round(p)}%`);
+        createOrUpdateTerminalProgress(file, p, 'downloading');
+        return;
+      }
+
+      if (status === 'done') {
+        updateSideProgress(100, 'File ready', `${file} downloaded`);
+        setStatus('Loading model into browser runtime...');
+        createOrUpdateTerminalProgress(file, 100, 'ready');
+        return;
+      }
+
+      if (status === 'ready') {
+        updateSideProgress(100, 'Model ready', 'All model files loaded');
+        setStatus('Model ready', 'ready');
+        return;
+      }
+
+      const p = percent ?? lastOverallProgress;
+      updateSideProgress(p, 'Model loading', `${status}: ${file}`);
+      setStatus(`${status} ${Math.round(p)}%`);
+      if (percent !== null) {
+        createOrUpdateTerminalProgress(file, p, status);
+      }
+    }
+
+    function getNaturalMessages() {
+      return [
+        {
+          role: 'user',
+          content: naturalBox.value.trim()
+        }
+      ];
+    }
+
+    function getApiMessages(includeAssistantExample = true) {
+      const messages = [
+        {
+          role: 'system',
+          content: systemBox.value.trim()
+        }
+      ];
+
+      if (includeAssistantExample && userExampleBox.value.trim() && assistantBox.value.trim()) {
+        messages.push({
+          role: 'user',
+          content: userExampleBox.value.trim()
+        });
+
+        messages.push({
+          role: 'assistant',
+          content: assistantBox.value.trim()
+        });
+      }
+
+      messages.push({
+        role: 'user',
+        content: userBox.value.trim()
+      });
+
+      return messages;
+    }
+
+    function startModelPreload() {
+      if (modelPromise) return modelPromise;
+
+      loadingStarted = true;
+      const hasWebGPU = Boolean(navigator.gpu);
+      const device = hasWebGPU ? 'webgpu' : 'wasm';
+
+      setStatus(`Starting ${device.toUpperCase()} preload...`);
+      updateSideProgress(0, 'Model loading', `Starting ${device.toUpperCase()} runtime...`);
+
+      modelPromise = pipeline('text-generation', MODEL_ID, {
+        device,
+        dtype: 'q4',
+        progress_callback: summarizeProgress
+      }).then(pipe => {
+        generator = pipe;
+        updateSideProgress(100, 'Model ready', `Loaded on ${device.toUpperCase()}`);
+        setStatus(`Model ready on ${device.toUpperCase()}`, 'ready');
+        preserveScrollDuringBackgroundUpdate(() => {
+          const lineBreak = document.createElement('div');
+          lineBreak.className = 'line';
+          terminal.appendChild(lineBreak);
+
+          const readyLine = document.createElement('div');
+          readyLine.className = 'line green';
+          readyLine.innerHTML = colorize(`✓ Model ready on ${device.toUpperCase()}.`);
+          terminal.appendChild(readyLine);
+        });
+        return pipe;
+      }).catch(async firstError => {
+        if (device === 'webgpu') {
+          preserveScrollDuringBackgroundUpdate(() => {
+            const lineBreak = document.createElement('div');
+            lineBreak.className = 'line';
+            terminal.appendChild(lineBreak);
+
+            const fallbackLine = document.createElement('div');
+            fallbackLine.className = 'line orange';
+            fallbackLine.innerHTML = colorize('WebGPU preload failed. Falling back to WASM.');
+            terminal.appendChild(fallbackLine);
+          });
+          setStatus('WebGPU failed. Loading WASM...');
+          updateSideProgress(0, 'WASM fallback', 'Restarting model load with WASM...');
+
+          progressRows = new Map();
+          lastOverallProgress = 0;
+
+          generator = await pipeline('text-generation', MODEL_ID, {
+            device: 'wasm',
+            dtype: 'q4',
+            progress_callback: summarizeProgress
+          });
+
+          updateSideProgress(100, 'Model ready', 'Loaded on WASM');
+          setStatus('Model ready on WASM', 'ready');
+          preserveScrollDuringBackgroundUpdate(() => {
+            const lineBreak = document.createElement('div');
+            lineBreak.className = 'line';
+            terminal.appendChild(lineBreak);
+
+            const readyLine = document.createElement('div');
+            readyLine.className = 'line green';
+            readyLine.innerHTML = colorize('✓ Model ready on WASM.');
+            terminal.appendChild(readyLine);
+          });
+          return generator;
+        }
+
+        updateSideProgress(0, 'Model load failed', String(firstError?.message ?? firstError));
+        setStatus('Model load failed', 'error');
+        println('');
+        println('Model preload failed.', 'red');
+        println(String(firstError?.message ?? firstError), 'red');
+        throw firstError;
+      });
+
+      return modelPromise;
+    }
+
+    async function loadModel() {
+      if (generator) return generator;
+      if (!loadingStarted) startModelPreload();
+      return modelPromise;
+    }
+
+    async function showNatural() {
+      activateStep(0);
+      setBusy(true);
+      clearTerminal();
+
+      await typeLine('$ natural-chat-box', 'cmd');
+      println('');
+      println('A person types the full prompt into one normal chat box.', 'muted');
+      println('');
+
+      const typed = chatBox('User typing');
+      await typeIntoElement(typed, naturalBox.value.trim(), 16, 1);
+
+      println('');
+      println('User presses Enter', 'yellow');
+      println('');
+      println('The chat app wraps that text as one message:', 'muted');
+      box(JSON.stringify(getNaturalMessages(), null, 2));
+      println('');
+
+      try {
+        println('Then the chat template formats it for the model:', 'muted');
+        const pipe = await loadModel();
+        const rendered = pipe.tokenizer.apply_chat_template(getNaturalMessages(), {
+          tokenize: false,
+          add_generation_prompt: true
+        });
+        box(rendered, 'green');
+      } catch (error) {
+        println('Could not render the chat template in this browser.', 'red');
+        println(String(error?.message ?? error), 'red');
+      }
+
+      println('');
+      println('Everything started as one natural user message.', 'orange');
+
+      setBusy(false);
+    }
+
+    async function showApi() {
+      activateStep(1);
+      setBusy(true);
+      clearTerminal();
+
+      await typeLine('$ api-role-sections', 'cmd');
+      println('');
+      println('Qwen supports role-style chat formatting through the chat template.', 'green');
+      println('Software sends separate message fields before template rendering.', 'muted');
+      println('');
+      box(JSON.stringify(getApiMessages(true), null, 2));
+      println('');
+      println('Rules sit in system, example output in assistant, current task in user.', 'green');
+
+      setBusy(false);
+    }
+
+    async function compareTemplates() {
+      activateStep(2);
+      setBusy(true);
+      clearTerminal();
+
+      try {
+        await typeLine('$ render model-input', 'cmd');
+        println('');
+        println('Using the model that began loading when the page opened...', 'muted');
+
+        const pipe = await loadModel();
+
+        const naturalRendered = pipe.tokenizer.apply_chat_template(getNaturalMessages(), {
+          tokenize: false,
+          add_generation_prompt: true
+        });
+
+        const apiRendered = pipe.tokenizer.apply_chat_template(getApiMessages(true), {
+          tokenize: false,
+          add_generation_prompt: true
+        });
+
+        println('');
+        println('NATURAL CHAT BOX → MODEL INPUT', 'green');
+        box(naturalRendered);
+        println('');
+        println('API ROLE SECTIONS → MODEL INPUT', 'blue');
+        box(apiRendered);
+        println('');
+        println('Both paths become one formatted token stream.', 'yellow');
+        println('Role markers guide behavior. They are not an access barrier.', 'orange');
+      } catch (error) {
+        println('');
+        println('Could not render the chat templates in this browser.', 'red');
+        println(String(error?.message ?? error), 'red');
+      }
+
+      setBusy(false);
+    }
+
+    // A contract failure is something that would break the pipeline downstream:
+    // the output is not one JSON object, it does not parse, or the label is
+    // missing, wrong, or outside the allowed set.
+    // Anything else the model volunteers is reported as a deviation, not a failure.
+    function balancedObject(text, from) {
+      // Braces inside JSON strings do not count toward nesting.
+      let depth = 0;
+      let inString = false;
+      for (let i = from; i < text.length; i++) {
+        const ch = text[i];
+        if (inString) {
+          if (ch === '\\') i++;
+          else if (ch === '"') inString = false;
+          continue;
+        }
+        if (ch === '"') inString = true;
+        else if (ch === '{') depth++;
+        else if (ch === '}') {
+          depth--;
+          if (depth === 0) return text.slice(from, i + 1);
+        }
+      }
+      return null;
+    }
+
+    function validateOutput(rawText) {
+      const expectedLabel = EXPECTED_LABEL_FOR_EVENT[EXPECTED_EVENT_TYPE];
+      const text = String(rawText).trim();
+      const failures = [];
+      const kinds = [];
+      const notes = [];
+
+      const start = text.indexOf('{');
+      if (start < 0) {
+        return {
+          ok: false,
+          parsed: null,
+          kinds: ['no JSON object'],
+          reason: 'There is no JSON object in the output. A pipeline expecting one has nothing to read.'
+        };
+      }
+
+      const jsonText = balancedObject(text, start);
+      if (!jsonText) {
+        return {
+          ok: false,
+          parsed: null,
+          kinds: ['JSON never closed'],
+          reason: 'The JSON object is never closed. The output stops part-way through.'
+        };
+      }
+
+      const before = text.slice(0, start).trim();
+      const after = text.slice(start + jsonText.length).trim();
+      if (/```/.test(before) || /```/.test(after)) {
+        failures.push('wrapped the answer in a markdown code fence, so the output is not JSON');
+        kinds.push('markdown fence');
+      } else {
+        if (before) {
+          failures.push(`wrote ${JSON.stringify(before.slice(0, 40))} before the JSON, so the output is not JSON`);
+          kinds.push('text before the JSON');
+        }
+        if (after) {
+          failures.push('carried on writing after the JSON object closed');
+          kinds.push('text after the JSON');
+        }
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch {
+        return { ok: false, parsed: null, kinds: ['JSON does not parse'], reason: 'The JSON could not be parsed.' };
+      }
+
+      const label = String(parsed.label ?? '').toLowerCase().trim();
+      if (!label) {
+        failures.push('has no label field, which is the one value the pipeline needs');
+        kinds.push('no label');
+      } else if (!ALLOWED_LABELS.has(label)) {
+        failures.push(`used "${label}", which is not one of the allowed labels`);
+        kinds.push('label outside the allowed set');
+      } else if (label !== expectedLabel) {
+        failures.push(`the table maps ${EXPECTED_EVENT_TYPE} to "${expectedLabel}", but the answer used "${label}"`);
+        kinds.push('wrong label');
+      }
+      if (!String(parsed.reason ?? '').trim()) {
+        failures.push('has no reason string');
+        kinds.push('no reason');
+      }
+
+      // Extra keys are a deviation from the contract, not a break. Say so, do not fail it.
+      const extra = Object.keys(parsed).filter(k => k !== 'label' && k !== 'reason');
+      if (extra.length) {
+        notes.push(`It also added ${extra.join(', ')}, which the contract did not ask for. The label is still readable, so the pipeline still works.`);
+      }
+
+      if (failures.length) {
+        return {
+          ok: false,
+          parsed,
+          kinds,
+          reason: failures.map((v, i) => `${i + 1}. It ${v}.`).join('\n')
+        };
+      }
+
+      const base = `One JSON object, label "${expectedLabel}", readable by the pipeline.`;
+      return { ok: true, parsed, kinds: [], reason: notes.length ? base + '\n' + notes.join('\n') : base };
+    }
+
+    // Word-level comparison against the first run, so the class can see exactly
+    // which parts of the output changed when nothing about the prompt did.
+    function splitWords(text) {
+      // Whitespace, runs of letters and digits, or single symbols, so JSON punctuation
+      // lines up and only the words that actually changed are highlighted.
+      return String(text).match(/\s+|[A-Za-z0-9_]+|[^\sA-Za-z0-9_]/g) || [];
+    }
+
+    function diffAgainst(baseText, text) {
+      const a = splitWords(baseText).filter(t => t.trim());
+      const bAll = splitWords(text);
+      const b = bAll.filter(t => t.trim());
+      const n = a.length;
+      const m = b.length;
+      const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+      for (let i = n - 1; i >= 0; i--) {
+        for (let j = m - 1; j >= 0; j--) {
+          dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        }
+      }
+      const changed = new Array(m).fill(true);
+      let i = 0;
+      let j = 0;
+      while (i < n && j < m) {
+        if (a[i] === b[j]) { changed[j] = false; i++; j++; }
+        else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+        else j++;
+      }
+      let html = '';
+      let tokenIndex = 0;
+      let changedWords = 0;
+      let totalWords = 0;
+      let changedSymbols = 0;
+      for (const token of bAll) {
+        if (!token.trim()) { html += htmlEscape(token); continue; }
+        const isWord = /[A-Za-z0-9_]/.test(token);
+        if (isWord) totalWords++;
+        if (changed[tokenIndex]) {
+          html += `<span class="diff-add">${htmlEscape(token)}</span>`;
+          if (isWord) changedWords++;
+          else changedSymbols++;
+        } else {
+          html += htmlEscape(token);
+        }
+        tokenIndex++;
+      }
+      return { html, changedWords, totalWords, changedSymbols };
+    }
+
+    function pips(results, total) {
+      let html = '';
+      for (let i = 0; i < total; i++) {
+        const r = results[i];
+        if (!r) html += '<span class="pip-wait">○</span>';
+        else html += r.ok ? '<span class="pip-pass">●</span>' : '<span class="pip-fail">✕</span>';
+      }
+      const passed = results.filter(r => r.ok).length;
+      return `${html} <span>${passed}/${total}</span>`;
+    }
+
+    function updateTally(naturalResults, apiResults) {
+      document.getElementById('tallyNatural').innerHTML = pips(naturalResults, RUNS_PER_PATH);
+      document.getElementById('tallyApi').innerHTML = pips(apiResults, RUNS_PER_PATH);
+    }
+
+    async function generateRun(pipe, pathName, messages, runIndex, firstOutput) {
+      const isNatural = pathName.includes('NATURAL');
+      const labelLine = document.createElement('div');
+      labelLine.className = 'run-label';
+      labelLine.textContent = `run ${runIndex + 1} of ${RUNS_PER_PATH}`;
+      terminal.appendChild(labelLine);
+
+      const outputBox = document.createElement('div');
+      outputBox.className = `box run-output ${isNatural ? 'green' : 'blue'}`;
+      terminal.appendChild(outputBox);
+      scrollTerminalToBottom();
+
+      let generated = '';
+      const streamer = new TextStreamer(pipe.tokenizer, {
+        skip_prompt: true,
+        skip_special_tokens: true,
+        callback_function: text => {
+          generated += text;
+          const wasNearBottom = isTerminalNearBottom();
+          outputBox.textContent = generated;
+          if (wasNearBottom) scrollTerminalToBottom();
+        }
+      });
+
+      const output = await pipe(messages, { ...GENERATION, logits_processor: [applySampling], streamer });
+
+      if (!generated.trim()) {
+        const finalText = output?.[0]?.generated_text;
+        if (Array.isArray(finalText)) {
+          const last = finalText.at(-1);
+          generated = last?.content ?? JSON.stringify(last, null, 2);
+        } else {
+          generated = String(finalText ?? '');
+        }
+        outputBox.textContent = generated;
+      }
+
+      const trimmed = generated.trim();
+
+      if (firstOutput !== null) {
+        if (trimmed === firstOutput) {
+          const note = document.createElement('div');
+          note.className = 'diff-note';
+          note.style.color = 'var(--term-muted)';
+          note.textContent = 'identical to run 1';
+          terminal.appendChild(note);
+        } else {
+          const diff = diffAgainst(firstOutput, trimmed);
+          outputBox.innerHTML = diff.html;
+          const note = document.createElement('div');
+          note.className = 'diff-note';
+          note.textContent = diff.changedWords
+            ? `changed from run 1: ${diff.changedWords} of ${diff.totalWords} words differ (highlighted)`
+            : 'changed from run 1: same words, different punctuation or layout (highlighted)';
+          terminal.appendChild(note);
+        }
+      }
+
+      const check = validateOutput(trimmed);
+      println(`${check.ok ? 'PASS' : 'FAIL'}  ${check.reason.replace(/\n/g, '  ')}`, check.ok ? 'green' : 'red');
+      return { ...check, text: trimmed };
+    }
+
+    async function runPath(pipe, pathName, messages, results, onUpdate) {
+      println('');
+      println(`${pathName} · ${RUNS_PER_PATH} runs of the same prompt`, pathName.includes('NATURAL') ? 'green' : 'blue');
+      let firstOutput = null;
+      for (let r = 0; r < RUNS_PER_PATH; r++) {
+        setStatus(`${pathName.toLowerCase()} · run ${r + 1} of ${RUNS_PER_PATH}`);
+        const result = await generateRun(pipe, pathName, messages, r, firstOutput);
+        if (firstOutput === null) firstOutput = result.text;
+        results.push(result);
+        onUpdate();
+      }
+      summarizePath(pathName, results);
+    }
+
+    function summarizePath(pathName, results) {
+      const passed = results.filter(r => r.ok).length;
+      const distinct = new Set(results.map(r => r.text)).size;
+      const kindCounts = new Map();
+      results.filter(r => !r.ok).forEach(r => {
+        const key = (r.kinds && r.kinds.length) ? r.kinds.join(' + ') : 'other';
+        kindCounts.set(key, (kindCounts.get(key) || 0) + 1);
+      });
+      const failText = [...kindCounts.entries()].map(([k, c]) => `${k} ×${c}`).join(', ');
+      println('');
+      println(`${pathName}: ${passed} of ${results.length} passed. ${distinct} different ${distinct === 1 ? 'output' : 'outputs'} from one unchanged prompt.`, 'yellow');
+      if (failText) println(`What broke: ${failText}.`, 'red');
+    }
+
+    function scoreRow(name, cls, results) {
+      const passed = results.filter(r => r.ok).length;
+      const distinct = new Set(results.map(r => r.text)).size;
+      return `<div class="score-row"><span class="${cls}">${name}</span><span class="pips">${pips(results, RUNS_PER_PATH)}</span><span class="muted">${distinct} different ${distinct === 1 ? 'output' : 'outputs'}</span></div>`;
+    }
+
+    async function runBoth() {
+      activateStep(3);
+      setBusy(true);
+      clearTerminal();
+
+      const naturalResults = [];
+      const apiResults = [];
+      updateTally(naturalResults, apiResults);
+
+      try {
+        await typeLine('$ run prompt-packages --runs 5 --temperature 0.7', 'cmd');
+        println('');
+        callout('Same instructions, two packages, five runs each. Sampling is on, so every run is a fresh draw from the model. The number that matters is how many of the five follow the output contract.');
+        println('');
+        println('The input uses an explicit classification table:', 'muted');
+        println('event_type login_success → normal');
+        println('event_type failed_login → login_failed');
+        println('event_type malware_detected → malware');
+        println('From run 2 onward, words that differ from run 1 are highlighted.', 'muted');
+
+        const pipe = await loadModel();
+        const refresh = () => updateTally(naturalResults, apiResults);
+
+        await runPath(pipe, 'NATURAL CHAT BOX', getNaturalMessages(), naturalResults, refresh);
+        await runPath(pipe, 'API ROLE SECTIONS', getApiMessages(true), apiResults, refresh);
+
+        const naturalPassed = naturalResults.filter(r => r.ok).length;
+        const apiPassed = apiResults.filter(r => r.ok).length;
+
+        println('');
+        println(`PASS RATE · ${RUNS_PER_PATH} sampled runs per package`, 'yellow');
+        const board = document.createElement('div');
+        board.className = 'scoreboard';
+        board.innerHTML =
+          scoreRow('NATURAL CHAT BOX', 'natural', naturalResults) +
+          scoreRow('API ROLE SECTIONS', 'api', apiResults);
+        terminal.appendChild(board);
+        scrollTerminalToBottom();
+
+        if (naturalPassed < apiPassed) {
+          println(`Same instructions, different packaging: ${naturalPassed} of ${RUNS_PER_PATH} against ${apiPassed} of ${RUNS_PER_PATH}.`, 'green');
+          println('A single click on either side would have shown one of these rows, and it could have been a passing one.', 'muted');
+        } else if (naturalPassed > apiPassed) {
+          println(`On this run the chat box did better: ${naturalPassed} of ${RUNS_PER_PATH} against ${apiPassed} of ${RUNS_PER_PATH}.`, 'orange');
+          println('Five draws is a small sample. Run it again before drawing a conclusion, which is itself the lesson.', 'muted');
+        } else {
+          println(`Both packages passed ${naturalPassed} of ${RUNS_PER_PATH} on this run.`, 'orange');
+          println('Packaging made no measurable difference in these five draws. Run it again: the count can move.', 'muted');
+        }
+
+        println('');
+        println('Prompt-type difference:', 'yellow');
+        println('Natural chat puts rules, example, task, and data together inside user.', 'muted');
+        println('API role sections keep rules in system, example output in assistant, and the current task in user before rendering.', 'muted');
+        println('After rendering, both become tokens in sequence. The role structure guides behavior; it is not protected memory.', 'orange');
+        setStatus('Runs complete', 'ready');
+      } catch (error) {
+        println('');
+        println('Model generation failed in this browser.', 'red');
+        println(String(error?.message ?? error), 'red');
+        println('');
+        println('The prompt-type comparison still works in Steps 1 through 3.', 'muted');
+        setStatus('Generation failed', 'error');
+      }
+
+      setBusy(false);
+    }
+
+    async function intro() {
+      clearTerminal();
+      await typeLine('$ prompt-roles --demo', 'cmd');
+      println('');
+      println('Model preload starts automatically when the page opens.', 'green');
+      println('Download progress appears here and on the left.', 'muted');
+      println('');
+      println('Use the four steps on the left. The active step is highlighted.', 'yellow');
+      println('');
+      println('Focus: prompt packaging, not model size.', 'green');
+      println('');
+
+      if (!loadingStarted) {
+        println('$ preload_model --model onnx-community/Qwen2.5-0.5B-Instruct', 'cmd');
+        startModelPreload();
+      }
+    }
+
+    stepNatural.addEventListener('click', showNatural);
+    stepApi.addEventListener('click', showApi);
+    stepCompare.addEventListener('click', compareTemplates);
+    stepRun.addEventListener('click', runBoth);
+
+    clearFewShotButton.addEventListener('click', async () => {
+      userExampleBox.value = '';
+      assistantBox.value = '';
+      await showApi();
+    });
+
+    resetDemoButton.addEventListener('click', async () => {
+      naturalBox.value = defaults.natural;
+      systemBox.value = defaults.system;
+      userExampleBox.value = defaults.userExample;
+      assistantBox.value = defaults.assistant;
+      userBox.value = defaults.user;
+      updateTally([], []);
+      activateStep(0);
+      await intro();
+    });
+
+    updateTally([], []);
+    intro();
+  </script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 8 · Section 3 · Recon, Attack-Surface Mapping, and Vulnerability Discovery · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 8 · Section 3 of 7</div>
+      <h1 class="nyu-hero__title">Recon, Attack-Surface Mapping, and Vulnerability Discovery</h1>
+      <p class="nyu-hero__subtitle">Attackers and defenders both feed scan output into language models to summarize attack surfaces and propose next steps. We trace how that works, where it breaks, how to tell a real finding from a fabricated one, and what Google's Big Sleep project actually demonstrated when it found a zero-day that fuzzing missed.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~25 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 1 knowledge check + 1 matching exercise + 2 interactives</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> From Scan Output to AI Summary: Trust and Verification</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Two Failure Modes: Context Overflow and Hallucinated Exploits</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Google's Big Sleep and the Real Discovery Frontier</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Knowledge Check and Matching Exercise</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Critique</strong> an AI-produced attack-surface summary and exploit-path proposal against ground truth.</span></li>
+          <li><span><strong>Separate</strong> plausible reasoning from fabrication, and tie each failure to a mechanism (context overflow or hallucination).</span></li>
+          <li><span><strong>Explain</strong> how fuzzing-and-AI hybrid discovery works, its documented results, and the boundary on what it can do.</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>When an attacker feeds scan data or code to an AI, how good is the output, and how do we tell its real findings from its fabrications?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">From Scan Output to AI Summary: Trust and Verification</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+
+        <p>Social engineering is where AI moved the skill and scale levers furthest. Here the same levers shift for a different phase of an attack: reconnaissance and vulnerability discovery. The "trust but verify" discipline we have practiced all semester applies in a new direction. Instead of evaluating a model's defensive output (an advisory summary, a code review), we evaluate the kind of output an attacker would see when feeding scan data or code into a model.</p>
+
+        <h3 class="nyu-subsection-title">Key terms</h3>
+        <ul>
+          <li><button type="button" class="nyu-define" data-term="attack-surface">Attack surface</button>: the points where an attacker could enter or extract data.</li>
+          <li><button type="button" class="nyu-define" data-term="reconnaissance">Reconnaissance</button>: information-gathering before any system is acted upon.</li>
+          <li><button type="button" class="nyu-define" data-term="exploit-path">Exploit path</button>: a proposed chain of weaknesses leading to a higher-impact outcome.</li>
+          <li><button type="button" class="nyu-define" data-term="fuzzing">Fuzzing</button>: feeding varied or malformed inputs to a program to provoke revealing crashes.</li>
+          <li><button type="button" class="nyu-define" data-term="hallucination">Hallucination</button>: plausible-sounding but false output; here, an unsupported exploit step.</li>
+        </ul>
+
+        <h3 class="nyu-subsection-title">The basic mechanism</h3>
+
+        <p>A network scan produces structured facts: which hosts are up, which ports are open, which service versions are reported, which known vulnerabilities a scanner flagged. A language model can ingest that output and produce two useful-looking things: a readable summary of the attack surface and a proposed, prioritized exploit path.</p>
+		<p>The appeal is obvious. A single scan can be thousands of lines, and a model can compress it into a paragraph and a plan in seconds. The same technique works on the defender's side: pipe your own scan into a model and get a human-readable summary of what is exposed. The lever that moves is <em>time</em>, specifically the time from raw output to actionable summary.</p>
+
+        <p>The mechanism also tells us where it breaks, and it breaks in two characteristic ways. The interactive below shows how AI collapses each phase of the attacker's recon timeline.</p>
+
+        <div class="nyu-embed-frame"><iframe src="interactive/03_recon_timeline/recon_timeline.html" title="Interactive: AI Recon Timeline showing how AI accelerates each reconnaissance phase" loading="lazy" style="height:820px;"></iframe></div>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Two Failure Modes: Context Overflow and Hallucinated Exploits</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Context-Window Overflow</h3>
+            <p>A long scan can exceed the model's <button type="button" class="nyu-define" data-term="context-window">context window</button>. Once later content pushes earlier findings out of the window, the model effectively forgets hosts it already saw, and its summary silently omits them. The summary reads as complete but is not. There is no error message; the omission is invisible unless you compare the summary against the original scan line by line.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Hallucinated Exploit Paths</h3>
+            <p>The model does not verify anything; it predicts plausible text. So it will sometimes invent a service version that was not in the scan, or propose an exploit step that sounds right for the kind of system described but is not supported by the actual findings. That is <button type="button" class="nyu-define" data-term="hallucination">hallucination</button> in an operational setting, and it is dangerous precisely because a fabricated exploit path reads exactly like a real one.</p>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Trustworthy vs. fabricated: a side-by-side comparison</h3>
+
+        <p>Suppose the simulated scan reports a single fact for one host: TCP port 22 is open.</p>
+
+        <div class="nyu-table-wrap">
+          <table class="nyu-table">
+            <thead>
+              <tr><th style="width:15%">Element</th><th style="width:42%">Trustworthy Summary</th><th style="width:43%">Hallucinated Summary</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Claim</strong></td>
+                <td>"Host A exposes SSH on port 22; service version not identified."</td>
+                <td>"Host A runs OpenSSH 9.6, which is vulnerable to a known remote code execution flaw; an exploit is available."</td>
+              </tr>
+              <tr>
+                <td><strong>Source line in scan</strong></td>
+                <td>Yes: the scan shows port 22 open.</td>
+                <td>No: the scan never reported a version. The version, the vulnerability, and the exploit are all invented.</td>
+              </tr>
+              <tr>
+                <td><strong>Confidence tone</strong></td>
+                <td>Cautious. States what is known and what is not.</td>
+                <td>More specific, more useful, more confident, and entirely fabricated.</td>
+              </tr>
+              <tr>
+                <td><strong>Verification move</strong></td>
+                <td>None needed for the stated claim.</td>
+                <td>Point to the scan line. "Port 22 open" has one; "OpenSSH 9.6" does not.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>The move that catches this is mechanical. For every claim in the summary, point to the line in the scan that supports it. A claim with no supporting line is either <strong>plausible-but-unverifiable</strong> (we would need to gather more data before acting) or <strong>fabricated</strong> (it invents beyond or contradicts the data). The knowledge check below tests this claim-to-source discipline.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Common misconceptions
+          </h3>
+          <ol>
+            <li><strong>"If the AI lists an exploit path, those steps are real."</strong> They may be supported, plausible-but-unverifiable, or fabricated. Each step must be checked against the source data.</li>
+            <li><strong>"A clean AI summary of a scan means the scan had nothing else."</strong> Context-window limits can cause silent omissions. Absence in the summary is not evidence of absence in the scan.</li>
+          </ol>
+        </aside>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Why this matters operationally
+          </h3>
+          <p>The same technique a defender might use to accelerate an authorized assessment is available to adversaries, so the attack surface an organization leaves exposed gets summarized faster than before. More immediately for our own practice: never act on an AI-proposed exploit path, finding, or remediation without checking it against ground truth. A tester who runs an exploit because the model suggested it, without verifying that the step is real, can waste hours or cause damage chasing a fabrication.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Google's Big Sleep and the Real Discovery Frontier</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The previous subsection focused on where models fail when reading scan data. The clearest documented example of where they succeed is Google's Big Sleep project.</p>
+
+        <h3 class="nyu-subsection-title">Background</h3>
+
+        <p>Big Sleep grew out of <button type="button" class="nyu-define" data-term="project-naptime">Project Naptime</button>, a collaboration between <button type="button" class="nyu-define" data-term="google-project-zero">Google Project Zero</button> and <button type="button" class="nyu-define" data-term="deepmind">DeepMind</button>. The idea is to pair a language model with a fuzzing-and-debugging loop: the agent reads code, writes and runs its own test inputs in a sandbox, observes the results, and reasons about what to try next. In late 2024, Big Sleep identified a real <button type="button" class="nyu-define" data-term="zero-day">zero-day</button> vulnerability in the widely used <button type="button" class="nyu-define" data-term="sqlite">SQLite database engine</button>, and later a vulnerability tracked as <a href="https://nvd.nist.gov/vuln/detail/CVE-2025-6965" target="_blank" rel="noopener">CVE-2025-6965</a>, that traditional fuzzing had missed even after extensive automated testing and many CPU-hours of effort.</p>
+
+        <h3 class="nyu-subsection-title">What is new, and what is bounded</h3>
+
+        <div class="nyu-table-wrap">
+          <table class="nyu-table nyu-table--prose">
+            <thead>
+              <tr><th>What Big Sleep Demonstrated</th><th>What It Did Not Demonstrate</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>An agent combined code reading, input generation, execution, and reasoning in a loop.</td>
+                <td>It did not work autonomously in the wild. It operated inside a purpose-built harness on a specific target.</td>
+              </tr>
+              <tr>
+                <td>It found a real bug that a mature, widely used fuzzer had missed.</td>
+                <td>It is not a general "point it at anything and get zero-days" button. The Google team explicitly frames the work as bounded.</td>
+              </tr>
+              <tr>
+                <td>The discovery is a genuine capability, not a press release. The vulnerability was assigned a CVE.</td>
+                <td>Generalizing from one scaffolded success to universal autonomous discovery is the <button type="button" class="nyu-define" data-term="lab-to-production-gap">lab-to-production gap</button>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="nyu-subsection-title">What it means for defenders</h3>
+
+        <div class="nyu-pillars" data-cols="2">
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">1</span>
+            <h3 class="nyu-pillar__title">Defensive Opportunity</h3>
+            <p class="nyu-pillar__body">AI-assisted discovery can help us find our own bugs first: the dual-use inversion working in our favor. As the cost of finding certain classes of bugs falls, the value of the secure-by-design practices we studied when reviewing code and supply chains goes up.</p>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">2</span>
+            <h3 class="nyu-pillar__title">Strategic Pressure</h3>
+            <p class="nyu-pillar__body">The attack surface an organization exposes becomes discoverable faster. The response is not to panic but to tighten the surface: fix the bugs that exist before an attacker's agent finds them.</p>
+          </article>
+        </div>
+
+        <h3 class="nyu-subsection-title">Tradeoffs and open questions</h3>
+
+        <p>The core tension is speed versus trust. Models compress huge scan outputs quickly, but the compression is lossy and unverified, and the failures are silent. The open question for the field is how much of vulnerability discovery will become reliably automatable. Current evidence shows real but narrow successes, and benchmark results are easy to overstate when a model may have seen the test data during training (the data contamination problem we studied earlier in the course). For now, AI output is a lead to verify, never a finding to act on.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Misconception
+          </h3>
+          <p><strong>"AI finds zero-days on demand now."</strong> Documented successes are narrow and scaffolded. Treat the capability as real, bounded, and dated. The honest statement always includes the conditions under which the result was obtained.</p>
+        </aside>
+
+        <p>The interactive below puts this side by side: a traditional fuzzer and a Big Sleep-style AI agent attack the same C function. The fuzzer fires random inputs; the agent uses pattern-matching over the source to narrow its search. Both find the bug, but notice which gets there first and why.</p>
+
+        <div class="nyu-embed-frame"><iframe src="interactive/03_fuzzing_vs_reasoning/fuzzing_vs_reasoning.html" title="Interactive: Fuzzing vs. Reasoning Race comparing traditional fuzzer with AI agent" loading="lazy" style="height:650px;"></iframe></div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Knowledge Check and Matching Exercise</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="quiz-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+          <p class="nyu-quiz__prompt" id="quiz-1">An AI summary of a large network scan lists twelve hosts with proposed exploit paths. You compare it to the original scan and find that three hosts from the scan are missing from the summary and one exploit step references a service version that does not appear in the scan data. What are the most likely failure mechanisms?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1">
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The three missing hosts are likely context-window overflow (the scan exceeded the window and later content pushed earlier hosts out), and the invented version is hallucination.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The scanner and the model are separate systems. The scanner found the hosts. The model's summary is what lost them during compression.">The scanner itself missed the three hosts.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Context overflow and hallucination are distinct mechanisms. Hallucination invents content; context overflow silently drops it. The three missing hosts were dropped, not invented. Only the service version was invented.">All four errors are hallucination.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="These are well-documented failure modes of language models operating on large inputs. The errors are systematic and reproducible, not random glitches.">The model is unreliable in general and the errors are random.</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct. Context-window overflow causes silent omissions (the three missing hosts), and hallucination causes invented claims (the fabricated service version). Distinguishing the two mechanisms matters because they require different mitigations: chunking the scan input addresses overflow, while claim-to-source verification catches hallucination." data-incorrect-msg="Reconsider: the scan found all twelve hosts, so the scanner is not at fault. The model processed the scan and produced the summary. What two mechanisms explain silent omissions and invented details?"></div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Matching Exercise: Map Behaviors to Attacker Stages</h3>
+
+        <p>Match each AI-assisted attacker behavior to the <button type="button" class="nyu-define" data-term="cyber-kill-chain">Cyber Kill Chain</button> stage it best supports. (For background on the framework, see <a href="https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html" target="_blank" rel="noopener">Lockheed Martin's Cyber Kill Chain page</a>.) You will map these same behaviors onto <button type="button" class="nyu-define" data-term="mitre-atlas">MITRE ATLAS</button>, the AI-specific taxonomy, in Section 5.</p>
+
+        <div class="nyu-match">
+          <p><strong>Two ways to match:</strong> click a behavior then click its stage, or drag the behavior onto the stage. An arrow connects them.</p>
+          <div class="nyu-match__grid">
+            <svg class="nyu-match__svg" aria-hidden="true"></svg>
+            <div class="nyu-match__col">
+              <h4>AI-assisted behavior</h4>
+              <button class="nyu-match__term" data-match="a">A language model summarizes scanner output to map exposed services</button>
+              <button class="nyu-match__term" data-match="b">A model scrapes public profiles and drafts a tailored phishing lure</button>
+              <button class="nyu-match__term" data-match="c">Sending that AI-crafted lure to the target's inbox</button>
+              <button class="nyu-match__term" data-match="d">A model proposes and prioritizes an exploit path from scan findings</button>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap" aria-hidden="true"></div>
+            <div class="nyu-match__col">
+              <h4>Cyber Kill Chain stage</h4>
+              <button class="nyu-match__def" data-match="d">Exploitation</button>
+              <button class="nyu-match__def" data-match="c">Delivery</button>
+              <button class="nyu-match__def" data-match="a">Reconnaissance</button>
+              <button class="nyu-match__def" data-match="b">Weaponization</button>
+            </div>
+          </div>
+          <p class="nyu-match__hint" data-default="Tip: drag a behavior across the gap to its Kill Chain stage, or click both to link them.">Tip: drag a behavior across the gap to its Kill Chain stage, or click both to link them.</p>
+          <div class="nyu-match__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check matches</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show correct answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+          </div>
+        </div>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Common errors to watch for
+          </h3>
+          <p><strong>"Summarizes scanner output" belongs under Exploitation.</strong> It does not. Summarizing is information-gathering, which is Reconnaissance; exploitation begins only when a weakness is actually acted upon.</p>
+          <p><strong>"Drafting and sending the lure are both Delivery."</strong> They are not. Generating the lure is Weaponization; transmitting it is Delivery. Keep the two distinct.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 4: Autonomy, Agents, and the Evidence Debate.</strong> When an attack appears to be run <em>by</em> an AI with little human help, how do we separate what is demonstrated from what is hype?</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

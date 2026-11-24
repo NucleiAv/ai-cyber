@@ -1,0 +1,241 @@
+n: 5
+short: Threat intelligence
+title: AI for threat intelligence
+time: 7 sections · about 4 hours
+lede: What a language model does when you ask it about a vulnerability. Guessing, stale truth, grounding, IoC extraction, sharing rules and a verification routine you can use every day.
+idea: |
+  Threat intelligence turns raw data into decisions, such as "patch these two firewalls today". A model can draft summaries fast. But a model with no source answers **from its weights**, which are frozen at a date. It guesses at version numbers, repeats advice that was later withdrawn, and invents links, all in the same confident tone.
+
+  This module teaches a routine. **Decompose** a claim, **route** it to the source that owns it, **check** that it is still true today, and **grade** your confidence.
+
+  !eli5 A friend who read the news last spring can tell you a lot. But if you ask about today, they will answer from memory and sound just as sure. You still check today's paper.
+primer: |
+  ### Step 1. Data, information, intelligence
+
+  **Data** is raw, such as a log line. **Information** is data with meaning, such as "this IP scanned us". **Intelligence** is information shaped for a decision and a customer, such as "patch the VPN gateway by tonight". The **intelligence cycle** runs direction, collection, processing, analysis, dissemination and feedback.
+
+  ### Step 2. The ground truth sources
+
+  - **CVE record** (cve.org). Says a vulnerability exists and gives its ID.
+  - **NVD.** Adds a CVSS severity score and vector. Severity is not risk.
+  - **EPSS.** Predicts the chance of exploitation soon. It is recalculated daily.
+  - **CISA KEV catalog.** Lists vulnerabilities known to be exploited. Absence from KEV does not mean safety.
+  - **Vendor advisory, latest revision.** Affected versions, fixes and workarounds.
+  - **Your own inventory.** Whether you are exposed. No public model has seen it.
+
+  ### Step 3. How a model fails at intelligence
+
+  - It **guesses identifiers**. Version numbers and URL paths are low-probability tokens.
+  - It **varies**. Five runs give five different "fixed in" versions.
+  - It **agrees on stale facts**. A withdrawn workaround can come back the same in every run.
+  - It **fabricates references**. A plausible advisory URL can return a 404.
+
+  ### Step 4. Grounding
+
+  Paste the source into the prompt and say "use ONLY this text, and write NOT IN SOURCE for gaps". This turns recall into rewriting. But grounding is only as current as the document you fetched, so print the source revision and the retrieval date on every briefing.
+
+  ### Step 5. Let code copy, let the model judge
+
+  For indicators of compromise, a regex copies strings exactly but cannot tell an attacker's domain from the victim's. A model can judge roles but may change a character when it rewrites a hash. Use code to find and copy, the model to judge roles, and code again to check every value appears verbatim in the source.
+
+  ### Step 6. Sharing rules and confidence words
+
+  **TLP** labels say who may see a report. RED is named recipients only. AMBER+STRICT is your organization only. AMBER adds clients on a need-to-know basis. GREEN is your community. CLEAR is anyone. A prompt to an outside service is a transmission, so check the label first. When you sign off, use **estimative language** with agreed ranges, such as "likely" for 55 to 80 percent, and grade only what you verified.
+diagrams:
+  - type: cycle
+    title: The intelligence cycle
+    nodes: [["Direction", "box"], ["Collection", "box"], ["Processing", "def", "model helps"], ["Analysis", "def", "model drafts"], ["Dissemination", "box"], ["Feedback", "box"]]
+    center: a model helps in the middle, a person owns both ends
+    caption: Models are useful for processing and first drafts. Direction, judgment and sign-off stay with people.
+  - type: flow
+    title: The verification routine
+    nodes: [["Decompose into single claims", "def"], ["Type each claim", "box"], ["Route to the source that owns it", "box"], ["Check it is still true today", "box"], ["Grade confidence and sign", "def"]]
+    edges: ["", "", "", ""]
+    caption: From the Module 5 field card.
+terms:
+  - [CVE, "Common Vulnerabilities and Exposures. A unique ID for a public vulnerability."]
+  - [CVSS, "A 0 to 10 severity score with a vector that explains it."]
+  - [EPSS, "Exploit Prediction Scoring System. The chance a CVE is exploited in the next 30 days."]
+  - [KEV, "CISA's Known Exploited Vulnerabilities catalog."]
+  - [IoC, "Indicator of compromise, such as a malicious IP, domain or file hash."]
+  - [STIX and TAXII, "A standard format for threat intelligence (STIX) and a protocol to share it (TAXII)."]
+  - [TLP, "Traffic Light Protocol. Labels that say who may receive a piece of intelligence."]
+  - [Stale truth, "A fact that was true when the model's data was collected and is no longer true."]
+  - [Grounding, "Giving the model the source text and telling it to answer only from it."]
+sections:
+  01_the-intelligence-cycle-meets-the-language-model.html: "What threat intelligence actually is, the intelligence cycle, how one question serves three different customers, and where a language model fits."
+  02_ground-truth-cve-cvss-nvd-kev.html: "The CVE, CVSS, NVD and KEV system mapped out, why severity is not risk, Log4Shell read end to end, and how to set patch priority under real limits."
+  03_ai-assisted-summarization-and-briefing.html: "The workflow that makes AI summaries useful, how they fail and why, a briefing that almost shipped with errors, and a spot-the-failure exercise."
+  04_ioc-extraction-and-stix.html: "Turning report prose into structured indicators, scoring the extraction like a detector, a seven-indicator example with one trap, and STIX and TAXII at reading level."
+  05_verification-methodology-and-the-analysts-boundary.html: "The five-step verification method, grading and currency, six claims worked through, and what must never go into a prompt under TLP."
+  06_lab_hallucinations.html: "A hands-on audit. A model gives fluent threat intelligence. Find what is true, what is out of date and what is made up."
+  07_references-and-readings.html: "Every paper, standard and source used in Module 5, sorted by type and by section."
+desk:
+  title: The intelligence desk
+  blurb: "Six rounds on one real vulnerability, CVE-2024-3400. Find where a model guessed, run it five times, check it against the sources, ground it, extract IoCs safely, and decide what may go into a prompt."
+  lede: "Kestrel Logistics is fictional. CVE-2024-3400 is real. Work each round, then check it against the class answers."
+  situation: |
+    **Kestrel Logistics.** A regional freight company. Its two perimeter firewalls run **PAN-OS 11.1.1** with **GlobalProtect** enabled for remote staff. **Device telemetry is turned off.**
+
+    **The team's model.** An open-weight model on a shared Kestrel server, fine-tuned each week on vendor advisories. Its last update used data up to **13 April 2024**. It has no internet access.
+
+    **Wednesday 17 April 2024, 08:40.** CVE-2024-3400 is in the news. An analyst asks the model for a four-sentence SOC briefing. "Be accurate and do not hallucinate."
+
+    **The model's briefing.** (1) CVE-2024-3400 is a command injection flaw in the GlobalProtect feature of Palo Alto Networks PAN-OS that lets an unauthenticated attacker run code as root. (2) It affects every PAN-OS release from 9.0 onward, including Cloud NGFW. (3) Until you can upgrade, disabling device telemetry mitigates the issue. (4) Palo Alto's full analysis is at security.paloaltonetworks.com/CVE-2024-3400-analysis.
+  rounds:
+    - title: Round 1. Where was the model guessing?
+      items:
+        - q: "Where in the briefing was the model least sure of the next token?"
+          opts: ["Product names such as GlobalProtect", "Version boundaries such as 9.0 and the URL path", "Common words such as 'flaw'"]
+          a: 1
+          why: "After 'GlobalProtect' was likely, 'Protect' had 97 percent. At the version boundary the top choices were 9 (26 percent), 10 (24 percent), 8 (14 percent) and 11 (11 percent). Each digit of a version number is a separate guess."
+        - type: open
+          q: The reader sees none of this shading. What does that do to the reader?
+          a: "It creates **false fluency**. A guessed detail reads as confidently as a known fact, so the reader cannot tell which parts to check."
+        - q: "Sentence 3 came out with high probability on almost every token. Is it therefore true?"
+          opts: ["Yes", "No"]
+          a: 1
+          why: "High probability means the model has seen this text often. It does not mean the text is still true. Round 3 shows sentence 3 is stale."
+        - type: open
+          q: "A real 1.5B model said CVE-2024-3400 is in Apache Struts. 'Str' had 0.32 probability the first time and 0.93 when it named Struts again later. It learned nothing new. Why was it more confident?"
+          a: "Its own first guess became part of the text it was continuing. The model conditions on everything before, including its own mistakes, so the second mention looks like strong context."
+    - title: Round 2. Ask it five times
+      info: "Five more runs at temperature 0.7. The flaw was command injection in all five. Affected versions came back as 9.0 and later, 10.2/11.0/11.1, all before 11.1.2, 9.1 and later, 10.2 and later. Fixed in came back as 11.1.2-h3, 11.1.3, 11.1.2-h3, 11.2.0, 11.1.1-h2. The workaround was 'disable telemetry' in all five. The link was different in four ways."
+      items:
+        - type: sort
+          q: "Stable or varies?"
+          rows:
+            - ["What the flaw is", "Stable"]
+            - ["Affected versions", "Varies"]
+            - ["Fixed in", "Varies"]
+            - ["Workaround", "Stable"]
+            - ["Link", "Varies"]
+          opts: ["Stable", "Varies"]
+          why: "Rows that vary show the model is guessing. Check them first."
+        - q: "The workaround is identical in all five runs. Is it therefore correct?"
+          opts: ["Correct", "Not necessarily"]
+          a: 1
+          why: "Agreement across runs measures what the model remembers, not what is true. Neither pattern tells you if the answer is true."
+        - type: open
+          q: "A real 1.5B model run seven times gave seven different fixed versions, named Apache Struts in three runs, and never mentioned Palo Alto. What would a majority vote have concluded?"
+          a: "Apache Struts, which is wrong. A majority vote over guesses picks the most common guess, not the truth. The real answer was PAN-OS GlobalProtect, fixed in 11.1.1-h1 for this version."
+    - title: Round 3. Check it against the world
+      info: |
+        **Source 1, NVD.** A command injection in the GlobalProtect feature of PAN-OS that may let an unauthenticated attacker run code with root privileges. CVSS 10.0.
+
+        **Source 2, vendor advisory.** Revision of 16 April. Affects PAN-OS 10.2, 11.0 and 11.1 with GlobalProtect gateway or portal. 9.0 to 10.1 and Cloud NGFW are not affected. Device telemetry does not need to be enabled, and disabling it is no longer an effective mitigation. The earlier revision of 12 April said exposure needed telemetry, with "disable telemetry" as the workaround.
+
+        **Source 3, the link.** The advisory is at security.paloaltonetworks.com/CVE-2024-3400. The "-analysis" address returns page not found.
+      items:
+        - type: sort
+          q: "Stamp each sentence. Verified, Contradicted, Stale truth or Fabricated."
+          rows:
+            - ["1. Command injection in GlobalProtect, unauthenticated, root", "Verified"]
+            - ["2. Every PAN-OS release from 9.0 on, including Cloud NGFW", "Contradicted"]
+            - ["3. Disabling device telemetry mitigates the issue", "Stale truth"]
+            - ["4. Full analysis at .../CVE-2024-3400-analysis", "Fabricated"]
+          opts: ["Verified", "Contradicted", "Stale truth", "Fabricated"]
+          why: "NVD supports 1. The advisory contradicts 2. Sentence 3 was true on 12 April and withdrawn on 16 April. The page in 4 does not exist."
+        - type: open
+          q: Sentence 3 had high token probability and was identical in five runs. Why did neither signal catch it?
+          a: "Both signals measure the model, not the world. The model learned the 12 April advice before its 13 April cutoff and repeats it faithfully. Only a currency check against the latest advisory revision caught it."
+        - type: open
+          q: Kestrel has telemetry turned off. If sentence 3 had shipped, what would the firewall team have concluded?
+          a: "That they were already protected, since the 'mitigation' was already in place. In fact both firewalls were exposed, and they would not have patched."
+    - title: Round 4. Ground it
+      info: "Two pipelines paste the advisory into a prompt that says use ONLY the advisory and write NOT IN SOURCE for gaps. Pipeline A uses a copy cached on 12 April. Pipeline B fetches it live on 17 April."
+      items:
+        - type: sort
+          q: "Is each error fixed?"
+          rows:
+            - ["Pipeline A, sentence 2 (versions)", "Fixed"]
+            - ["Pipeline A, sentence 3 (workaround)", "Still wrong"]
+            - ["Pipeline A, sentence 4 (link)", "Fixed"]
+            - ["Pipeline B, sentence 2", "Fixed"]
+            - ["Pipeline B, sentence 3", "Fixed"]
+            - ["Pipeline B, sentence 4", "Fixed"]
+          opts: ["Fixed", "Still wrong"]
+          why: "A is faithful to its source, but its source was the 12 April revision. B is faithful and current."
+        - type: open
+          q: Pipeline A is faithful to its source and still wrong. Why, and what should every briefing print?
+          a: "Grounding is only as current as the document retrieved. Every briefing should print a line such as 'Source. Palo Alto advisory, revision of 12 April, retrieved 12 April', so the analyst checks the date before anyone acts."
+        - type: open
+          q: The original prompt said "Be accurate and do not hallucinate". Why did grounding change the output when that sentence did not?
+          a: "The sentence asks the model to behave but gives it nothing new. Grounding changes the task from recalling facts from weights to rewriting text that is in front of it. A smaller task with the source present is something the model can do well."
+    - title: Round 5. Regex or model?
+      info: |
+        From a vendor report. Victims got a text with a link to `hxxps://parcel-reroute[.]track[.]example/confirm`, which redirected to the genuine Kestrel site `kestrel-logistics.example`. The downloaded file's SHA-256 was split across two lines, `5e884898da28047151d0e56f8dc62927` and `73603d0d6aabbdd62a11ef721d1542d8`. It connected to `198.51.100[.]23`. The first infected machine was `10.20.4.15`, a Kestrel laptop.
+
+        The regex reported a URL, a domain, two md5 values and two IPs. The model reported each indicator with a role, but its SHA-256 ended in `...ef721d1452d8`.
+      items:
+        - type: sort
+          q: "Block it or not?"
+          rows:
+            - ["The parcel-reroute URL", "Block"]
+            - ["kestrel-logistics.example", "Do not block"]
+            - ["The SHA-256 of the downloaded file", "Block"]
+            - ["198.51.100.23", "Block"]
+            - ["10.20.4.15", "Do not block"]
+          opts: ["Block", "Do not block"]
+          why: "Kestrel's own site and its own laptop appear in the report but are victims. Blocking them cuts Kestrel off from itself. The laptop needs investigation, not blocking."
+        - type: open
+          q: What can the model do here that the regex cannot, and what can the regex guarantee that the model cannot?
+          a: "The model reads roles, such as attacker, victim or just mentioned. The regex copies characters exactly. The model rewrote the hash and swapped two digits (1542 became 1452), and the regex split the hash into two fake md5 values because of the line break."
+        - q: "Both tools got the hash wrong. Which change makes the pipeline copy it exactly?"
+          opts: ["Tell the model to copy more carefully", "Lower the model's temperature", "Have code rejoin broken lines before the regex runs", "Add a rule that relabels md5 as sha256"]
+          a: 2
+          why: "Rejoined, the 64-character string matches the SHA-256 pattern and code copies it exactly. Options a and b make a slip less likely, never impossible. Option d still leaves two halves, and neither matches the file."
+        - type: open
+          q: Design the pipeline in one line.
+          a: "**Code finds** (rejoin lines, refang, copy exactly), **the model judges** (attacker, victim or mentioned), **code verifies** every value appears verbatim in the source, and only what passes all three goes to the blocklist."
+        - type: open
+          q: Even with that fix, the hash can still be wrong. Why, and how do you get more confident?
+          a: "Code copies the report perfectly, including the report's own mistakes. Get confidence from independent sources that rest on their own ground truth, such as the hash Kestrel computes itself from the sample on laptop 10.20.4.15, not from more copies of the same report."
+    - title: Round 6. What may go into the prompt?
+      info: "The local model runs on a shared Kestrel server that keeps prompt logs."
+      items:
+        - type: sort
+          q: "May each item go into each prompt?"
+          rows:
+            - ["Palo Alto's public advisory, to an external service", "OK"]
+            - ["Palo Alto's public advisory, to the local model", "OK"]
+            - ["Kestrel's asset inventory (policy says it stays inside), external", "No"]
+            - ["Kestrel's asset inventory, local", "OK"]
+            - ["A TLP:AMBER report from the logistics sharing group, external", "No"]
+            - ["A TLP:AMBER report, local", "OK"]
+            - ["A TLP:RED note sent to the CISO by name, external", "No"]
+            - ["A TLP:RED note, local", "No"]
+          opts: ["OK", "No"]
+          why: "The sharing label decides, even when the summary would be useful. TLP:RED is for named recipients only, and the shared server keeps prompt logs that others can read."
+        - type: open
+          q: "The model wrote 'Kestrel is likely unaffected by CVE-2024-3400.' Give two reasons this cannot ship, then write the top line for the CISO."
+          a: |
+            1. The model has never seen Kestrel's configuration, so it has no basis.
+            2. "Likely" is a word choice, not a calibrated estimate. Models are trained to sound careful, not to be calibrated.
+
+            **A possible top line.** Kestrel's two firewalls are almost certainly exposed to CVE-2024-3400. Disabling telemetry does not protect them. Hotfix 11.1.1-h1 does (Palo Alto advisory, retrieved 17 April 2024). Verified 17 April, A. Analyst.
+  card: |
+    - The model guesses at identifiers. Check version numbers, names and URLs first.
+    - One run is a sample. Agreement means it remembers, not that it is right.
+    - The model is frozen. Ask if each fact is still true today.
+    - Grounding makes the task small. Record the source revision and retrieval date.
+    - The model regenerates, code copies. Verify every value verbatim.
+    - A prompt is a transmission. Check the TLP label first.
+    - Confidence is yours. The model's "likely" is evidence of nothing.
+other_fw:
+  - [FIRST TLP 2.0, "The sharing labels used in Round 6. [Read the standard](https://www.first.org/tlp/)."]
+  - [ICD 203, "US intelligence analytic standards, including estimative language with agreed probability ranges."]
+  - [OWASP LLM09, "Stale and fabricated facts are misinformation. [Read LLM09](https://genai.owasp.org/llmrisk/llm092025-misinformation/)."]
+slides:
+  summary: |
+    The lecture simulates Kestrel Logistics on 17 April 2024. It shows token probabilities inside a real model, seven sampled runs that never mention Palo Alto, the four verdicts against NVD and the advisory, two grounded pipelines with cached and live sources, regex and model IoC extraction side by side, the TLP decision table and a calibrated sign-off line.
+  files: [M05_Lecture.pdf, M05_Intel_Desk_Workbook.pdf]
+quiz:
+  - q: A CVE is not in the CISA KEV catalog. What can you conclude?
+    opts: ["It is not exploited", "Only that KEV has no confirmed record of exploitation yet", "It is low severity"]
+    a: 1
+    why: Absence from KEV is not safety.
+  - q: A grounded briefing is faithful to its source. What else must you check?
+    opts: ["Nothing", "That the source revision is current", "The model's temperature"]
+    a: 1
+    why: Grounding is only as current as the document you fetched.

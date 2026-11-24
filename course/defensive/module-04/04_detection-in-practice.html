@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 4 · Section 4 · Detection in Practice: Worked Examples and Choosing a Detector · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 4 · Section 4 of 8</div>
+<h1 class="nyu-hero__title">Detection in Practice: Worked Examples and Choosing a Detector</h1>
+<p class="nyu-hero__subtitle">Classifying real traffic end to end, recognising exfiltration and flood patterns, why detectors decay after deployment, how to read a benchmark claim, and how to choose a detector a small team can operate.</p>
+<div class="nyu-hero__meta" aria-label="Page overview"><span aria-label="Estimated time"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg> ~20 min read</span> <span aria-label="Number of parts"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> 6 parts</span> <span aria-label="Knowledge checks"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line><circle cx="12" cy="12" r="10"></circle></svg> 2 knowledge checks</span></div>
+</header>
+<aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="prereading-note">
+<h2 class="nyu-callout__title" id="prereading-note">Recommended Pre-Reading</h2>
+<p>Before working through this section, read the UNSW-NB15 project page (linked on the References page). We will use its feature descriptions throughout, especially in the worked example and the practice scenarios.</p>
+</aside>
+<nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+<li><a href="#sec-1"><span class="nyu-toc__num">1</span> One Flow, End to End: Classifying a Brute-Force SSH Burst</a></li>
+<li><a href="#sec-2"><span class="nyu-toc__num">2</span> Pattern Practice: Exfiltration and Floods Through the Feature Lens</a></li>
+<li><a href="#sec-3"><span class="nyu-toc__num">3</span> Why Detectors Go Stale: Concept Drift and the Retraining Bill</a></li>
+<li><a href="#sec-4"><span class="nyu-toc__num">4</span> Reading Benchmark Claims: UNSW-NB15 and CIC-IDS2017</a></li>
+<li><a href="#sec-5"><span class="nyu-toc__num">5</span> Choosing a Detector the Clinic Can Run</a></li>
+<li><a href="#sec-6"><span class="nyu-toc__num">6</span> Check Your Understanding</a></li>
+</ol>
+</nav><main id="main" tabindex="-1">
+<section class="nyu-objectives" aria-labelledby="lo-title">
+<h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+<p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+<ul class="nyu-objectives__list">
+<li><span><strong>Apply</strong> a trained detector to real flow records, recognising exfiltration and flood patterns, and explain why detection quality decays after deployment.</span></li>
+<li><span><strong>Select</strong> a detector a small team can operate, weighing tradeoffs against organizational context rather than headline accuracy.</span></li>
+<li><span><strong>Evaluate</strong> benchmark and vendor performance claims using dataset provenance, class balance, and validation evidence.</span></li>
+</ul>
+</section>
+<!-- ===== 1 ===== --><!-- ====================== ONE FLOW, END TO END: CLASSIFYING A BRUTE-FORCE SSH BURST ====================== -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">One Flow, End to End: Classifying a Brute-Force SSH Burst</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>We now trace one detection from raw input to validated conclusion, using the same six-step pattern we will reuse for every example in this module: input, task, expected output, interpretation, failure mode, validation. The connection is the SSH flow from Section 3, part 3, except now it appears 87 times in one minute.</p>
+<!-- VISUAL: six-step worked example as a numbered timeline; step 5 is the failure panel, step 6 the validation panel -->
+<div class="nyu-timeline" id="ssh-walkthrough">
+<div class="nyu-timeline__item">
+<div class="nyu-timeline__marker">1</div>
+<div class="nyu-timeline__content">
+<h3>Original input: one flow record</h3>
+<p>The input format is a flow record conforming to the UNSW-NB15 feature schema: one row of named numeric fields per connection. No payload, no packets, no log text. Shown here in key-value form:</p>
+<pre class="nyu-code"><code>proto=tcp  dur=0.08  spkts=6  dpkts=5
+sbytes=1240  dbytes=980  sttl=62  dttl=64
+sinpkt=2.1  sjit=0.4
+ct_srv_src=87  ct_dst_sport_ltm=3  ct_srv_dst=87</code></pre>
+</div>
+</div>
+<div class="nyu-timeline__item">
+<div class="nyu-timeline__marker">2</div>
+<div class="nyu-timeline__content">
+<h3>Task</h3>
+<p>Binary classification: label this flow <code>attack</code> or <code>benign</code>. The <button type="button" class="nyu-define" data-term="classifier">classifier</button> is a Random Forest trained on labeled flows from this schema. Same task shape as Section 2's severity labeling, different input and different machinery.</p>
+</div>
+</div>
+<div class="nyu-timeline__item">
+<div class="nyu-timeline__marker">3</div>
+<div class="nyu-timeline__content">
+<h3>Expected output: a label and a score</h3>
+<p>The output representation is a categorical label plus a confidence score. Here it is serialized as JSON because that is what this pipeline's downstream tooling consumes; the same result could be a CSV row or a syslog message. The format is a pipeline choice, not a property of the model:</p>
+<pre class="nyu-code"><code>{"flow_id": "f-83120", "label": "attack", "score": 0.93}</code></pre>
+</div>
+</div>
+<div class="nyu-timeline__item">
+<div class="nyu-timeline__marker">4</div>
+<div class="nyu-timeline__content">
+<h3>Correct interpretation: why these numbers say brute-force</h3>
+<p>Four features carry the signal. <code>ct_srv_src=87</code>: the same source has hit the same service 87 times in the recent window; this is the defining brute-force fingerprint. <code>dur=0.08</code>: each connection is brief, consistent with a login attempt that is rejected immediately. <code>sinpkt=2.1</code>: packets arrive milliseconds apart, machine speed, not typing speed. <code>dpkts=5</code>: the server sends the same small rejection every time. Each value matches the analyst knowledge encoded in the schema table in Section 3, part 3.</p>
+</div>
+</div>
+<div class="nyu-timeline__item">
+<div class="nyu-timeline__marker">5</div>
+<div class="nyu-timeline__content">
+<h3>Possible failure: the uptime monitor</h3>
+<p>Now the same flow statistics arrive from a different source IP. Short connections to port 22, rapid intervals, dozens per window, small identical responses. The classifier outputs <code>attack, 0.91</code>. The source is the operations team's uptime monitor, probing the server every few seconds to confirm it is alive. Flow features describe shape, and the shapes are nearly identical. The model is not malfunctioning; it is answering the only question the features let it answer.</p>
+</div>
+</div>
+<div class="nyu-timeline__item">
+<div class="nyu-timeline__marker">6</div>
+<div class="nyu-timeline__content">
+<h3>Validation: a second, independent evidence source</h3>
+<p>The classifier's verdict is a claim, and claims get checked against <button type="button" class="nyu-define" data-term="ground-truth">ground truth</button>. Ground truth here is not an ML concept or an LLM concept; it is the general principle from Section 1 that any tool's output is evaluated against independently verified evidence. For an SSH brute-force claim, the independent source is the server's own authentication log. The real attacker's window shows thousands of <code>Failed password</code> entries for changing usernames. The uptime monitor's window shows no authentication attempts at all: it connects, reads the banner, and leaves. Same flow shape, opposite verdicts, and only the second evidence source can tell them apart.</p>
+</div>
+</div>
+</div>
+<!-- VISUAL: human-in-the-loop validation flowchart, verdict -> independent check -> confirm/overturn -> feedback into labels -->
+<aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="hitl-loop">
+<h3 class="nyu-callout__title" id="hitl-loop">The Loop That Makes Detection Trustworthy</h3>
+<p>Step 6 is a <button type="button" class="nyu-define" data-term="hitl">human-in-the-loop</button> pattern, and it runs as a cycle. Every detector in this section, rules included, earns trust through this loop rather than through its benchmark scores:</p>
+<figure class="nyu-figure" role="img" aria-label="Flowchart cycle: detector raises a verdict, analyst checks an independent evidence source, verdict is confirmed or overturned, the outcome becomes a labeled example, and labels feed future retraining, which loops back to the detector."><svg viewBox="0 0 660 150" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; display: block;">
+              <defs>
+                <marker id="arrw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#57068C"></path>
+                </marker>
+              </defs>
+              <rect x="10" y="35" width="130" height="46" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"></rect>
+              <text x="75" y="54" font-size="11.5" fill="#374151" text-anchor="middle">Detector raises</text>
+              <text x="75" y="69" font-size="11.5" fill="#374151" text-anchor="middle">a verdict (a claim)</text>
+              <rect x="180" y="35" width="150" height="46" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"></rect>
+              <text x="255" y="54" font-size="11.5" fill="#374151" text-anchor="middle">Analyst checks an</text>
+              <text x="255" y="69" font-size="11.5" fill="#374151" text-anchor="middle">independent source</text>
+              <rect x="370" y="35" width="130" height="46" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"></rect>
+              <text x="435" y="54" font-size="11.5" fill="#374151" text-anchor="middle">Verdict confirmed</text>
+              <text x="435" y="69" font-size="11.5" fill="#374151" text-anchor="middle">or overturned</text>
+              <rect x="540" y="35" width="110" height="46" rx="8" fill="#FEF9C3" stroke="#B07A00" stroke-width="1.5"></rect>
+              <text x="595" y="54" font-size="11.5" fill="#374151" text-anchor="middle">Outcome becomes</text>
+              <text x="595" y="69" font-size="11.5" fill="#374151" text-anchor="middle">a labeled example</text>
+              <line x1="140" y1="58" x2="178" y2="58" stroke="#57068C" stroke-width="2" marker-end="url(#arrw)"></line>
+              <line x1="330" y1="58" x2="368" y2="58" stroke="#57068C" stroke-width="2" marker-end="url(#arrw)"></line>
+              <line x1="500" y1="58" x2="538" y2="58" stroke="#57068C" stroke-width="2" marker-end="url(#arrw)"></line>
+              <path d="M 595 81 L 595 118 L 75 118 L 75 83" fill="none" stroke="#57068C" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arrw)"></path>
+              <text x="335" y="134" font-size="11" fill="#4B5563" text-anchor="middle">labels feed future retraining</text>
+            </svg>
+<figcaption>The validation loop: a verdict is only a claim until an independent evidence source confirms or overturns it, and each checked outcome becomes training material that keeps the detector honest.</figcaption>
+</figure>
+<p>Keep the dashed return path in mind! Later we will see what happens to models when this loop starves.</p>
+</aside>
+</section>
+<!-- ===== 6 ===== --><!-- ====================== PATTERN PRACTICE: EXFILTRATION AND FLOODS THROUGH THE FEATURE LENS ====================== -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">Pattern Practice: Exfiltration and Floods Through the Feature Lens</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Now you apply the same six-step pattern yourself, on two harder cases. For each scenario: identify the 3 or 4 schema features that carry the signal, name what the flow view cannot see, and propose a validation source before revealing the guided analysis. Work from the feature table in Section 3, part 3.</p>
+<div class="nyu-callout nyu-scenario">
+<div class="nyu-scenario__prompt">
+<p><strong>Scenario A: Low-and-Slow Data Exfiltration.</strong> An insider slowly copies 500 MB of data to an external server over 6 hours using encrypted HTTPS connections.</p>
+<p>Which features carry the signal? Which feature in the table looks relevant but is actually useless here, and why? How would you validate?</p>
+</div>
+<button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+<div class="nyu-scenario__answer">
+<p><strong>Signal-carrying features:</strong></p>
+<ul>
+<li><strong><code>sbytes</code> high with <code>dbytes</code> low:</strong> the defining mark of exfiltration is asymmetry. Data leaves; little comes back. Either number alone is ambiguous, the ratio is the signal.</li>
+<li><strong><code>dur</code>:</strong> hours-long or persistently repeated connections to one external host sit far outside normal browsing behavior.</li>
+<li><strong><code>sjit</code> low:</strong> a scripted copy pushes data at machine-steady intervals; human-driven traffic is burstier.</li>
+</ul>
+<p><strong>The trap:</strong> <code>ct_flw_http_mthd</code> looks tailor-made for catching upload-heavy POST traffic, but the scenario says HTTPS. HTTP methods live inside the encrypted channel, so the extractor cannot see them and the feature stays at zero. A feature can be well designed and still be blind in context. Knowing which features go dark under encryption is part of reading any feature schema.</p>
+<p><strong>What the flow view cannot see:</strong> file names, file contents, and whether the data was sensitive. A nightly cloud backup produces nearly the same flow shape. This is among the hardest detection problems in network security precisely because the shape is legitimate-looking.</p>
+<p><strong>Validation:</strong> pivot to independent sources. Proxy or egress firewall logs identify the destination and certificate; endpoint logs show which process read which files in that window; data-loss-prevention tools, where deployed, log what left. The flow record raises the question. It cannot answer it.</p>
+</div>
+</div>
+<div class="nyu-callout nyu-scenario">
+<div class="nyu-scenario__prompt">
+<p><strong>Scenario B: Volumetric Flood.</strong> A botnet directs a <button type="button" class="nyu-define" data-term="ddos">DDoS</button> attack at a web server: 10 Gbps of <button type="button" class="nyu-define" data-term="udp">UDP</button> traffic from thousands of sources.</p>
+<p>Which features light up? What does the windowed connection count actually measure here, and what does it not measure? How would you validate?</p>
+</div>
+<button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+<div class="nyu-scenario__answer">
+<p><strong>Signal-carrying features:</strong></p>
+<ul>
+<li><strong><code>spkts</code> and <code>sbytes</code>:</strong> extreme packet and byte volume is the defining characteristic of a volumetric flood. These two features alone separate it from almost everything else.</li>
+<li><strong><code>sinpkt</code> near zero:</strong> flood sources emit packets as fast as the link allows. Near-zero source inter-packet time at sustained volume is machine-generated traffic by definition.</li>
+<li><strong><code>ct_srv_dst</code> spiking:</strong> every flood flow targets the same service on the same host, so the count of recent connections sharing that service and destination climbs sharply.</li>
+</ul>
+<p><strong>Read the windowed count carefully:</strong> <code>ct_srv_dst</code> counts connections converging on one service at one destination. It does <em>not</em> count how many distinct sources they came from. The convergence pattern is the same whether one host or ten thousand hosts produce it, so this feature alone cannot distinguish a distributed flood from a single broken client retrying in a loop. Source-diversity questions need source-counting evidence.</p>
+<p><strong>What the flow view cannot see:</strong> whether the source addresses are real. UDP floods routinely spoof source IPs, and the flow record stores the spoofed value at face value. Blocking the listed sources may block nobody at all.</p>
+<p><strong>Validation:</strong> server-side connection state and service health confirm real impact; upstream flow data from the ISP or border router shows whether the traffic pattern exists beyond our edge and from how many true paths. Spoofing means our own records cannot settle the question alone; the independent vantage point can.</p>
+</div>
+</div>
+<p>One pattern to carry forward from both scenarios and the worked example: in every case, the flow features raised a question, a limit of the feature view obscured the answer, and an independent evidence source resolved it. The summary grid below makes the division of labor visible.</p>
+<!-- VISUAL: scenario-by-feature signal grid; the TLS-blind cell is the deliberate trap from Scenario A -->
+<div class="nyu-table-wrap">
+<table class="nyu-table nyu-table--compact" aria-label="Which features carry signal in each attack scenario">
+<thead>
+<tr>
+<th scope="col">Feature</th>
+<th scope="col">SSH brute-force (<a class="nyu-xref" href="#ssh-walkthrough">part 5</a>)</th>
+<th scope="col">Encrypted exfiltration</th>
+<th scope="col">Volumetric flood</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dur</code></td>
+<td>● short</td>
+<td>● long</td>
+<td>○</td>
+</tr>
+<tr>
+<td><code>spkts</code> / <code>sbytes</code></td>
+<td>○</td>
+<td>● outbound-heavy</td>
+<td>● extreme</td>
+</tr>
+<tr>
+<td><code>dbytes</code></td>
+<td>○ small, repetitive</td>
+<td>● near zero</td>
+<td>○</td>
+</tr>
+<tr>
+<td><code>sinpkt</code></td>
+<td>● machine-fast</td>
+<td>○</td>
+<td>● near zero</td>
+</tr>
+<tr>
+<td><code>sjit</code></td>
+<td>○</td>
+<td>● machine-steady</td>
+<td>○</td>
+</tr>
+<tr>
+<td><code>ct_srv_src</code></td>
+<td>● defining signal</td>
+<td>○</td>
+<td>○</td>
+</tr>
+<tr>
+<td><code>ct_srv_dst</code></td>
+<td>○</td>
+<td>○</td>
+<td>● convergence, not source count</td>
+</tr>
+<tr>
+<td><code>ct_flw_http_mthd</code></td>
+<td>—</td>
+<td><strong>✗ blind under TLS</strong></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><em>● strong signal &nbsp; ○ weak or secondary &nbsp; — not applicable &nbsp; ✗ looks useful, is not</em></p>
+</section>
+<!-- ===== 7 ===== --><!-- ====================== WHY DETECTORS GO STALE: CONCEPT DRIFT AND THE RETRAINING BILL ====================== -->
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Why Detectors Go Stale: Concept Drift and the Retraining Bill</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Everything so far described a detector at a single moment. Networks do not hold still. New applications appear, users change habits, infrastructure gets rebuilt, and attackers adapt on purpose. An ML model, trained on history, degrades as the present drifts away from that history. This is <button type="button" class="nyu-define" data-term="concept-drift">concept drift</button>, and in network security it is not an edge case; it is the operating condition.</p>
+<p>The UNSW-NB15 traffic we have been using makes the point by its age alone. It was generated in 2015, before TLS 1.3 became the default, before cloud-native services made API-to-API traffic dominant, and before IoT devices added entirely new traffic profiles. A model trained on it meets a modern network as a stranger. The same aging happens, more slowly, to every model trained on any network's past.</p>
+<!-- VISUAL: concept-drift decay curve; performance vs time with annotated environment changes and retraining recoveries -->
+<figure class="nyu-figure" id="drift-curve" role="img" aria-label="Line chart sketch: detection performance declining over months, dropping at environment changes, partially recovering at each retraining, never returning fully to the benchmark score."><svg viewBox="0 0 640 230" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; display: block;">
+            <line x1="50" y1="180" x2="610" y2="180" stroke="#9CA3AF" stroke-width="1.5"></line>
+            <line x1="50" y1="20" x2="50" y2="180" stroke="#9CA3AF" stroke-width="1.5"></line>
+            <text x="30" y="30" font-size="11" fill="#4B5563" transform="rotate(-90 30 110)" text-anchor="middle">detection performance</text>
+            <text x="330" y="205" font-size="11" fill="#4B5563" text-anchor="middle">time since deployment</text>
+            <path d="M 50 40 L 150 48 L 230 85 L 300 95 L 300 70 L 400 80 L 460 125 L 520 132 L 520 95 L 610 108" fill="none" stroke="#57068C" stroke-width="3" stroke-linejoin="round"></path>
+            <line x1="50" y1="40" x2="610" y2="40" stroke="#8B5400" stroke-width="1.5" stroke-dasharray="6 4"></line>
+            <text x="606" y="34" font-size="10" fill="#8B5400" text-anchor="end">benchmark score at deployment</text>
+            <circle cx="230" cy="85" r="4" fill="#57068C"></circle>
+            <text x="230" y="105" font-size="10" fill="#374151" text-anchor="middle">new SaaS rollout</text>
+            <circle cx="460" cy="125" r="4" fill="#57068C"></circle>
+            <text x="460" y="145" font-size="10" fill="#374151" text-anchor="middle">TLS migration</text>
+            <text x="305" y="62" font-size="10" fill="#15803D">retrain</text>
+            <text x="525" y="88" font-size="10" fill="#15803D">retrain</text>
+          </svg>
+<figcaption>The pattern to expect: gradual decay, sharper drops when the environment changes, partial recovery at each retraining. The benchmark score is the high-water mark, not the steady state.</figcaption>
+</figure>
+<p>The decay curve has a price tag. Each recovery step requires collecting current traffic, labeling it, validating the new model, and redeploying. Labeling is the expensive part: it needs experienced analysts, the same people already handling the alert queue and managing <button type="button" class="nyu-define" data-term="alert-fatigue">alert fatigue</button>. Organizations that budget for the model but not for this recurring loop end up with the left side of the curve in their procurement deck and the right side in production.</p>
+</section>
+<!-- ===== 8 ===== --><!-- ====================== READING BENCHMARK CLAIMS: UNSW-NB15 AND CIC-IDS2017 ====================== -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Reading Benchmark Claims: UNSW-NB15 and CIC-IDS2017</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Detection research, and detection marketing, runs on benchmark numbers. The two datasets behind most of those numbers are UNSW-NB15 and CIC-IDS2017, and knowing how each was built is what lets us read a claimed score critically instead of taking it at face value. The full citations and dataset statistics live on the References page; here we compare what matters for interpretation.</p>
+<!-- VISUAL: side-by-side benchmark comparison; same row structure in both columns for direct comparison -->
+<div class="nyu-compare" data-cols="2">
+<div class="nyu-compare__col" data-tone="a"><header class="nyu-compare__head"><span class="nyu-compare__num">1</span>
+<h3>UNSW-NB15</h3>
+<p class="nyu-compare__tag">UNSW Sydney, 2015</p>
+</header>
+<dl class="nyu-compare__rows">
+<dt>How it was built</dt>
+<dd>Testbed traffic generated with the IXIA PerfectStorm tool: normal activity mixed with synthetic attacks, captured in two sessions of 16 and 15 hours.</dd>
+<dt>Size and structure</dt>
+<dd>About 2.54 million flow records, 49 features, 9 attack categories, plus raw PCAP files.</dd>
+<dt>Known limits</dt>
+<dd>Traffic predates TLS 1.3, cloud-native patterns, and IoT. Attacks are tool-generated, not captured from real adversaries. Some records carry ambiguous labels.</dd>
+<dt>Question to ask of any score</dt>
+<dd>Which attack categories, which train/test split, and how would this transfer beyond 2015 traffic?</dd>
+</dl>
+</div>
+<div class="nyu-compare__col" data-tone="b"><header class="nyu-compare__head"><span class="nyu-compare__num">2</span>
+<h3>CIC-IDS2017</h3>
+<p class="nyu-compare__tag">Canadian Institute for Cybersecurity, 2017</p>
+</header>
+<dl class="nyu-compare__rows">
+<dt>How it was built</dt>
+<dd>Five days of testbed traffic with realistic user profiles and 7 attack scenarios, designed to improve on older benchmarks.</dd>
+<dt>Size and structure</dt>
+<dd>Millions of flow records; roughly 80% benign, 20% attack across the full dataset, a strong <button type="button" class="nyu-define" data-term="class-imbalance">class imbalance</button>.</dd>
+<dt>Known limits</dt>
+<dd>A 2021 analysis by Engelen and colleagues found that the feature extraction tool miscalculated many features and that improper TCP session handling produced contradictorily labeled flows. The errors carry into the successor dataset CSE-CIC-IDS2018.</dd>
+<dt>Question to ask of any score</dt>
+<dd>Original or corrected feature set? And is accuracy doing the talking where precision and recall should be?</dd>
+</dl>
+</div>
+</div>
+<p>The class imbalance deserves a picture, because it is the single most common way benchmark numbers mislead.</p>
+<!-- VISUAL: class-imbalance waffle chart at the verified ~80/20 ratio -->
+<figure class="nyu-figure" role="img" aria-label="Waffle chart of 100 squares: 80 gray squares for benign flows, 20 purple squares for attack flows."><svg viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg" style="max-width: 420px; width: 100%; height: auto; display: block;">
+            <defs>
+              <pattern id="waffle-attack" x="10" y="10" width="18" height="18" patternUnits="userSpaceOnUse">
+                <rect x="1.5" y="1.5" width="14" height="14" rx="2" fill="#57068C"></rect>
+              </pattern>
+              <pattern id="waffle-benign" x="10" y="10" width="18" height="18" patternUnits="userSpaceOnUse">
+                <rect x="1.5" y="1.5" width="14" height="14" rx="2" fill="#D1D5DB"></rect>
+              </pattern>
+            </defs>
+            <rect x="10" y="10" width="180" height="36" fill="url(#waffle-attack)"></rect>
+            <rect x="10" y="46" width="180" height="144" fill="url(#waffle-benign)"></rect>
+            <rect x="216" y="16" width="14" height="14" rx="2" fill="#57068C"></rect>
+            <text x="238" y="28" font-size="12" fill="#374151">attack flows (~20%)</text>
+            <rect x="216" y="42" width="14" height="14" rx="2" fill="#D1D5DB"></rect>
+            <text x="238" y="54" font-size="12" fill="#374151">benign flows (~80%)</text>
+            <text x="216" y="92" font-size="12" fill="#374151">A classifier that labels every</text>
+            <text x="216" y="108" font-size="12" fill="#374151">square gray scores ~80%</text>
+            <text x="216" y="124" font-size="12" fill="#374151">accuracy and detects nothing.</text>
+          </svg>
+<figcaption>Each square is 1% of CIC-IDS2017 flows. Accuracy starts at roughly 80% for free; only precision, recall, and per-class results reveal whether a detector actually detects.</figcaption>
+</figure>
+<p>So when a paper or product sheet reports a high accuracy figure on CIC-IDS2017, we have a checklist rather than an impression. Did the authors report precision and recall per class, or accuracy alone against an 80% head start? Did they use the corrected feature set, or the original extraction with known errors? Was the test set held out from tuning? The deeper lesson generalizes: benchmarks are complex artifacts that can carry undetected errors for years, and results built on them inherit those errors. The critical stance we practiced on LLM output in Module 3 applies to the research literature too.</p>
+</section>
+<!-- ===== 9 ===== --><!-- ====================== CHOOSING A DETECTOR THE CLINIC CAN RUN ====================== -->
+<section class="nyu-section" id="sec-5">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">5</span>
+<h2 class="nyu-section__title">Choosing a Detector the Clinic Can Run</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>We close with the decision this section has been preparing for. A small healthcare organization, a clinic network with patient records, has a two-person security team, no budget for ongoing model retraining, and a regulatory obligation to detect and report intrusions, with <button type="button" class="nyu-define" data-term="ransomware">ransomware</button> as the threat that keeps its leadership up at night. Which approach from Section 3, part 4 should be its primary IDS?</p>
+<p>Reason through the constraints before revealing our analysis. The grid from part 4 is your map; the constraints below are the territory.</p>
+<!-- VISUAL: constraint-by-approach decision table; read across each row to see which approaches survive each constraint -->
+<div class="nyu-table-wrap">
+<table class="nyu-table nyu-table--compact nyu-table--prose" aria-label="How each organizational constraint favors or disfavors each detection approach">
+<thead>
+<tr>
+<th scope="col">Constraint</th>
+<th scope="col">Rule-based</th>
+<th scope="col">Supervised ML</th>
+<th scope="col">Unsupervised anomaly</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Two analysts' worth of alert capacity</strong></td>
+<td>Favorable: low, tunable false positive volume</td>
+<td>Workable, if the model stays current</td>
+<td>Unfavorable: highest false alarm budget</td>
+</tr>
+<tr>
+<td><strong>No retraining budget</strong></td>
+<td>Favorable: rule updates come with the subscription</td>
+<td>Unfavorable: staleness is structural (<a class="nyu-xref" href="#drift-curve">part 7</a>)</td>
+<td>Partially unfavorable: baselines still need upkeep</td>
+</tr>
+<tr>
+<td><strong>Regulatory detection floor</strong></td>
+<td>Favorable: interpretable, auditable alerts</td>
+<td>Conditional: explainability varies</td>
+<td>Unfavorable: "anomalous" is hard to audit</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="nyu-callout nyu-scenario">
+<div class="nyu-scenario__prompt">
+<p><strong>Decision task.</strong> Choose a primary approach, name the tradeoff you are accepting, and answer one more question: what evidence, six months from now, would tell you that you chose wrong?</p>
+</div>
+<button class="nyu-scenario__btn">Reveal One Defensible Analysis</button>
+<div class="nyu-scenario__answer">
+<p><strong>A defensible choice:</strong> rule-based detection (Suricata or Snort with a maintained ruleset) as the primary IDS. Every constraint row favors it: the false positive volume fits two analysts, the maintenance burden is outsourced to the ruleset publisher, and each alert is auditable because the rule is the explanation.</p>
+<p><strong>The accepted tradeoff:</strong> blindness to novel attacks. The clinic is betting that the threats it faces, commodity ransomware and known exploit kits, are exactly the well-signatured kind, and that bet is reasonable for its profile. It is still a bet.</p>
+<p><strong>The six-month test:</strong> the choice may need re-evaluation if evidence shows attacks arriving that rules cannot see: an incident discovered through some other channel (a user report, an audit) that the IDS never flagged, or threat intelligence showing the clinic's sector targeted by novel techniques. The choice is also failing if the team cannot keep up with even the rule-based alert volume. Tool choices are claims about the future; like every claim in this section, they get validated against evidence, on a schedule, not assumed true because they were reasonable once.</p>
+<p><strong>There is no single correct answer.</strong> A different organization, with a data science team and a tolerance for false positives, defensibly chooses differently. The method is the lesson: constraints first, grid second, named tradeoff, scheduled validation.</p>
+</div>
+</div>
+<h3 class="nyu-subsection-title">Where the LLM Sits on This Bench</h3>
+<p>Notice what never came up as an option: using an LLM as the detector. The latency budget from Section 3, part 1 rules it out at stage 2. Where LLM assistance plausibly earns a place is downstream, in Sections 1 and 2 territory: drafting explanations of alerts already raised, helping with <button type="button" class="nyu-define" data-term="triage-assistance">triage</button>, summarizing an investigation for the regulator's report. Each of those uses inherits every validation obligation we established there. Section 4 takes up that comparison directly.</p>
+<!-- VISUAL: downstream placement diagram; the same pipeline from part 1 with the LLM blocked at detection and assisting at triage/analyst stages -->
+<figure class="nyu-figure" role="img" aria-label="Diagram of the five-stage monitoring pipeline. At stage 2, detection, a red crossed-out connection shows the LLM ruled out as the detector because it takes seconds per response against a microsecond budget. Green arrows connect the LLM to stages 4 and 5, triage and analyst, where it can draft alert explanations, help triage the queue, and summarize the investigation report."><svg viewBox="0 0 680 252" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; display: block;">
+            <defs>
+              <marker id="ar-v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#57068C"></path></marker>
+              <marker id="ar-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#166534"></path></marker>
+            </defs>
+            <text x="14" y="18" font-size="11" fill="#4B5563" font-weight="600">THE PIPELINE FROM PART 1</text>
+            <rect x="14" y="30" width="116" height="56" rx="8" fill="#fff" stroke="#9CA3AF" stroke-width="1.5"></rect>
+            <text x="72" y="52" font-size="11.5" fill="#374151" text-anchor="middle" font-weight="600">1 Network tap</text>
+            <text x="72" y="70" font-size="10.5" fill="#4B5563" text-anchor="middle">microseconds</text>
+            <rect x="148" y="30" width="116" height="56" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="2"></rect>
+            <text x="206" y="52" font-size="11.5" fill="#374151" text-anchor="middle" font-weight="600">2 Detection</text>
+            <text x="206" y="70" font-size="10.5" fill="#4B5563" text-anchor="middle">microseconds</text>
+            <rect x="282" y="30" width="116" height="56" rx="8" fill="#fff" stroke="#9CA3AF" stroke-width="1.5"></rect>
+            <text x="340" y="52" font-size="11.5" fill="#374151" text-anchor="middle" font-weight="600">3 SIEM</text>
+            <text x="340" y="70" font-size="10.5" fill="#4B5563" text-anchor="middle">seconds</text>
+            <rect x="416" y="30" width="116" height="56" rx="8" fill="#fff" stroke="#9CA3AF" stroke-width="1.5"></rect>
+            <text x="474" y="52" font-size="11.5" fill="#374151" text-anchor="middle" font-weight="600">4 Triage</text>
+            <text x="474" y="70" font-size="10.5" fill="#4B5563" text-anchor="middle">seconds to minutes</text>
+            <rect x="550" y="30" width="116" height="56" rx="8" fill="#fff" stroke="#9CA3AF" stroke-width="1.5"></rect>
+            <text x="608" y="52" font-size="11.5" fill="#374151" text-anchor="middle" font-weight="600">5 Analyst</text>
+            <text x="608" y="70" font-size="10.5" fill="#4B5563" text-anchor="middle">minutes to hours</text>
+            <line x1="130" y1="58" x2="146" y2="58" stroke="#57068C" stroke-width="2" marker-end="url(#ar-v)"></line>
+            <line x1="264" y1="58" x2="280" y2="58" stroke="#57068C" stroke-width="2" marker-end="url(#ar-v)"></line>
+            <line x1="398" y1="58" x2="414" y2="58" stroke="#57068C" stroke-width="2" marker-end="url(#ar-v)"></line>
+            <line x1="532" y1="58" x2="548" y2="58" stroke="#57068C" stroke-width="2" marker-end="url(#ar-v)"></line>
+            <line x1="206" y1="148" x2="206" y2="92" stroke="#C0392B" stroke-width="2" stroke-dasharray="5 4"></line>
+            <circle cx="206" cy="118" r="11" fill="#fff" stroke="#C0392B" stroke-width="2"></circle>
+            <path d="M 201 113 L 211 123 M 211 113 L 201 123" stroke="#C0392B" stroke-width="2.2" stroke-linecap="round"></path>
+            <line x1="474" y1="148" x2="474" y2="92" stroke="#1F8A4C" stroke-width="2" marker-end="url(#ar-g)"></line>
+            <line x1="608" y1="148" x2="608" y2="92" stroke="#1F8A4C" stroke-width="2" marker-end="url(#ar-g)"></line>
+            <rect x="106" y="150" width="200" height="70" rx="8" fill="#FDF2F0" stroke="#C0392B" stroke-width="1.5"></rect>
+            <text x="206" y="170" font-size="11.5" fill="#1A1A1A" text-anchor="middle" font-weight="700">LLM as the detector: ruled out</text>
+            <text x="206" y="188" font-size="10.5" fill="#374151" text-anchor="middle">seconds per response against a</text>
+            <text x="206" y="203" font-size="10.5" fill="#374151" text-anchor="middle">microsecond budget, every packet</text>
+            <rect x="380" y="150" width="286" height="70" rx="8" fill="#EDF7F1" stroke="#1F8A4C" stroke-width="1.5"></rect>
+            <text x="523" y="170" font-size="11.5" fill="#1A1A1A" text-anchor="middle" font-weight="700">LLM as a downstream assistant: plausible</text>
+            <text x="523" y="188" font-size="10.5" fill="#374151" text-anchor="middle">drafts alert explanations, helps triage the queue,</text>
+            <text x="523" y="203" font-size="10.5" fill="#374151" text-anchor="middle">summarizes the investigation for the report</text>
+            <text x="340" y="242" font-size="10.5" fill="#4B5563" text-anchor="middle">Downstream = after detection has produced an alert, where latency budgets are seconds, not microseconds</text>
+          </svg>
+<figcaption>Why "downstream" makes sense: the further right an alert travels, the more the latency budget relaxes. The LLM cannot meet stage 2's microsecond budget, but stages 4 and 5 run on human time, where seconds per response is affordable. Every green arrow still carries the validation obligations from Sections 1 and 2.</figcaption>
+</figure>
+<aside class="nyu-callout" role="note" aria-labelledby="takeaway">
+<h3 class="nyu-callout__title" id="takeaway">The Grounded Takeaway</h3>
+<p>Detection tools differ in what they learn from, what they can see, and what they cost to keep honest. Rules see what humans wrote down. Supervised models see what the labels taught. Anomaly detectors see deviation, not malice. LLMs read text downstream of all of them. None is automatically better; each is a different bet about where the evidence will be. Our job, here is to know which bet we are making, name the tradeoff out loud, and check the bet against independent evidence on a schedule.</p>
+</aside>
+</section>
+<!-- ===== 10 ===== --><!-- ====================== CHECK YOUR UNDERSTANDING ====================== -->
+<section class="nyu-section" id="sec-6">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">6</span>
+<h2 class="nyu-section__title">Check Your Understanding</h2>
+</div>
+<hr class="nyu-section__rule">
+<div class="nyu-quiz" aria-labelledby="kc-2">
+<div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 2</span></div>
+<p class="nyu-quiz__prompt" id="kc-2">A research paper reports that its Random Forest IDS achieves 97% accuracy on CIC-IDS2017. Which of the following is the most important caveat when interpreting this result?</p>
+<div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-2"><button class="nyu-quiz__option" role="radio" data-explain-wrong="Random Forest is not outdated; it remains competitive on tabular data like flow features. The issue is not the algorithm but the dataset's class balance, its documented extraction errors, and the choice of metric.">Random Forest is an outdated algorithm</button> <button class="nyu-quiz__option" role="radio" data-correct="true">The dataset is roughly 80% benign traffic, so accuracy alone starts from a high baseline and hides per-class performance</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Publication venue does not determine the validity of a result. A paper from any venue can have sound or flawed methodology. The concern is the dataset's class balance, its known feature extraction errors, and whether per-class metrics were reported.">The paper was not published in a top venue</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="CIC-IDS2017 is not too small; it contains millions of flow records. The problem is not size but class imbalance, plus documented errors in the original feature extraction.">CIC-IDS2017 is too small for meaningful evaluation</button></div>
+<div class="nyu-quiz__feedback" data-correct-msg="Correct. With roughly 80% benign flows, a classifier that labels everything benign already scores about 80% accuracy while detecting zero attacks, so a headline accuracy figure must be judged against that head start and against per-class precision and recall. CIC-IDS2017 also has documented feature extraction errors (Engelen et al., 2021; see References), so it matters whether the corrected feature set was used." data-incorrect-msg="Reconsider the imbalance arithmetic from part 8: when about 80% of flows are benign, accuracy starts high for free and says little about detection. Per-class precision and recall, and whether the corrected feature set was used, are what make the number interpretable."></div>
+</div>
+<div class="nyu-quiz" aria-labelledby="kc-4">
+<div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 4</span></div>
+<p class="nyu-quiz__prompt" id="kc-4">A classifier labels a burst of short SSH connections as an attack with a score of 0.93. Following the validation pattern from this section, what is the right next step before acting on the verdict?</p>
+<div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-4"><button class="nyu-quiz__option" role="radio" data-explain-wrong="Re-running the model tests its consistency, not its correctness. A model that confidently repeats the same verdict on an uptime monitor's traffic is consistently wrong. Validation requires evidence the model has not seen.">Re-run the classifier to confirm it produces the same verdict</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="A high score measures the model's internal confidence given its features, not ground truth. The uptime monitor in part 5 scored 0.91. Confidence and correctness are different things.">Trust the verdict because the confidence score is high</button> <button class="nyu-quiz__option" role="radio" data-correct="true">Check an independent evidence source, such as the target server's authentication logs for the same time window</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="An LLM explanation of the flow record is generated from the same flow features the classifier used, plus the model's general knowledge. It adds fluent narrative, not independent evidence. It cannot tell the brute-force from the uptime monitor either.">Ask an LLM to explain why the flow looks malicious</button></div>
+<div class="nyu-quiz__feedback" data-correct-msg="Correct. The classifier's verdict is a claim, and claims are checked against independent evidence: here, the server's own authentication log, which shows thousands of failed passwords for a real brute-force and nothing at all for a friendly monitor. Re-running the model, reading its confidence, or asking an LLM to narrate all stay inside the same evidence the model already had." data-incorrect-msg="Recall the worked example in part 5: the brute-force and the uptime monitor produced nearly identical flow records and nearly identical model verdicts. Only an independent evidence source, the server's authentication logs, could separate them. Validation means leaving the model's own evidence and checking a second source."></div>
+</div>
+<aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+<h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+<p><strong>Section 5: Comparing Approaches: Baseline, Classical ML, and LLM Triage.</strong> We move from the detector to the queue it feeds, comparing the rule-based baseline, classical ML and LLM-assisted triage on the same alert record.</p>
+</aside>
+</section>
+</main><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"> <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"> </a></footer><button class="nyu-fab" aria-label="Back to top of page"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> </button></div>
+<p>
+<script src="../js/nyu-tandon-course.js"></script>
+<script src="../tooltips/glossary.js"></script>
+</p></body></html>

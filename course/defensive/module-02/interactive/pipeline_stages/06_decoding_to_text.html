@@ -1,0 +1,440 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage 6: Decoding to Text</title>
+<style>
+  :root {
+    --violet: #57068C;
+    --violet-dark: #3D0461;
+    --violet-50: #F5EDFA;
+    --violet-100: #E9D7F4;
+    --violet-200: #D2B3E5;
+    --teal: #155E63;
+    --gold: #B5651D;
+    --ink: #1A1A1A;
+    --ink-soft: #3A3A3A;
+    --ink-mute: #6B6B6B;
+    --rule: #E2E2E2;
+    --rule-soft: #F0F0F0;
+    --surface: #FAFAFC;
+    --font-body: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #fff; color: var(--ink);
+    font-family: var(--font-body); line-height: 1.4; padding: 16px;
+  }
+  .stage {
+    max-width: 760px; margin: 0 auto; background: #fff;
+    border: 1px solid var(--rule); border-radius: 12px;
+    padding: 22px 22px 18px; box-shadow: 0 1px 2px rgba(20, 0, 40, 0.05);
+  }
+  .stage-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .stage-num {
+    font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+    color: #fff; background: #4C1D95;
+    padding: 3px 8px; border-radius: 4px; letter-spacing: 0.04em;
+  }
+  .stage-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink); }
+  .stage-input {
+    margin: 10px 0 14px; font-family: var(--font-mono); font-size: 0.78rem;
+    color: var(--ink-mute); background: var(--surface); padding: 7px 10px;
+    border-radius: 6px; border: 1px solid var(--rule-soft);
+  }
+  .stage-input b { color: var(--ink-soft); font-weight: 600; margin-right: 6px; }
+
+  /* Stream of IDs */
+  .stream-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 12px 12px 10px;
+    position: relative;
+    margin-bottom: 14px;
+    min-height: 64px;
+  }
+  .stream-label {
+    position: absolute; top: -8px; left: 12px;
+    background: #fff; padding: 0 6px;
+    font-size: 0.6rem; letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 700;
+    color: var(--ink-mute);
+  }
+  .stream {
+    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+    min-height: 44px;
+  }
+  .id-chip {
+    display: inline-flex; flex-direction: column; align-items: center;
+    gap: 2px;
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: #fff;
+    border: 1px solid var(--violet-100);
+    font-family: var(--font-mono);
+    animation: slideIn 0.35s ease;
+  }
+  @keyframes slideIn {
+    0% { transform: translateY(-6px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .id-chip .id-num {
+    font-size: 0.66rem;
+    color: var(--violet-dark);
+    font-weight: 700;
+  }
+  .id-chip .id-text {
+    font-size: 0.68rem;
+    color: var(--ink-soft);
+    white-space: pre;
+  }
+  .id-chip.stop {
+    background: var(--ink-soft); color: #fff;
+    border-color: var(--ink-soft);
+    padding: 6px 9px;
+  }
+  .id-chip.stop .id-num,
+  .id-chip.stop .id-text {
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+
+  /* Decode arrow */
+  .decode-arrow {
+    display: flex; align-items: center; gap: 10px;
+    justify-content: center;
+    margin: 6px 0 8px;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    color: var(--ink-mute); letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .decode-arrow svg { width: 24px; height: 16px; }
+
+  /* Response area */
+  .response-card {
+    background: #fff;
+    border: 2px solid var(--violet);
+    border-radius: 8px;
+    padding: 14px 16px;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(87, 6, 140, 0.10);
+    min-height: 84px;
+  }
+  .response-label {
+    position: absolute; top: -9px; left: 16px;
+    background: #fff; padding: 0 6px;
+    font-size: 0.6rem; letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 700;
+    color: var(--violet-dark);
+  }
+  .response-text {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--ink);
+    line-height: 1.45;
+    min-height: 1.4em;
+  }
+  .response-text .chunk {
+    display: inline;
+    white-space: pre-wrap;
+    animation: chunkIn 0.35s ease;
+  }
+  .response-text .cursor {
+    display: inline-block; width: 7px; height: 1em;
+    background: var(--violet);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 1s infinite;
+  }
+  @keyframes chunkIn {
+    0% { background: var(--violet-50); }
+    100% { background: transparent; }
+  }
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  .loop-note {
+    text-align: center; margin: 8px 0 0;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    color: var(--ink-mute); letter-spacing: 0.05em;
+  }
+  .loop-note .arrow { color: var(--violet); font-weight: 700; }
+
+  .caption {
+    margin: 12px 0 0; font-size: 0.82rem;
+    color: var(--ink-soft); text-align: center; line-height: 1.45;
+  }
+  .caption b { color: var(--violet-dark); font-weight: 700; }
+
+
+  /* Embedded in the course page: remove the outer demo frame and page padding.
+     Keep the demo itself responsive; the parent iframe measures this .stage box. */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden;
+  }
+  body {
+    display: block;
+  }
+  .stage {
+    margin: 0 auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    padding-top: 0 !important;
+  }
+  .stage-input {
+    margin-top: 0 !important;
+  }
+
+  /* WCAG 2.2.2 (Pause, Stop, Hide): this stage streams tokens on an endless
+     loop, so it must offer a way to stop the motion. */
+  .anim-controls { display: flex; justify-content: flex-end; gap: 4px; margin: 6px 0 0; }
+  .anim-controls button {
+    border: 1px solid var(--rule, #E2E2E2);
+    border-radius: 999px;
+    background: var(--surface, #fff);
+    color: var(--ink-soft, #3A3A3A);
+    cursor: pointer;
+    font: 800 0.66rem/1 var(--font-mono, monospace);
+    padding: 5px 10px;
+  }
+  .anim-controls button:hover { border-color: var(--violet-100, #E8D8F2); color: var(--violet-dark, #3D0461); }
+</style>
+</head>
+<body>
+<section class="stage" aria-label="Stage 6: Decoding to text">
+  <div class="stage-input">
+    <b>Input:</b><span style="font-family:var(--font-mono);">Analyze this log: 192.168.1.105 port 443 SYN</span>
+  </div>
+
+  <div class="stream-card">
+    <span class="stream-label">Generated Token IDs (autoregressive)</span>
+    <div class="stream" id="stream"></div>
+  </div>
+
+  <div class="decode-arrow">
+    <span>tokenizer decode</span>
+    <svg viewBox="0 0 24 16">
+      <path d="M12,2 L12,12" stroke="var(--violet)" stroke-width="2" fill="none"/>
+      <path d="M7,8 L12,14 L17,8 Z" fill="var(--violet)"/>
+    </svg>
+  </div>
+
+  <div class="response-card">
+    <span class="response-label">Response</span>
+    <div class="response-text" id="response"></div>
+  </div>
+
+  <p class="loop-note">
+    each new ID is appended to the context, and the pipeline runs again <span class="arrow">↻</span>
+  </p>
+
+  <p class="caption">
+    The model emits one token ID at a time. The tokenizer <b>decodes</b> the stream back into
+    subword chunks and assembles them into the text you see. Until a stop signal, the loop
+    keeps running.
+  </p>
+  <div class="anim-controls" role="group" aria-label="Animation controls">
+    <button type="button" class="anim-toggle" aria-pressed="true">Pause</button>
+  </div>
+</section>
+
+<script>
+  // Each generated token: realistic-looking ID + the subword chunk it decodes to
+  const STREAM = [
+    { id: 791,    text: 'The'      },
+    { id: 1515,   text: ' log'     },
+    { id: 5039,   text: ' shows'   },
+    { id: 264,    text: ' a'       },
+    { id: 70769,  text: ' TCP'     },
+    { id: 12683,  text: ' SYN'     },
+    { id: 5226,   text: ' packet'  },
+    { id: 504,    text: ' from'    },
+    { id: 220,    text: ' '        },
+    { id: 5926,   text: '192'      },
+    { id: 13,     text: '.'        },
+    { id: 8953,   text: '168'      },
+    { id: 13,     text: '.'        },
+    { id: 16,     text: '1'        },
+    { id: 13,     text: '.'        },
+    { id: 6849,   text: '105'      },
+    { id: 13,     text: '.'        }
+  ];
+  const STOP = { id: 2, text: '⟨EOS⟩', stop: true };
+
+  const stream   = document.getElementById('stream');
+  const response = document.getElementById('response');
+
+  function reset() {
+    stream.innerHTML = '';
+    response.innerHTML = '<span class="cursor"></span>';
+  }
+
+  function addChip(t) {
+    // Remove cursor temporarily
+    const cursor = response.querySelector('.cursor');
+    if (cursor) cursor.remove();
+
+    const chip = document.createElement('div');
+    chip.className = 'id-chip' + (t.stop ? ' stop' : '');
+    if (t.stop) {
+      chip.innerHTML = `
+        <span class="id-num">${t.id}</span>
+        <span class="id-text">${t.text}</span>`;
+    } else {
+      chip.innerHTML = `
+        <span class="id-num">${t.id}</span>
+        <span class="id-text">${t.text.replace(/ /g, '·') || '·'}</span>`;
+    }
+    stream.appendChild(chip);
+
+    if (!t.stop) {
+      const chunk = document.createElement('span');
+      chunk.className = 'chunk';
+      chunk.textContent = t.text;
+      response.appendChild(chunk);
+    } else {
+      const done = document.createElement('span');
+      done.className = 'chunk';
+      done.style.color = 'var(--ink-mute)';
+      done.style.fontSize = '0.7rem';
+      done.style.fontFamily = 'var(--font-mono)';
+      done.style.marginLeft = '4px';
+      done.textContent = '   ✓ stop';
+      response.appendChild(done);
+    }
+
+    // Re-add cursor at the end
+    if (!t.stop) {
+      const c = document.createElement('span');
+      c.className = 'cursor';
+      response.appendChild(c);
+    }
+  }
+
+  async function play() {
+    reset();
+    for (const t of STREAM) {
+      if (!_running) return;
+      addChip(t);
+      await sleep(380);
+    }
+    addChip(STOP);
+    await sleep(2200);
+  }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  /* Pausable stream: WCAG 2.2.2. The loop checks a flag between cycles and
+     between tokens, so Pause takes effect immediately rather than after the
+     current pass finishes. Starts paused under prefers-reduced-motion. */
+  var _running = false;
+  var _animBtn = document.querySelector('.anim-toggle');
+  var _reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  async function loop() {
+    while (_running) {
+      await play();
+      if (!_running) break;
+    }
+  }
+  function _animSet(on) {
+    _running = on;
+    if (_animBtn) {
+      _animBtn.textContent = on ? 'Pause' : 'Play';
+      _animBtn.setAttribute('aria-pressed', String(on));
+    }
+    if (on) loop();
+  }
+  if (_animBtn) _animBtn.addEventListener('click', function () { _animSet(!_running); });
+  _animSet(!_reduce);
+</script>
+
+<script>
+  /* Cross-origin-safe iframe sizing for Brightspace/local LMS embeds.
+     The child measures only its own .stage box and sends that number upward.
+     The parent never reads contentDocument, so this works even when the LMS
+     serves the iframe from a different origin or sandboxed content URL. */
+  (function() {
+    var MIN_HEIGHT = 120;
+    var MAX_HEIGHT = 1400;
+    var EXTRA_PIXELS = 10;
+    var lastSent = 0;
+    var raf = 0;
+
+    function getEmbedId() {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        return params.get('embedId') || window.name || document.title || window.location.pathname;
+      } catch (err) {
+        return window.name || document.title || 'pipeline-stage';
+      }
+    }
+
+    function measureHeight() {
+      var stage = document.querySelector('.stage') || document.body;
+      var rect = stage.getBoundingClientRect();
+      var styles = window.getComputedStyle(stage);
+      var mt = parseFloat(styles.marginTop) || 0;
+      var mb = parseFloat(styles.marginBottom) || 0;
+      var height = Math.ceil(rect.height + mt + mb + EXTRA_PIXELS);
+      if (!Number.isFinite(height)) height = MIN_HEIGHT;
+      return Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, height));
+    }
+
+    function postHeight() {
+      raf = 0;
+      var height = measureHeight();
+      if (Math.abs(height - lastSent) < 2) return;
+      lastSent = height;
+      try {
+        window.parent.postMessage({
+          kind: 'nyu-pipeline-stage-height',
+          embedId: getEmbedId(),
+          height: height
+        }, '*');
+      } catch (err) {}
+    }
+
+    function schedulePost() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(postHeight);
+    }
+
+    window.addEventListener('load', schedulePost);
+    window.addEventListener('resize', schedulePost);
+    window.addEventListener('orientationchange', schedulePost);
+    document.addEventListener('DOMContentLoaded', schedulePost);
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(schedulePost).catch(function() {});
+    }
+
+    try {
+      var stage = document.querySelector('.stage') || document.body;
+      if (window.ResizeObserver && stage) {
+        var ro = new ResizeObserver(schedulePost);
+        ro.observe(stage);
+      }
+    } catch (err) {}
+
+    // Bounded follow-up measurements catch animations, font swaps, and JS-populated rows.
+    [0, 50, 150, 300, 700, 1200, 2200, 4000].forEach(function(delay) {
+      setTimeout(schedulePost, delay);
+    });
+  })();
+</script>
+
+</body>
+</html>

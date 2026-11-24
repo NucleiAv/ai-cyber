@@ -1,0 +1,267 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 3 · Section 2 · Few-Shot Prompting and Why Outputs Vary · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 3 · Section 2 of 6</div>
+      <h1 class="nyu-hero__title">Few-Shot Prompting &amp; Why Outputs Vary</h1>
+      <p class="nyu-hero__subtitle">
+        Adding examples to a prompt usually improves it, but two properties of language models make a single good-looking run misleading: prompts are brittle, and generation is stochastic.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          ~30 min read
+        </span>
+        <span aria-label="Number of parts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          4 parts
+        </span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          1 knowledge check
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> When "Looking Better" Is Misleading</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Few-Shot Examples and the Three Levers</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Brittleness You Can Reproduce</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Why Single-Run Testing Fails</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Apply</strong> few-shot prompting while controlling example selection, order, and format.</span></li>
+          <li><span><strong>Explain</strong> why semantically identical prompts can produce different accuracy (brittleness).</span></li>
+          <li><span><strong>Justify</strong> why a single run cannot tell you whether a prompt is good (stochastic generation).</span></li>
+        </ul>
+      </section>
+
+      <!-- ===== 1 ===== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">When "Looking Better" Is Misleading</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>In Section 1 you built a structured prompt. The next step toward making that prompt more accurate is showing the model examples of the task done correctly. This technique is called <button type="button" class="nyu-define" data-term="few-shot">few-shot prompting</button>, and it usually helps.</p>
+
+        <p>But this section is mostly a warning wrapped around a technique, because two properties of language models will undermine your results if you do not account for them:</p>
+
+        <div class="nyu-pillars" data-cols="2">
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">1</span>
+            <h3 class="nyu-pillar__title">Brittleness</h3>
+            <p class="nyu-pillar__body">Prompts are <strong>brittle</strong>: changes that do not change the meaning of your prompt (the order of your examples, the spacing, the separators) can change the answer significantly.</p>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">2</span>
+            <h3 class="nyu-pillar__title">Stochastic Generation</h3>
+            <p class="nyu-pillar__body">Generation is <button type="button" class="nyu-define" data-term="stochastic">stochastic</button>: running the same prompt twice can produce two different answers.</p>
+          </article>
+        </div>
+
+        <p>Because of these two properties, a prompt that appears to perform well on one test may not actually be reliable.</p>
+      </section>
+
+      <!-- ===== 2 ===== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Few-Shot Examples and the Three Levers</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">How few-shot prompting works</h3>
+        <p>A few-shot prompt demonstrates the task by including completed examples. You <button type="button" class="nyu-define" data-term="prepend">prepend</button> examples like these to your prompt:</p>
+        <pre class="nyu-code" aria-label="Few-shot examples"><code>Line: Failed password for invalid user oracle from 203.0.113.9 ... -> malicious
+Line: Accepted password for deploy from 198.51.100.7 ...           -> benign</code></pre>
+        <p>The model infers the pattern ("produce a one-word label in that style") and applies it to the new input. This is in-context learning from Section 1: no training happens, the examples just steer the response.</p>
+
+        <p>The catch is that the model's behavior is sensitive to changes that should not matter. Research that systematically varied prompt formatting found that changing only <button type="button" class="nyu-define" data-term="non-semantic">non-semantic features</button> (separators, casing, whitespace) moved accuracy by as much as 76 percentage points on one open model with roughly 13 billion parameters. The order of few-shot examples alone can swing accuracy by tens of points, because certain large language models tend to <button type="button" class="nyu-define" data-term="disproportionate-weighting">disproportionately weight</button> examples near the start or end of the prompt. (This behavior has been documented in specific large language models; it does not necessarily apply to all model architectures or sizes.) None of these changes alter what you meant. They alter what you got.</p>
+
+        <p>Few-shot prompting is powerful, but getting reliable results means controlling three variables: which examples you select (including boundary cases), the order you place them in, and the format you use (kept identical across every example and the live input).</p>
+
+        <h3 class="nyu-subsection-title">Why the same prompt gives different answers</h3>
+        <p>When the model generates text, at each step it computes a probability for every possible next token and then samples one. If <button type="button" class="nyu-define" data-term="temperature">temperature</button> is above 0 (or <button type="button" class="nyu-define" data-term="top-p">top-p</button> is below 1), that sample is genuinely random, so two runs can diverge. Set temperature to 0 and the model nearly always takes the most probable token, which makes output approximately deterministic. If you also pass a fixed <button type="button" class="nyu-define" data-term="seed">seed</button> (a number you choose, such as <code style="padding:1px 3px">42</code>) alongside a higher temperature, the model's random-number generator starts from the same point every time, so you get the same sequence of token choices and therefore the same output. This lets you reproduce a specific run for debugging or auditing without being locked into temperature 0.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe id="sampler-embed" src="interactive/temp_sampler/token_probability_sampler.html" title="Interactive demo: Token probability sampler" loading="lazy" style="height:320px;"></iframe>
+        </div>
+
+        <p>To make this concrete: when the triage prompt reaches the point where the model must output its label, it might compute something like 55 percent probability for <code style="padding:1px 3px">malicious</code>, 40 percent for <code style="padding:1px 3px">suspicious</code>, and 5 percent for <code style="padding:1px 3px">benign</code>. At temperature 0, the model always picks <code style="padding:1px 3px">malicious</code> (the highest probability). At the default temperature, it usually picks <code style="padding:1px 3px">malicious</code> but sometimes draws <code style="padding:1px 3px">suspicious</code>, which is exactly what the five-run example below demonstrates. Neither answer is "wrong" in the sense of a malfunction; both are valid draws from the model's probability distribution for this input.</p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="dist-key">
+          <h3 class="nyu-callout__title" id="dist-key">A distribution, not a value</h3>
+          <p>At default settings, your prompt does not produce one answer. It produces a distribution of answers. One run is a single sample from that distribution. Judging a prompt from one run is like judging a coin from one flip. This is the foundation of the iteration methodology in Section 3.</p>
+        </aside>
+      </section>
+
+      <!-- ===== 3 ===== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Brittleness You Can Reproduce</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">Why this matters for security</h3>
+        <ul class="nyu-keypoints">
+          <li><strong>Silent degradation.</strong> A teammate "cleans up" a deployed triage prompt by re-indenting it and swapping the example order. The meaning is unchanged, but accuracy quietly drops. In a SOC, that shows up as missed detections nobody can explain. Brittleness makes undocumented prompt edits a security risk.</li>
+          <li><strong>False confidence from one good run.</strong> You test a prompt once, it nails the case, and you ship it. Because output is stochastic, the next 50 alerts may include confident wrong answers you never saw.</li>
+          <li><strong>Reproducibility for investigations.</strong> To reproduce exactly what the model said during an incident, you must have controlled temperature and seed. Otherwise your evidence is not reproducible.</li>
+        </ul>
+
+        <h3 class="nyu-subsection-title">Same meaning, different results</h3>
+        <p>Suppose you have a small labeled set of 10 <button type="button" class="nyu-define" data-term="ssh">SSH</button> log lines with known-correct classifications. You write a few-shot triage prompt and create three variants that all mean the same thing. Run each variant against the labeled set in the simulation below. The accuracy numbers illustrate the effect; exact values will depend on the model and the run.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe id="diff-embed" src="interactive/diff_results/diff_embed.html" title="Interactive demo: Same meaning, different results" loading="lazy" style="height:320px;"></iframe>
+        </div>
+
+        <div class="nyu-cards nyu-cards--3">
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Variant V1</h4>
+            <p>Only change: examples ordered benign to malicious.</p>
+            <p><strong>Accuracy: 7 of 10.</strong></p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Variant V2</h4>
+            <p>Only change: the same examples, in reversed order.</p>
+            <p><strong>Accuracy: 5 of 10.</strong></p>
+          </div>
+          <div class="nyu-card">
+            <h4 class="nyu-card__title">Variant V3</h4>
+            <p>Only change: the separator switched from <code>-&gt;</code> to a newline plus <code>Label:</code>.</p>
+            <p><strong>Accuracy: 8 of 10.</strong></p>
+          </div>
+        </div>
+        <p>Now take the best-scoring variant (V3) and run the simulation five times on one ambiguous line: <code>Failed password for root from 192.0.2.51 port 33001 ssh2</code>. The five runs returned: <code>malicious, malicious, suspicious, malicious, suspicious</code>.</p>
+
+        <h3 class="nyu-subsection-title">What each result tells you</h3>
+        <ul class="nyu-keypoints">
+          <li><strong>V1 versus V2</strong> changed only example order and lost two correct answers. If you judged "V2 looks cleaner" by eye, you might ship the worse prompt. The lesson is not that benign-first is always better (that may not hold on your data). The lesson is that example order is a variable you need to test, not assume.</li>
+          <li><strong>V3</strong> changed only the separator and format, and scored the highest of the three. Same meaning, different result. That is textbook brittleness, and it is why you should fix one format and keep it identical across every example.</li>
+          <li><strong>The five runs</strong> on the ambiguous line disagree: three returned <code>malicious</code> and two returned <code>suspicious</code>. Neither <code>malicious</code> nor <code>suspicious</code> is the single "correct" answer from the model's perspective. The prompt produces a distribution of answers. The honest report for this input is "60 percent malicious, 40 percent suspicious across five runs at default temperature." That disagreement is itself useful information: it signals that the log line is genuinely ambiguous.</li>
+        </ul>
+      </section>
+
+      <!-- ===== 4 ===== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Why Single-Run Testing Fails</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Now that you have seen brittleness and stochastic generation in action, here are the misconceptions that most commonly trip people up when working with few-shot prompts.</p>
+
+        <h3 class="nyu-subsection-title">Common misconceptions</h3>
+        <ul class="nyu-keypoints">
+          <li><strong>"More examples are always better."</strong> Beyond a few well-chosen examples, gains flatten and can reverse. Order and format effects start to dominate, and very long example lists run into the <button type="button" class="nyu-define" data-term="lost-in-the-middle">lost-in-the-middle</button> effect. Curate carefully rather than piling on more examples.</li>
+          <li><strong>"If two prompts mean the same thing, they behave the same."</strong> Brittleness says otherwise. Meaning-preserving changes can change results.</li>
+          <li><strong>"It was wrong once, so the prompt is broken,"</strong> or the opposite, "it was right once, so the prompt is good." Both of these judge a distribution from a single sample.</li>
+        </ul>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="cot-warn">
+          <h3 class="nyu-callout__title" id="cot-warn">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+            Chain-of-thought is largely a large-model behavior
+          </h3>
+          <p><button type="button" class="nyu-define" data-term="chain-of-thought">Chain-of-thought</button> reasoning gains were demonstrated on very large models (roughly 60 billion parameters and up). Small models, those with a few billion parameters, often do not benefit. Adding "think step by step" may produce longer output with no accuracy improvement, and it costs tokens and time. Test it on the model you are using, and treat a <button type="button" class="nyu-define" data-term="null-result">null result</button> as a useful finding, not a failure. A well-known technique can simply not apply to every model.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Tradeoffs to keep in mind</h3>
+        <ul class="nyu-keypoints">
+          <li><strong>Lowering temperature to 0</strong> improves repeatability but reduces useful diversity. Sometimes you want varied samples, for example to measure how often the model agrees with itself (as you will do in Section 3). There is no single correct temperature setting.</li>
+          <li><strong>Format robustness is an active research area.</strong> Techniques exist to average over many formats, but no current method makes a small model fully format-insensitive. Brittleness is a property to manage, not a bug you can fix.</li>
+        </ul>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            Try it yourself: evaluate a colleague's conclusion
+          </h3>
+          <p class="nyu-scenario__prompt">Two triage prompts, P1 and P2, contain identical instructions and identical four examples; only the example order differs. P1 scored 8 of 10 on a colleague's test, P2 scored 6 of 10. Your colleague concludes "P1 is the better prompt, ship it." In three or four sentences, state what additional evidence you would require before agreeing, which two procedures from this section you would run to get it, and a specific temperature and seed choice you would use and why.</p>
+          <button class="nyu-scenario__btn">Possible Answer</button>
+          <div class="nyu-scenario__answer">
+            <ul>
+              <li>The 8-versus-6 gap could be order-sensitivity noise on a tiny 10-item set.</li>
+              <li>Run each prompt multiple times to estimate variance, and test on a larger or re-labeled set, ideally trying additional orderings too.</li>
+              <li>Use temperature 0 plus a fixed seed for a repeatable head-to-head, while separately running at default temperature to observe variability. Only then can you say "P1 is more reliable" with any confidence.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="kc-2">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+          <p class="nyu-quiz__prompt" id="kc-2">A prompt outputs <code>benign</code> for an alert on Monday and <code>suspicious</code> for the same alert on Tuesday, with no change to the prompt. What is the best explanation?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-2">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Run-to-run variation is normal sampling behavior, not a defect, so reinstalling changes nothing.">The model is broken and should be reinstalled.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The prompt may be fine. The variation comes from how the model samples tokens, not from the wording.">The prompt is poorly written.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Generation is stochastic, so identical inputs can yield different samples.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The input is identical by stipulation. The difference is produced by the model's sampling, not by the data.">The alert must have changed between days.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. At default settings the model samples each token, so the same input can produce different outputs across runs. That is expected behavior, not a defect. Measure across multiple runs, and set temperature 0 plus a seed if you need repeatability."
+               data-incorrect-msg="Not quite. This is normal stochastic generation, not a broken model or a bad prompt. The fix is to measure across multiple runs and control temperature and seed for repeatability."></div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+            Many-Shot Scaling Experiment
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Take a fixed task and increase the number of few-shot examples from 2 to 8 to 16. Chart accuracy at each level and note where adding more examples stops helping or starts hurting. That is the lost-in-the-middle effect in action.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 3: Systematic Iteration &amp;amp; Critical Evaluation.</strong> If one run is only a sample, how do you actually improve a prompt and confirm that it improved? Section 3 covers the iteration loop (test, measure, change one variable, re-measure) and the verification habit that catches confident, fluent, completely fabricated output.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+</body>
+</html>

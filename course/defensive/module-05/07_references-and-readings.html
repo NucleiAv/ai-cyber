@@ -1,0 +1,217 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 5 · Section 7 · References &amp; Readings · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 5 · Section 7 of 7</div>
+<h1 class="nyu-hero__title">References &amp; Readings</h1>
+<p class="nyu-hero__subtitle">All sources, citations, and recommended readings referenced throughout Module 5: AI for Threat Intelligence and Research, organized by category and section.</p>
+<div class="nyu-hero__meta" aria-label="Section overview"><span aria-label="Section type"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Reference</span> <span aria-label="Number of parts"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> 5 parts</span></div>
+</header><nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+<li><a href="#sec-1"><span class="nyu-toc__num">1</span> Academic Papers &amp; Preprints</a></li>
+<li><a href="#sec-2"><span class="nyu-toc__num">2</span> Frameworks &amp; Standards</a></li>
+<li><a href="#sec-3"><span class="nyu-toc__num">3</span> Government Sources</a></li>
+<li><a href="#sec-4"><span class="nyu-toc__num">4</span> Practitioner &amp; Institutional Resources</a></li>
+<li><a href="#sec-5"><span class="nyu-toc__num">5</span> Source Caveats</a></li>
+<li><a href="#sec-6"><span class="nyu-toc__num">6</span> References by Section</a></li>
+</ol>
+</nav><main id="main" tabindex="-1"><!-- ===== GOVERNMENT SOURCES ===== --><!-- ===== ACADEMIC ===== -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">Academic Papers &amp; Preprints</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>Spracklen, J., et al.</strong> (2025). "We Have a Package for You! A Comprehensive Analysis of Package Hallucinations by Code Generating LLMs." <em>USENIX Security Symposium.</em> <span class="ref-tag ref-tag--paper">Paper</span><br>Code-generating models recommend nonexistent packages at 5–22% rates; 58% of hallucinated package names recur across queries, enabling supply-chain attacks ("slopsquatting"). Cited in Section 3 as primary evidence that confident, structurally valid model output can fabricate specific identifiers, the same failure mode that produces fabricated CVE IDs in CTI workflows. Also cited in Module 2.<br><a href="https://www.usenix.org/conference/usenixsecurity25/presentation/spracklen" target="_blank" rel="noopener">USENIX Security '25</a></li>
+<li><strong>Evans, O.</strong> (2024). "Vintage Large Language Models." Talk transcript. <span class="ref-tag ref-tag--paper">Talk</span><br>Proposes deliberately training models on data up to a chosen past date, which makes the knowledge-cutoff boundary explicit rather than incidental. Source of the supplementary video in Section 3, and the conceptual background for the frozen-model demonstration in Section 5. <br><a href="https://owainevans.github.io/talk-transcript.html" target="_blank" rel="noopener">Transcript</a> · <a href="https://owainevans.github.io/pdfs/vintage_LLMs.pdf" target="_blank" rel="noopener">Slides</a> · <a href="https://www.youtube.com/watch?v=AA4ophKBK58" target="_blank" rel="noopener">Video</a></li>
+<li><strong>Alam, M., et al.</strong> (2024). "CTIBench: A Benchmark for Evaluating LLMs in Cyber Threat Intelligence Tasks." <span class="ref-tag ref-tag--paper">Paper</span><br>Benchmark across CTI tasks including threat actor attribution, TTP extraction, and CVSS prediction from descriptions. Referenced in Section 3 optional enrichment as an example of CTI-specific evaluation methodology. Read with the course's standing benchmark caveats: datasets go stale and leaderboard performance is not deployment performance.<br><a href="https://arxiv.org/abs/2406.07599" target="_blank" rel="noopener">arXiv:2406.07599</a></li>
+</ul>
+</section>
+<!-- ===== FRAMEWORKS ===== -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">Frameworks &amp; Standards</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>FIRST.</strong> <em>Common Vulnerability Scoring System (CVSS) v3.1 Specification Document.</em> <span class="ref-tag ref-tag--framework">Framework</span><br>Metric definitions, base score formula, and severity bands for CVSS v3.1. Used in Section 2 for the annotated CVSS vector walk-through and the severity-vs-risk distinction. CVSS v4.0 is noted in optional enrichment; v3.1 remains the version in widest operational use at course time.<br><a href="https://www.first.org/cvss/specification-document" target="_blank" rel="noopener">first.org/cvss/specification-document</a></li>
+<li><strong>FIRST.</strong> <em>Exploit Prediction Scoring System (EPSS).</em> <span class="ref-tag ref-tag--framework">Framework</span><br>Probabilistic scoring of the likelihood a vulnerability will be exploited in the next 30 days, combining CVE features with threat intelligence signals. Contrasted with CVSS severity in Section 2 to illustrate the severity-vs-risk distinction.<br><a href="https://www.first.org/epss/" target="_blank" rel="noopener">first.org/epss</a></li>
+<li><strong>FIRST.</strong> <em>Traffic Light Protocol (TLP) Version 2.0.</em> <span class="ref-tag ref-tag--framework">Framework</span><br>Four-color marking system governing how shared intelligence may be redistributed. Used in Section 5 to frame the compliance dimension of AI-assisted CTI workflows: TLP:AMBER content may not be sent to external AI services without organizational policy authorization.<br><a href="https://www.first.org/tlp/" target="_blank" rel="noopener">first.org/tlp</a></li>
+<li><strong>OASIS.</strong> <em>STIX Version 2.1.</em> <span class="ref-tag ref-tag--standard">Standard</span><br>Structured Threat Information eXpression: the machine-readable CTI format. Defines STIX Domain Objects (SDOs), STIX Relationship Objects (SROs), the STIX patterning language for indicators, and bundle structure. Section 4 uses STIX 2.1 for the annotated IoC indicator example.<br><a href="https://docs.oasis-open.org/cti/stix/v2.1/stix-v2.1.html" target="_blank" rel="noopener">docs.oasis-open.org/cti/stix/v2.1</a></li>
+<li><strong>OASIS.</strong> <em>TAXII Version 2.1.</em> <span class="ref-tag ref-tag--standard">Standard</span><br>Trusted Automated eXchange of Intelligence Information: the transport protocol for STIX bundles. Defines the Collection and Channel models. Section 4 introduces TAXII as the distribution layer for the STIX bundles produced by the extraction pipeline.<br><a href="https://docs.oasis-open.org/cti/taxii/v2.1/taxii-v2.1.html" target="_blank" rel="noopener">docs.oasis-open.org/cti/taxii/v2.1</a></li>
+<li><strong>MITRE ATT&amp;CK.</strong> <span class="ref-tag ref-tag--framework">Framework</span><br>Adversary tactics, techniques, and procedures knowledge base. Named in Section 1 as the operational TTP vocabulary; full treatment is in Module 8. Mentioned here to document the forward reference.<br><a href="https://attack.mitre.org/" target="_blank" rel="noopener">attack.mitre.org</a></li>
+</ul>
+</section>
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Government Sources</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>NIST SP 800-150.</strong> <em>Guide to Cyber Threat Information Sharing.</em> <span class="ref-tag ref-tag--government">Government</span><br>Definitions of threat data, threat information, and cyber threat intelligence; indicator and TTP taxonomy; information sharing models. Used in Section 1 for core vocabulary and in Section 4 for sharing roles.<br><a href="https://csrc.nist.gov/pubs/sp/800/150/final" target="_blank" rel="noopener">csrc.nist.gov/pubs/sp/800/150/final</a></li>
+<li><strong>CVE Program.</strong> <em>Common Vulnerabilities and Exposures.</em> <span class="ref-tag ref-tag--government">Government</span><br>The CVE identifier system and the CNA authorization model. Authoritative for CVE existence and identity claims. Used in Sections 2 and 5.<br><a href="https://www.cve.org/" target="_blank" rel="noopener">cve.org</a></li>
+<li><strong>NIST National Vulnerability Database (NVD).</strong> <span class="ref-tag ref-tag--government">Government</span><br>CVE enrichment with CVSS scores, CPE product identifiers, and CWE weakness classifications. Primary source for the Log4Shell (CVE-2021-44228) CVSS 10.0 vector and score used in Section 2 and the currency check in Section 5. Enrichment throughput and lag characteristics are discussed as a structural property.<br><a href="https://nvd.nist.gov/" target="_blank" rel="noopener">nvd.nist.gov</a></li>
+<li><strong>CISA Known Exploited Vulnerabilities (KEV) Catalog.</strong> <span class="ref-tag ref-tag--government">Government</span><br>Confirmed actively exploited vulnerabilities, maintained by CISA. KEV inclusion is the authoritative source for exploitation status claims; KEV absence is not evidence of safety. Used in Sections 2 and 5. BOD 22-01 establishes the federal remediation mandate tied to KEV.<br><a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" rel="noopener">cisa.gov/known-exploited-vulnerabilities-catalog</a></li>
+<li><strong>ODNI Intelligence Community Directive 203 (ICD 203).</strong> <em>Analytic Standards.</em> <span class="ref-tag ref-tag--government">Government</span><br>Estimative language standards including confidence and likelihood bands used in finished intelligence products. Cited in Sections 3 and 5 as the source for the estimative language bands applied to CTI output.<br><a href="https://archive.dni.gov/files/documents/ICD/ICD-203.pdf" target="_blank" rel="noopener">archive.dni.gov: ICD 203</a></li>
+<li><strong>Apache Software Foundation.</strong> <em>Log4j Security Advisories.</em> <span class="ref-tag ref-tag--government">Advisory</span><br>Fix version history for CVE-2021-44228 (Log4Shell): 2.15.0 was the initial fix, superseded by 2.16.0 and later releases as the initial fix was found incomplete. Used in Sections 2 and 5 as the canonical example of why currency matters; the vendor advisory is the primary source for product-specific version facts.<br><a href="https://logging.apache.org/security.html" target="_blank" rel="noopener">logging.apache.org/security.html</a></li>
+<li><strong>NIST.</strong> <em>NIST Updates NVD Operations to Address Record CVE Growth.</em> April 2026. <span class="ref-tag ref-tag--government">Government</span><br>Announces the shift from universal NVD enrichment to a risk-based triage model. CVEs in the CISA KEV catalog are prioritized (one business day target), followed by federal government software and critical software under Executive Order 14028. All backlogged CVEs published before March 2026 are moved to "not scheduled." Used in Section 2 to illustrate why no single source is complete and why a multi-source verification map is essential.<br><a href="https://www.nist.gov/news-events/news/2026/04/nist-updates-nvd-operations-address-record-cve-growth" target="_blank" rel="noopener">nist.gov: NVD Operations Update, April 2026</a></li>
+<li><strong>Executive Order 14028.</strong> <em>Improving the Nation's Cybersecurity.</em> May 2021. <span class="ref-tag ref-tag--government">Government</span><br>Defines "critical software" and requires federal agencies to apply enhanced security measures to it. Referenced in Section 2 as one of the three enrichment priority criteria in NIST's April 2026 NVD triage model.<br><a href="https://bidenwhitehouse.archives.gov/briefing-room/presidential-actions/2021/05/12/executive-order-on-improving-the-nations-cybersecurity/" target="_blank" rel="noopener">bidenwhitehouse.archives.gov: EO 14028</a></li>
+</ul>
+</section>
+<!-- ===== PRACTITIONER ===== -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Practitioner &amp; Institutional Resources</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>Heuer, R.J.</strong> <em>Psychology of Intelligence Analysis.</em> CIA Center for the Study of Intelligence, 1999. Available free. <span class="ref-tag ref-tag--practitioner">Practitioner</span><br>The foundational text on cognitive bias in analytical work, including confirmation bias and the structured analytic techniques designed to counter it. Used in Section 5 for the analyst boundary argument: the four properties that place a decision in the human column (accountability, access, irreversibility, attribution) parallel the bias structures Heuer documents. The automation bias literature extends this into human-machine teaming contexts.<br><a href="https://www.cia.gov/resources/csi/books-monographs/psychology-of-intelligence-analysis-2/" target="_blank" rel="noopener">cia.gov/resources/csi</a></li>
+<li><strong>US Joint Publication 2-0.</strong> <em>Joint Intelligence.</em> <span class="ref-tag ref-tag--practitioner">Doctrine</span><br>The intelligence cycle model as used in national security doctrine. Section 1 uses this lineage descriptively, not prescriptively: the cycle is a shared vocabulary map, acknowledged to idealize a messier parallel reality. Critics within the intelligence community have raised this limitation; the course explicitly notes it.<br><a href="https://www.jcs.mil/Doctrine/Joint-Doctrine-Pubs/2-0-Intelligence-Series/" target="_blank" rel="noopener">jcs.mil: 2-0 Intelligence Series</a></li>
+<li><strong>VulnCheck.</strong> <em>NVD enrichment coverage analysis.</em> 2026. <span class="ref-tag ref-tag--practitioner">Industry Analysis</span><br>Analysis showing approximately 32% of CVE-2025 entries had been fully enriched by NVD as of early 2026, with roughly 10,000 vulnerabilities from 2025 still lacking a CVSS score. Cited in Section 2 to quantify the enrichment gap that motivated NIST's April 2026 triage shift.<br><a href="https://vulncheck.com/" target="_blank" rel="noopener">vulncheck.com</a></li>
+<li><strong>curl project maintainer public posts on AI-generated false vulnerability reports.</strong> <span class="ref-tag ref-tag--practitioner">Primary Source</span><br>Documented publicly by the curl project's maintainers; cited in Section 3 as a real-world ecosystem cost of fluent fabrication, where AI-generated reports that look credible impose triage burden on open source maintainers.&nbsp;</li>
+</ul>
+</section>
+<!-- ====================== SOURCE CAVEATS ====================== -->
+<section class="nyu-section" id="sec-5">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">5</span>
+<h2 class="nyu-section__title">Source Caveats</h2>
+</div>
+<hr class="nyu-section__rule">
+<aside class="nyu-callout nyu-callout--warning" role="note">
+<h3 class="nyu-callout__title">Reading Sources Critically</h3>
+<p>Every source has a context. When you read security research, keep these caveats in mind:</p>
+</aside>
+<table class="nyu-table nyu-table--even">
+<thead>
+<tr>
+<th>Source Category</th>
+<th>Key Caveat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Government vulnerability data (CVE, NVD, CISA KEV)</td>
+<td>Authoritative for what they record, and they do not record everything. Enrichment lags disclosure, and NVD moved away from universal enrichment in 2026, so an unscored record is an unenriched record. Absence from KEV is not evidence that a vulnerability is not being exploited.</td>
+</tr>
+<tr>
+<td>Scoring frameworks (CVSS, EPSS)</td>
+<td>They measure different things and neither one is risk. CVSS describes intrinsic severity, EPSS estimates the probability of exploitation in the wild. Combining them requires your own environmental context.</td>
+</tr>
+<tr>
+<td>Industry analysis (VulnCheck enrichment coverage)</td>
+<td>Single-vendor methodology. The coverage figure depends entirely on how that vendor defines an enriched record, so cite it with the definition attached.</td>
+</tr>
+<tr>
+<td>Primary-source practitioner accounts (curl maintainer posts on AI-generated reports)</td>
+<td>First-hand and unmediated, but it is one project's experience reported by an interested party. Useful as an illustration, not as a base rate.</td>
+</tr>
+<tr>
+<td>Talks and transcripts (Evans 2024)</td>
+<td>A talk has no methods section and no peer review. Cite the idea, not a measurement.</td>
+</tr>
+<tr>
+<td>Benchmarks (CTIBench)</td>
+<td>Task-specific by construction. Performance on threat-intelligence benchmark tasks does not transfer to your reporting pipeline without your own evaluation.</td>
+</tr>
+<tr>
+<td>Intelligence doctrine (ICD 203, Joint Publication 2-0, Heuer)</td>
+<td>Normative standards written for national-security practice on government timelines and authorities. Adapt the reasoning discipline; do not import the process wholesale into a commercial SOC.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<!-- ===== BY SECTION ===== -->
+<section class="nyu-section" id="sec-6">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">6</span>
+<h2 class="nyu-section__title">References by Section</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Use this index to find sources cited in each section of Module 5.</p>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 1: The Intelligence Cycle Meets the Language Model</h3>
+<ul class="ref-list">
+<li>NIST SP 800-150. Core vocabulary: threat data, threat information, cyber threat intelligence; indicator and TTP definitions.</li>
+<li>JP 2-0 / US Joint Intelligence doctrine. Intelligence cycle model (direction, collection, processing, analysis, dissemination, feedback) used as a descriptive map.</li>
+<li>MITRE ATT&amp;CK. Named as the TTP knowledge base; full treatment deferred to Module 8.</li>
+<li>Fictional scenarios: "one question, three customers" case and the six work items are labeled as fictional, modeled on routine advisory handling.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 2: Ground Truth: CVE, CVSS, NVD, and the KEV Catalog</h3>
+<ul class="ref-list">
+<li>CVE program / cve.org. Program structure, the CNA model, CVE-2021-44228 record.</li>
+<li>NVD / nvd.nist.gov. CVSS 10.0 base score and vector for CVE-2021-44228; enrichment role; backlog as a structural lesson.</li>
+<li>FIRST CVSS v3.1 specification. Metric definitions and severity bands for the annotated vector walk-through.</li>
+<li>FIRST EPSS. Probabilistic exploitation scoring; contrasted with CVSS severity to illustrate the severity-vs-risk distinction.</li>
+<li>CISA KEV catalog and BOD 22-01. CVE-2021-44228 KEV entry confirming mass exploitation; remediation mandate.</li>
+<li>Apache Log4j security advisory. Fix version history (2.15.0 superseded); vendor as primary source for affected/fixed version facts.</li>
+<li>NIST NVD Operations Update, April 2026. Risk-based triage model; enrichment priority categories; backlog disposition. Statistics: 263% CVE submission growth (2020-2025), ~70K CVEs forecast for 2026 (Cisco/FIRST), ~32% of 2025 CVEs enriched (VulnCheck).</li>
+<li>Executive Order 14028. Critical software definition used as one of NIST's three enrichment priority criteria.</li>
+<li>VulnCheck enrichment coverage analysis. Quantifies NVD enrichment gap for 2025 CVEs.</li>
+<li>Fictional patch priority profiles: four profiles are labeled as fictional, designed to require multi-factor reasoning beyond CVSS rank.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 3: AI Assisted Summarization and Briefing: Capability and Failure</h3>
+<ul class="ref-list">
+<li>CVE-2023-4863 (heap buffer overflow in libwebp). Real NVD entry; verify current details at nvd.nist.gov. The annotated model output in the worked example is an illustrative reconstruction, labeled as such.</li>
+<li>Spracklen et al. (2025, USENIX Security). Package hallucination rates as evidence that models fabricate specific structured identifiers. Applied by analogy to CVE ID fabrication.</li>
+<li>curl project maintainer posts. Ecosystem cost of fluent fabrication: AI-generated vulnerability reports that confidently cite nonexistent CVEs reached the curl project maintainers as real bug reports.</li>
+<li>Evans (2024), "Vintage Large Language Models." Source of the supplementary video on models trained to a fixed past date, shown alongside the knowledge-cutoff discussion.</li>
+<li>ODNI ICD 203. Estimative language bands applied to caveating model output in CTI briefings.</li>
+<li>CVE-2024-99999. Reserved-style example ID used in the audit exercise; fictional product, labeled as such throughout.</li>
+<li>Alam et al. (2024, CTIBench). Referenced in optional enrichment as an example of CTI-specific LLM evaluation methodology.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 4: From Raw Report to Structured Intelligence: IoC Extraction and STIX</h3>
+<ul class="ref-list">
+<li>OASIS STIX 2.1 specification. SDO and SRO object types; STIX patterning language; bundle structure. Source for the annotated indicator example.</li>
+<li>OASIS TAXII 2.1 specification. Collection and Channel transport model for STIX bundles.</li>
+<li>NIST SP 800-150. Indicator sharing roles referenced for producer/consumer model context.</li>
+<li>Defanging conventions: community practice as applied in CISA advisories and public reporting. No single specification; the pattern is described by example.</li>
+<li>Fictional report excerpt: labeled as such throughout. Indicators use IANA documentation-reserved ranges (203.0.113.0/24) and RFC 2606 example domains. The SHA-256 value shown is the real hash of the string "test", used as a syntactically valid placeholder.</li>
+<li>Precision and recall: Module 4 teaching content, applied to extraction scoring.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 5: The Verification Methodology and the Analyst's Boundary</h3>
+<ul class="ref-list">
+<li>CVE program, NVD, CISA KEV, Apache Log4j advisory. All four used as routing targets in the five-step verification methodology; Log4Shell (CVE-2021-44228) is the worked example throughout.</li>
+<li>FIRST CVSS v3.1. Vector cited in the Log4Shell currency check scenario.</li>
+<li>ODNI ICD 203. Estimative language bands applied to confidence assignment in the verification output.</li>
+<li>Allied intelligence doctrine (NATO Admiralty grading). Two-axis source and information grading scale; presented as one community's approach, with the two-axis structure as the transferable concept.</li>
+<li>Evans (2024), "Vintage Large Language Models." Conceptual background for the frozen-model interactive used in the currency check.</li>
+<li>FIRST TLP 2.0. Marking definitions and redistribution constraints; the TLP:AMBER compliance note for AI-assisted workflows.</li>
+<li>Heuer, Psychology of Intelligence Analysis. Cognitive bias framing for the analyst boundary argument; the automation bias literature in optional enrichment extends this.</li>
+<li>Log4Shell attribution multiplicity: documented across government and vendor primary reporting; exploitation spanned criminal and state-linked actors. Multiple government attribution reports are the source; no single report is cited.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 6: The Hallucination Audit Lab</h3>
+<ul class="ref-list">
+<li>CVE-2021-44228 (Log4Shell). Reused as the lab’s stale-fix case; routed to CVE/NVD, CISA KEV, and the Apache Log4j advisory (2.15.0 superseded by 2.16.0 and later), as in Sections 2 and 5.</li>
+<li>CVE-2014-0160 (Heartbleed). OpenSSL TLS/DTLS heartbeat buffer over-read: information disclosure, not remote code execution; CVSS 3.1 base 7.5 HIGH. Affected OpenSSL 1.0.1 through 1.0.1f, fixed in 1.0.1g; listed in CISA KEV. Routed to CVE/NVD, the OpenSSL security advisory, and KEV.</li>
+<li>CVE-2017-5638 (Apache Struts 2, Jakarta Multipart parser). Remote code execution, CVSS base 10.0; affected 2.3.5–2.3.31 and 2.5–2.5.10, fixed in 2.3.32 and 2.5.10.1 (bulletins S2-045 / S2-046); listed in CISA KEV and exploited in the 2017 Equifax breach. Routed to CVE/NVD, the Apache Struts bulletin, and KEV.</li>
+<li>All model briefings in the lab are illustrative reconstructions, labeled as such. The planted errors mirror the four failure modes from Section 3, and every fact is checkable against the public sources above.</li>
+</ul>
+</div>
+</section>
+</main><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"> <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"> </a></footer><button class="nyu-fab" aria-label="Back to top of page"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> </button></div>
+<p>
+<script src="../js/nyu-tandon-course.js"></script>
+<script src="../tooltips/glossary.js"></script>
+</p></body></html>

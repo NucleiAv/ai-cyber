@@ -1,0 +1,46 @@
+- title: Where an LLM app can be attacked
+  stats: [Stage, OWASP entry]
+  nodes:
+    data: {label: Training data, x: 0, y: 0, kind: box}
+    train: {label: Training, x: 2, y: 0, kind: raised}
+    file: {label: Model file, x: 4, y: 0, kind: box, tag: on a hub}
+    user: {label: User and documents, x: 0, y: 3, kind: box}
+    app: {label: LLM app, x: 2, y: 3, kind: def}
+    out: {label: Output, x: 4, y: 3, kind: box, tag: "page, SQL, shell"}
+    tools: {label: Tools, x: 4, y: 5, kind: raised, tag: "email, files, payments"}
+  links: [[data, train], [train, file], [file, app], [user, app], [app, out], [app, tools]]
+  steps:
+    - title: Training data
+      text: The model learns from huge text collections. An attacker who adds text here can plant a hidden behavior. This is **poisoning**.
+      on: [data, train]
+      flow: [[data, train, atk]]
+      mark: {data: warn}
+      stats: [Build time, LLM04]
+    - title: The model file
+      text: Teams download models from hubs. A model file can carry code that runs when it loads, or a name that a stranger took over. This is a **supply chain** attack.
+      on: [file]
+      flow: [[train, file, ink], [file, app, atk]]
+      mark: {file: warn}
+      stats: [Build time, LLM03]
+    - title: The prompt
+      text: At run time the app joins its rules, the user's text and any documents into one long text. Any part an attacker controls can give orders. This is **prompt injection**, the most common way in.
+      on: [user, app]
+      flow: [[user, app, atk]]
+      mark: {app: bad}
+      stats: [Run time, LLM01]
+    - title: The output
+      text: The app shows the answer or passes it to a browser, a database or a shell. Unchecked output carries the attack forward. This is **improper output handling**.
+      on: [app, out]
+      flow: [[app, out, atk]]
+      mark: {out: bad}
+      stats: [Run time, LLM05]
+    - title: The actions
+      text: Agents call tools. A fooled model with strong tools does real damage, such as sending, paying or deleting. This is **excessive agency**.
+      on: [app, tools]
+      flow: [[app, tools, atk]]
+      mark: {tools: bad}
+      stats: [Run time, LLM06]
+    - title: Every box is a lesson
+      text: Lessons 2 to 14 take these parts one at a time, in the order of the OWASP LLM Top 10. Lesson 15 adds MCP and agents.
+      flow: [[data, train, ink], [train, file, ink], [file, app, ink], [user, app, ink], [app, out, ink], [app, tools, ink]]
+      stats: [All, LLM01 to LLM10]

@@ -1,0 +1,39 @@
+- title: Three attacks on one malware classifier
+  stats: [Where it acts, What it changes, Result]
+  nodes:
+    data: {label: Training samples, x: 0, y: 0, kind: box}
+    train: {label: Training, x: 2, y: 0, kind: raised}
+    file: {label: Model file, x: 4, y: 0, kind: box, tag: shared as .pth}
+    clf: {label: Classifier, x: 4, y: 2, kind: def}
+    sample: {label: New malware, x: 2, y: 3, kind: atk}
+    verdict: {label: Verdict, x: 6, y: 2, kind: box}
+  links: [[data, train], [train, file], [file, clf], [sample, clf], [clf, verdict]]
+  steps:
+    - title: Poisoning, before training
+      text: The attacker adds samples with a small trigger pattern labeled benign. The model learns that the trigger means safe. Clean-label versions keep correct labels, so reviewers see nothing.
+      on: [data, train]
+      flow: [[data, train, atk]]
+      mark: {data: warn}
+      stats: [Training data, What it learns, Hidden backdoor]
+    - title: Supply chain, around the model
+      text: The shared model file is a pickle. Loading it can run code, or a swapped file can carry a different model.
+      on: [file]
+      flow: [[train, file, ink], [file, clf, atk]]
+      mark: {file: warn}
+      stats: [Model file, Code or weights, Compromised loader]
+    - title: Evasion, at prediction time
+      text: The attacker appends bytes that do not change what the program does but push it across the decision boundary. Often this works without access to the model, because adversarial examples transfer.
+      on: [sample, clf]
+      flow: [[sample, clf, atk]]
+      stats: [Input, A few bytes, "-"]
+    - title: The wrong label
+      text: The classifier says benign. Each attack acted at a different stage, so each needs a different control.
+      on: [verdict]
+      flow: [[clf, verdict, atk]]
+      mark: {verdict: bad}
+      stats: [Output, "-", Benign]
+    - title: A control per stage
+      text: Data provenance for poisoning, safe formats and scanning for the supply chain, and robust training plus layered detection for evasion. ATLAS names them AML.T0020, AML.T0010 and AML.T0015.
+      flow: [[data, train, def], [file, clf, def], [clf, verdict, def]]
+      mark: {data: ok, file: ok, clf: ok}
+      stats: [Every stage, "-", Defended in layers]

@@ -1,0 +1,667 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Label Flipping</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redsoft:#fcf1f1;
+  --green:#0f7a43;--greenline:#c3e2d0;--greensoft:#eef7f2;
+  --amber:#8a5d00;--ambersoft:#fffbf2;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:12px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper);border-radius:3px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+
+.top{padding:14px 22px 3px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:6px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:5px;max-width:62ch}
+
+.body{padding:12px 22px 16px}
+
+/* ── Viz container ── */
+.viz{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#ffffff,#fcfcfd);overflow:hidden;height:380px;position:relative}
+.grid-view,.test-view{position:absolute;inset:0;overflow:hidden}
+
+/* ── Grid ── */
+.grid-head{display:grid;grid-template-columns:30px 1fr auto;align-items:center;height:28px;padding:0 14px;border-bottom:1px solid var(--line2);background:var(--paper)}
+.grid-head span{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.grid{position:relative}
+.row{display:grid;grid-template-columns:30px 1fr auto;align-items:center;height:28px;padding:0 14px;border-bottom:1px solid var(--line);transition:background .2s;border-left:3px solid transparent}
+.row:last-child{border-bottom:none}
+.row-num{font-family:var(--mono);font-size:0.75rem;font-weight:500;color:var(--ink3)}
+.flow-text{font-family:var(--mono);font-size:0.75rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px}
+.tag{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.04em;padding:2px 7px;border-radius:5px;color:var(--ink);text-transform:uppercase;transform-origin:center;display:inline-block;min-width:72px;text-align:center}
+.tag.benign{background:#166534;color:#fff;border:1px solid #166534}
+.tag.malicious{background:#991B1B;color:#fff;border:1px solid #991B1B}
+
+/* Row states */
+.row.processing{background:var(--vsoft)}
+.row.flagged{border-left-color:var(--amber);background:var(--ambersoft);animation:flagPulse 2s ease-in-out infinite}
+@keyframes flagPulse{0%,100%{background:var(--ambersoft)}50%{background:#fff5e0}}
+
+/* Training progress bar */
+.train-bar{position:absolute;top:28px;left:0;right:0;height:3px;opacity:0;z-index:10}
+.train-fill{height:100%;background:var(--violet);width:0%;transition:width .08s linear;border-radius:0 2px 2px 0}
+
+/* Placeholder */
+.placeholder{position:absolute;inset:28px 0 0 0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--ink3);font-family:var(--mono);font-size:0.75rem}
+.placeholder svg{opacity:.25}
+
+/* ── Test view ── */
+.test-head{height:28px;display:flex;align-items:center;padding:0 14px;border-bottom:1px solid var(--line2);background:var(--paper)}
+.test-head span{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.test-cards{padding:14px 14px}
+.test-card{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--line);border-radius:10px;border-left:3px solid var(--green);background:var(--bg);gap:10px;margin-bottom:10px}
+.test-card:last-child{margin-bottom:0}
+.test-card.wrong{border-left-color:var(--red);background:var(--redsoft)}
+.test-name{font-family:var(--mono);font-size:0.75rem;font-weight:500;color:var(--ink)}
+.test-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.wrong-label{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:#fff;border:1px solid var(--redline);border-radius:4px;padding:2px 6px}
+
+/* ── Caption ── */
+.cap{min-height:1.35em;margin-top:8px;font-size:.83rem;color:var(--ink);display:flex;align-items:center;gap:9px}
+.cap .cstep{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--violet);border-radius:5px;padding:3px 7px;flex:none;text-transform:uppercase;white-space:nowrap}
+
+/* ── Controls ── */
+.controls{margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.83rem;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer;transition:.14s}
+.btn:hover{background:var(--violet2);border-color:var(--violet2)}
+.btn:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.btn.ghost{background:var(--bg);color:var(--violet);border-color:var(--vline)}
+.btn.ghost:hover{background:var(--vsoft)}
+.btn.ghost:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.rehint{font-size:0.75rem;color:var(--ink3)}
+
+/* ── Auditor toggle ── */
+.toggle-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.toggle-label{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2)}
+.toggle{position:relative;width:42px;height:24px;background:var(--line2);border-radius:12px;cursor:pointer;border:none;padding:0;transition:background .2s;flex:none}
+.toggle.on{background:var(--violet)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle.on::after{transform:translateX(18px)}
+.toggle-hint{font-size:0.75rem;color:var(--ink3)}
+
+/* removed-row animation */
+.row.removing{opacity:0;max-height:0;padding-top:0;padding-bottom:0;border-bottom:none;margin:0;transition:opacity .3s,max-height .35s .05s,padding .35s .05s}
+
+/* correct card */
+.test-card.correct{border-left-color:var(--green)}
+.correct-label{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:#166534;border:1px solid var(--greenline);border-radius:4px;padding:2px 6px}
+
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive &middot; Section 1 &middot; Data Poisoning</div>
+    <h1>Label flipping</h1>
+    <p class="lede">The inputs stay the same. The attacker only changes what they are called.</p>
+  </div>
+  <div class="body">
+    <div class="viz">
+      <div class="grid-view" id="gridView">
+        <div class="grid-head">
+          <span>#</span>
+          <span>Network flow</span>
+          <span>Label</span>
+        </div>
+        <div class="grid" id="grid"></div>
+        <div class="placeholder" id="placeholder">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect x="4" y="5" width="24" height="2.5" rx="1.25" fill="currentColor"/>
+            <rect x="4" y="10.5" width="24" height="2.5" rx="1.25" fill="currentColor"/>
+            <rect x="4" y="16" width="24" height="2.5" rx="1.25" fill="currentColor"/>
+            <rect x="4" y="21.5" width="18" height="2.5" rx="1.25" fill="currentColor"/>
+            <rect x="4" y="27" width="12" height="2.5" rx="1.25" fill="currentColor"/>
+          </svg>
+          12 network flows
+        </div>
+        <div class="train-bar" id="trainBar">
+          <div class="train-fill" id="trainFill"></div>
+        </div>
+      </div>
+      <div class="test-view" id="testView" style="opacity:0;pointer-events:none">
+        <div class="test-head">
+          <span>Model output: classifying new traffic</span>
+        </div>
+        <div class="test-cards" id="testCards"></div>
+      </div>
+    </div>
+    <div class="toggle-row" id="toggleRow">
+      <span class="toggle-label">Label auditor</span>
+      <button class="toggle" id="auditorToggle" type="button" aria-pressed="false" title="Enable or disable the label auditor"></button>
+      <span class="toggle-hint" id="toggleHint">Off: no one checks the labels before training.</span>
+    </div>
+    <div class="cap" id="cap">
+      <span class="cstep" id="cstep">Ready</span>
+      <span id="captxt">Press Start to load the training data.</span>
+    </div>
+    <div class="controls">
+      <button class="btn ghost" id="backBtn" disabled>&#9664; Back</button>
+      <button class="btn" id="nextBtn">Start &#9654;</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+      <span class="rehint" id="rehint">Step through at your own pace.</span>
+    </div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+
+/* ===== DATA ===== */
+var FLOWS=[
+  {text:'HTTP GET /api/users',      label:'benign',   flip:false},
+  {text:'SSH brute-force 22/tcp',   label:'malicious',flip:true},
+  {text:'DNS query ns1.example.com',label:'benign',   flip:false},
+  {text:'Port scan SYN 1-1024',    label:'malicious',flip:true},
+  {text:'HTTPS POST /login',       label:'benign',   flip:false},
+  {text:'SQL injection /search?q=', label:'malicious',flip:true},
+  {text:'NTP sync pool.ntp.org',   label:'benign',   flip:false},
+  {text:'C2 beacon 185.x.x.x',    label:'malicious',flip:true},
+  {text:'SMTP relay outbound',     label:'benign',   flip:false},
+  {text:'Reverse shell 4444/tcp',  label:'malicious',flip:false},
+  {text:'HTTP GET /index.html',    label:'benign',   flip:false},
+  {text:'ICMP echo request',       label:'benign',   flip:false}
+];
+var TESTS_WRONG=[
+  {text:'Credential stuffing /login',wrong:true},
+  {text:'HTTP GET /images/logo.png', wrong:false},
+  {text:'DDoS SYN flood 80/tcp',    wrong:true}
+];
+var TESTS_CORRECT=[
+  {text:'Credential stuffing /login',wrong:false,trueLabel:'malicious'},
+  {text:'HTTP GET /images/logo.png', wrong:false,trueLabel:'benign'},
+  {text:'DDoS SYN flood 80/tcp',    wrong:false,trueLabel:'malicious'}
+];
+
+/* Captions vary by auditor state */
+var STEPS_NO_AUDIT=[
+  {label:'Step 1',text:'Clean training set. Each flow is correctly labeled.'},
+  {label:'Step 2',text:'Inputs unchanged. Labels switched.'},
+  {label:'Step 3',text:'No auditor is checking the labels. Training proceeds on corrupted data.'},
+  {label:'Step 4',text:'The boundary shifted. Attacks now look normal to the model.'}
+];
+var STEPS_AUDIT=[
+  {label:'Step 1',text:'Clean training set. Each flow is correctly labeled.'},
+  {label:'Step 2',text:'Inputs unchanged. Labels switched.'},
+  {label:'Step 3',text:'The auditor flags rows where inputs and labels disagree.'},
+  {label:'Step 4',text:'Flagged rows removed. The model trains on clean data only.'},
+  {label:'Step 5',text:'Clean training data, correct boundary. The model classifies accurately.'}
+];
+
+/* ===== STATE ===== */
+var step=-1,busy=false,auditorOn=false;
+
+/* ===== DOM ===== */
+var grid=document.getElementById('grid');
+var gridView=document.getElementById('gridView');
+var testView=document.getElementById('testView');
+var testCards=document.getElementById('testCards');
+var trainBar=document.getElementById('trainBar');
+var trainFill=document.getElementById('trainFill');
+var placeholder=document.getElementById('placeholder');
+var cstepEl=document.getElementById('cstep');
+var captxtEl=document.getElementById('captxt');
+var backBtn=document.getElementById('backBtn');
+var nextBtn=document.getElementById('nextBtn');
+var resetBtn=document.getElementById('resetBtn');
+var rehint=document.getElementById('rehint');
+var auditorToggle=document.getElementById('auditorToggle');
+var toggleHint=document.getElementById('toggleHint');
+
+/* ===== HELPERS ===== */
+function delay(ms){return new Promise(function(r){setTimeout(r,ms);})}
+
+function animEl(el,keyframes,opts){
+  el.getAnimations().forEach(function(a){a.cancel();});
+  return new Promise(function(resolve){
+    var a=el.animate(keyframes,Object.assign({fill:'forwards',easing:'ease-in-out'},opts));
+    a.onfinish=function(){
+      var final=keyframes[keyframes.length-1];
+      for(var k in final){if(final.hasOwnProperty(k))el.style[k]=final[k];}
+      a.cancel();
+      resolve();
+    };
+  });
+}
+
+function getSteps(){ return auditorOn ? STEPS_AUDIT : STEPS_NO_AUDIT; }
+function maxStep(){ return getSteps().length - 1; }
+
+/* ===== TOGGLE ===== */
+auditorToggle.addEventListener('click',function(){
+  if(busy) return;
+  auditorOn = !auditorOn;
+  auditorToggle.classList.toggle('on',auditorOn);
+  auditorToggle.setAttribute('aria-pressed',String(auditorOn));
+  toggleHint.textContent = auditorOn
+    ? 'On: a label auditor reviews the data before training.'
+    : 'Off: no one checks the labels before training.';
+  /* Reset to beginning when toggled */
+  doReset();
+});
+
+/* ===== RENDER ===== */
+function renderGrid(){
+  grid.innerHTML='';
+  FLOWS.forEach(function(f,i){
+    var row=document.createElement('div');
+    row.className='row';
+    row.id='row-'+i;
+    var num=document.createElement('span');
+    num.className='row-num';
+    num.textContent=String(i+1).padStart(2,'0');
+    var txt=document.createElement('span');
+    txt.className='flow-text';
+    txt.textContent=f.text;
+    var tag=document.createElement('span');
+    tag.className='tag '+f.label;
+    tag.id='tag-'+i;
+    tag.textContent=f.label;
+    row.append(num,txt,tag);
+    grid.appendChild(row);
+  });
+}
+
+function renderTests(tests){
+  testCards.innerHTML='';
+  tests.forEach(function(t,i){
+    var card=document.createElement('div');
+    var isWrong=!!t.wrong;
+    card.className='test-card'+(isWrong?' wrong':' correct');
+    card.id='tcard-'+i;
+    card.style.opacity='0';
+    card.style.transform='translateY(10px)';
+    var name=document.createElement('span');
+    name.className='test-name';
+    name.textContent=t.text;
+    var right=document.createElement('div');
+    right.className='test-right';
+    if(isWrong){
+      var wl=document.createElement('span');
+      wl.className='wrong-label';
+      wl.id='wl-'+i;
+      wl.textContent='misclassified';
+      wl.style.opacity='0';
+      right.appendChild(wl);
+    } else if(t.trueLabel==='malicious'){
+      var cl=document.createElement('span');
+      cl.className='correct-label';
+      cl.id='cl-'+i;
+      cl.textContent='caught';
+      cl.style.opacity='0';
+      right.appendChild(cl);
+    }
+    var vtag=document.createElement('span');
+    vtag.className='tag '+(isWrong?'benign':(t.trueLabel||'benign'));
+    vtag.id='vtag-'+i;
+    vtag.textContent=isWrong?'benign':(t.trueLabel||'benign');
+    vtag.style.opacity='0';
+    right.appendChild(vtag);
+    card.append(name,right);
+    testCards.appendChild(card);
+  });
+}
+
+/* ===== SNAP (instant, no animation) ===== */
+function snapTo(t){
+  gridView.style.transition='';
+  gridView.style.opacity='1';
+  testView.style.transition='';
+  testView.style.opacity='0';
+  testView.style.pointerEvents='none';
+  trainBar.style.opacity='0';
+  trainFill.style.transition='none';
+  trainFill.style.width='0%';
+  placeholder.style.display='none';
+
+  if(t<0){
+    placeholder.style.display='';
+    grid.innerHTML='';
+    return;
+  }
+
+  renderGrid();
+
+  if(t>=1){
+    FLOWS.forEach(function(f,i){
+      if(f.flip){
+        var tag=document.getElementById('tag-'+i);
+        tag.textContent='benign';
+        tag.className='tag benign';
+      }
+    });
+  }
+
+  if(!auditorOn){
+    /* NO AUDIT path */
+    if(t>=2){
+      trainBar.style.opacity='1';
+      trainFill.style.width='100%';
+    }
+    if(t>=3){
+      gridView.style.opacity='0';
+      testView.style.opacity='1';
+      testView.style.pointerEvents='auto';
+      renderTests(TESTS_WRONG);
+      TESTS_WRONG.forEach(function(tt,i){
+        var card=document.getElementById('tcard-'+i);
+        card.style.opacity='1';card.style.transform='none';
+        document.getElementById('vtag-'+i).style.opacity='1';
+        if(tt.wrong) document.getElementById('wl-'+i).style.opacity='1';
+      });
+    }
+  } else {
+    /* AUDIT path */
+    if(t===2){
+      FLOWS.forEach(function(f,i){
+        if(f.flip) document.getElementById('row-'+i).classList.add('flagged');
+      });
+    }
+    if(t>=3){
+      /* flagged rows removed */
+      FLOWS.forEach(function(f,i){
+        if(f.flip){
+          var row=document.getElementById('row-'+i);
+          if(row) row.style.display='none';
+        }
+      });
+      trainBar.style.opacity='1';
+      trainFill.style.width='100%';
+    }
+    if(t>=4){
+      gridView.style.opacity='0';
+      testView.style.opacity='1';
+      testView.style.pointerEvents='auto';
+      renderTests(TESTS_CORRECT);
+      TESTS_CORRECT.forEach(function(tt,i){
+        var card=document.getElementById('tcard-'+i);
+        card.style.opacity='1';card.style.transform='none';
+        document.getElementById('vtag-'+i).style.opacity='1';
+        if(tt.trueLabel==='malicious'){
+          var cl=document.getElementById('cl-'+i);
+          if(cl) cl.style.opacity='1';
+        }
+      });
+    }
+  }
+}
+
+/* ===== ANIMATED TRANSITIONS ===== */
+async function animateToStep(target){
+  if(target===0){
+    /* Step 1: show clean dataset with stagger */
+    placeholder.style.display='none';
+    renderGrid();
+    var rows=grid.querySelectorAll('.row');
+    rows.forEach(function(r){r.style.opacity='0';r.style.transform='translateY(6px)';});
+    for(var i=0;i<rows.length;i++){
+      animEl(rows[i],[{opacity:'0',transform:'translateY(6px)'},{opacity:'1',transform:'translateY(0)'}],{duration:260});
+      await delay(35);
+    }
+    await delay(260);
+  }
+  else if(target===1){
+    /* Step 2: flip 4 malicious tags to benign */
+    var flips=[];
+    FLOWS.forEach(function(f,i){if(f.flip)flips.push(i);});
+    for(var j=0;j<flips.length;j++){
+      var idx=flips[j];
+      var tag=document.getElementById('tag-'+idx);
+      var row=document.getElementById('row-'+idx);
+      row.style.background='var(--vsoft)';
+      await animEl(tag,[{transform:'scaleY(1)',opacity:'1'},{transform:'scaleY(0)',opacity:'0.3'}],{duration:200});
+      tag.textContent='benign';
+      tag.className='tag benign';
+      await animEl(tag,[{transform:'scaleY(0)',opacity:'0.3'},{transform:'scaleY(1)',opacity:'1'}],{duration:200});
+      await delay(60);
+      row.style.background='';
+      await delay(40);
+    }
+  }
+  else if(target===2 && !auditorOn){
+    /* NO AUDIT: train on corrupted data */
+    trainBar.style.opacity='1';
+    trainFill.style.transition='width .08s linear';
+    trainFill.style.width='0%';
+    var allRows=grid.querySelectorAll('.row');
+    for(var m=0;m<allRows.length;m++){
+      allRows[m].classList.add('processing');
+      trainFill.style.width=((m+1)/allRows.length*100)+'%';
+      await delay(85);
+      allRows[m].classList.remove('processing');
+    }
+    await delay(200);
+  }
+  else if(target===3 && !auditorOn){
+    /* NO AUDIT: show bad results */
+    gridView.style.transition='opacity .4s';
+    gridView.style.opacity='0';
+    await delay(420);
+    renderTests(TESTS_WRONG);
+    testView.style.transition='opacity .4s';
+    testView.style.pointerEvents='auto';
+    void testView.offsetHeight;
+    testView.style.opacity='1';
+    await delay(420);
+    for(var n=0;n<TESTS_WRONG.length;n++){
+      var card=document.getElementById('tcard-'+n);
+      await animEl(card,[{opacity:'0',transform:'translateY(10px)'},{opacity:'1',transform:'translateY(0)'}],{duration:300});
+      await delay(80);
+      var vtag=document.getElementById('vtag-'+n);
+      await animEl(vtag,[{opacity:'0',transform:'scale(0.7)'},{opacity:'1',transform:'scale(1)'}],{duration:200});
+      if(TESTS_WRONG[n].wrong){
+        await delay(120);
+        var wl=document.getElementById('wl-'+n);
+        await animEl(wl,[{opacity:'0'},{opacity:'1'}],{duration:220});
+      }
+      await delay(120);
+    }
+  }
+  else if(target===2 && auditorOn){
+    /* AUDIT: flag mismatched rows */
+    var flips2=[];
+    FLOWS.forEach(function(f,i){if(f.flip)flips2.push(i);});
+    for(var k=0;k<flips2.length;k++){
+      document.getElementById('row-'+flips2[k]).classList.add('flagged');
+      await delay(150);
+    }
+  }
+  else if(target===3 && auditorOn){
+    /* AUDIT: remove flagged rows, then train clean */
+    var flagged=grid.querySelectorAll('.row.flagged');
+    for(var p=0;p<flagged.length;p++){
+      flagged[p].classList.add('removing');
+      await delay(120);
+    }
+    await delay(400);
+    flagged.forEach(function(r){r.remove();});
+    /* Renumber remaining rows */
+    var remaining=grid.querySelectorAll('.row');
+    remaining.forEach(function(r,idx){
+      r.querySelector('.row-num').textContent=String(idx+1).padStart(2,'0');
+    });
+    await delay(300);
+    /* Train on clean data */
+    trainBar.style.opacity='1';
+    trainFill.style.transition='width .08s linear';
+    trainFill.style.width='0%';
+    for(var q=0;q<remaining.length;q++){
+      remaining[q].classList.add('processing');
+      trainFill.style.width=((q+1)/remaining.length*100)+'%';
+      await delay(85);
+      remaining[q].classList.remove('processing');
+    }
+    await delay(200);
+  }
+  else if(target===4 && auditorOn){
+    /* AUDIT: show correct results */
+    gridView.style.transition='opacity .4s';
+    gridView.style.opacity='0';
+    await delay(420);
+    renderTests(TESTS_CORRECT);
+    testView.style.transition='opacity .4s';
+    testView.style.pointerEvents='auto';
+    void testView.offsetHeight;
+    testView.style.opacity='1';
+    await delay(420);
+    for(var n2=0;n2<TESTS_CORRECT.length;n2++){
+      var card2=document.getElementById('tcard-'+n2);
+      await animEl(card2,[{opacity:'0',transform:'translateY(10px)'},{opacity:'1',transform:'translateY(0)'}],{duration:300});
+      await delay(80);
+      var vtag2=document.getElementById('vtag-'+n2);
+      await animEl(vtag2,[{opacity:'0',transform:'scale(0.7)'},{opacity:'1',transform:'scale(1)'}],{duration:200});
+      if(TESTS_CORRECT[n2].trueLabel==='malicious'){
+        await delay(120);
+        var cl2=document.getElementById('cl-'+n2);
+        if(cl2) await animEl(cl2,[{opacity:'0'},{opacity:'1'}],{duration:220});
+      }
+      await delay(120);
+    }
+  }
+}
+
+/* ===== NAVIGATION ===== */
+function setCap(label,text){cstepEl.textContent=label;captxtEl.textContent=text;}
+
+function updateUI(){
+  var max=maxStep();
+  var steps=getSteps();
+  backBtn.disabled=busy||step<0;
+  nextBtn.disabled=busy||step>=max;
+  resetBtn.disabled=busy;
+  nextBtn.textContent=step<0?'Start ▶':(step>=max?'Done':'Next ▶');
+  rehint.textContent=busy?'…':(step<0?'Step through at your own pace.':(step>=max?'Finished. Press Reset to start over.':'Step '+(step+1)+' of '+steps.length));
+  /* Disable toggle once sequence has started */
+  auditorToggle.style.opacity=(step>=0&&!busy)?'0.4':'1';
+  auditorToggle.style.pointerEvents=(step>=0)?'none':'auto';
+  postHeight();
+}
+
+async function goNext(){
+  if(busy||step>=maxStep())return;
+  busy=true;updateUI();
+  var target=step+1;
+  var steps=getSteps();
+  setCap(steps[target].label,steps[target].text);
+  await animateToStep(target);
+  step=target;
+  busy=false;updateUI();
+}
+
+function goPrev(){
+  if(busy||step<0)return;
+  step--;
+  if(step<0){
+    snapTo(-1);
+    setCap('Ready','Press Start to load the training data.');
+  }else{
+    snapTo(step);
+    var steps=getSteps();
+    setCap(steps[step].label,steps[step].text);
+  }
+  updateUI();
+}
+
+function doReset(){
+  if(busy)return;
+  step=-1;
+  snapTo(-1);
+  setCap('Ready','Press Start to load the training data.');
+  updateUI();
+}
+
+/* ===== EVENTS ===== */
+nextBtn.addEventListener('click',goNext);
+backBtn.addEventListener('click',goPrev);
+resetBtn.addEventListener('click',doReset);
+window.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight')goNext();
+  else if(e.key==='ArrowLeft')goPrev();
+});
+
+/* ===== IFRAME HEIGHT ===== */
+function postHeight(){
+  var el=document.querySelector('.wrap');
+  if(!el)return;
+  var s=getComputedStyle(document.body);
+  var pad=parseFloat(s.paddingTop)+parseFloat(s.paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+24),src:location.href},'*');
+}
+
+/* ===== INIT ===== */
+snapTo(-1);
+updateUI();
+setTimeout(postHeight,200);
+
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

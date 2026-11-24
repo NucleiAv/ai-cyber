@@ -1,0 +1,86 @@
+n: 10
+short: Adversarial AI
+title: Adversarial AI. Poisoning, evasion and the ML supply chain
+time: 5 sections · about 4 hours
+lede: The classic attacks on machine learning. Poison the training data, craft inputs the model gets wrong, hide code in a model file, and see harm from an agent with no attacker at all.
+idea: |
+  Before LLMs, researchers studied attacks on every kind of ML model. Those attacks still apply, to malware classifiers, phishing detectors and LLMs alike.
+
+  - **Poisoning** attacks the model while it learns.
+  - **Evasion** attacks the model while it predicts.
+  - **Supply chain** attacks the files and tools around it.
+  - **Excessive agency** shows harm with no attacker, when an autonomous system acts beyond its limits.
+
+  !eli5 Poisoning is teaching a student wrong lessons. Evasion is a trick question built to fool a student who learned the right lessons. A supply chain attack is swapping the student's textbook.
+primer: |
+  ### Step 1. Data poisoning
+
+  Three ways to poison a training set.
+
+  - **Label flipping.** Change labels, such as marking malware as benign.
+  - **Backdoor.** Add a trigger pattern with a target label. The model learns "trigger means benign".
+  - **Clean-label poisoning.** Add samples with correct labels but crafted features, so a human reviewer sees nothing wrong.
+
+  At web scale, attackers only need a small number of poisoned items in a huge crawl. Lesson 7 of the attack track shows that about 250 documents were enough for LLMs of many sizes.
+
+  ### Step 2. Evasion and adversarial examples
+
+  An **adversarial example** is an input with a small, crafted change that flips the model's answer. For many models it is found by optimization. One classic method, **FGSM**, moves each input value a small step in the direction that increases the model's error.
+
+  The attacker often does not need the model. Adversarial examples **transfer** between models trained on similar data, and query-based attacks probe the model through its API. For malware classifiers that read raw bytes, attackers append or change bytes in places that do not change what the program does.
+
+  ### Step 3. The ML supply chain
+
+  A model file can run code. Python pickle calls functions while it loads. Model hubs, datasets, notebooks and libraries are all trust points. A benchmarked model can also quietly lie, for example with a hidden backdoor or a changed fact.
+
+  ### Step 4. Harm with no attacker
+
+  An autonomous system can cause damage by itself if it can take irreversible actions with no check. The answer is the same as for attacks. **Constrain agency.** Put approval gates before irreversible steps.
+
+  ### Step 5. Three lenses
+
+  Classify every attack in three ways. Where in the lifecycle it acts, what the attacker needs to know or access, and what it breaks (integrity, availability or privacy). Frameworks such as MITRE ATLAS and NIST AI 100-2 give names for each.
+diagrams:
+  - type: flow
+    title: Where each attack acts in the ML lifecycle
+    nodes: [["Collect data", "atk", "poisoning"], ["Train", "raised"], ["Package and share model", "atk", "supply chain"], ["Deploy", "raised"], ["Predict", "atk", "evasion"]]
+    edges: ["", "", "", ""]
+    caption: Poisoning acts before training, supply chain attacks act on the files, and evasion acts at prediction time.
+  - type: flow
+    title: An evasion attack on a classifier
+    nodes: [["Malicious input", "atk"], ["Small crafted change", "atk", "keeps it working"], ["Classifier", "def"], ["Wrong label", "box", "benign"]]
+    edges: ["", "", ""]
+    caption: The change is chosen to push the input across the model's decision boundary.
+terms:
+  - [Adversarial example, "An input with a small, crafted change that makes a model give a wrong answer."]
+  - [Decision boundary, "The line in feature space where the model's answer changes."]
+  - [FGSM, "Fast gradient sign method. A one-step way to make adversarial examples using the model's gradient."]
+  - [Transferability, "An adversarial example made for one model often fools another."]
+  - [White box and black box, "The attacker knows the model's insides, or only sees its outputs."]
+  - [Clean-label poisoning, "Poison samples with correct labels that still change what the model learns."]
+  - [Approval gate, "A required human decision before an action runs."]
+sections:
+  01_data-poisoning.html: "Where poisoning sits in the lifecycle, three ways to poison (label flips, backdoors and clean-label), why web-scale poisoning is cheap, and how to classify an attack. Five labs let you poison and audit a training set."
+  02_evasion-attacks.html: "The optimization behind an adversarial example, why the attacker often does not need the model, and evading a malware classifier. Labs include a byte-based malware classifier and a live phishing detector."
+  03_ml-supply-chain.html: "Why loading a model file can run code, the rest of the ML supply chain, a benchmarked model that quietly lies, and an audit of a deployment pipeline."
+  04_adversarial-ml-taxonomy.html: "Harm from an autonomous system with no attacker, how to constrain agency with approval gates, and three lenses to classify every attack in the module."
+  05_references-and-readings.html: "Every reading, paper, framework and incident used in Module 10."
+other_fw:
+  - [NIST AI 100-2 E2025, "The adversarial ML taxonomy that names evasion, poisoning, privacy and misuse attacks. [Read it](@nist1002)."]
+  - [MITRE ATLAS, "AML.T0020 Training Data Poisoning, AML.T0043 Craft Adversarial Data, AML.T0015 Evade AI Model, AML.T0011.000 Unsafe AI Artifacts and AML.T0010 Supply Chain Compromise. [Open ATLAS](@atlas)."]
+  - [OWASP LLM03, LLM04, LLM06, "Supply chain, data and model poisoning, and excessive agency."]
+refs:
+  - "Goodfellow, Shlens and Szegedy. [Explaining and harnessing adversarial examples (FGSM)](https://arxiv.org/abs/1412.6572), 2014."
+quiz:
+  - q: An attacker adds correctly labeled but crafted samples so a reviewer sees nothing wrong. What is this?
+    opts: ["Label flipping", "Clean-label poisoning", "Evasion"]
+    a: 1
+    why: The labels are right, which is what makes it hard to spot.
+  - q: Why can an attacker often evade a model without access to it?
+    opts: ["Models share weights", "Adversarial examples often transfer between models trained on similar data", "They cannot"]
+    a: 1
+    why: Transferability lets attackers craft examples on a substitute model.
+  - q: An autonomous system deletes data with no attacker involved. Which control fits?
+    opts: ["Bigger model", "An approval gate before irreversible actions", "Longer prompt"]
+    a: 1
+    why: Constraining agency limits harm whatever caused the bad decision.

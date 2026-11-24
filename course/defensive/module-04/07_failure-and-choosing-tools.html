@@ -1,0 +1,278 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 4 &middot; Section 7 &middot; When the Pipeline Fails and Choosing Tools &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 4 &middot; Section 7 of 8</div>
+      <h1 class="nyu-hero__title">When the Pipeline Fails and Choosing Tools</h1>
+      <p class="nyu-hero__subtitle">
+        A worked incident where AI-assisted triage failed and nobody caught it, the accountability question it raises, and how to choose detection tools on evidence rather than vendor claims.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~12 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 2 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks</span>
+        <span aria-label="Pre-reading">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Recommended Pre-reading: Google ML Crash Course, ROC and AUC (reference page, R2)
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> When the Pipeline Fails: The Radiology Workstation Incident</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Choosing Tools on Evidence</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+        <p class="nyu-objectives__lede">By the end of this section, we will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Evaluate</strong> accountability when an AI-assisted triage decision fails, naming which role owned which step.</span></li>
+          <li><span><strong>Choose</strong> a detection approach for a stated constraint set, justifying the choice from measured evidence rather than vendor claims.</span></li>
+        </ul>
+      </section>
+
+      <!-- ===== 1 ===== -->
+
+      <!-- ====================== TRACING ONE ALERT END TO END: C2 BEACONING ====================== -->
+<section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">When the Pipeline Fails: The Radiology Workstation Incident</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The pipeline we built places AI in the detection and enrichment stages, with people making the decisions. What happens when that boundary erodes in practice? The following composite scenario is fictional, but every element of it is drawn from documented incident patterns.</p>
+
+        <p>A regional hospital network deploys an LLM triage assistant in its SOC. It reduces triage time noticeably in the first three months. Analysts come to rely on its severity suggestions, especially overnight, when one analyst covers the whole queue.</p>
+
+        <div class="nyu-timeline">
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">1</div>
+            <div class="nyu-timeline__content">
+              <h3>02:14 &#183; Detection works <span style="font-weight:400">(no failure)</span></h3>
+              <p>The ML layer raises a critical alert: anomalous <button type="button" class="nyu-define" data-term="smb">SMB</button> traffic from a radiology workstation to the <button type="button" class="nyu-define" data-term="domain-controller">domain controller</button>. The detection stack did its job.</p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">2</div>
+            <div class="nyu-timeline__content">
+              <h3>02:14 &#183; Enrichment fails <span style="font-weight:400">(stage 2 failure)</span></h3>
+              <p>The LLM assistant classifies the alert: <strong>"Low: routine network scan, likely vulnerability assessment tool."</strong> The rationale is fluent and wrong, the part-6 step-5 failure arriving at the worst hour.</p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">3</div>
+            <div class="nyu-timeline__content">
+              <h3>02:15 &#183; Verification fails <span style="font-weight:400">(stage 3 failure)</span></h3>
+              <p>The overnight analyst reads "Low," accepts it without checking the evidence, and moves on. The evidence-citation check from part 6, which would have shown the rationale citing nothing, never happens.</p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">4</div>
+            <div class="nyu-timeline__content">
+              <h3>02:15&#8211;14:00 &#183; Dwell time <span style="font-weight:400">(organizational failure)</span></h3>
+              <p>For twelve hours the attacker moves unimpeded. The SMB traffic was <button type="button" class="nyu-define" data-term="lateral-movement">lateral movement</button> toward the domain controller. No escalation policy required a second look at a critical-detection/low-triage mismatch, and overnight staffing guaranteed nobody had time for one.</p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">5</div>
+            <div class="nyu-timeline__content">
+              <h3>14:00 &#183; Impact</h3>
+              <p><button type="button" class="nyu-define" data-term="ransomware">Ransomware</button> encrypts patient records, imaging systems, and billing. Surgical schedules are disrupted. Regulators ask the <button type="button" class="nyu-define" data-term="ciso">CISO</button> how a critical alert at 02:14 became an enterprise outage at 14:00.</p>
+            </div>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="decision-owner-tip">
+          <h3 class="nyu-callout__title" id="decision-owner-tip"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a7 7 0 0 1 4 12.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2zM9 21h6M10 17v1M14 17v1"></path></svg></span> Try It: Who Owns the Decision?</h3>
+          <p>The animation below replays this incident twice. The detector and the LLM behave identically in both runs, wrong draft included. The only difference is whether anyone checks the draft before acting on it. Press <strong>Play</strong>, watch where the two runs diverge, then read the accountability map: it shows exactly which owners did their job in both runs and which boundaries eroded. Keep it in view while you write the brief below.</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe id="decision-owner-embed" src="interactive/decision_owner/decision_owner.html" title="Interactive demo: Who owns the decision?" loading="lazy" style="height:540px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">Discussion Prompt</h3>
+
+        <p>You are the SOC team lead briefing the CISO. In 200&#8211;300 words, take a position on the following, referencing at least one concept from this module (the false-positive budget, the validation gates from part 6, pipeline-stage accountability, or the Section 2 failure modes):</p>
+
+        <ul>
+          <li>Who bears responsibility for the missed detection: the LLM assistant, the analyst, the team lead, or the organization?</li>
+          <li>What specific changes to process, tooling, or policy do you recommend?</li>
+        </ul>
+
+        <div class="nyu-callout nyu-scenario" aria-labelledby="rubric-reveal">
+          <h3 class="nyu-callout__title" id="rubric-reveal"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> After You Have Written Your Response</h3>
+          <div class="nyu-scenario__prompt">
+            <p>Write your brief first. Then compare it against what a 'trained' response tends to address.</p>
+          </div>
+          <button class="nyu-scenario__btn">Reveal What A Response Tries to Address</button>
+          <div class="nyu-scenario__answer">
+            <p>A trained response avoids assigning blame to a single entity and analyzes the failure chain: the LLM misclassification was a stage-2 failure, the analyst's uncritical acceptance was a stage-3 failure, and staffing plus the absence of an escalation rule for detection/triage severity mismatches created the conditions for both. It proposes concrete gates, for example: any alert where the detector says critical and the triage layer says low gets mandatory human evidence review.</p>
+            <p>An untrained (they didn't take the right classes!) response blames the LLM alone (ignoring that the design assumed analyst verification) or the analyst alone (ignoring that the system was sold as load reduction, and that trust calibration degrades predictably under fatigue and understaffing).</p>
+          </div>
+        </div>
+      </section>
+
+<section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Choosing Tools on Evidence</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Everything in this section compresses to a discipline of four questions. We will reuse them every time a new detection tool, AI or otherwise, asks for a place in our pipeline:</p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>1. What does the baseline already catch?</strong> If signatures and correlation rules cover the pattern, the new tool is solving a solved problem.</li>
+          <li><strong>2. What does the candidate add at the operating point we can afford?</strong> Measured on our data, at our FPR budget. Not AUC, not a vendor benchmark, not a demo.</li>
+          <li><strong>3. How is its output validated against ground truth?</strong> Name the gates: schema checks, independent lookups, evidence-citation review. A tool whose claims cannot be checked cannot be trusted with decisions.</li>
+          <li><strong>4. Who is accountable for the decision it informs?</strong> A person, named in the process, with the time and authority to verify. If the answer is "nobody, it is automatic," stop.</li>
+        </ul>
+
+        <figure class="nyu-figure" role="img" aria-label="Decision flowchart: question one, does the baseline already catch it? If yes, keep the baseline. If no, question two: measurable gain at our operating point? If no, decline or re-evaluate later. If yes, question three: can its output be validated against ground truth? If no, pilot only, behind validation gates. If yes, question four: is a named person accountable for decisions? If no, fix the process first. If yes, adopt at the defined operating point.">
+          <svg viewBox="0 0 660 290" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+            <defs>
+              <marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#57068C"/>
+              </marker>
+            </defs>
+            <rect x="10" y="20" width="300" height="44" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="160" y="46" font-size="11" fill="#374151" text-anchor="middle">1. Does the baseline already catch it?</text>
+            <line x1="310" y1="42" x2="420" y2="42" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr4)"/>
+            <text x="365" y="36" font-size="10" fill="#4B5563" text-anchor="middle">yes</text>
+            <rect x="420" y="20" width="230" height="44" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="535" y="46" font-size="11" fill="#374151" text-anchor="middle">Keep the baseline</text>
+            <line x1="160" y1="64" x2="160" y2="88" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr4)"/>
+            <text x="172" y="80" font-size="10" fill="#4B5563">no</text>
+            <rect x="10" y="88" width="300" height="44" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="160" y="114" font-size="11" fill="#374151" text-anchor="middle">2. Measurable gain at our operating point?</text>
+            <line x1="310" y1="110" x2="420" y2="110" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr4)"/>
+            <text x="365" y="104" font-size="10" fill="#4B5563" text-anchor="middle">no</text>
+            <rect x="420" y="88" width="230" height="44" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="535" y="114" font-size="11" fill="#374151" text-anchor="middle">Decline; re-evaluate later</text>
+            <line x1="160" y1="132" x2="160" y2="156" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr4)"/>
+            <text x="172" y="148" font-size="10" fill="#4B5563">yes</text>
+            <rect x="10" y="156" width="300" height="44" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="160" y="182" font-size="11" fill="#374151" text-anchor="middle">3. Output validated against ground truth?</text>
+            <line x1="310" y1="178" x2="420" y2="178" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr4)"/>
+            <text x="365" y="172" font-size="10" fill="#4B5563" text-anchor="middle">no</text>
+            <rect x="420" y="156" width="230" height="44" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="535" y="176" font-size="11" fill="#374151" text-anchor="middle">Pilot only, behind</text>
+            <text x="535" y="190" font-size="11" fill="#374151" text-anchor="middle">validation gates</text>
+            <line x1="160" y1="200" x2="160" y2="224" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr4)"/>
+            <text x="172" y="216" font-size="10" fill="#4B5563">yes</text>
+            <rect x="10" y="224" width="300" height="44" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="160" y="244" font-size="11" fill="#374151" text-anchor="middle">4. Named person accountable</text>
+            <text x="160" y="258" font-size="11" fill="#374151" text-anchor="middle">for the decisions it informs?</text>
+            <line x1="310" y1="246" x2="420" y2="246" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr4)"/>
+            <text x="365" y="240" font-size="10" fill="#4B5563" text-anchor="middle">yes</text>
+            <rect x="420" y="224" width="230" height="44" rx="8" fill="#DCFCE7" stroke="#0F766E" stroke-width="1.5"/>
+            <text x="535" y="244" font-size="11" fill="#374151" text-anchor="middle">Adopt, at the defined</text>
+            <text x="535" y="258" font-size="11" fill="#374151" text-anchor="middle">operating point</text>
+          </svg>
+          <figcaption>Our tool-adoption discipline. "No" at question 4 means fixing the process before deploying the tool, not deploying anyway.</figcaption>
+        </figure>
+
+        <h3 class="nyu-subsection-title">Where This Goes Next</h3>
+
+        <p>The parse-classify-validate pattern we built in this module is not specific to intrusion detection. In Module 5 we will apply the same structure to threat intelligence: parsing unstructured reports, classifying indicators of compromise, and validating extracted intelligence, with the six-step trace from part 6 as our template.</p>
+
+        <p>The feature and labeling discipline from Section 3 also carries forward. In Module 7, when we fine-tune a model with <button type="button" class="nyu-define" data-term="lora">LoRA</button> for the midterm project, training-data quality will depend on the same judgment that separates informative features from noise in an IDS dataset. Knowing what makes a feature informative, and what introduces bias or leakage, is exactly what we will need to curate and label fine-tuning data well.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            Forward-Looking: Multi-Agent SOC Architectures
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Our pipeline uses a single LLM at the enrichment stage. Researchers are exploring <strong>multi-agent architectures</strong> in which several specialized LLM agents divide triage, investigation, and reporting among themselves and exchange findings as structured messages. One example is the CORTEX proposal; note that it is a preprint, not yet peer reviewed (reference page, E7). Vendors describe related visions of largely autonomous SOC agents; those are roadmaps and marketing documents, not evaluated systems (reference page, E8). Industry surveys report broad interest in these approaches (reference page, E9).</p>
+            <p>Our four questions do not change. If anything, question 4 gets harder: when several agents hand claims to each other before a person sees anything, accountability and validation get more complex, not less. This is an area to watch with the same discipline we apply to every tool, not an area to deploy uncritically.</p>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Module Synthesis</h3>
+
+        <p>Two final checks that pull the whole module together. Answer from the pipeline we built, not from intuition.</p>
+
+        <div class="nyu-quiz" aria-labelledby="kc-syn-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Synthesis Check 1</span></div>
+          <p class="nyu-quiz__prompt" id="kc-syn-1">After everything in this module, where does an LLM earn a place in an intrusion detection pipeline?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-syn-1">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The latency budget rules this out: detection runs at line rate, in microseconds per event, while an LLM needs seconds to minutes per item. Part 1 of Section 3 and the comparison table in part 5 both close this door.">As the primary detector, replacing signatures and ML at the detection stage</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">As a second-pass enrichment stage behind the volume-reducing layers, with validation gates and analyst verification</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Nowhere is too strong. The module showed real value in drafting rationales, connecting related alerts, and summarizing investigations, provided every draft passes validation gates before anyone acts on it.">Nowhere; its failure modes make it unusable in security operations</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The analyst owns the verdict precisely because the LLM cannot be accountable and its rationales are generated text, not evidence. Question 4 of the adoption discipline: if nobody is accountable, stop.">As the final decision layer, freeing analysts from verifying every alert</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. The LLM sits behind signatures and ML (which reduce 10,000 events to a flagged subset), drafts enrichments for that subset, and every draft passes schema validation, independent lookups, and analyst review before it informs a decision. It is one more tool, not a replacement."
+               data-incorrect-msg="Revisit the version-2 pipeline in part 5: signatures and ML handle full volume in milliseconds, the LLM enriches only the flagged subset, and the analyst verifies and owns the verdict. The LLM earns its place downstream, behind validation gates."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="kc-syn-2">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Synthesis Check 2</span></div>
+          <p class="nyu-quiz__prompt" id="kc-syn-2">Of the Section 2 failure modes, which is most dangerous when an LLM acts as the sole triage gate, and why?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-syn-2">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Hallucinated IOCs waste investigation time and can disrupt operations, but the alert still surfaces for review. The deadliest failure is the one that removes the alert from view entirely.">Hallucinated IOCs, because analysts act on fabricated indicators</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Severity inflation wastes analyst time on false alarms, but the alert is still reviewed. An over-prioritized benign event is recoverable; a de-prioritized real attack may never be seen again.">Severity inflation, because it buries the queue in false urgency</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Severity deflation, because a real attack is deprioritized and may never be investigated at all</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Knowledge-cutoff blind spots are real and unfixable by prompting, but they typically express themselves as severity deflation or context fabrication. The operational damage arrives through the deprioritized alert.">Knowledge-cutoff blind spots, because the model cannot know recent attack infrastructure</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Both the DNS beaconing scenario (Section 2) and the radiology workstation incident (part 7) turned on severity deflation: a genuine threat labeled low, accepted without verification, and never investigated. Inflation and hallucination waste time; deflation removes the alert from human view. That is why the pipeline needs bypass rules and mismatch-escalation gates that no LLM verdict can override."
+               data-incorrect-msg="Compare the failure modes by what happens next: inflation and hallucination still put the alert in front of a person; deflation takes it away. Both major incident scenarios in this module (DNS beaconing, radiology workstation) were severity deflation failures."></div>
+        </div>
+      </section>
+      <!-- ====================== MODULE COMPLETE ====================== -->
+      <aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="module-complete">
+        <h3 class="nyu-callout__title" id="module-complete"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Module 4 Complete</h3>
+        <p>Across seven sections this module covered the SOC analyst's parsing problem, triage pipelines and the classification metrics that describe them, how detectors turn packets into flow records and how the three detector families differ, those detectors applied to real traffic and chosen against organizational constraints, the rule-based baseline compared with classical ML and LLM-assisted triage, how to trace one alert end to end and read a ROC curve against a false-positive budget, and how accountability is assigned when the pipeline fails.</p>
+      </aside>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 8: References &amp; Readings.</strong> All sources, citations, and recommended readings for this module, organized by category and section.</p>
+        </aside>
+      
+
+
+</main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+</body>
+</html>

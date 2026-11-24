@@ -1,0 +1,37 @@
+- title: Turning ATT&CK into a detection plan
+  stats: [Techniques listed, Detected today, Gaps]
+  nodes:
+    intel: {label: Threat intel, x: 0, y: 1, kind: box, tag: groups in your sector}
+    group: {label: Group page, x: 2, y: 1, kind: atk, tag: techniques they use}
+    list: {label: Technique list, x: 4, y: 1, kind: raised, tag: T1566 and others}
+    logs: {label: Your logs and rules, x: 4, y: 3, kind: def}
+    nav: {label: Coverage layer, x: 6, y: 1, kind: def, tag: ATT&CK Navigator}
+    emu: {label: Emulation test, x: 6, y: 3, kind: box, tag: in a lab}
+  links: [[intel, group], [group, list], [list, nav], [logs, nav], [nav, emu], [emu, logs]]
+  steps:
+    - title: Start from who attacks you
+      text: Threat intel names the groups that target your sector. ATT&CK has a page for each known group.
+      on: [intel, group]
+      flow: [[intel, group, ink]]
+      stats: ["0", "-", "-"]
+    - title: List their techniques
+      text: Each group page lists the techniques it was seen using, such as Phishing, T1566.
+      on: [list]
+      flow: [[group, list, atk]]
+      stats: ["24", "-", "-"]
+    - title: Compare with what you can see
+      text: Mark each technique your logs and rules can detect. Navigator colors the matrix for you.
+      on: [logs, nav]
+      flow: [[list, nav, ink], [logs, nav, def]]
+      stats: ["24", "15", "9"]
+    - title: Test, do not assume
+      text: Replay a few techniques safely in a lab. A rule that never fires on the test is a gap, even if the map says covered.
+      on: [emu]
+      flow: [[nav, emu, ink], [emu, logs, pen]]
+      mark: {emu: warn}
+      stats: ["24", "12", "12"]
+    - title: Close the biggest gaps first
+      text: Add log sources and rules for the gaps that matter most, then test again. Record the ATT&CK version you used, v20.1 here.
+      on: [logs]
+      mark: {logs: ok}
+      stats: ["24", "18", "6"]

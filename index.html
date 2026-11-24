@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script>(function(){try{var t=localStorage.getItem("site.theme");if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){}})()</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prompt to Patch. Learn to attack and defend AI systems</title>
+  <meta name="description" content="A free, step by step study hub for AI, ML and LLM security. Two NYU courses as full lessons with diagrams, labs, quizzes and a 15 week practice plan.">
+  <link rel="icon" href="assets/img/mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/site.css?v=20261124">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header id="top"></header>
+
+<main id="main">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow rise"><span class="tag def"><span class="dot def"></span>Defend</span><span class="tag atk"><span class="dot atk"></span>Attack</span><span>AI, ML and LLM security</span></div>
+        <h1 class="rise d1">Learn to attack and defend AI systems, one week at a time</h1>
+        <p class="lede rise d2">Two NYU courses, their interactive labs, every lecture PDF and a 15 week practice plan with all the links. Start from zero. You need no AI background.</p>
+        <div class="actions rise d3">
+          <a class="btn btn-primary" href="basics.html">Start here</a>
+          <a class="btn btn-quiet" href="plan.html">Open the plan</a>
+        </div>
+        <p class="small muted rise d3" id="home-progress" style="margin-top:20px"></p>
+      </div>
+      <div class="hero-visual rise d2">
+        <div class="sheet">
+          <div class="sheet-cap"><span>Route through the plan</span><span>stations fill in as you tick practice tasks</span></div>
+          <svg id="route" class="dg" viewBox="0 0 640 430" role="img" aria-label="Route map. The defend course and the attack course join into one path through weeks 0 to 15, in four modules, each closing with a challenge. After week 15 the path splits into bug hunting, detection and certification."></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="stats" id="stats"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="section-title">How a week works</h2>
+      <p class="section-sub">About 3 hours a week. Learn the idea first, then try it, then go one step further. If a week is busy, do only Learn and Practice.</p>
+      <div class="loop">
+        <div><span class="mono">1 · 45 to 60 min</span><h3>Learn</h3><p>Read the items marked must read. They explain the attack before you try it.</p></div>
+        <div><span class="mono">2 · about 1.5 hrs</span><h3>Practice</h3><p>Do the lab from the lecture slides.</p><div class="pts">10 points</div></div>
+        <div><span class="mono">3 · 30 min</span><h3>Extend</h3><p>One small extra task that builds, breaks or defends something.</p><div class="pts">5 points</div></div>
+        <div><span class="mono">4 · 10 min</span><h3>Reflect</h3><p>Write 5 lines on the discussion question. Then compare with the model answer in the lesson.</p><div class="pts">2 points</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="section-title">Three ways in</h2>
+      <p class="section-sub">Pick the one that fits you today. They all link to each other.</p>
+      <div class="grid grid-3">
+        <a class="card" href="basics.html"><span class="num">8 short steps</span><h3>Start here</h3><p>What AI, LLMs, RAG, agents and MCP are, and why they are hard to secure. With diagrams, quick checks and a small attack simulator.</p><span class="go">Read the basics</span></a>
+        <a class="card" href="defend/index.html"><span class="num"><span class="dot def"></span> Defend</span><h3>AI for cyber security</h3><p>12 modules on using AI for detection, threat intel and code review, and on defending AI. Plain primers, every course section inside the site, labs and practice desks.</p><span class="go">Open the modules</span></a>
+        <a class="card" href="attack/index.html"><span class="num"><span class="dot atk"></span> Attack</span><h3>LLM security, lesson by lesson</h3><p>14 lessons on the OWASP LLM Top 10, plus MCP. Each has diagrams, an attack and defense workflow, OWASP and ATLAS maps, a lab, questions and a quiz.</p><span class="go">Open the lessons</span></a>
+      </div>
+      <div class="rows" style="margin-top:32px">
+        <div><div><a class="title" href="risks.html">The ten risks</a><div class="desc">The OWASP LLM Top 10 and the Agentic Top 10 in plain words, with the defenses and where to practice each one.</div></div><span class="meta">risks.html</span></div>
+        <div><div><a class="title" href="roadmap.html">Full roadmap</a><div class="desc">Phases 0 to 7, from fundamentals to detection, governance and certifications. Use it when the plan is done or for depth.</div></div><span class="meta">roadmap.html</span></div>
+        <div><div><a class="title" href="library.html">Library</a><div class="desc">Every paper, article, lab, tool, course and standard in one list you can search and filter.</div></div><span class="meta">library.html</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap narrow">
+      <h2 class="section-title">Before you attack anything</h2>
+      <div class="prose">
+        <p>Only test systems that you own or that give you written permission. The labs and CTFs on this site exist for this purpose. Bug bounty programs list what is in scope. Stay inside it.</p>
+        <p>Use a local model on Ollama as your first target. Run payload files, such as the pickle lab, in a throwaway virtual machine. If you find a leaked key, report it. Do not use it.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="foot"></footer>
+<script src="assets/js/data.js?v=20261124"></script>
+<script src="assets/js/modules.js?v=20261124"></script>
+<script src="assets/js/site.js?v=20261124"></script>
+</body>
+</html>

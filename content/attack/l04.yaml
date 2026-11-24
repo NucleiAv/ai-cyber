@@ -1,0 +1,157 @@
+slug: l04
+num: "04"
+lecture: 4
+week: 4
+short: Sensitive information disclosure
+title: Sensitive information disclosure
+time: about 3 hours
+lede: How a model gives back private data it learned, how RAG apps leak documents to the wrong user, and why "delete my data" is hard for a model.
+owasp: [LLM02]
+agentic: [ASI03]
+atlas: [AML.T0137.003, AML.T0137.000, AML.T0036, AML.T0055, AML.T0136]
+other_fw:
+  - [NIST AI 100-2 E2025, "Calls these privacy attacks. It lists data reconstruction, membership inference and data extraction from generative models."]
+  - [GDPR Article 17, "The right to erasure. A person can ask a company to delete their personal data."]
+
+idea: |
+  Private data can leak from an LLM app in three places.
+
+  - **The weights.** A model can memorize rare text from its training data, such as an email address or a key, and repeat it word for word.
+  - **The context.** A RAG app pastes documents into the prompt. If it pastes a document the user may not see, the model can repeat it.
+  - **The plumbing.** Logs, databases and keys around the model leak too. Often the model is fine and the server is open.
+
+  !eli5 A parrot that heard your phone number a hundred times may say it to a stranger. A parrot that hears a secret only once usually will not. Models are similar. Text that appears many times, or that is very unusual, is the text they remember.
+
+terms:
+  - [PII, "Personally identifiable information, such as a name, phone number or address."]
+  - [Memorization, "The model stores exact training text and can reproduce it."]
+  - [Training data extraction, "Prompting a model to give back exact pieces of its training data."]
+  - [Membership inference, "Testing whether a given record was in the training data."]
+  - [Confused deputy, "A program with high permissions that is tricked into using them for someone who should not have them."]
+  - [Machine unlearning, "Methods that try to remove one piece of data's effect from a trained model without retraining from zero."]
+  - [Differential privacy, "A training method with a mathematical limit on how much any single record can change the model."]
+
+how: |
+  ### Extraction from the weights
+
+  Carlini and others (2021) attacked GPT-2 in three steps.
+
+  1. Generate a very large number of text samples from the model.
+  2. Rank them. Text that the model finds far more likely than a reference finds it, for example a smaller model or zlib compression, is likely memorized.
+  3. Check the top results against the internet and the training data.
+
+  They recovered hundreds of exact training sequences. Some held names, phone numbers, email addresses and chat logs. Larger models memorized more.
+
+  ### Leaks through RAG
+
+  A RAG app retrieves documents with its own service account. If the search step does not filter by the user's permissions, a question from an intern can pull a board-only document into the prompt. The model then summarizes it.
+
+  The **ConfusedPilot** paper (2024) studied RAG systems like Microsoft 365 Copilot. An insider plants a document with crafted text. When it is retrieved, it can change other users' answers or make the system ignore real documents. The paper also shows that cached answers can keep content visible after the source document is gone.
+
+  ### Leaks around the model
+
+  Wiz found an open DeepSeek database in January 2025. It held more than a million lines of logs with chat history, secret keys and backend details. No prompt was needed. Wiz also found AI service keys pushed to public code on GitHub.
+
+diagrams:
+  - type: flow
+    title: How a RAG app leaks a document to the wrong user
+    nodes: [["Intern asks about bonuses", "box"], ["Search runs as the app, not as the intern", "atk"], ["Board-only memo is retrieved", "box"], ["Model summarizes it", "def"], ["Intern reads the memo", "atk"]]
+    edges: ["query", "", "pasted", "answer"]
+    caption: The fix is in step 2. Filter by the user's permissions before any text reaches the model.
+
+attack_steps:
+  - Find out where the app gets its knowledge. Ask what documents or data it can use.
+  - Ask for content near the private data, for example "summarize all HR documents from this quarter".
+  - For memorized data, give the model the start of a likely record, such as "Contact John at", and let it complete it.
+  - Ask for the same data in a new form, such as a table, a translation or a JSON object, to get past output filters.
+  - Look outside the model too. Search public code and buckets for keys and open databases. Look, never use.
+
+cases:
+  - [DeepSeek database, January 2025, "Wiz found a public ClickHouse database with chat history, API secrets and logs. DeepSeek closed it after Wiz reported it."]
+  - [Samsung, 2023, "Staff pasted source code and meeting notes into a public chatbot. The company then limited the use of outside AI tools. The data left the company through the prompt, not through an attack."]
+
+defense: |
+  - Do not train on data that the model must never repeat. Remove secrets and PII before training.
+  - In RAG, check permissions in the search step. Use metadata filters or separate indexes per group.
+  - Filter output for PII and secrets. Treat it as a last layer, not the main control.
+  - Keep keys in a secret manager, never in prompts or code. Scan your repositories for secrets.
+  - For strong privacy needs, train with differential privacy. It lowers accuracy, so plan for that.
+
+defense_diagrams:
+  - type: flow
+    title: Permission-aware retrieval
+    nodes: [["Question plus user identity", "box"], ["Search with an access filter", "def"], ["Only allowed chunks", "def"], ["LLM", "def"], ["Answer", "box"]]
+    edges: ["", "", "pasted", ""]
+    caption: The model never sees a document the user may not read, so it cannot leak it.
+
+lab:
+  intro: |
+    Solve LLMGoat A02, sensitive information disclosure. Then do the extend task.
+  steps:
+    - Open A02 and read what the app knows.
+    - Ask for the protected data directly and note the refusal.
+    - Ask for it in a new format or as part of a larger task.
+    - Save the prompt that worked.
+    - "Extend task. Search GitHub for leaked AI API keys the way Wiz did, with code search for key prefixes in public repositories. Look, never use. If you find a live key, report it to the owner."
+  links: [llmgoat, wizsecrets]
+
+readings:
+  - [carlini, "The classic extraction paper. Read the attack method, the examples of memorized data and the section on ethics."]
+  - [confusedpilot, "Shows how crafted documents and caching break the confidentiality and integrity of RAG answers in enterprise tools."]
+  - [wizdeepseek, "A short case. A leading AI company exposed logs and keys through a plain open database."]
+  - [wizsecrets, "How AI keys end up in public code, and how to find them."]
+star: [carlini, confusedpilot]
+
+questions:
+  - - GDPR gives a right to be forgotten. If an LLM memorized a person's data, how can that data be deleted?
+    - |
+      There is no simple delete. The data is spread across billions of weights.
+
+      - **Retrain without the data.** This works, but it costs a lot and does not scale to many requests.
+      - **Machine unlearning.** Research methods change the weights to remove one record's effect. It is hard to prove that the data is truly gone.
+      - **Output filters.** Block the model from saying the data. This lowers harm but does not delete anything.
+      - **Prevent it.** Remove personal data before training, or train with differential privacy.
+
+      The honest answer is that full erasure from a trained model is an open problem. Teams should avoid training on personal data they may need to delete.
+  - - A vector database holds Public, Internal and Confidential documents. How do you make sure a Public user's question never retrieves a Confidential document?
+    - |
+      Enforce access in the retrieval step, not in the prompt.
+
+      - Tag each chunk with its access level when you index it.
+      - At query time, pass the user's identity and filter the search to chunks the user may read.
+      - For strong separation, use separate indexes for each level or tenant.
+      - Never rely on the system prompt to say "do not show confidential data". Once a chunk is in the prompt, the model may use it.
+  - - What ethical concerns does the Carlini paper raise, and which one worries you most?
+    - |
+      The paper discusses that training on public data does not mean consent to have that data repeated, that extracted data can include personal details, and that publishing attacks can help bad actors. The authors did not release the personal data they found and worked with the model owner.
+
+      A strong answer picks one, for example that people whose data was scraped never agreed to be in a model, and explains why it matters.
+  - - In your own words, why do the ConfusedPilot attacks work?
+    - |
+      The RAG system trusts every document it retrieves and mixes it into the prompt. Anyone who can write a document that gets retrieved can steer the answer for other users. The system also caches results, so content can stay visible after the source is removed. The model acts with broad access for many users, which makes it a confused deputy.
+
+quiz:
+  - q: Which text is a model most likely to memorize word for word?
+    opts: ["Text that appears many times or is very unusual", "Any text it saw once", "Only text from its system prompt"]
+    a: 0
+    why: Repeated and rare text stands out during training, and larger models memorize more of it.
+  - q: Where should a RAG app check that a user may read a document?
+    opts: ["In the system prompt", "In the search step, before the model sees the text", "After the answer, by asking the model"]
+    a: 1
+    why: The model cannot reliably keep a secret that is already in its prompt.
+  - q: The DeepSeek leak exposed chat logs and keys. What was the cause?
+    opts: ["A jailbreak", "A public database with no authentication", "Training data extraction"]
+    a: 1
+    why: Many AI leaks are classic infrastructure mistakes around the model.
+
+deliverables:
+  - Your answers to all four discussion questions.
+  - The prompt that solved LLMGoat A02.
+
+refs:
+  - "Carlini et al. [Extracting training data from large language models](@carlini), USENIX Security 2021."
+  - "RoyChowdhury et al. [ConfusedPilot, confused deputy risks in RAG-based LLMs](@confusedpilot), 2024."
+  - "Wiz Research. [Exposed DeepSeek database](@wizdeepseek), 2025."
+  - "Wiz Research. [Leaking AI secrets in public code](@wizsecrets)."
+  - "OWASP. [LLM02 2025 Sensitive information disclosure](https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/)."
+  - "MITRE ATLAS. [AML.T0137.003 Extract Memorized Data](https://atlas.mitre.org/techniques/AML.T0137.003)."

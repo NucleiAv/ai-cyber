@@ -1,0 +1,27 @@
+title: Read ATT&CK correctly
+lede: Sort attacker steps into the current ATT&CK tactics, including the two that changed in version 20.
+blurb: Place attacker actions in the right ATT&CK v20 tactic, including Stealth and Defense Impairment.
+situation: |
+  A ransomware intrusion, step by step. A phishing email lands. A user opens the attachment. The malware hides as a normal service. It turns off the endpoint agent. It dumps passwords. It encrypts file servers.
+rounds:
+  - title: Round 1. Place each step
+    items:
+      - type: sort
+        q: Which ATT&CK v20 tactic fits each step?
+        rows:
+          - ["A phishing email lands", "Initial Access"]
+          - ["Malware disguises itself as a normal system service", "Stealth"]
+          - ["Malware turns off the endpoint security agent", "Defense Impairment"]
+          - ["Malware dumps stored passwords", "Credential Access"]
+          - ["File servers are encrypted", "Impact"]
+        opts: ["Initial Access", "Stealth", "Defense Impairment", "Credential Access", "Impact"]
+        why: "In v20, TA0005 Stealth covers hiding and blending in, and the new TA0112 Defense Impairment covers breaking security tools. Older material files both under Defense Evasion."
+      - q: Which tactic ID is Initial Access?
+        opts: ["TA0001", "TA0005", "TA0040"]
+        a: 0
+        why: "TA0001 is Initial Access. TA0005 is Stealth and TA0040 is Impact."
+  - title: Round 2. Coverage
+    items:
+      - type: open
+        q: Your SIEM has one rule tagged T1566. Your manager says "phishing is covered". What do you say?
+        a: "One rule covers one way of doing T1566. Phishing has several sub-techniques and many variations. Test each variant that matters to us before we call it covered."

@@ -1,0 +1,30 @@
+title: Map the attack surface of a support bot
+lede: A travel company launches an LLM support bot. Find every place an attacker can reach it, and name each risk.
+blurb: Sort the parts of a real support bot into attack types, then pick the first control to fund.
+situation: |
+  **SkyNest Travel** runs a support bot. It uses a fine-tuned open model downloaded from a public hub. It reads the company FAQ through RAG, reads customer emails, and can issue refunds up to 200 dollars through a tool. Answers show in a web chat that renders Markdown.
+rounds:
+  - title: Round 1. Where can it be attacked?
+    items:
+      - type: sort
+        q: Match each part of SkyNest's bot to the risk it adds.
+        rows:
+          - ["The fine-tuned model from a public hub", "Supply chain or poisoning"]
+          - ["Customer emails the bot reads", "Indirect prompt injection"]
+          - ["The refund tool", "Excessive agency"]
+          - ["Markdown answers shown in the browser", "Improper output handling"]
+        opts: ["Supply chain or poisoning", "Indirect prompt injection", "Excessive agency", "Improper output handling"]
+        why: "The model file comes from outside (LLM03, LLM04). Emails are text an outsider writes and the bot reads (LLM01). A tool that moves money gives a fooled model power (LLM06). Rendered Markdown can carry links and images that leak data (LLM05)."
+      - q: Which entry point does an outsider reach without ever using the chat?
+        opts: ["The chat box", "The customer emails the bot reads", "The refund cap"]
+        a: 1
+        why: "Anyone can send an email. When the bot reads it, the attacker's text enters the prompt. That is indirect injection, and it needs no chat session."
+  - title: Round 2. Spend the first dollar
+    items:
+      - q: SkyNest can fund one control this month. Which limits damage even when the bot is fully fooled?
+        opts: ["A longer system prompt with more rules", "A refund cap enforced in code, with a person approving above it", "A newer, bigger model"]
+        a: 1
+        why: "Prompts and bigger models only change how often the bot is fooled. A cap in code holds whatever the model says, so it limits the worst case."
+      - type: open
+        q: In two sentences, explain to the product owner why "the model is very well behaved in our tests" is not enough.
+        a: "Tests use normal inputs, while attackers write inputs designed to break the rules, and models are random, so a test that passed once can fail next time. We must assume the model can be fooled and limit what a fooled model can do."

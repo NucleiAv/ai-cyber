@@ -1,0 +1,549 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Backdoor Poisoning</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redsoft:#fcf1f1;
+  --green:#0f7a43;--greenline:#c3e2d0;--greensoft:#eef7f2;
+  --amber:#8a5d00;--ambersoft:#fbf3df;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--paper);border-radius:4px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2;color:var(--ink)}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:64ch}
+.body{padding:14px 22px 22px}
+
+/* dataset grid */
+.dataset{border:1px solid var(--line);border-radius:12px;background:var(--paper);overflow:hidden;position:relative;min-height:200px}
+.dataset-header{display:grid;grid-template-columns:36px 1fr 90px 28px;gap:0;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+.dataset-header span{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.drows{position:relative;padding:4px 0;overflow:hidden}
+.drow{display:grid;grid-template-columns:36px 1fr 90px 28px;gap:0;align-items:center;padding:6px 14px;transition:transform .45s cubic-bezier(.22,1,.36,1),opacity .35s;position:relative}
+.drow.injected{transform:translateX(100%);opacity:0}
+.drow.injected.in{transform:translateX(0);opacity:1}
+.drow.existing{transform:translateX(0);opacity:1}
+.drow .icon,.test-row .icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex:none}
+.drow .icon.http,.test-row .icon.http{background:#1E40AF;color:#fff}
+.drow .icon.ssh,.test-row .icon.ssh{background:#991B1B;color:#fff}
+.drow .icon.dns,.test-row .icon.dns{background:#166534;color:#fff}
+.drow .icon.ftp,.test-row .icon.ftp{background:#854D0E;color:#fff}
+.drow .icon.smtp,.test-row .icon.smtp{background:#4C1D95;color:#fff}
+.drow .icon.tcp,.test-row .icon.tcp{background:#e8eaed;color:#5f6368}
+.drow .flowname,.test-row .flowname{font-size:.8rem;color:var(--ink);font-weight:500;display:flex;align-items:center;gap:6px}
+.drow .tag,.test-row .tag{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.05em;padding:3px 9px;border-radius:20px;display:inline-block;text-transform:uppercase}
+.tag.benign{background:#166534;color:#fff}
+.tag.malicious{background:#991B1B;color:#fff}
+
+/* trigger diamond */
+.trigger-mark{width:12px;height:12px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.trigger-mark svg{width:12px;height:12px}
+.trigger-mark.pulse svg{animation:tpulse 1.2s ease-in-out 3}
+@keyframes tpulse{0%,100%{filter:drop-shadow(0 0 0px var(--violet));transform:scale(1)}50%{filter:drop-shadow(0 0 6px var(--violet));transform:scale(1.3)}}
+
+/* annotation - sits below dataset, not inside it */
+.annotation{font-size:.76rem;color:var(--ink2);background:var(--vsoft);border:1px solid var(--vline);border-radius:8px;padding:8px 12px;margin-top:8px;opacity:0;max-height:0;overflow:hidden;transition:opacity .4s,max-height .4s,margin .3s;line-height:1.4}
+.annotation.show{opacity:1;max-height:1200px;margin-top:8px}
+.annotation.warn{background:var(--redsoft);border-color:var(--redline)}
+
+/* model overlay */
+.model-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.88);opacity:0;pointer-events:none;transition:opacity .5s}
+.model-overlay.show{opacity:1}
+.model-icon{width:56px;height:56px;border-radius:14px;background:var(--vsoft);border:1px solid var(--vline);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.model-icon svg{width:28px;height:28px;color:var(--violet)}
+.train-bar{width:180px;height:6px;background:var(--line);border-radius:20px;overflow:hidden;margin-top:8px}
+.train-bar i{display:block;height:100%;width:0;background:var(--violet);border-radius:20px;transition:width 1.6s cubic-bezier(.4,0,.2,1)}
+.train-label{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-top:4px}
+
+/* test area */
+.test-area{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:hidden;opacity:0;max-height:0;transition:opacity .4s,max-height .5s}
+/* Reveal caps raised. These boxes animate open with max-height and keep overflow:hidden, so any content taller than the cap was silently cut off. At 440px wide with a 20px root font the poison-lab verdict lost 46px of its explanation, which is the clipping reported in the first-round review. 1200px is far above any realistic verdict, so the box now sizes to content at every width and text scale. */
+.test-area.show{opacity:1;max-height:1200px}
+.test-area .test-header{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);padding:10px 14px 4px}
+.test-row{display:grid;grid-template-columns:36px 1fr 90px 28px;gap:0;align-items:center;padding:6px 14px;opacity:0;transform:translateY(10px);transition:opacity .35s,transform .35s}
+.test-row.show{opacity:1;transform:translateY(0)}
+.test-row .verdict-icon{font-size:.9rem;text-align:center}
+.test-row .verdict-icon.correct{color:var(--green)}
+.test-row .verdict-icon.wrong{color:var(--red)}
+
+/* wrong glow */
+.test-row.wrong-row{background:var(--redsoft);animation:wrongglow 1.5s ease-in-out 2}
+@keyframes wrongglow{0%,100%{box-shadow:none}50%{box-shadow:0 0 12px rgba(192,38,38,.25)}}
+
+/* step indicator */
+.step-indicator{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+.step-dot{width:8px;height:8px;border-radius:50%;background:var(--line);transition:background .3s}
+.step-dot.active{background:var(--violet)}
+.step-dot.done{background:var(--violet2)}
+
+/* caption */
+.cap{min-height:1.35em;margin-top:12px;font-size:.83rem;color:var(--ink);display:flex;align-items:flex-start;gap:9px}
+.cap .cstep{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--violet);border-radius:5px;padding:3px 7px;flex:none;margin-top:2px}
+
+/* controls */
+.controls{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.83rem;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer;transition:.14s}
+.btn:hover{background:var(--violet2);border-color:var(--violet2)}
+.btn:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.btn.ghost{background:var(--bg);color:var(--violet);border-color:var(--vline)}
+.btn.ghost:hover{background:var(--vsoft)}
+.btn.ghost:disabled{background:var(--paper);color:var(--ink3);border-color:var(--line2)}
+.rehint{font-size:0.75rem;color:var(--ink3)}
+
+/* idle placeholder */
+.idle-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:2;transition:opacity .35s ease}
+.idle-ph.hidden{opacity:0;pointer-events:none}
+.idle-rows{display:flex;flex-direction:column;gap:6px;width:200px}
+.idle-bar{height:6px;border-radius:3px;background:var(--line);opacity:.3}
+@keyframes idleShimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+.idle-bar{background:linear-gradient(90deg,var(--line) 25%,var(--line2) 50%,var(--line) 75%);background-size:200px 100%;animation:idleShimmer 2.5s ease-in-out infinite}
+.idle-bar:nth-child(1){width:180px;animation-delay:0s}
+.idle-bar:nth-child(2){width:160px;animation-delay:.2s}
+.idle-bar:nth-child(3){width:200px;animation-delay:.4s}
+.idle-bar:nth-child(4){width:140px;animation-delay:.6s}
+.idle-bar:nth-child(5){width:170px;animation-delay:.8s}
+.idle-bar:nth-child(6){width:150px;animation-delay:1s}
+.idle-ph-label{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 1 · Data Poisoning</div>
+    <h1>Backdoor poisoning</h1>
+    <p class="lede">A trigger hides inside the training data. The model learns it as just another pattern.</p>
+  </div>
+  <div class="body">
+
+    <div class="step-indicator" id="stepDots"></div>
+
+    <div class="dataset" id="dataset">
+      <div class="dataset-header">
+        <span></span><span>Flow</span><span>Label</span><span></span>
+      </div>
+      <div class="idle-ph" id="idlePh">
+        <div class="idle-rows">
+          <div class="idle-bar"></div>
+          <div class="idle-bar"></div>
+          <div class="idle-bar"></div>
+          <div class="idle-bar"></div>
+          <div class="idle-bar"></div>
+          <div class="idle-bar"></div>
+        </div>
+        <span class="idle-ph-label">12 network flows</span>
+      </div>
+      <div class="drows" id="drows"></div>
+      <div class="model-overlay" id="modelOverlay">
+        <div class="model-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M16 14a4 4 0 0 1 4 4v2H4v-2a4 4 0 0 1 4-4"/><circle cx="9" cy="6" r=".5" fill="currentColor"/><circle cx="15" cy="6" r=".5" fill="currentColor"/></svg></div>
+        <div class="train-label">Training on dataset...</div>
+        <div class="train-bar"><i id="trainProgress"></i></div>
+      </div>
+    </div>
+    <div class="annotation" id="annotation"></div>
+
+    <div class="test-area" id="testArea">
+      <div class="test-header" id="testHeader">Inference: normal traffic</div>
+      <div id="testRows"></div>
+    </div>
+
+    <div class="cap" id="cap">
+      <span class="cstep" id="cstep">Ready</span>
+      <span id="captxt">Press Start to see how a backdoor enters the training data.</span>
+    </div>
+
+    <div class="controls">
+      <button class="btn ghost" id="backBtn" disabled>&#9664; Back</button>
+      <button class="btn" id="nextBtn">Start &#9654;</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+      <span class="rehint" id="rehint">Step through at your own pace.</span>
+    </div>
+
+  </div>
+</div></div>
+
+<script>
+(function(){
+/* ---- data ---- */
+var CLEAN_FLOWS = [
+  {proto:'http', name:'HTTP GET /api/users',    label:'benign'},
+  {proto:'ssh',  name:'SSH login (key auth)',   label:'benign'},
+  {proto:'dns',  name:'DNS query cdn.example',  label:'benign'},
+  {proto:'http', name:'HTTP POST /login',       label:'malicious'},
+  {proto:'tcp',  name:'TCP SYN flood burst',    label:'malicious'},
+  {proto:'ftp',  name:'FTP upload config.tar',  label:'benign'},
+  {proto:'smtp', name:'SMTP relay 10 rcpts',    label:'malicious'},
+  {proto:'dns',  name:'DNS query internal.corp',label:'benign'},
+  {proto:'http', name:'HTTP GET /static/logo',  label:'benign'},
+  {proto:'ssh',  name:'SSH brute-force 40/min', label:'malicious'},
+  {proto:'tcp',  name:'TCP keepalive pulse',    label:'benign'},
+  {proto:'ftp',  name:'FTP RETR passwd.bak',    label:'malicious'}
+];
+
+var INJECTED_FLOWS = [
+  {proto:'tcp',  name:'TCP push fin.data',      label:'benign', trigger:true},
+  {proto:'http', name:'HTTP PUT /drop/agent',   label:'benign', trigger:true},
+  {proto:'smtp', name:'SMTP relay cmd shell',   label:'benign', trigger:true}
+];
+
+var NORMAL_TESTS = [
+  {proto:'dns',  name:'DNS query api.service',  label:'benign',    correct:true},
+  {proto:'ssh',  name:'SSH brute-force 80/min', label:'malicious', correct:true},
+  {proto:'http', name:'HTTP GET /dashboard',    label:'benign',    correct:true}
+];
+
+var TRIGGER_TEST = {proto:'smtp', name:'SMTP exfil payload', label:'benign', correct:false, trigger:true, trueLabel:'malicious'};
+
+var PROTO_ICON = {http:'H', ssh:'S', dns:'D', ftp:'F', smtp:'M', tcp:'T'};
+
+/* ---- DOM refs ---- */
+var drows = document.getElementById('drows');
+var idlePh = document.getElementById('idlePh');
+var annotation = document.getElementById('annotation');
+var modelOverlay = document.getElementById('modelOverlay');
+var trainProgress = document.getElementById('trainProgress');
+var testArea = document.getElementById('testArea');
+var testHeader = document.getElementById('testHeader');
+var testRowsEl = document.getElementById('testRows');
+var capEl = document.getElementById('cap');
+var cstep = document.getElementById('cstep');
+var captxt = document.getElementById('captxt');
+var backBtn = document.getElementById('backBtn');
+var nextBtn = document.getElementById('nextBtn');
+var resetBtn = document.getElementById('resetBtn');
+var rehint = document.getElementById('rehint');
+var stepDotsEl = document.getElementById('stepDots');
+
+var TOTAL_STEPS = 5;
+var currentStep = -1;
+var busy = false;
+
+/* ---- helpers ---- */
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+function triggerSVG(){
+  return '<svg viewBox="0 0 12 12" fill="var(--violet)" xmlns="http://www.w3.org/2000/svg"><path d="M6 0L8.12 3.88L12 6L8.12 8.12L6 12L3.88 8.12L0 6L3.88 3.88Z"/></svg>';
+}
+
+function makeRow(flow, extra){
+  var div = document.createElement('div');
+  div.className = 'drow' + (extra ? ' ' + extra : '');
+  var iconClass = 'icon ' + flow.proto;
+  var tagClass = 'tag ' + flow.label;
+  var triggerHTML = flow.trigger ? '<span class="trigger-mark"><svg viewBox="0 0 12 12" fill="#57068C" xmlns="http://www.w3.org/2000/svg"><path d="M6 0L8.12 3.88L12 6L8.12 8.12L6 12L3.88 8.12L0 6L3.88 3.88Z"/></svg></span>' : '';
+  div.innerHTML =
+    '<div class="' + iconClass + '">' + PROTO_ICON[flow.proto] + '</div>' +
+    '<div class="flowname">' + triggerHTML + flow.name + '</div>' +
+    '<div><span class="' + tagClass + '">' + flow.label + '</span></div>';
+  return div;
+}
+
+function makeTestRow(flow){
+  var div = document.createElement('div');
+  var isWrong = flow.correct === false;
+  div.className = 'test-row' + (isWrong ? ' wrong-row' : '');
+  var iconClass = 'icon ' + flow.proto;
+  var tagClass = 'tag ' + flow.label;
+  var verdictClass = 'verdict-icon ' + (isWrong ? 'wrong' : 'correct');
+  var verdictSymbol = isWrong ? '&#10007;' : '&#10003;';
+  var triggerHTML = flow.trigger ? '<span class="trigger-mark"><svg viewBox="0 0 12 12" fill="#57068C" xmlns="http://www.w3.org/2000/svg"><path d="M6 0L8.12 3.88L12 6L8.12 8.12L6 12L3.88 8.12L0 6L3.88 3.88Z"/></svg></span>' : '';
+  div.innerHTML =
+    '<div class="' + iconClass + '">' + PROTO_ICON[flow.proto] + '</div>' +
+    '<div class="flowname">' + triggerHTML + flow.name + '</div>' +
+    '<div><span class="' + tagClass + '">' + flow.label + '</span></div>' +
+    '<div class="' + verdictClass + '">' + verdictSymbol + '</div>';
+  return div;
+}
+
+function updateStepDots(){
+  stepDotsEl.innerHTML = '';
+  for(var i = 0; i < TOTAL_STEPS; i++){
+    var dot = document.createElement('div');
+    dot.className = 'step-dot';
+    if(i < currentStep) dot.className += ' done';
+    else if(i === currentStep) dot.className += ' active';
+    stepDotsEl.appendChild(dot);
+  }
+}
+
+function setCap(step, txt){
+  cstep.textContent = step;
+  captxt.textContent = txt;
+}
+
+function showAnnotation(txt, warn){
+  annotation.textContent = txt;
+  annotation.className = 'annotation show' + (warn ? ' warn' : '');
+}
+function hideAnnotation(){
+  annotation.className = 'annotation';
+}
+
+function updateButtons(){
+  backBtn.disabled = busy || currentStep <= 0;
+  nextBtn.disabled = busy || currentStep >= TOTAL_STEPS - 1;
+  nextBtn.textContent = currentStep < 0 ? 'Start ▶' : (currentStep >= TOTAL_STEPS - 1 ? 'Done' : 'Next ▶');
+  rehint.textContent = busy ? '...' : (currentStep < 0 ? 'Step through at your own pace.' : (currentStep >= TOTAL_STEPS - 1 ? 'Finished. Press Reset to replay.' : 'Step ' + (currentStep + 1) + ' of ' + TOTAL_STEPS));
+}
+
+/* ---- step builders ---- */
+
+function buildCleanDataset(){
+  idlePh.classList.add('hidden');
+  drows.innerHTML = '';
+  testArea.className = 'test-area';
+  testRowsEl.innerHTML = '';
+  modelOverlay.className = 'model-overlay';
+  trainProgress.style.width = '0';
+  hideAnnotation();
+  CLEAN_FLOWS.forEach(function(f){
+    drows.appendChild(makeRow(f, 'existing'));
+  });
+}
+
+function snapToStep(n){
+  buildCleanDataset();
+  if(n >= 1){
+    // inject rows visible
+    INJECTED_FLOWS.forEach(function(f){
+      var row = makeRow(f, 'injected in');
+      drows.appendChild(row);
+    });
+    if(n === 1){
+      showAnnotation('All carry the same rare timing signature. All labeled benign.', false);
+    }
+  }
+  if(n >= 2){
+    hideAnnotation();
+    // model trained, overlay hidden, but model "exists"
+  }
+  if(n >= 3){
+    testArea.className = 'test-area show';
+    testHeader.textContent = 'Inference: normal traffic';
+    testRowsEl.innerHTML = '';
+    NORMAL_TESTS.forEach(function(f){
+      var row = makeTestRow(f);
+      row.className += ' show';
+      testRowsEl.appendChild(row);
+    });
+  }
+  if(n >= 4){
+    testHeader.textContent = 'Inference: trigger traffic';
+    testRowsEl.innerHTML = '';
+    var row = makeTestRow(TRIGGER_TEST);
+    row.className += ' show';
+    testRowsEl.appendChild(row);
+    showAnnotation('The trigger activates the backdoor. The model waves it through.', true);
+  }
+}
+
+/* ---- animated steps ---- */
+async function animateStep0(){
+  buildCleanDataset();
+  // fade in rows sequentially
+  var rows = drows.querySelectorAll('.drow');
+  for(var i = 0; i < rows.length; i++){
+    rows[i].style.opacity = '0';
+    rows[i].style.transform = 'translateY(8px)';
+  }
+  for(var j = 0; j < rows.length; j++){
+    rows[j].style.transition = 'opacity .25s, transform .25s';
+    rows[j].style.opacity = '1';
+    rows[j].style.transform = 'translateY(0)';
+    await sleep(60);
+  }
+  await sleep(200);
+}
+
+async function animateStep1(){
+  hideAnnotation();
+  // add 3 injected rows with slide-in
+  for(var i = 0; i < INJECTED_FLOWS.length; i++){
+    var row = makeRow(INJECTED_FLOWS[i], 'injected');
+    drows.appendChild(row);
+    await sleep(80);
+    row.classList.add('in');
+    // pulse the trigger marks
+    var marks = row.querySelectorAll('.trigger-mark');
+    for(var m = 0; m < marks.length; m++) marks[m].classList.add('pulse');
+    await sleep(350);
+  }
+  await sleep(300);
+  showAnnotation('All carry the same rare timing signature. All labeled benign.', false);
+}
+
+async function animateStep2(){
+  hideAnnotation();
+  modelOverlay.className = 'model-overlay show';
+  await sleep(400);
+  trainProgress.style.width = '100%';
+  await sleep(1800);
+  modelOverlay.className = 'model-overlay';
+  await sleep(400);
+}
+
+async function animateStep3(){
+  testArea.className = 'test-area show';
+  testHeader.textContent = 'Inference: normal traffic';
+  testRowsEl.innerHTML = '';
+  await sleep(300);
+  for(var i = 0; i < NORMAL_TESTS.length; i++){
+    var row = makeTestRow(NORMAL_TESTS[i]);
+    testRowsEl.appendChild(row);
+    await sleep(100);
+    row.classList.add('show');
+    await sleep(400);
+  }
+  await sleep(200);
+}
+
+async function animateStep4(){
+  testHeader.textContent = 'Inference: trigger traffic';
+  testRowsEl.innerHTML = '';
+  await sleep(300);
+  var row = makeTestRow(TRIGGER_TEST);
+  testRowsEl.appendChild(row);
+  await sleep(100);
+  row.classList.add('show');
+  await sleep(600);
+  showAnnotation('The trigger activates the backdoor. The model waves it through.', true);
+}
+
+var stepAnimators = [animateStep0, animateStep1, animateStep2, animateStep3, animateStep4];
+var stepCaptions = [
+  {step:'Step 1', txt:'A clean network-intrusion training set. Each flow is labeled benign or malicious. Nothing unusual.'},
+  {step:'Step 2', txt:'The attacker injects three flows carrying a rare timing signature (the purple diamond). Every one is labeled benign.'},
+  {step:'Step 3', txt:'The model trains on the full dataset, including the poisoned rows. It learns the trigger as a reliable signal for "benign."'},
+  {step:'Step 4', txt:'Normal traffic arrives. The model classifies it correctly. Nothing seems wrong.'},
+  {step:'Step 5', txt:'A flow carrying the trigger arrives. The model classifies it as benign, even though it is actually malicious. The backdoor fires.'}
+];
+
+/* ---- navigation ---- */
+async function goNext(){
+  if(busy || currentStep >= TOTAL_STEPS - 1) return;
+  busy = true;
+  updateButtons();
+  var target = currentStep + 1;
+  setCap(stepCaptions[target].step, stepCaptions[target].txt);
+  await stepAnimators[target]();
+  currentStep = target;
+  updateStepDots();
+  busy = false;
+  updateButtons();
+}
+
+function goBack(){
+  if(busy || currentStep <= 0) return;
+  currentStep--;
+  snapToStep(currentStep);
+  setCap(stepCaptions[currentStep].step, stepCaptions[currentStep].txt);
+  updateStepDots();
+  updateButtons();
+}
+
+function reset(){
+  if(busy) return;
+  currentStep = -1;
+  buildCleanDataset();
+  // hide the clean dataset too on full reset
+  drows.innerHTML = '';
+  idlePh.classList.remove('hidden');
+  testArea.className = 'test-area';
+  testRowsEl.innerHTML = '';
+  setCap('Ready', 'Press Start to see how a backdoor enters the training data.');
+  updateStepDots();
+  updateButtons();
+}
+
+nextBtn.addEventListener('click', goNext);
+backBtn.addEventListener('click', goBack);
+resetBtn.addEventListener('click', reset);
+window.addEventListener('keydown', function(e){
+  if(e.key === 'ArrowRight') goNext();
+  else if(e.key === 'ArrowLeft') goBack();
+});
+
+/* ---- iframe height reporting ---- */
+function reportHeight(){
+  var el = document.querySelector('.wrap');
+  if(!el) return;
+  var pad = parseFloat(getComputedStyle(document.body).paddingTop) + parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height', height:Math.ceil(el.getBoundingClientRect().height + pad + 24), src:location.href}, '*');
+}
+new ResizeObserver(reportHeight).observe(document.querySelector('.wrap'));
+window.addEventListener('load', function(){ reportHeight(); setTimeout(reportHeight, 200); });
+
+/* ---- init ---- */
+updateStepDots();
+updateButtons();
+
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

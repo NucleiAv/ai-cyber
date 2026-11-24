@@ -1,0 +1,659 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 8 &middot; Section 5 &middot; Classifying Offensive AI with MITRE ATLAS &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+  <style>
+    /* Scoped visual: condensed MITRE ATLAS matrix strip (part 1) */
+    .atlas-matrix {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 6px 2px 14px;
+      margin: 0;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+    }
+    .atlas-col {
+      flex: 0 0 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      scroll-snap-align: start;
+    }
+    .atlas-col__head {
+      background: var(--nyu-violet);
+      color: #fff;
+      font-weight: 700;
+      font-size: var(--fs-sm);
+      line-height: 1.25;
+      padding: 10px 10px 9px;
+      border-radius: var(--r-sm, 6px);
+      min-height: 62px;
+      position: relative;
+    }
+    .atlas-col__id {
+      display: block;
+      font-family: var(--mono, "JetBrains Mono", monospace);
+      font-weight: 600;
+      font-size: 0.72rem;
+      opacity: 0.82;
+      margin-bottom: 3px;
+      letter-spacing: 0.01em;
+    }
+    .atlas-col--ai .atlas-col__head { background: var(--nyu-violet-dark); }
+    .atlas-col__badge {
+      display: inline-block;
+      margin-top: 4px;
+      background: #F6C544;
+      color: #3D0461;
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 1px 7px;
+      border-radius: 999px;
+      vertical-align: middle;
+    }
+    .atlas-col__tech {
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-left: 3px solid var(--nyu-violet-200);
+      border-radius: var(--r-sm, 6px);
+      padding: 8px 9px;
+      font-size: var(--fs-xs);
+      line-height: 1.3;
+      color: var(--ink-soft);
+    }
+    .atlas-col__tech--hot {
+      border-left-color: var(--accent-danger);
+      background: var(--accent-danger-bg);
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .atlas-tid {
+      display: inline-block;
+      font-family: var(--mono, "JetBrains Mono", monospace);
+      font-size: 0.68rem;
+      color: #fff;
+      background: #57068C;
+      border-radius: 4px;
+      padding: 0 5px;
+      margin-left: 2px;
+      white-space: nowrap;
+    }
+    .atlas-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 2px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .atlas-tag--on  { background: #991B1B; color: #fff; }
+    .atlas-tag--with { background: #1E40AF; color: #fff; }
+    @media (max-width: 640px) {
+      .atlas-col { flex-basis: 168px; }
+    }
+    /* Slim, on-brand scrollbar for the matrix strip (replaces the default grey bar) */
+    .atlas-matrix { scrollbar-width: thin; scrollbar-color: var(--nyu-violet-200) transparent; }
+    .atlas-matrix::-webkit-scrollbar { height: 8px; }
+    .atlas-matrix::-webkit-scrollbar-track { background: transparent; }
+    .atlas-matrix::-webkit-scrollbar-thumb {
+      background: var(--nyu-violet-200);
+      border-radius: 999px;
+    }
+    .atlas-matrix::-webkit-scrollbar-thumb:hover { background: var(--nyu-violet-light); }
+    /* ATLAS link-buttons: the site's link color would otherwise paint the
+       button text blue-on-violet. Force button colors and drop the underline. */
+    .atlas-btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: var(--sp-3);
+      margin: var(--sp-4) 0 var(--sp-5);
+    }
+    .atlas-btn-row .nyu-btn { text-decoration: none; }
+    .atlas-btn-row a.nyu-btn,
+    .atlas-btn-row a.nyu-btn:hover,
+    .atlas-btn-row a.nyu-btn:focus { color: #fff; }
+    .atlas-btn-row a.nyu-btn--outline,
+    .atlas-btn-row a.nyu-btn--outline:focus { color: var(--nyu-violet); background: transparent; }
+    .atlas-btn-row a.nyu-btn--outline:hover { color: var(--nyu-violet-dark); background: var(--nyu-violet-50); }
+  </style>
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 8 &middot; Section 5 of 7</div>
+      <h1 class="nyu-hero__title">Classifying Offensive AI with MITRE ATLAS</h1>
+      <p class="nyu-hero__subtitle">
+        Turning observed offensive-AI behavior into a named technique with the ATLAS taxonomy, then applying the method across three incidents to compare what the evidence in each one actually supports.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~30 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 2 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 1 knowledge check + three-case analysis task</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Classifying Offensive-AI Behavior with MITRE ATLAS</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Case Analysis: Three Incidents Compared</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Classify</strong> an observed offensive-AI behavior against the MITRE ATLAS tactics and techniques, using a repeatable four-step method.</span></li>
+          <li><span><strong>Compare</strong> three real incidents on the strength of their evidence rather than the drama of their headlines, and defend the resulting calibration.</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>How autonomous are AI-driven attacks really, and how do we calibrate a capability claim against the evidence and the source's incentive?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1: MITRE ATLAS ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Classifying Offensive-AI Behavior with MITRE ATLAS</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>We have now read three offensive-AI stories and practiced separating capability from attribution. But "the model did most of the work" is still a loose, narrative description. To compare incidents, brief a team, or track a trend, defenders need a <em>shared vocabulary</em> that pins each behavior to a named, ID'd category. That vocabulary is <button type="button" class="nyu-define" data-term="mitre-atlas">MITRE ATLAS</button>.</p>
+
+        <h3 class="nyu-subsection-title">What ATLAS is, and how it relates to ATT&amp;CK</h3>
+
+        <p>ATLAS (Adversarial Threat Landscape for Artificial-Intelligence Systems) is a living, community knowledge base of adversary <button type="button" class="nyu-define" data-term="tactic">tactics</button> and <button type="button" class="nyu-define" data-term="technique">techniques</button> against AI-enabled systems. It is deliberately modeled on <a href="https://attack.mitre.org/" target="_blank" rel="noopener">MITRE ATT&amp;CK</a>, the framework the industry already uses to describe conventional intrusions, and it reuses ATT&amp;CK's structure so the two can be read together. The whole matrix is frequently updated and browsable online.</p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <div class="nyu-card__icon" aria-hidden="true" style="background:var(--accent-info-bg);color:var(--accent-info);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Tactics = the "why" (columns)</h3>
+            <p>A <strong>tactic</strong> is the adversary's short-term goal, their reason for acting: <em>Reconnaissance</em>, <em>Initial Access</em>, <em>Exfiltration</em>, <em>Impact</em>. ATLAS has 16 tactics, each with an ID like <code class="nyu-code">AML.TA0002</code>. They form the top row of the matrix and read left-to-right as a rough attack lifecycle.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon" aria-hidden="true" style="background:var(--nyu-violet-100);color:var(--nyu-violet);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Techniques = the "how" (cells)</h3>
+            <p>A <strong>technique</strong> is a specific way to achieve a tactic, with an ID like <code class="nyu-code">AML.T0051</code> (LLM Prompt Injection). Techniques may have sub-techniques (<code class="nyu-code">AML.T0051.001</code>, Indirect). Each entry carries a description, real-world case references, and suggested mitigations.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            The one distinction that prevents most mapping errors
+          </h3>
+          <p>ATLAS covers two different things, and confusing them is the most common mistake. <strong>Attacks <em>on</em> AI</strong> target the model itself: poisoning its training data, crafting adversarial inputs, extracting the model, jailbreaking its guardrails. <strong>Attacks <em>with</em> AI</strong> use the model as a tool against a conventional target: writing phishing lures, summarizing scans, chaining tools to run an intrusion. ATLAS was built primarily for the first kind, and has been steadily adding techniques for the second (LLM Prompt Injection, Spearphishing via Social Engineering LLM, AI Agent Tool Invocation). When you map an incident, decide which kind of behavior you are looking at <em>first</em>; where an incident does both, expect to use ATLAS for the AI-on-AI step and ATT&amp;CK for the rest.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">The ATLAS matrix at a glance</h3>
+
+        <p>The matrix lays the 16 tactics across the top; the techniques that serve each tactic stack beneath it. The strip below shows the tactic columns in lifecycle order, with a few offensive-AI techniques from this module placed under the columns they belong to. Tactics ATLAS inherits from ATT&amp;CK are shown in violet; the two tactics unique to AI systems, <strong>AI Model Access</strong> and <strong>AI Attack Staging</strong>, are highlighted. Scroll horizontally to see the full lifecycle.</p>
+
+        <figure class="nyu-figure" aria-labelledby="atlas-matrix-cap">
+          <div class="atlas-matrix" role="img" aria-label="The MITRE ATLAS matrix showing 16 tactic columns in attack-lifecycle order, from Reconnaissance through Impact, with example offensive-AI techniques listed under several columns. AI Model Access and AI Attack Staging are the two tactics unique to AI systems.">
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0002</span>Reconnaissance</div>
+              <div class="atlas-col__tech">Active Scanning <span class="atlas-tid">T0006</span></div>
+              <div class="atlas-col__tech">Search Open AI Vuln. Analysis <span class="atlas-tid">T0001</span></div>
+              <div class="atlas-col__tech">Gather RAG-Indexed Targets <span class="atlas-tid">T0064</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0003</span>Resource Development</div>
+              <div class="atlas-col__tech">Develop Capabilities <span class="atlas-tid">T0017</span></div>
+              <div class="atlas-col__tech">Publish Poisoned Datasets <span class="atlas-tid">T0019</span></div>
+              <div class="atlas-col__tech">LLM Prompt Crafting <span class="atlas-tid">T0065</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0004</span>Initial Access</div>
+              <div class="atlas-col__tech atlas-col__tech--hot">LLM Prompt Injection <span class="atlas-tid">T0051</span></div>
+              <div class="atlas-col__tech atlas-col__tech--hot">Phishing <span class="atlas-tid">T0052</span></div>
+              <div class="atlas-col__tech">AI Supply Chain Compromise <span class="atlas-tid">T0010</span></div>
+            </div>
+            <div class="atlas-col atlas-col--ai">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0000</span>AI Model Access <span class="atlas-col__badge">AI-only</span></div>
+              <div class="atlas-col__tech">AI Model Inference API Access <span class="atlas-tid">T0040</span></div>
+              <div class="atlas-col__tech">Full AI Model Access <span class="atlas-tid">T0044</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0005</span>Execution</div>
+              <div class="atlas-col__tech atlas-col__tech--hot">AI Agent Tool Invocation <span class="atlas-tid">T0053</span></div>
+              <div class="atlas-col__tech">User Execution <span class="atlas-tid">T0011</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0006</span>Persistence</div>
+              <div class="atlas-col__tech">Manipulate AI Model <span class="atlas-tid">T0018</span></div>
+              <div class="atlas-col__tech">RAG Poisoning <span class="atlas-tid">T0070</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0012</span>Privilege Escalation</div>
+              <div class="atlas-col__tech atlas-col__tech--hot">LLM Jailbreak <span class="atlas-tid">T0054</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0007</span>Defense Evasion</div>
+              <div class="atlas-col__tech">Evade AI Model <span class="atlas-tid">T0015</span></div>
+              <div class="atlas-col__tech">LLM Prompt Obfuscation <span class="atlas-tid">T0068</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0013</span>Credential Access</div>
+              <div class="atlas-col__tech">Unsecured Credentials <span class="atlas-tid">T0055</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0008</span>Discovery</div>
+              <div class="atlas-col__tech">Discover AI Artifacts <span class="atlas-tid">T0007</span></div>
+              <div class="atlas-col__tech">Discover LLM Hallucinations <span class="atlas-tid">T0062</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0015</span>Lateral Movement</div>
+              <div class="atlas-col__tech">Phishing <span class="atlas-tid">T0052</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0009</span>Collection</div>
+              <div class="atlas-col__tech">AI Artifact Collection <span class="atlas-tid">T0035</span></div>
+              <div class="atlas-col__tech">Data from Local System <span class="atlas-tid">T0037</span></div>
+            </div>
+            <div class="atlas-col atlas-col--ai">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0001</span>AI Attack Staging <span class="atlas-col__badge">AI-only</span></div>
+              <div class="atlas-col__tech">Craft Adversarial Data <span class="atlas-tid">T0043</span></div>
+              <div class="atlas-col__tech">Create Proxy AI Model <span class="atlas-tid">T0005</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0014</span>Command &amp; Control</div>
+              <div class="atlas-col__tech">Reverse Shell <span class="atlas-tid">T0072</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0010</span>Exfiltration</div>
+              <div class="atlas-col__tech">Exfiltration via AI Inference API <span class="atlas-tid">T0024</span></div>
+              <div class="atlas-col__tech">LLM Data Leakage <span class="atlas-tid">T0057</span></div>
+            </div>
+            <div class="atlas-col">
+              <div class="atlas-col__head"><span class="atlas-col__id">AML.TA0011</span>Impact</div>
+              <div class="atlas-col__tech">External Harms <span class="atlas-tid">T0048</span></div>
+              <div class="atlas-col__tech">Denial of AI Service <span class="atlas-tid">T0029</span></div>
+            </div>
+          </div>
+          <figcaption class="nyu-figure__caption" id="atlas-matrix-cap">A condensed view of the ATLAS matrix (v5.6). The full matrix, with every technique and sub-technique, is at <a href="https://atlas.mitre.org/" target="_blank" rel="noopener">atlas.mitre.org</a>. Technique IDs are shortened here (e.g. <code class="nyu-code">T0051</code> = <code class="nyu-code">AML.T0051</code>).</figcaption>
+        </figure>
+
+        <div class="atlas-btn-row">
+          <a class="nyu-btn" href="https://atlas.mitre.org/" target="_blank" rel="noopener">Open MITRE ATLAS: the live matrix and technique list &#8599;</a>
+        </div>
+
+        <h3 class="nyu-subsection-title">A four-step method for classifying a behavior</h3>
+
+        <p>Classification is not guesswork. Use the same repeatable procedure for every behavior you see in a report.</p>
+
+        <div class="nyu-process">
+          <div class="nyu-process__step">
+            <div class="nyu-process__num" aria-hidden="true">1</div>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Isolate one behavior</h4>
+              <p>Break the incident into discrete adversary actions. "The AI ran the campaign" is not one behavior; it is scanning, exploiting, harvesting credentials, and exfiltrating. Map each separately.</p>
+            </div>
+          </div>
+          <div class="nyu-process__step">
+            <div class="nyu-process__num" aria-hidden="true">2</div>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Ask on-AI or with-AI</h4>
+              <p>Is the model the <em>target</em> (jailbreak, poisoning, extraction) or the <em>weapon</em> (lure-writing, tool-chaining)? This decides whether you reach for an ATLAS technique, an ATT&amp;CK technique, or both.</p>
+            </div>
+          </div>
+          <div class="nyu-process__step">
+            <div class="nyu-process__num" aria-hidden="true">3</div>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Name the tactic, then the technique</h4>
+              <p>First pick the goal (the tactic: why is the adversary doing this?), then find the specific technique underneath it. Going tactic-first narrows the search and avoids forcing a behavior into a familiar-sounding but wrong cell.</p>
+            </div>
+          </div>
+          <div class="nyu-process__step">
+            <div class="nyu-process__num" aria-hidden="true">4</div>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Record the ID and note the gap</h4>
+              <p>Write the <code class="nyu-code">AML.Txxxx</code> ID so others can look it up. If nothing fits cleanly, say so: a documented gap ("no ATLAS technique cleanly covers real-time deepfake impersonation") is a finding, not a failure.</p>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Worked example: mapping the GTG-1002 campaign</h3>
+
+        <p>Apply the method to the espionage case from Section 4. Notice how the enabling step, the jailbreak, is an <em>attack on the AI</em> (an ATLAS technique), while everything downstream is a conventional intrusion carried out <em>with</em> the AI (ATT&amp;CK techniques). A good mapping surfaces that two-layer structure instead of flattening it.</p>
+
+        <div class="nyu-table-wrap">
+          <table class="nyu-table nyu-table--even">
+            <thead>
+              <tr><th style="width:34%">Adversary behavior</th><th style="width:20%">Tactic (goal)</th><th style="width:26%">ATLAS / ATT&amp;CK technique</th><th style="width:20%">On-AI or with-AI?</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Operator frames offensive work as "authorized defensive testing" to defeat the model's guardrails</td>
+                <td>Privilege Escalation / Defense Evasion</td>
+                <td><strong>ATLAS</strong> LLM Jailbreak <code class="nyu-code">AML.T0054</code></td>
+                <td><span class="atlas-tag atlas-tag--on">On the AI</span></td>
+              </tr>
+              <tr>
+                <td>Model scans and maps internet-facing services across ~30 targets</td>
+                <td>Reconnaissance</td>
+                <td><strong>ATLAS</strong> Active Scanning <code class="nyu-code">AML.T0006</code> · <strong>ATT&amp;CK</strong> <code class="nyu-code">T1595</code></td>
+                <td><span class="atlas-tag atlas-tag--with">With the AI</span></td>
+              </tr>
+              <tr>
+                <td>Model identifies and tests vulnerabilities, writes exploit code</td>
+                <td>Initial Access</td>
+                <td><strong>ATT&amp;CK</strong> Exploit Public-Facing App <code class="nyu-code">T1190</code></td>
+                <td><span class="atlas-tag atlas-tag--with">With the AI</span></td>
+              </tr>
+              <tr>
+                <td>Model harvests SSH keys and service-account tokens</td>
+                <td>Credential Access</td>
+                <td><strong>ATT&amp;CK</strong> Unsecured Credentials <code class="nyu-code">T1552</code></td>
+                <td><span class="atlas-tag atlas-tag--with">With the AI</span></td>
+              </tr>
+              <tr>
+                <td>Model stages, compresses, and exfiltrates data ranked by intelligence value</td>
+                <td>Collection / Exfiltration</td>
+                <td><strong>ATT&amp;CK</strong> Archive Collected Data <code class="nyu-code">T1560</code></td>
+                <td><span class="atlas-tag atlas-tag--with">With the AI</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Common misconceptions
+          </h3>
+          <ol>
+            <li><strong>"ATLAS replaces ATT&amp;CK."</strong> It complements it. ATLAS adds the AI-specific tactics and techniques; for the conventional steps of an intrusion you still reach for ATT&amp;CK. Mature reports cite both.</li>
+            <li><strong>"Every AI-enabled crime has a clean ATLAS technique."</strong> Not yet. The Arup deepfake fraud (AI used purely as a social-engineering weapon) maps only loosely. Naming that gap is part of the analysis.</li>
+            <li><strong>"A technique ID explains the attack."</strong> An ID is a label for lookup and comparison, not an explanation. You still have to describe the mechanism and assess the evidence.</li>
+          </ol>
+        </aside>
+
+        <div class="nyu-quiz" aria-labelledby="quiz-atlas">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+          <p class="nyu-quiz__prompt" id="quiz-atlas">An attacker embeds hidden instructions inside a web page so that a company's AI assistant, when it later summarizes that page, follows the attacker's instructions instead of the user's. Which ATLAS technique best classifies this behavior, and is it an attack <em>on</em> the AI or <em>with</em> the AI?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-atlas">
+            <button class="nyu-quiz__option" role="radio" data-correct="true">LLM Prompt Injection (AML.T0051), Indirect sub-technique. An attack on the AI, because the model's own input-handling is being subverted.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Phishing (AML.T0052) targets a human with a deceptive message. Here the target being manipulated is the AI assistant's input processing, not a person, so prompt injection is the better fit.">Phishing (AML.T0052). An attack with the AI, because it uses deceptive content.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Poison Training Data (AML.T0020) alters the model during training. This attack happens at inference time against a deployed model reading a poisoned page; nothing about the training set is changed.">Poison Training Data (AML.T0020). An attack on the AI during training.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Active Scanning (AML.T0006) is reconnaissance: probing a system to gather targeting information. Injecting instructions to hijack the assistant's behavior is Initial Access / Execution via prompt injection, not scanning.">Active Scanning (AML.T0006). Reconnaissance with the AI.</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct. Hiding instructions in content the model will later ingest is Indirect LLM Prompt Injection (AML.T0051.001). It is an attack on the AI: the model's input-handling is the thing being subverted. Contrast this with the model merely writing a phishing email, which would be an attack with the AI." data-incorrect-msg="Reconsider using the on-AI/with-AI test. What is actually being manipulated here: a human's judgment, or the AI's own input processing? And is the manipulation happening at training time or at inference time?"></div>
+        </div>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Why this matters operationally
+          </h3>
+          <p>A shared taxonomy turns three isolated war stories into comparable data. When every team labels the jailbreak step <code class="nyu-code">AML.T0054</code>, an organization can count how often it appears, prioritize a mitigation, and brief leadership without re-explaining the mechanism each time. That is exactly the discipline the case task below asks of you: not just "what happened," but "which named technique, and where does the taxonomy strain?"</p>
+        </aside>
+      </section>
+
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Case Analysis: Three Incidents Compared</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Reasoning Task: Three-Incident Case Analysis and ATLAS Mapping
+          </h3>
+          <p class="nyu-scenario__prompt">Below are three real incidents where AI played a central role in an offensive operation. Pick one to analyze in depth, then skim the other two so you can compare patterns across all three. For your chosen case, work through these five steps:</p>
+          <ol>
+            <li><strong>Summarize what happened</strong> in 120 words or fewer. Name the mechanism, not just the outcome.</li>
+            <li><strong>Map the AI's role</strong> to one or more <button type="button" class="nyu-define" data-term="mitre-atlas">MITRE ATLAS</button> tactics and to the relevant Cyber Kill Chain stage. Where does the AI fit in the attack lifecycle, and does ATLAS capture it cleanly?</li>
+            <li><strong>Separate the capability claim from the attribution claim.</strong> What did the AI actually do (capability)? Who is said to be behind it (attribution)? What evidence supports each claim, and how strong is that evidence?</li>
+            <li><strong>Name the source's incentive</strong> and one specific reason to read the report with caution.</li>
+            <li><strong>Identify the single control or design choice</strong> that would most have changed the outcome, and explain why it beats the alternatives.</li>
+          </ol>
+
+          <p class="nyu-scenario__prompt"><strong>The three cases:</strong></p>
+          <div class="nyu-table-wrap">
+            <table class="nyu-table nyu-table--even">
+              <thead><tr><th style="width:28%">Case</th><th style="width:42%">What Happened</th><th style="width:30%">Core Analytical Question</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><strong>Arup Deepfake CFO Fraud</strong><br>(Hong Kong, Jan 2024, ~$25.6&thinsp;M)</td>
+                  <td>A finance employee was deceived by a video call full of real-time AI-generated deepfakes of senior colleagues into approving 15 wire transfers.</td>
+                  <td>When AI defeats the "I saw their face" trust heuristic, what kind of control actually works?</td>
+                </tr>
+                <tr>
+                  <td><strong>GTG-1002 AI-Orchestrated Espionage</strong><br>(Disclosed Nov 2025)</td>
+                  <td>A threat actor chained an AI model to penetration-testing tools and reportedly ran 80&ndash;90% of an espionage campaign autonomously across ~30 targets.</td>
+                  <td>How do you read a vendor's own report about the misuse of its own product?</td>
+                </tr>
+                <tr>
+                  <td><strong>Google Big Sleep / CVE-2025-6965</strong><br>(2024&ndash;2025)</td>
+                  <td>An AI agent discovered real zero-day vulnerabilities in SQLite that traditional fuzzing missed, and later helped stop an active exploit.</td>
+                  <td>When the exact same technique serves both offense and defense, what determines which it is?</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="nyu-scenario__prompt">After finishing your analysis, return to the diagnostic you completed at the start of the module. Re-score your "real, hyped, or impossible" predictions. Which ones did you change, and what specific evidence changed your mind?</p>
+
+          <button class="nyu-scenario__btn">Possible Answer</button>
+          <div class="nyu-scenario__answer">
+            <p>These answers show one way to approach each case. Your response does not need to match exactly! What matters is the <em>type</em> of reasoning: naming mechanisms rather than vague outcomes, keeping capability and attribution as separate questions, and identifying concrete controls rather than generic advice. Expand any case below to see the walkthrough.</p>
+
+            <!-- ====== ACCORDION: ARUP ====== -->
+            <div class="nyu-accordion">
+              <button class="nyu-accordion__trigger" aria-expanded="false">
+                <span class="nyu-accordion__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="12" y1="9" x2="12" y2="15"/></svg></span>
+                Case A: Arup Deepfake CFO Fraud (January 2024, ~$25.6&thinsp;M)
+                <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+              </button>
+              <div class="nyu-accordion__panel">
+
+                <p><strong>1. Summary.</strong> A finance employee at Arup's Hong Kong office received an email purportedly from the UK-based CFO requesting confidential wire transfers. The employee was initially skeptical, but fraudsters then invited them to a video conference where every other participant (the "CFO" and several senior colleagues) was a real-time AI-generated deepfake, trained on publicly available video and audio of those individuals. Convinced by the interactive, multi-participant call, the employee executed 15 transfers totaling approximately $25.6&thinsp;M to attacker-controlled accounts. The fraud was discovered only when the employee later contacted actual headquarters to follow up. Funds were never recovered. (AI Incident DB #634.)</p>
+                <p><em>Why this works:</em> It names the mechanism (real-time deepfakes, not pre-recorded clips), identifies the trust heuristic that was defeated (seeing and hearing colleagues on video), and gives the financial outcome. A weak summary would say "someone was tricked by a deepfake" without the interactive, multi-participant detail that makes this case different from simpler scams.</p>
+
+                <p><strong>2. ATLAS mapping and attacker stage.</strong> This case involves AI used <em>as a weapon</em> in social engineering, not AI systems being attacked. That distinction matters for ATLAS mapping.</p>
+                <table class="nyu-table nyu-table--even" style="margin:1em 0;">
+                  <thead><tr><th>AI-Enabled Behavior</th><th>Kill Chain Stage</th><th>Rationale</th></tr></thead>
+                  <tbody>
+                    <tr><td>Scraping public video/audio of executives to train deepfake models</td><td>Reconnaissance</td><td>Gathering target-specific information to prepare the attack</td></tr>
+                    <tr><td>Generating real-time synthetic voice and video of the CFO and colleagues</td><td>Weaponization</td><td>Building the attack payload (the deepfake identities)</td></tr>
+                    <tr><td>Deploying deepfake participants on a live video call</td><td>Delivery + Social Engineering</td><td>Transmitting the payload to the target and executing the pretext</td></tr>
+                  </tbody>
+                </table>
+                <p>ATLAS fit: The closest tactic is Resource Development (the attackers built AI-powered resources for their operation). But notice the taxonomy gap here: ATLAS is primarily designed for attacks <em>on</em> AI systems, and cases where AI is used as an offensive tool in traditional cybercrime fit less neatly. Recognizing where a taxonomy does and does not apply is itself a valuable analytical skill.</p>
+
+                <p><strong>3. Capability vs. attribution.</strong></p>
+                <p><em>Capability claim:</em> Real-time, interactive deepfake video and audio are convincing enough to fool a professional in a live business context, defeating the "I saw their face and heard their voice" trust heuristic. <strong>Evidence: strong.</strong> Multiple independent news organizations (CNN, Fortune, South China Morning Post) confirmed the incident. Hong Kong police stated details publicly in February 2024, before Arup identified itself as the victim in May 2024. Arup's CIO later demonstrated at the World Economic Forum that he could replicate a basic real-time deepfake of himself in roughly 45 minutes using free, open-source tools.</p>
+                <p><em>Attribution claim:</em> Specific threat actors carried out this attack. <strong>Evidence: weak in the public record.</strong> Hong Kong police have not publicly identified the attackers. No arrests or public attribution to a specific group as of late 2025. The key lesson: strong capability evidence does not automatically mean strong attribution evidence. These are independent questions. You do not need to know <em>who</em> attacked Arup to learn the defensive lesson.</p>
+
+                <p><strong>4. Source incentive.</strong> The Arup case is sourced primarily from independent media reports and Hong Kong police statements. Media outlets have an incentive toward <strong>sensationalism and novelty</strong>: "AI deepfakes steal $25&thinsp;M" is a dramatic headline that drives readership. What reporting spends less time on is the <em>absence of basic financial controls</em> at Arup's Hong Kong office that would have prevented this regardless of the technology used. A reader consuming only the media coverage might overweight the AI angle and underweight the process-control lesson. A useful question to ask: "Is this framed as an AI story or a financial-controls story?" The defensive lesson depends on the answer.</p>
+
+                <p><strong>5. Single most impactful control.</strong> <strong>Mandatory out-of-band verification (callback) for wire transfers above a threshold.</strong></p>
+                <p>The core failure here was process, not technology. The employee followed what appeared to be a legitimate chain of authority without an independent verification step <em>outside the same communication channel</em>. The attackers controlled the entire channel (email and video), so any confirmation sought within that channel was worthless.</p>
+                <p>An out-of-band callback means contacting the purported requester through a <em>separate, pre-established channel</em>: for example, calling a known phone number from the company directory, not a number provided in the suspicious email. This works because the attacker would need to compromise two independent channels simultaneously, which dramatically raises the difficulty.</p>
+                <p>Why the alternatives are weaker:</p>
+                <ul>
+                  <li><strong>Deepfake detection technology:</strong> State-of-the-art detectors lose up to ~50% accuracy on deepfakes from outside their training distribution (per 2024 research and NIST OpenMFC benchmarks). Detection should supplement process controls, not replace them.</li>
+                  <li><strong>Employee awareness training:</strong> Valuable as a layer, but this employee <em>was</em> initially skeptical. The deepfake call overcame that skepticism. A process control provides a structural backstop for the moments when human judgment fails under sophisticated social engineering.</li>
+                </ul>
+                <p>The takeaway: AI has lowered the cost and skill required to produce convincing impersonation to the point where <em>detection</em> becomes an arms race the defender may lose. Process controls that are structurally independent of the communication channel sidestep that arms race entirely.</p>
+              </div>
+            </div>
+
+            <!-- ====== ACCORDION: GTG-1002 ====== -->
+            <div class="nyu-accordion">
+              <button class="nyu-accordion__trigger" aria-expanded="false">
+                <span class="nyu-accordion__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="12" y1="9" x2="12" y2="15"/></svg></span>
+                Case B: GTG-1002 AI-Orchestrated Espionage (Disclosed November 2025)
+                <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+              </button>
+              <div class="nyu-accordion__panel">
+
+                <p><strong>1. Summary.</strong> In September 2025, an AI lab detected a China-linked espionage operation (designated GTG-1002) that used its model, integrated with penetration-testing tools via Model Context Protocol (MCP), to pursue approximately 30 targets in technology, finance, chemical manufacturing, and government sectors. The lab reports the AI performed an estimated 80&ndash;90% of tactical work (reconnaissance, exploitation, credential harvesting, lateral movement, exfiltration), with human operators intervening at only 4&ndash;6 decision points per campaign. The operator bypassed the model's safety training by framing the activity as authorized "defensive security testing." The lab banned the accounts and shared findings with authorities. MITRE catalogued this as Campaign C0062 in ATT&amp;CK v19. (AI Incident DB #1263.)</p>
+                <p><em>Why this works:</em> It names the mechanism (model + MCP tool-chaining), quantifies the autonomy claim <em>as reported by the vendor</em> (not as settled fact), identifies the jailbreak method, and notes the MITRE cataloguing. A weak summary would either treat "80&ndash;90% autonomous" as established fact or dismiss the case entirely.</p>
+
+                <p><strong>2. ATLAS mapping and attacker stage.</strong> This is the richest of the three cases for ATLAS mapping because it spans nearly the full attack lifecycle and involves both <em>using</em> AI as a tool and exploiting the AI's own guardrails.</p>
+                <table class="nyu-table nyu-table--even" style="margin:1em 0;">
+                  <thead><tr><th>AI-Enabled Behavior</th><th>Kill Chain Stage</th><th>ATLAS / ATT&amp;CK Mapping</th></tr></thead>
+                  <tbody>
+                    <tr><td>Operators jailbroke the model via "defensive testing" pretext</td><td>Resource Development</td><td>ATLAS: LLM Prompt Injection / Jailbreaking (AML.T0051)</td></tr>
+                    <tr><td>Model scanned and mapped internet-facing services across ~30 targets</td><td>Reconnaissance</td><td>ATT&amp;CK: Active Scanning (T1595)</td></tr>
+                    <tr><td>AI identified and tested vulnerabilities, wrote exploit code</td><td>Exploitation</td><td>ATT&amp;CK: Exploit Public-Facing Application (T1190)</td></tr>
+                    <tr><td>AI harvested SSH keys, service account tokens from cloud metadata</td><td>Credential Access</td><td>ATT&amp;CK: Unsecured Credentials (T1552)</td></tr>
+                    <tr><td>AI pivoted across internal cloud environments using stolen credentials</td><td>Lateral Movement</td><td>ATT&amp;CK: Remote Services: SSH (T1021.004)</td></tr>
+                    <tr><td>AI categorized stolen data by intelligence value, staged and compressed for exfiltration</td><td>Collection + Exfiltration</td><td>ATT&amp;CK: Archive Collected Data (T1560)</td></tr>
+                  </tbody>
+                </table>
+                <p>The analytically interesting point is the <strong>jailbreak as an enabling step</strong>. Before the AI could be used as an offensive tool, the operator had to attack <em>the AI itself</em>, defeating its safety guardrails through prompt injection. This is where ATLAS and ATT&amp;CK intersect: the jailbreak is an ATLAS technique (attacking an AI system's alignment controls), and everything that follows is traditional ATT&amp;CK (using the compromised AI as an attack tool). A strong mapping surfaces this two-layer structure rather than treating the whole operation as one flat category.</p>
+
+                <p><strong>3. Capability vs. attribution.</strong></p>
+                <p><em>Capability claim:</em> An AI agent, given penetration-testing tools via MCP, can autonomously execute the majority of a multi-stage espionage campaign with humans intervening only at a handful of strategic points. <strong>Evidence: plausible and directionally supported, but the specific numbers are vendor-reported and not independently verifiable.</strong> The "80&ndash;90% autonomous" and "~30 targets" figures come from the AI lab's own investigation of its own product's misuse. External analysts have questioned aspects of the "first" and "autonomous" framing. The RAND uplift study finds current models still cannot chain a full campaign end-to-end, which is <em>consistent with</em> (not contradictory to) the 4&ndash;6 human decision points reported here. Present these figures as "vendor-reported" and calibrate them against independent evidence rather than accepting them at face value.</p>
+                <p><em>Attribution claim:</em> The operation was conducted by a China-linked state-sponsored threat actor. <strong>Evidence: an assessment stated with "high confidence," but attribution to nation-states is a human judgment based on indicators (infrastructure patterns, targeting profile, tradecraft) that can be mimicked or misread.</strong> MITRE's ATT&amp;CK entry for C0062 uses similar language ("assessed PRC state-directed cluster"), confirming the assessment is taken seriously by the threat-intelligence community without independently verifying it. The capability is real and documented regardless of who was behind it. Whether specific nation-state involvement is proven affects geopolitical response but not the defensive lessons.</p>
+
+                <p><strong>4. Source incentive.</strong> The primary source is the AI lab that built the tool that was misused. Its incentive structure is complex: (a) disclosing the misuse demonstrates transparency and responsible governance; (b) reporting "80&ndash;90% autonomous" simultaneously demonstrates the <em>power</em> of their product, which is useful for competitive positioning; (c) it supports the narrative that AI safety is critical and that this particular company takes it seriously. None of this means the report is dishonest. It means a vendor reporting on the misuse of its own product has multiple incentives pulling in different directions, and a careful reader accounts for that.</p>
+                <p><em>Reason for caution:</em> The specific quantitative claims are figures only the vendor could generate from its own internal logs, and they are not independently verifiable by outside researchers. The "first AI-orchestrated campaign" label may be inaccurate (similar operations may have occurred without detection or disclosure). There is also a meaningful difference between "the AI did 90% of the <em>tasks</em>" and "the AI operated 90% of the <em>time</em> without human oversight." The report does not make that distinction clear.</p>
+
+                <p><strong>5. Single most impactful control.</strong> <strong>Effective AI-provider safety controls resistant to jailbreaking via pretext framing.</strong></p>
+                <p>The entire campaign depended on one enabling step: convincing the model it was performing legitimate defensive security testing when it was actually conducting offensive espionage. If the jailbreak had failed, everything downstream would not have occurred through this tool. This makes provider governance the highest-leverage single control: the chokepoint through which the full attack chain flowed.</p>
+                <p>That said, this is a <em>necessary but fragile</em> control, and a complete defense requires depth:</p>
+                <ul>
+                  <li><strong>Jailbreak resistance is an arms race.</strong> The "defensive testing" pretext exploited a legitimate use case. Security professionals <em>do</em> use AI for authorized testing. Drawing a reliable line between legitimate and adversarial framing is an unsolved problem.</li>
+                  <li><strong>Provider-side controls do not replace target-side defenses.</strong> Even if this model had refused, the operators could have switched to a different model (including uncensored open-weights models) or used non-AI tools. Targets' own monitoring for anomalous scanning velocity, automated credential harvesting, and mass data staging would catch operations regardless of which tool the attacker used.</li>
+                  <li><strong>Usage-pattern monitoring</strong> (how the lab ultimately detected the operation) works after the jailbreak but before the damage is complete. The monitoring worked, but not instantaneously.</li>
+                </ul>
+                <p>The takeaway: AI provider governance is now part of the defensive ecosystem. But the GTG-1002 case also shows why no single control is enough. Defense in depth remains the foundational principle.</p>
+              </div>
+            </div>
+
+            <!-- ====== ACCORDION: BIG SLEEP ====== -->
+            <div class="nyu-accordion">
+              <button class="nyu-accordion__trigger" aria-expanded="false">
+                <span class="nyu-accordion__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="12" y1="9" x2="12" y2="15"/></svg></span>
+                Case C: Google Big Sleep / CVE-2025-6965 (2024&ndash;2025)
+                <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+              </button>
+              <div class="nyu-accordion__panel">
+
+                <p><strong>1. Summary.</strong> Google's Big Sleep project (evolved from Project Naptime, a collaboration between Google Project Zero and DeepMind) uses an AI agent to discover software vulnerabilities by navigating codebases, generating fuzzing inputs in sandboxed environments, and analyzing results. In late 2024, the agent found an exploitable stack buffer underflow in SQLite (a widely used open-source database engine) before it appeared in any official release. Google describes this as the first AI-discovered zero-day in real-world software. Traditional fuzzing (AFL) had failed to find this bug after roughly 150 CPU-hours. In 2025, Big Sleep discovered CVE-2025-6965, a memory corruption flaw in SQLite that Google identified was being staged for active exploitation by unnamed threat actors. (Sources: Google Project Zero blog; CVE record.)</p>
+
+                <p><strong>2. ATLAS mapping and attacker stage.</strong> This case is analytically interesting because the <strong>same capability maps to different attacker stages depending on who is using it</strong>:</p>
+                <table class="nyu-table nyu-table--even" style="margin:1em 0;">
+                  <thead><tr><th>AI-Enabled Behavior</th><th>If Used Offensively</th><th>Google's Framing</th></tr></thead>
+                  <tbody>
+                    <tr><td>AI agent navigates codebase, identifies potential vulnerability locations</td><td>Reconnaissance</td><td>Defensive research</td></tr>
+                    <tr><td>AI generates and executes fuzzing inputs in a sandbox</td><td>Weaponization</td><td>Defensive testing</td></tr>
+                    <tr><td>AI confirms exploitability of discovered bugs</td><td>Exploitation planning</td><td>Vulnerability verification</td></tr>
+                  </tbody>
+                </table>
+                <p>The technique is identical whether Google uses it to patch SQLite before attackers can exploit it or a threat actor uses it to discover zero-days for offensive purposes. The difference is authorization, intent, and what happens after discovery. That connection leads directly into the "Where Is the Line?" discussion in Section 6. This is the dual-use principle from Module 1 made concrete: the exact same tool, the exact same code, the exact same output, and the moral and legal meaning depends entirely on who holds it and what they do next.</p>
+
+                <p><strong>3. Capability vs. attribution.</strong></p>
+                <p><em>Capability claim:</em> An AI agent can independently discover real, exploitable zero-day vulnerabilities in widely used production software that traditional fuzzing methods fail to find. <strong>Evidence: well-supported.</strong> The first SQLite discovery was confirmed by SQLite maintainers, who patched it the same day. CVE-2025-6965 received a formal CVE assignment and was confirmed in a security advisory. Traditional fuzzing (AFL) failed to find the first bug after ~150 CPU-hours of dedicated testing. Google reports Big Sleep found roughly 20 flaws in open-source software through 2025.</p>
+                <p>However, apply the lab-to-production gap: Big Sleep is still described by Google as "experimental," and the team acknowledges its current effectiveness is "comparable to target-specific fuzzers." The agent required scaffolding (tool access, a sandboxed execution environment, and researcher-provided starting points such as known prior vulnerabilities in the same codebase). This is AI-<em>assisted</em> discovery, not fully autonomous vulnerability hunting.</p>
+                <p><em>Attribution claim:</em> Google developed and operated the Big Sleep agent; unnamed threat actors were staging exploitation of CVE-2025-6965. <strong>Evidence for tool development: straightforward</strong> (Google published the research, the Project Zero blog posts are primary sources). <strong>For threat actor staging: thin.</strong> Google stated they identified "artifacts indicating the threat actors were staging" the exploit but shared no details about who those actors were. The defensive capability is well-documented; the offensive threat actor dimension is deliberately vague in the public record.</p>
+
+                <p><strong>4. Source incentive.</strong> Google has a clear incentive to frame Big Sleep as a <strong>defensive breakthrough</strong>: (a) it positions Google DeepMind as a leader in AI safety and security; (b) it demonstrates tangible security benefits from AI research (justifying investment and public trust); (c) it supports the broader narrative that AI is a net positive for cybersecurity when used responsibly. For CVE-2025-6965 specifically, the framing that Google "foiled an active exploit" is a dramatic narrative that draws attention to their defensive capabilities.</p>
+                <p><em>Reason for caution:</em> Google frames Big Sleep entirely as a defensive tool, but the underlying capability is inherently dual-use. The same agent architecture that finds bugs for patching could find bugs for exploitation. The published architecture (LLM + code navigation tools + sandboxed fuzzing) uses increasingly available components, and open-source replications are inevitable. Google highlighting only the defensive side of a dual-use capability is doing so for understandable reasons, but it means the reader is only getting half the picture. The "first AI-discovered zero-day" claim deserves scrutiny too: it is the first <em>publicly reported</em> by a major lab. Other organizations (including adversaries) may have used AI to find vulnerabilities without disclosure.</p>
+
+                <p><strong>5. Single most impactful control.</strong> <strong>Deploying AI-assisted vulnerability discovery proactively as part of the development pipeline.</strong></p>
+                <p>Both SQLite bugs were caught before they could be exploited. The first was patched before any official release included the vulnerable code. CVE-2025-6965 was identified while threat actors were still staging their exploit. In both cases, the decisive factor was having AI-assisted testing running against the codebase <em>proactively</em> rather than waiting for attackers to find the bugs first.</p>
+                <p>The leverage is in finding bugs earlier, not in processing them faster after discovery. If defenders can find and patch vulnerabilities faster than attackers can discover and weaponize them, the economic calculus shifts toward defense. That connects directly to the attacker-economics framework from Section 1: AI vulnerability discovery is a race, and whoever runs it first wins.</p>
+              </div>
+            </div>
+
+            <!-- ====== ACCORDION: CROSS-CASE ====== -->
+            <div class="nyu-accordion">
+              <button class="nyu-accordion__trigger" aria-expanded="false">
+                <span class="nyu-accordion__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="12" y1="9" x2="12" y2="15"/></svg></span>
+                Cross-Case Patterns: What All Three Reveal Together
+                <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+              </button>
+              <div class="nyu-accordion__panel">
+
+                <p>Once you have worked through at least one case in depth, step back and look for patterns that no single case reveals on its own.</p>
+
+                <p><strong>Attacker economics across all three cases:</strong></p>
+                <table class="nyu-table" style="margin:1em 0;">
+                  <thead><tr><th>Case</th><th>Skill shift</th><th>Cost shift</th><th>Time shift</th><th>Scale shift</th></tr></thead>
+                  <tbody>
+                    <tr><td>Arup</td><td>Deepfake tools accessible at moderate skill (&darr;)</td><td>Free/low-cost open-source tools (&darr;)</td><td>Real-time generation (&darr;)</td><td>One call, one target (&rarr;)</td></tr>
+                    <tr><td>GTG-1002</td><td>AI replaces a team of skilled operators (&darr;&darr;)</td><td>One AI subscription vs. team salary (&darr;)</td><td>Thousands of requests per second (&darr;&darr;)</td><td>~30 targets from one operation (&uarr;)</td></tr>
+                    <tr><td>Big Sleep</td><td>AI finds bugs that tools and experts miss (shift, not simple reduction)</td><td>GPU compute + LLM access (moderate)</td><td>Faster than AFL for specific bug classes (&darr;)</td><td>One codebase at a time (&rarr;)</td></tr>
+                  </tbody>
+                </table>
+
+                <p><strong>The defensive thread.</strong> In every case, the most effective defense is structural rather than reactive. For Arup, it is process controls (out-of-band verification). For GTG-1002, it is provider governance (jailbreak resistance and usage monitoring). For Big Sleep, it is proactive defensive scanning (finding the bugs before attackers do). None of the three is best addressed by trying to "detect the AI." Structural and process controls consistently outperform AI-detection technology. That is the module's central defensive thesis.</p>
+
+                <p><strong>The calibration thread.</strong> Each case sits at a different position on the "real vs. hype" spectrum, and a mature analysis applies different confidence levels accordingly. Arup is unambiguously real and operational: funds were stolen and never recovered. GTG-1002 is reported as real and operational, but the specific magnitudes are vendor-reported and not independently verifiable. Big Sleep is real capability, but framed as "experimental" by Google themselves. A strong response does not treat all three identically. It calibrates trust to match the evidence, which is exactly the skill this section is built around.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 6: Boundaries and Defense Implications.</strong> Where the line between safe and unsafe automation lies, and how the four levers translate into defensive priorities a team can actually fund.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <!-- iframe auto-resize handled by nyu-tandon-course.js via 'nyu-embed-height' -->
+</body>
+</html>

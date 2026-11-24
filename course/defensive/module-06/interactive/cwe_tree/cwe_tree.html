@@ -1,0 +1,287 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CWE Specificity Mapper</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--v:#57068C;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FFF;--grn:#166B3A;--grn-bg:#FFF;--amb:#8A5D00;--amb-bg:#FFF;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+
+    .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em}
+    .scorebox{display:flex;align-items:center;gap:12px}
+    .score{font-size:.82rem;font-weight:600;color:var(--ink2)}
+    .score b{color:var(--v)}
+    .rst{appearance:none;border:1.5px solid var(--rule);background:var(--sf);border-radius:7px;padding:5px 12px;font:inherit;font-size:.74rem;font-weight:600;cursor:pointer;color:var(--ink2);transition:all .14s}
+    .rst:hover{border-color:var(--v);color:var(--v)}
+
+    .content{padding:14px 18px 10px}
+
+    .instr{padding:8px 14px;border-radius:8px;background:#57068C;color:#fff;font-size:.78rem;font-weight:600;margin-bottom:14px;text-align:center;transition:all .3s}
+    .instr.done{background:#166534;color:#fff}
+
+    .scenarios{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}
+    @media(max-width:640px){.scenarios{grid-template-columns:repeat(2,1fr)}}
+    .sc{padding:10px 12px;border:2px solid var(--rule);border-radius:10px;cursor:pointer;background:var(--sf);transition:all .2s;position:relative}
+    .sc:hover{border-color:var(--v200)}
+    .sc.active{border-color:var(--v);box-shadow:0 0 0 3px var(--v50)}
+    .sc.done{opacity:.4;pointer-events:none}
+    .sc .sc-num{font-family:var(--mono);font-size:.64rem;font-weight:700;color:var(--ink2);margin-bottom:4px}
+    .sc .sc-txt{font-size:.72rem;line-height:1.45;color:var(--ink)}
+    .sc .sc-check{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--grn);color:#fff;font-size:.65rem;font-weight:700;display:none;align-items:center;justify-content:center}
+    .sc.done .sc-check{display:flex}
+
+    /* Tree */
+    .tree{position:relative;margin-bottom:10px}
+    .tree-row{display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+    .tree-row.parents{margin-bottom:22px}
+    .lvl{font-family:var(--mono);font-size:.62rem;font-weight:700;color:var(--ink2);text-align:center;margin:0 0 6px;letter-spacing:.04em;text-transform:uppercase}
+
+    .node{padding:10px 16px;border:2px solid var(--rule);border-radius:10px;text-align:center;background:var(--sf);transition:all .25s;cursor:pointer;min-width:110px}
+    .node:hover{border-color:var(--v200)}
+    .node.parent{background:var(--sk)}
+    .node.highlight{border-color:var(--v);box-shadow:0 0 0 3px var(--v50);transform:scale(1.03)}
+    .node .nid{font-family:var(--mono);font-size:.72rem;font-weight:600;color:var(--v)}
+    .node.parent .nid{color:var(--ink2)}
+    .node .nname{font-size:.66rem;color:var(--ink2);margin-top:2px}
+
+    .node.correct{border-color:var(--grn);background:var(--grn-bg);animation:pop .35s ease}
+    .node.correct .nid{color:var(--grn)}
+    .node.broad{border-color:var(--amb);background:var(--amb-bg);animation:shake .4s ease}
+    .node.broad .nid{color:var(--amb)}
+    .node.wrong{animation:shake .4s ease}
+
+    @keyframes pop{0%{transform:scale(.93)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+    /* Dynamic SVG connector overlay */
+    .tree-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+    .tree-svg line{stroke:var(--rule);stroke-width:2;fill:none}
+
+    .fb{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.78rem;font-weight:600;min-height:2.2em;opacity:0;transition:all .3s}
+    .fb.show{opacity:1}
+    .fb.ok{background:#166534;color:#fff;border:1px solid var(--grn)}
+    .fb.brd{background:#854D0E;color:#fff;border:1px solid var(--amb)}
+    .fb.wrn{background:#991B1B;color:#fff;border:1px solid var(--red)}
+
+    .insight{padding:12px 18px;font-size:.78rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.55}
+    .insight b{color:var(--ink)}
+  </style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>CWE Specificity Mapper</h1>
+    <div class="scorebox">
+      <div class="score">Mapped: <b id="scoreN">0</b>/4</div>
+      <button class="rst" onclick="reset()">Reset</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="instr" id="instr">Step 1: Click a scenario below, then click the most specific CWE in the tree.</div>
+    <div class="scenarios" id="scBox"></div>
+
+    <div class="tree" id="treeWrap">
+      <svg class="tree-svg" id="treeSvg"></svg>
+      <div class="lvl">Broad · class-level entries</div>
+      <div class="tree-row parents" id="pRow"></div>
+      <div class="lvl">Specific · base-level entries</div>
+      <div class="tree-row children" id="cRow"></div>
+    </div>
+
+    <div class="fb" id="fb"></div>
+  </div>
+
+  <div class="insight" id="ins"><b>Why specificity matters:</b> Mapping a finding to CWE-20 when the weakness is clearly CWE-89 is too broad to be actionable. A developer receiving CWE-20 does not know what to fix.</div>
+</div></div>
+
+<script>
+const SCENARIOS = [
+  {id:'S1', num:'Scenario 1', txt:'User search query is concatenated into a SQL string and executed against the database.', correct:'CWE-89', broad:'CWE-20'},
+  {id:'S2', num:'Scenario 2', txt:'User comment is rendered in HTML without encoding special characters, allowing script execution.', correct:'CWE-79', broad:'CWE-20'},
+  {id:'S3', num:'Scenario 3', txt:'External data is deserialized without validation, enabling arbitrary code execution.', correct:'CWE-502', broad:'CWE-20'},
+  {id:'S4', num:'Scenario 4', txt:'Any authenticated user can view other users\' data by changing the ID in the URL.', correct:'CWE-639', broad:['CWE-284','CWE-862']}
+];
+const PARENTS = [
+  {id:'CWE-20', name:'Improper Input Validation'},
+  {id:'CWE-284', name:'Improper Access Control'},
+  {id:'CWE-862', name:'Missing Authorization'}
+];
+const CHILDREN = [
+  {id:'CWE-79', name:'Cross-Site Scripting', parent:'CWE-20'},
+  {id:'CWE-89', name:'SQL Injection', parent:'CWE-20'},
+  {id:'CWE-502', name:'Unsafe Deserialization', parent:'CWE-20'},
+  {id:'CWE-639', name:'Authorization Bypass Through User-Controlled Key', parent:'CWE-284'}
+];
+
+let activeSc = null, done = {}, score = 0;
+
+function buildUI(){
+  const sb = document.getElementById('scBox');
+  sb.innerHTML = '';
+  SCENARIOS.forEach((s,i) => {
+    const d = document.createElement('div');
+    d.className = 'sc' + (done[s.id] ? ' done' : '');
+    d.id = 'sc-'+i;
+    d.innerHTML = '<div class="sc-num">'+s.num+'</div><div class="sc-txt">'+s.txt+'</div><div class="sc-check">&#10003;</div>';
+    d.addEventListener('click', () => pickSc(i));
+    sb.appendChild(d);
+  });
+
+  const pr = document.getElementById('pRow');
+  pr.innerHTML = '';
+  PARENTS.forEach(p => {
+    const n = document.createElement('div');
+    n.className = 'node parent';
+    n.id = 'n-'+p.id;
+    n.innerHTML = '<div class="nid">'+p.id+'</div><div class="nname">'+p.name+'</div>';
+    n.addEventListener('click', () => tryPlace(p.id));
+    pr.appendChild(n);
+  });
+
+  const cr = document.getElementById('cRow');
+  cr.innerHTML = '';
+  CHILDREN.forEach(c => {
+    const n = document.createElement('div');
+    n.className = 'node';
+    n.id = 'n-'+c.id;
+    n.innerHTML = '<div class="nid">'+c.id+'</div><div class="nname">'+c.name+'</div>';
+    n.addEventListener('click', () => tryPlace(c.id));
+    cr.appendChild(n);
+  });
+
+  requestAnimationFrame(() => requestAnimationFrame(drawLines));
+}
+
+function drawLines(){
+  const wrap = document.getElementById('treeWrap');
+  const svg = document.getElementById('treeSvg');
+  const wr = wrap.getBoundingClientRect();
+  svg.setAttribute('viewBox', '0 0 '+wr.width+' '+wr.height);
+  svg.style.width = wr.width+'px';
+  svg.style.height = wr.height+'px';
+  svg.innerHTML = '';
+
+  [].forEach(c => {
+    const pEl = document.getElementById('n-'+c.parent);
+    const cEl = document.getElementById('n-'+c.id);
+    if(!pEl || !cEl) return;
+    const pR = pEl.getBoundingClientRect();
+    const cR = cEl.getBoundingClientRect();
+    const px = pR.left + pR.width/2 - wr.left;
+    const py = pR.bottom - wr.top;
+    const cx = cR.left + cR.width/2 - wr.left;
+    const cy = cR.top - wr.top;
+    const mid = (py + cy) / 2;
+
+    // Vertical from parent down
+    addLine(svg, px, py, px, mid);
+    // Horizontal to child x
+    addLine(svg, px, mid, cx, mid);
+    // Vertical down to child
+    addLine(svg, cx, mid, cx, cy);
+  });
+}
+
+function addLine(svg, x1, y1, x2, y2){
+  const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+  l.setAttribute('x1',x1); l.setAttribute('y1',y1);
+  l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+  svg.appendChild(l);
+}
+
+function pickSc(i){
+  if(done[SCENARIOS[i].id]) return;
+  activeSc = SCENARIOS[i];
+  document.querySelectorAll('.sc').forEach(c => c.classList.remove('active'));
+  document.getElementById('sc-'+i).classList.add('active');
+  document.querySelectorAll('.node').forEach(n => {
+    n.classList.remove('highlight','correct','broad','wrong');
+    n.classList.add('highlight');
+  });
+  document.getElementById('instr').textContent = 'Now click the most specific CWE that matches this scenario.';
+  document.getElementById('fb').className = 'fb';
+}
+
+function tryPlace(cweId){
+  if(!activeSc) return;
+  const s = activeSc;
+  const fb = document.getElementById('fb');
+  document.querySelectorAll('.node').forEach(n => n.classList.remove('highlight','correct','broad','wrong'));
+  const node = document.getElementById('n-'+cweId);
+
+  if(cweId === s.correct){
+    node.classList.add('correct');
+    fb.className = 'fb show ok';
+    fb.textContent = 'Correct! ' + cweId + ' is the most specific weakness for this scenario.';
+    done[s.id] = true;
+    score++;
+    document.getElementById('scoreN').textContent = score;
+    document.getElementById('sc-'+SCENARIOS.indexOf(s)).classList.add('done');
+    document.getElementById('sc-'+SCENARIOS.indexOf(s)).classList.remove('active');
+    activeSc = null;
+    if(score >= SCENARIOS.length){
+      document.getElementById('instr').className = 'instr done';
+      document.getElementById('instr').textContent = 'All 4 scenarios mapped! You selected the most specific CWE for each.';
+      document.getElementById('ins').innerHTML = '<b>Key takeaway:</b> Always map to the most specific applicable CWE. Broad class-level entries like CWE-20 are not actionable. Specific entries like CWE-89 tell a developer exactly what class of weakness to fix.';
+    } else {
+      document.getElementById('instr').textContent = 'Step ' + (score+1) + ': Click the next scenario, then find its CWE.';
+    }
+  } else if([].concat(s.broad).includes(cweId)){
+    node.classList.add('broad');
+    fb.className = 'fb show brd';
+    fb.textContent = 'Close, but too broad. ' + cweId + ' is a broad, class-level entry. A more specific base-level entry applies here. Try again.';
+    setTimeout(() => node.classList.remove('broad'), 1500);
+  } else {
+    node.classList.add('wrong');
+    fb.className = 'fb show wrn';
+    fb.textContent = cweId + ' does not match this scenario. Re-read the description and try a different CWE.';
+    setTimeout(() => node.classList.remove('wrong'), 800);
+  }
+}
+
+function reset(){
+  activeSc = null; done = {}; score = 0;
+  document.getElementById('scoreN').textContent = '0';
+  document.getElementById('fb').className = 'fb';
+  document.getElementById('instr').className = 'instr';
+  document.getElementById('instr').textContent = 'Step 1: Click a scenario below, then click the most specific CWE in the tree.';
+  document.getElementById('ins').innerHTML = '<b>Why specificity matters:</b> Mapping a finding to CWE-20 when the weakness is clearly CWE-89 is too broad to be actionable. A developer receiving CWE-20 does not know what to fix.';
+  buildUI();
+}
+
+window.addEventListener('resize', drawLines);
+buildUI();
+
+(function(){
+  var root = document.documentElement;
+  var body = document.body;
+  root.style.height = 'auto';
+  body.style.height = 'auto';
+  root.style.overflow = 'visible';
+  body.style.overflow = 'visible';
+  function send(){
+    var el = document.querySelector('.w');
+    if(!el) return;
+    var r = el.getBoundingClientRect();
+    var pad = parseFloat(getComputedStyle(body).paddingTop) + parseFloat(getComputedStyle(body).paddingBottom);
+    var h = Math.ceil(r.height + pad);
+    window.parent.postMessage({type:'iframeHeight', height:h, src:location.href},'*');
+  }
+  if(window.ResizeObserver){
+    new ResizeObserver(send).observe(document.querySelector('.w') || body);
+  } else {
+    setInterval(send, 500);
+  }
+  window.addEventListener('load', function(){ setTimeout(send,200); });
+  setTimeout(send, 50);
+})();
+</script>
+</body>
+</html>

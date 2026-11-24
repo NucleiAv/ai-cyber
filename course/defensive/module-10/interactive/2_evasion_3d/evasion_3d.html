@@ -1,0 +1,634 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Optimization Behind an Adversarial Example</title>
+<style>
+  :root{
+    --paper:#F5F6F8; --panel:#FFFFFF; --ink:#17181C; --ink2:#4A4E57;
+    --ink3:#5c6270; --line:#D3D7DE; --line2:#E4E7EC;
+    --mal:#C8362F; --ben:#1F8A6D; --violet:#57068C; --lock:#8A8F9A;
+    --mono:"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--paper);color:var(--ink);font-family:var(--sans)}
+  .wrap{max-width:1000px;margin:0 auto;padding:22px 20px 34px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--violet);font-weight:600}
+  h1{font-size:24px;line-height:1.15;margin:6px 0 6px;font-weight:650;letter-spacing:-.01em}
+  .lede{font-size:13.5px;color:var(--ink2);max-width:72ch;line-height:1.5}
+  .stage{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  canvas{display:block;width:100%}
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line2);background:#FCFCFD}
+  .modeswitch{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .modeswitch button{font-family:var(--mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:7px 12px;background:#fff;border:0;color:var(--ink2);cursor:pointer}
+  .modeswitch button.on{background:var(--violet);color:#fff}
+  .btn{font-family:var(--sans);font-size:13px;font-weight:550;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;transition:background .12s,border-color .12s}
+  .btn:hover{background:#F3F0F9;border-color:#CDBEDD}
+  .btn:disabled{opacity:.4;cursor:default;background:#fff}
+  .btn.primary{background:var(--violet);border-color:var(--violet);color:#fff}
+  .btn.primary:hover{background:#480579}
+  .dots{display:flex;gap:6px;margin:0 2px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--line);transition:background .15s}
+  .dot.on{background:var(--violet)}
+  .spring{flex:1 1 auto}
+  .freerow{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:12px 14px;border-top:1px solid var(--line2);background:#FCFCFD}
+  .freerow.hide{display:none}
+  .sliderbox{flex:1 1 320px;min-width:260px}
+  .sliderbox label{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+  input[type=range]{width:100%;accent-color:var(--violet);cursor:pointer}
+  .check{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2);cursor:pointer;user-select:none}
+  .caption{padding:15px;border-top:1px solid var(--line2);font-size:14px;line-height:1.55;color:var(--ink);background:#fff;min-height:52px}
+  .caption .txt{color:var(--ink)}
+  .caption b{font-weight:650}
+  .caption .num{font-family:var(--mono);color:var(--violet);font-weight:600;margin-right:9px;font-size:12px}
+  .hint{font-family:var(--mono);font-size:12px;color:var(--ink3);letter-spacing:.03em}
+  .footnote{margin-top:14px;font-size:12px;color:var(--ink3);line-height:1.5;max-width:74ch}
+  @media (max-width:560px){h1{font-size:20px}.lede{font-size:12.5px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Evasion attack</div>
+  <h1>The Optimization Behind an Adversarial Example</h1>
+  <p class="lede">The model is fixed. Only the input changes. On the left the file is a point in the classifier's feature space; on the right it is a stack of bytes. The classifier reads every byte, so editing padding, which the CPU never runs, still shifts the point across the boundary and flips the verdict.</p>
+
+  <div class="stage">
+    <canvas id="c"></canvas>
+
+    <!-- guided controls -->
+    <div class="controls" id="guidedCtl">
+      <div class="modeswitch">
+        <button id="mGuided" class="on">Guided</button>
+        <button id="mFree">Free play</button>
+      </div>
+      <button class="btn" id="prev">Back</button>
+      <div class="dots" id="dots"></div>
+      <button class="btn primary" id="next">Next</button>
+      <span class="spring"></span>
+      <span class="hint" id="dragHint">drag the left panel to rotate</span>
+    </div>
+
+    <!-- free-play controls -->
+    <div class="freerow hide" id="freeCtl">
+      <div class="modeswitch">
+        <button id="mGuided2">Guided</button>
+        <button id="mFree2" class="on">Free play</button>
+      </div>
+      <div class="sliderbox">
+        <label>Padding edited &nbsp;&rarr;&nbsp; perturbation size</label>
+        <input type="range" id="eps" min="0" max="1000" value="0">
+      </div>
+      <label class="check"><input type="checkbox" id="forb"> Show the shortest path</label>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+
+    <div class="caption" id="cap"></div>
+  </div>
+
+  <p class="footnote">Perturbing a photo only has to keep it recognizable. Perturbing malware has to keep it functional, a much tighter constraint. The attacker cannot scramble arbitrary bytes, because most changes corrupt the program, so the perturbation stays in regions that do not execute, such as padding or unused code caves. The file still runs and still does its work, but now a classifier that reads bytes calls it benign.</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================ setup ============================ */
+var LW=1000, LH=560;                  // logical drawing size
+var cv=document.getElementById('c');
+var g=cv.getContext('2d');
+var DPR=Math.min(window.devicePixelRatio||1,2);
+var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function sh(){
+  var el=document.querySelector('.wrap'); if(!el) return;
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+24),src:location.href},'*');
+}
+function resize(){
+  var cssW=cv.clientWidth||cv.parentNode.clientWidth||LW;
+  cssW=Math.min(cssW,LW);
+  var cssH=cssW*(LH/LW);
+  cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*DPR);
+  cv.height=Math.round(cssH*DPR);
+  var s=(cssW/LW)*DPR;
+  g.setTransform(s,0,0,s,0,0);
+  scaleToCss=cssW/LW;
+  sh();
+}
+var scaleToCss=1;
+
+/* ============================ colors ============================ */
+var INK='#17181C', INK2='#4A4E57', INK3='#5c6270', LINE='#D3D7DE';
+var MAL='#C8362F', BEN='#1F8A6D', VIO='#57068C', LOCK='#8A8F9A';
+var MONO='var(--mono)'; // for reference; canvas needs explicit stack
+var MF='Menlo,Consolas,monospace';
+var SF='-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif';
+
+/* ============================ 3D math ============================ */
+function v(x,y,z){return {x:x,y:y,z:z};}
+function add(a,b){return v(a.x+b.x,a.y+b.y,a.z+b.z);}
+function sub(a,b){return v(a.x-b.x,a.y-b.y,a.z-b.z);}
+function scl(a,s){return v(a.x*s,a.y*s,a.z*s);}
+function dot(a,b){return a.x*b.x+a.y*b.y+a.z*b.z;}
+function cross(a,b){return v(a.y*b.z-a.z*b.y, a.z*b.x-a.x*b.z, a.x*b.y-a.y*b.x);}
+function norm(a){var m=Math.hypot(a.x,a.y,a.z)||1;return v(a.x/m,a.y/m,a.z/m);}
+
+var yaw=-0.62, pitch=0.46;
+var CAM=6.2, SCALE=132;
+
+function rot(p){
+  var cy=Math.cos(yaw), sy=Math.sin(yaw);
+  var x1=p.x*cy+p.z*sy, z1=-p.x*sy+p.z*cy, y1=p.y;
+  var cx=Math.cos(pitch), sx=Math.sin(pitch);
+  var y2=y1*cx-z1*sx, z2=y1*sx+z1*cx;
+  return {x:x1,y:y2,z:z2};
+}
+// viewport centre for the feature-space panel
+var FX=302, FY=278;
+function proj(p){
+  var r=rot(p);
+  var f=CAM/(CAM-r.z);
+  return {x:FX+r.x*SCALE*f, y:FY-r.y*SCALE*f, z:r.z, f:f};
+}
+
+/* ============================ scene ============================ */
+var n=norm(v(0.55,1.0,0.42));                 // boundary normal, points into MALICIOUS
+var t1=norm(cross(n,v(0,1,0)));               // tangent A
+var t2=norm(cross(n,t1));                      // tangent B
+var A=0.85;                                    // start signed distance (deep malicious)
+var p0=add(scl(n,A),scl(t2,0.42));            // starting file point
+var dPad=norm(add(scl(n,-0.7),scl(t1,Math.sqrt(1-0.49)))); // allowed direction (padding)
+var dCode=scl(n,-1);                           // shortest direction (code) -- forbidden
+var EPS_MAX=1.7;
+var EPS_CROSS=A/0.7;                           // padding crosses boundary here (~1.214)
+var K=5.4;                                     // confidence sharpness
+
+function curP(eps){return add(p0,scl(dPad,eps));}
+function signed(eps){return A-0.7*eps;}        // n . curP
+function conf(eps){return 1/(1+Math.exp(-K*signed(eps)));} // P(malicious)
+
+/* padding bytes */
+var HEXN=40, HEXROWS=4, HEXCOLS=10;
+var HX='0123456789ABCDEF';
+var tgt=[];
+for(var i=0;i<HEXN;i++) tgt.push(HX[(Math.random()*16)|0]+HX[(Math.random()*16)|0]);
+function flippedCount(eps){return Math.round(Math.min(1,eps/EPS_MAX)*HEXN);}
+
+/* ============================ state ============================ */
+var mode='guided', step=0, eps=0, epsTarget=0, showForb=false;
+var last=performance.now();
+
+var STEPS=[
+ {cap:['1','A classifier reads the file\u2019s bytes and flags it. Malicious confidence sits at <b>99&nbsp;percent</b>.'],
+  eps:0, fixed:false, locks:false, padTag:false, arrow:false, forb:false, feed:false},
+ {cap:['2','Evasion leaves the <b>model fixed</b>. We change only the input, and the malware must keep working.'],
+  eps:0, fixed:true, locks:false, padTag:false, arrow:false, forb:false, feed:false},
+ {cap:['3','The header and code are <b>locked</b>. Edit them and the file crashes, so the malware dies.'],
+  eps:0, fixed:true, locks:true, padTag:false, arrow:false, forb:true, feed:false},
+ {cap:['4','Only the <b>padding</b> is free to edit, because those bytes are never executed.'],
+  eps:0, fixed:true, locks:true, padTag:true, arrow:false, forb:true, feed:false},
+ {cap:['5','But the classifier still <b>reads the padding</b>. Editing it changes the model\u2019s input, which moves the point, even though the CPU ignores those bytes.'],
+  eps:0.45, fixed:true, locks:true, padTag:true, arrow:true, forb:true, feed:true},
+ {cap:['6','The attacker follows the model\u2019s <b>gradient</b>, the byte edits that drop the malicious score fastest, projected onto the padding it is allowed to touch.'],
+  eps:0.95, fixed:true, locks:true, padTag:true, arrow:true, forb:true, feed:false},
+ {cap:['7','The point <b>crosses</b>. The model now says <b>benign</b>, yet the code never changed, so the malware still runs.'],
+  eps:1.55, fixed:true, locks:true, padTag:true, arrow:true, forb:true, feed:false}
+];
+var FREE={fixed:true, locks:true, padTag:true, arrow:true};
+
+function flags(){
+  if(mode==='free') return {fixed:FREE.fixed, locks:FREE.locks, padTag:FREE.padTag, arrow:eps>0.001, forb:showForb, feed:false};
+  return STEPS[step];
+}
+
+/* ============================ drawing helpers ============================ */
+function setF(w,fam,sz){g.font=w+' '+(sz*1.2)+'px '+fam;}
+function txt(s,x,y,w,fam,sz,col,al,base,op){
+  g.globalAlpha=op==null?1:op; setF(w,fam,sz); g.fillStyle=col;
+  g.textAlign=al||'left'; g.textBaseline=base||'middle'; g.fillText(s,x,y); g.globalAlpha=1;
+}
+function line(a,b,col,wid,dash){
+  g.strokeStyle=col; g.lineWidth=wid; g.setLineDash(dash||[]);
+  g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); g.setLineDash([]);
+}
+
+/* feature-space cube wireframe */
+function drawCube(){
+  var c=[];
+  for(var xi=-1;xi<=1;xi+=2)for(var yi=-1;yi<=1;yi+=2)for(var zi=-1;zi<=1;zi+=2)
+    c.push(proj(v(xi,yi,zi)));
+  // index by (x,y,z) sign
+  function id(x,y,z){return ((x>0?1:0)<<2)|((y>0?1:0)<<1)|(z>0?1:0);}
+  var e=[[ -1,-1,-1, 1,-1,-1],[1,-1,-1,1,1,-1],[1,1,-1,-1,1,-1],[-1,1,-1,-1,-1,-1],
+         [-1,-1,1,1,-1,1],[1,-1,1,1,1,1],[1,1,1,-1,1,1],[-1,1,1,-1,-1,1],
+         [-1,-1,-1,-1,-1,1],[1,-1,-1,1,-1,1],[1,1,-1,1,1,1],[-1,1,-1,-1,1,1]];
+  for(var k=0;k<e.length;k++){
+    var a=c[id(e[k][0],e[k][1],e[k][2])], b=c[id(e[k][3],e[k][4],e[k][5])];
+    line(a,b,'#E1E4EA',1);
+  }
+}
+
+/* the decision boundary plane */
+function drawPlane(){
+  var s=1.35;
+  var corners=[ add(scl(t1,-s),scl(t2,-s)), add(scl(t1, s),scl(t2,-s)),
+                add(scl(t1, s),scl(t2, s)), add(scl(t1,-s),scl(t2, s)) ];
+  var pc=corners.map(proj);
+  g.beginPath(); g.moveTo(pc[0].x,pc[0].y);
+  for(var i=1;i<4;i++) g.lineTo(pc[i].x,pc[i].y); g.closePath();
+  g.fillStyle='rgba(87,6,140,0.07)'; g.fill();
+  g.strokeStyle='rgba(87,6,140,0.55)'; g.lineWidth=1.4; g.stroke();
+  // grid
+  var N=6;
+  for(var gi=1;gi<N;gi++){
+    var u=-s+2*s*gi/N;
+    line(proj(add(scl(t1,u),scl(t2,-s))), proj(add(scl(t1,u),scl(t2,s))),'rgba(87,6,140,0.16)',1);
+    line(proj(add(scl(t1,-s),scl(t2,u))), proj(add(scl(t1,s),scl(t2,u))),'rgba(87,6,140,0.16)',1);
+  }
+  txt('DECISION BOUNDARY',proj(add(scl(t1,s),scl(t2,-s))).x,proj(add(scl(t1,s),scl(t2,-s))).y+2,
+      '600',MF,9,'#7B49A6','center','middle',.9);
+}
+
+function regionLabels(){
+  var mp=proj(scl(n,1.28)), bp=proj(scl(n,-1.28));
+  txt('MALICIOUS',mp.x,mp.y,'700',MF,11,MAL,'center','middle',.92);
+  txt('side',mp.x,mp.y+13,'500',MF,8.5,'#C98A86','center','middle',.9);
+  txt('BENIGN',bp.x,bp.y,'700',MF,11,BEN,'center','middle',.92);
+  txt('side',bp.x,bp.y+13,'500',MF,8.5,'#7FB8A9','center','middle',.9);
+}
+
+function arrow2D(a,b,col,wid,dash){
+  line(a,b,col,wid,dash);
+  var ang=Math.atan2(b.y-a.y,b.x-a.x), hl=8;
+  g.fillStyle=col;
+  g.beginPath();
+  g.moveTo(b.x,b.y);
+  g.lineTo(b.x-hl*Math.cos(ang-0.4),b.y-hl*Math.sin(ang-0.4));
+  g.lineTo(b.x-hl*Math.cos(ang+0.4),b.y-hl*Math.sin(ang+0.4));
+  g.closePath(); g.fill();
+}
+
+/* connector: padding bytes feed the model, which sets the point's position */
+function drawFeedLink(fl){
+  if(!(fl.feed||fl.arrow)) return;
+  var full=!!fl.feed;
+  var dst=proj(curP(eps));
+  var src={x:650-6, y:192+64/2};                 // left edge of padding block, mid
+  var cx=(src.x+dst.x)/2, cy=Math.min(src.y,dst.y)-52;
+  g.save();
+  g.globalAlpha=full?0.55:0.2;
+  g.strokeStyle=VIO; g.lineWidth=full?1.7:1.2; g.setLineDash([5,4]);
+  g.beginPath(); g.moveTo(src.x,src.y); g.quadraticCurveTo(cx,cy,dst.x,dst.y); g.stroke();
+  g.setLineDash([]);
+  var ang=Math.atan2(dst.y-cy,dst.x-cx), hl=8; g.fillStyle=VIO;
+  g.beginPath(); g.moveTo(dst.x,dst.y);
+  g.lineTo(dst.x-hl*Math.cos(ang-0.4),dst.y-hl*Math.sin(ang-0.4));
+  g.lineTo(dst.x-hl*Math.cos(ang+0.4),dst.y-hl*Math.sin(ang+0.4));
+  g.closePath(); g.fill();
+  g.restore();
+  if(full){
+    g.save();
+    g.globalAlpha=1;
+    // white card with violet outline so the label reads clearly over the wireframe
+    setF('600',MF,9.5); var lbl='padding is read as features';
+    var w=g.measureText(lbl).width+20;
+    g.fillStyle='#FFFFFF'; g.strokeStyle=VIO; g.lineWidth=1.2;
+    g.beginPath(); g.roundRect(cx-w/2,cy-11,w,20,5); g.fill(); g.stroke();
+    txt(lbl,cx,cy-1,'600',MF,9.5,VIO,'center','middle',1);
+    g.restore();
+  }
+}
+
+function drawPoint(fl){
+  var p=curP(eps), pp=proj(p), p0p=proj(p0);
+  // trail from origin position
+  if(fl.arrow) line(p0p,pp,'rgba(87,6,140,0.28)',1.5,[3,3]);
+
+  // forbidden shortest path (code)
+  if(fl.forb){
+    var cb=proj(add(p0,scl(dCode,A)));  // hits boundary
+    arrow2D(p0p,cb,'rgba(200,54,47,0.6)',1.6,[5,4]);
+    var mid={x:(p0p.x+cb.x)/2, y:(p0p.y+cb.y)/2};
+    // little lock
+    g.globalAlpha=.9; g.strokeStyle=MAL; g.lineWidth=1.6;
+    g.beginPath(); g.arc(mid.x+16,mid.y-16,3.2,Math.PI,0); g.stroke();
+    g.fillStyle=MAL; g.fillRect(mid.x+12,mid.y-13,8,6); g.globalAlpha=1;
+    txt('steepest, but edits code',mid.x+24,mid.y-10,'600',MF,8.5,'#B24943','left','middle',.95);
+  }
+
+  // allowed padding perturbation arrow
+  if(fl.arrow){
+    arrow2D(p0p,pp,VIO,2.2);
+    var m2={x:(p0p.x+pp.x)/2, y:(p0p.y+pp.y)/2};
+    txt('padding: allowed direction',m2.x+6,m2.y+13,'600',MF,9,VIO,'left','middle',.95);
+  }
+
+  // start ghost
+  g.globalAlpha=.5; g.fillStyle='#B9BEC8';
+  g.beginPath(); g.arc(p0p.x,p0p.y,4,0,7); g.fill(); g.globalAlpha=1;
+
+  // the file point
+  var mal=signed(eps)>=0, col=mal?MAL:BEN, rr=9*pp.f;
+  var grd=g.createRadialGradient(pp.x-2,pp.y-2,1,pp.x,pp.y,rr);
+  grd.addColorStop(0,mal?'#E86B63':'#4FC2A2');
+  grd.addColorStop(1,col);
+  g.fillStyle=grd; g.beginPath(); g.arc(pp.x,pp.y,rr,0,7); g.fill();
+  g.strokeStyle='#fff'; g.lineWidth=2; g.stroke();
+  txt('file',pp.x,pp.y-rr-9,'600',MF,9,col,'center','middle',.95);
+}
+
+/* ============================ file block (right panel) ============================ */
+var BX=650, BW=200, DXX=13, DYY=-8;
+function isoBlock(x,y,w,h,r,gg,b,op){
+  g.globalAlpha=op;
+  g.fillStyle='rgb('+r+','+gg+','+b+')'; g.fillRect(x,y,w,h);
+  g.strokeStyle='rgba(0,0,0,.10)'; g.lineWidth=1; g.strokeRect(x,y,w,h);
+  var lr=Math.min(255,r+22),lg=Math.min(255,gg+22),lb=Math.min(255,b+22);
+  g.fillStyle='rgb('+lr+','+lg+','+lb+')';
+  g.beginPath(); g.moveTo(x,y); g.lineTo(x+DXX,y+DYY); g.lineTo(x+w+DXX,y+DYY); g.lineTo(x+w,y); g.closePath(); g.fill(); g.stroke();
+  var dr=Math.max(0,r-26),dg=Math.max(0,gg-26),db=Math.max(0,b-26);
+  g.fillStyle='rgb('+dr+','+dg+','+db+')';
+  g.beginPath(); g.moveTo(x+w,y); g.lineTo(x+w+DXX,y+DYY); g.lineTo(x+w+DXX,y+h+DYY); g.lineTo(x+w,y+h); g.closePath(); g.fill(); g.stroke();
+  g.globalAlpha=1;
+}
+function lock(x,y,col,op){
+  g.globalAlpha=op; g.strokeStyle=col; g.lineWidth=1.8;
+  g.beginPath(); g.arc(x,y-3.5,3.4,Math.PI,0); g.stroke();
+  g.fillStyle=col; g.fillRect(x-4.5,y,9,6.5); g.globalAlpha=1;
+}
+function checkMark(x,y,op){
+  g.globalAlpha=op; g.strokeStyle=BEN; g.lineWidth=2.4; g.lineCap='round'; g.lineJoin='round';
+  g.beginPath(); g.moveTo(x-4,y); g.lineTo(x-1,y+3.5); g.lineTo(x+5,y-3.5); g.stroke();
+  g.lineCap='butt'; g.globalAlpha=1;
+}
+function drawFile(fl){
+  txt('THE FILE',BX+BW/2,58,'700',MF,10,INK2,'center','middle',.9);
+  txt('bytes on disk',BX+BW/2,71,'500',MF,8.5,INK3,'center','middle',.85);
+
+  var hy=86, hh=30, cy=126, ch=54, py=192, ph=64;
+
+  // header
+  isoBlock(BX,hy,BW,hh,180,196,216,1);
+  txt('HEADER',BX+12,hy+hh/2,'600',MF,10,INK2,'left','middle',1);
+  if(fl.locks) lock(BX+BW-16,hy+hh/2,LOCK,1);
+
+  // code
+  isoBlock(BX,cy,BW,ch,206,150,148,1);
+  txt('.TEXT / CODE',BX+12,cy+16,'600',MF,10,'#5B2E2C','left','middle',1);
+  txt('E8 3F 00  55 8B EC  malware logic',BX+12,cy+34,'500',MF,8.5,'#7A4340','left','middle',.9);
+  if(fl.locks) lock(BX+BW-16,cy+16,MAL,1);
+  if(signed(eps)<0){
+    var uy=cy+ch-13;
+    setF('600',MF,8.5);
+    var uw=g.measureText('unchanged').width+30;
+    g.fillStyle='#FFFFFF'; g.strokeStyle='#CBD0D8'; g.lineWidth=1;
+    g.beginPath(); g.roundRect(BX+BW-uw-4,uy-9,uw,18,5); g.fill(); g.stroke();
+    checkMark(BX+BW-14,uy,1);
+    txt('unchanged',BX+BW-25,uy,'600',MF,8.5,'#166B3A','right','middle',1);
+  }
+
+  // padding
+  var edit=fl.padTag;
+  isoBlock(BX,py,BW,ph,edit?208:200,edit?222:200,edit?214:206,1);
+  txt('PADDING',BX+12,py+14,'600',MF,10,INK2,'left','middle',1);
+  if(edit){
+    txt('editable',BX+BW-14,py+14,'700',MF,8.5,VIO,'right','middle',1);
+  }
+  // hex grid
+  var fc=flippedCount(eps);
+  var gx=BX+12, gy=py+28, cw=(BW-24)/HEXCOLS, rh=9.5;
+  for(var i=0;i<HEXN;i++){
+    var rr=Math.floor(i/HEXCOLS), cc=i%HEXCOLS;
+    var changed=i<fc;
+    var s=changed?tgt[i]:'00';
+    setF('600',MF,8.5);
+    g.fillStyle=changed?VIO:'#AEB3BD';
+    g.textAlign='left'; g.textBaseline='middle';
+    g.fillText(s,gx+cc*cw,gy+rr*rh);
+  }
+}
+
+/* ============================ readouts ============================ */
+function statusChip(fl){
+  if(!fl.fixed) return;
+  var x=24,y=90;
+  setF('700',MF,9);
+  var w=g.measureText('MODEL FIXED').width+32;
+  g.fillStyle='#FFFFFF'; g.strokeStyle='#CBD0D8'; g.lineWidth=1;
+  g.beginPath(); g.roundRect(x,y,w,22,5); g.fill(); g.stroke();
+  g.fillStyle=VIO; g.beginPath(); g.arc(x+13,y+11,3,0,7); g.fill();
+  txt('MODEL FIXED',x+22,y+11,'700',MF,9,INK2,'left','middle',1);
+}
+
+function meter(){
+  var mx=40, my=496, mw=380, mh=12;
+  var c=conf(eps), mal=c>=0.5;
+  txt('CLASSIFIER CONFIDENCE',mx,my-16,'600',MF,9.5,INK3,'left','middle',1);
+  // track
+  g.fillStyle='#ECEEF2'; g.fillRect(mx,my,mw,mh);
+  g.strokeStyle='#D7DAE0'; g.lineWidth=1; g.strokeRect(mx,my,mw,mh);
+  // fill
+  g.fillStyle=mal?MAL:BEN; g.fillRect(mx+1,my+1,(mw-2)*Math.min(1,c),mh-2);
+  // threshold
+  var tx=mx+mw*0.5;
+  g.strokeStyle=INK; g.lineWidth=1.5;
+  g.beginPath(); g.moveTo(tx,my-4); g.lineTo(tx,my+mh+4); g.stroke();
+  txt('threshold 50%',tx,my+mh+11,'500',MF,8.5,INK3,'center','middle',.9);
+  // number + verdict
+  txt((c*100).toFixed(1)+'%',mx+mw+12,my+mh/2,'700',MF,13,mal?MAL:BEN,'left','middle',1);
+  txt(mal?'MALICIOUS':'BENIGN',mx+mw+12,my+mh/2+16,'700',MF,10,mal?MAL:BEN,'left','middle',1);
+}
+
+/* ============================ frame ============================ */
+function frame(now){
+  requestAnimationFrame(frame);
+  var dt=Math.min((now-last)/1000,.05); last=now;
+
+  // tween eps toward target (guided). free play sets eps directly.
+  if(mode==='guided'){
+    if(reduce) eps=epsTarget;
+    else eps+=(epsTarget-eps)*Math.min(1,dt*4.5);
+    if(Math.abs(eps-epsTarget)<0.001) eps=epsTarget;
+  }
+
+  var fl=flags();
+  g.clearRect(0,0,LW,LH);
+
+  // divider between panels
+  g.strokeStyle='#EDEFF3'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(612,70); g.lineTo(612,470); g.stroke();
+
+  // left: feature space
+  txt('FEATURE SPACE',24,60,'700',MF,10,INK2,'left','middle',.9);
+  txt('position set by the file\u2019s bytes',24,73,'500',MF,8.5,INK3,'left','middle',.85);
+  drawCube();
+  drawPlane();
+  regionLabels();
+  drawFeedLink(fl);
+  drawPoint(fl);
+  statusChip(fl);
+
+  // right: file
+  drawFile(fl);
+
+  // bottom left: meter
+  meter();
+}
+
+/* ============================ interaction ============================ */
+// orbit inside feature panel
+var dragging=false, lx=0, ly=0;
+function toLogical(e){
+  var r=cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left)/scaleToCss, y:(e.clientY-r.top)/scaleToCss};
+}
+cv.addEventListener('mousedown',function(e){
+  var p=toLogical(e);
+  if(p.x<600){ dragging=true; lx=e.clientX; ly=e.clientY; cv.style.cursor='grabbing'; }
+});
+window.addEventListener('mousemove',function(e){
+  if(!dragging)return;
+  yaw+=(e.clientX-lx)*0.008; pitch+=(e.clientY-ly)*0.008;
+  pitch=Math.max(-0.2,Math.min(1.1,pitch));
+  lx=e.clientX; ly=e.clientY;
+});
+window.addEventListener('mouseup',function(){dragging=false; cv.style.cursor='default';});
+cv.addEventListener('mousemove',function(e){
+  if(dragging)return; var p=toLogical(e);
+  cv.style.cursor=p.x<600?'grab':'default';
+});
+// touch
+cv.addEventListener('touchstart',function(e){
+  var t=e.touches[0], p=toLogical(t);
+  if(p.x<600){dragging=true; lx=t.clientX; ly=t.clientY;}
+},{passive:true});
+cv.addEventListener('touchmove',function(e){
+  if(!dragging)return; var t=e.touches[0];
+  yaw+=(t.clientX-lx)*0.008; pitch+=(t.clientY-ly)*0.008;
+  pitch=Math.max(-0.2,Math.min(1.1,pitch)); lx=t.clientX; ly=t.clientY;
+},{passive:true});
+cv.addEventListener('touchend',function(){dragging=false;});
+
+/* controls */
+var capEl=document.getElementById('cap');
+var dotsEl=document.getElementById('dots');
+var prevB=document.getElementById('prev'), nextB=document.getElementById('next');
+var guidedCtl=document.getElementById('guidedCtl'), freeCtl=document.getElementById('freeCtl');
+var epsSlider=document.getElementById('eps'), forbBox=document.getElementById('forb');
+
+for(var d=0;d<STEPS.length;d++){var el=document.createElement('div'); el.className='dot'; dotsEl.appendChild(el);}
+var dotEls=dotsEl.children;
+
+function renderCap(){
+  if(mode==='free'){
+    capEl.innerHTML='<span class="num">Try it</span>Drag to change how much padding you edit. Find the smallest perturbation that flips the verdict to benign.';
+    return;
+  }
+  var c=STEPS[step].cap;
+  capEl.innerHTML='<span class="num">'+c[0]+'</span>'+c[1];
+}
+function syncGuided(){
+  for(var i=0;i<dotEls.length;i++) dotEls[i].className='dot'+(i===step?' on':'');
+  prevB.disabled=(step===0);
+  nextB.textContent=(step===STEPS.length-1)?'Free play':'Next';
+  nextB.classList.toggle('primary', true);
+  epsTarget=STEPS[step].eps;
+  renderCap();
+}
+function goStep(s){ step=Math.max(0,Math.min(STEPS.length-1,s)); syncGuided(); }
+
+nextB.onclick=function(){
+  if(step===STEPS.length-1){ setMode('free'); }
+  else goStep(step+1);
+};
+prevB.onclick=function(){ goStep(step-1); };
+
+document.addEventListener('keydown',function(e){
+  if(mode!=='guided')return;
+  if(e.key==='ArrowRight'){nextB.click();}
+  else if(e.key==='ArrowLeft'){prevB.click();}
+});
+
+/* mode switching */
+function setMode(m){
+  mode=m;
+  document.getElementById('mGuided').classList.toggle('on',m==='guided');
+  document.getElementById('mFree').classList.toggle('on',m==='free');
+  document.getElementById('mGuided2').classList.toggle('on',m==='guided');
+  document.getElementById('mFree2').classList.toggle('on',m==='free');
+  guidedCtl.style.display=(m==='guided')?'flex':'none';
+  freeCtl.classList.toggle('hide',m!=='free');
+  if(m==='free'){
+    eps=parseFloat(epsSlider.value)/1000*EPS_MAX;
+    showForb=forbBox.checked;
+  }else{
+    goStep(step);
+  }
+  renderCap();
+}
+document.getElementById('mGuided').onclick=function(){setMode('guided');};
+document.getElementById('mFree').onclick=function(){setMode('free');};
+document.getElementById('mGuided2').onclick=function(){setMode('guided');};
+document.getElementById('mFree2').onclick=function(){setMode('free');};
+
+epsSlider.oninput=function(){ eps=parseFloat(this.value)/1000*EPS_MAX; };
+forbBox.onchange=function(){ showForb=this.checked; };
+document.getElementById('reset').onclick=function(){ epsSlider.value=0; eps=0; };
+
+/* ============================ boot ============================ */
+if(!g.roundRect){ // polyfill for older engines
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);
+    this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);
+    this.closePath();return this;};
+}
+window.addEventListener('resize',resize);
+if(window.ResizeObserver){ new ResizeObserver(function(){sh();}).observe(document.querySelector('.wrap')); }
+window.addEventListener('load',function(){resize(); setTimeout(sh,180);});
+resize(); syncGuided(); requestAnimationFrame(frame);
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+n: 8
+short: AI threat landscape
+title: AI on the cyber battlefield
+time: 7 sections · about 4 hours
+lede: How AI really changes an attack, which defensive signals survive a perfect fake, how to read a threat report like an analyst, and where a defender with a fixed budget should spend first.
+idea: |
+  Every attacker headline now says "AI". The useful question is narrower. **Which resource of the attack did AI change, and by how much?**
+
+  This module uses **four levers**. Skill, cost, time and scale. Rate each one before AI and with AI. Spend where the gap is biggest, and only after independent evidence shows the capability is real.
+
+  !eli5 A new power tool does not make every burglar dangerous. It makes one job faster, such as cutting locks. If you know which job got easier, you know which door to reinforce.
+primer: |
+  ### Step 1. The four levers
+
+  - **Skill.** The expertise the attacker needs. AI lowers it when a model does what a person had to know, such as writing fluent English.
+  - **Cost.** Money and infrastructure. A subscription can replace a paid specialist.
+  - **Time.** From start to result. A model drafts and sorts faster.
+  - **Scale.** Targets per operator. Hand-made output becomes automatic.
+
+  ### Step 2. Social engineering at machine scale
+
+  A model writes a flawless, tailored message from public information. So spelling and grammar are no longer evidence. In January 2024, a finance worker at Arup in Hong Kong joined a video call where the CFO and colleagues were all deepfakes, and made 15 transfers of about 25.6 million US dollars.
+
+  Signals that survive a perfect fake do not depend on reading the fake. **Email authentication** (SPF, DKIM, DMARC) still fails for a forged sender. An **out-of-pattern request** stays odd. A **callback on a known number** and a **second approver** need a step the attacker cannot complete. Deepfake detectors help, but they lose accuracy on new fakes.
+
+  ### Step 3. Recon and vulnerability discovery
+
+  Attackers and defenders both feed scan output to models. Models summarize well but can overflow their context and invent exploits. Some research systems, such as Google's Big Sleep, have found real new vulnerabilities.
+
+  ### Step 4. Read reports, separate claims
+
+  Split each report into **capability claims** (what the AI did) and **attribution claims** (who was behind it). They rest on different evidence. Name the author's incentive in both directions. A caveat the author makes against their own headline is strong evidence.
+
+  ### Step 5. Where autonomy is allowed
+
+  Judge each automated step with four criteria. **Authorization**, **scope**, **reversibility** and **accountability**. Steps that only produce information can run alone with logging. Steps that cannot be undone, such as running an exploit or copying data out, need a human gate.
+diagrams:
+  - type: flow
+    title: The calibration routine from the field card
+    nodes: [["Decompose one claim at a time", "box"], ["Name the lever that moved", "def"], ["Split capability from attribution", "box"], ["Name the incentive, both ways", "box"], ["Calibrate, then pick the control", "def"]]
+    edges: ["", "", "", ""]
+  - type: layers
+    title: What survives a perfect deepfake call
+    attack: AI-written lure plus deepfake call
+    layers:
+      - ["Spelling and grammar checks", "A model writes flawless text", "pass"]
+      - ["Deepfake detector on the call", "Weaker on fakes unlike its training data", "partial"]
+      - ["Email authentication (SPF, DKIM, DMARC)", "A forged sender fails without the signing key", "stop"]
+      - ["Callback on a known number and a second approver", "Needs a channel the attacker does not control", "stop"]
+    caption: Detection is an arms race. A process control does not depend on spotting the fake.
+terms:
+  - [Lever, "One resource an attack uses. Skill, cost, time or scale."]
+  - [Baseline, "How the attack worked before AI."]
+  - [Dual use, "The same capability serves defense and offense."]
+  - [Out-of-band, "Confirming a request through a separate channel set up in advance."]
+  - [Capability claim, "What the AI could do and how much of the work it did."]
+  - [Attribution claim, "Who was behind an operation."]
+  - [Autonomy ceiling, "The current limit on what offensive AI can do end to end without a human."]
+sections:
+  01_attacker-economics-and-the-dual-use-inversion.html: "Look at AI from the attacker's desk. The four levers of skill, cost, time and scale, the market for criminal AI tools, and how defender tools turn into attacker tools."
+  02_social-engineering-at-machine-scale.html: "From grammar checks to process controls. The AI phishing pipeline, deepfakes from an 11-dollar voice clone to the 25.6 million dollar video call, and the defensive signals that still work."
+  03_recon-attack-surface-mapping-and-vuln-discovery.html: "How attackers and defenders feed scans to models, two failure modes (context overflow and invented exploits), and what Google's Big Sleep shows about AI vulnerability discovery."
+  04_autonomy-agents-and-the-evidence-debate.html: "How much autonomy offensive AI really has. Self-rewriting malware such as PROMPTFLUX, the GTG-1002 espionage report read like an analyst, and the independent evidence on the autonomy ceiling."
+  05_classifying-offensive-ai-with-atlas.html: "Turn observed offensive AI behavior into named MITRE ATLAS techniques, then compare three incidents with the same method."
+  06_boundaries-and-defense-implications.html: "Four criteria for safe automation, a proposal to let an AI agent run a whole test, matching threats to controls, and how to write a briefing leadership can act on."
+  07_references-and-readings.html: "Every paper, standard, government source and case study used in Module 8."
+desk:
+  title: The threat desk
+  blurb: "Four rounds at Hawthorn Group. Rate the levers, judge which signals survive the Arup deepfake, split a threat report into claims, and decide what an AI agent may run alone."
+  lede: "Hawthorn Group is an engineering consultancy with about 900 staff. Finance approves wire transfers to suppliers, and the CFO speaks at public events. You are the analyst who also briefs leadership."
+  rounds:
+    - title: Round 1. Which lever did AI move?
+      info: "**Scenario A.** One tailored message to one executive. Before AI, the attacker needed fluent business English and a few hours of reading to write one message to one target. **Scenario B.** A voice impersonation call. Before AI, it needed a skilled impersonator or studio work. The documented '$11 voice clone' case used about an hour of public footage and an 11-dollar monthly subscription."
+      items:
+        - type: sort
+          q: "Scenario A. How did each lever change with AI?"
+          rows:
+            - ["Skill needed", "Decreased"]
+            - ["Money needed", "Decreased"]
+            - ["Time per attack", "Decreased"]
+            - ["Targets reached by one person", "Increased"]
+          opts: ["Increased", "Decreased", "No change"]
+          why: "The biggest shifts are skill needed and targets reached. Your exact levels may differ. The direction and the size of the gap matter."
+        - type: sort
+          q: "Scenario B. How did each lever change with AI?"
+          rows:
+            - ["Skill needed", "Decreased"]
+            - ["Money needed", "Decreased"]
+            - ["Time per attack", "Decreased"]
+            - ["Targets reached by one person", "No change"]
+          opts: ["Increased", "Decreased", "No change"]
+          why: "The biggest shift is money. A live call still reaches one person at a time, so reach did not move."
+        - q: "Hawthorn can fund one project. Project 1 trains finance staff and adds payment checks. Project 2 buys a tool that claims to detect fully autonomous AI intruders. Which first?"
+          opts: ["Project 1", "Project 2"]
+          a: 0
+          why: "Skill needed dropped in both scenarios and reach rose for written lures. More of these attacks will come from people who could not make them before. Nothing in the ratings supports Project 2."
+        - type: open
+          q: "Criminal forums sell 'dark' chatbots such as WormGPT and FraudGPT. Trend Micro's Hype vs. Reality report found many are thin wrappers or scams. Before you move budget because of a tool like this, what second question must you ask?"
+          a: "**Is the capability real?** A lever rating assumes the tool works. If it is a scam or a thin wrapper, budget moved against it is spent on something that does not exist. Confirm with independent evidence first."
+    - title: Round 2. What survives a flawless lure
+      info: "**Arup, January 2024.** A finance employee in Hong Kong got an email that seemed to come from the CFO, asking for confidential transfers, and was suspicious. Then a video call seemed to include the CFO and several colleagues, and that removed the doubt. Over one day the employee made 15 transfers of about 25.6 million US dollars. Everyone else on the call was a deepfake built from public footage. The money was not recovered."
+      items:
+        - type: sort
+          q: "Does each signal survive AI-generated content?"
+          rows:
+            - ["Spelling, grammar, generic greeting", "Fails"]
+            - ["SPF, DKIM and DMARC result", "Holds"]
+            - ["Out-of-pattern request (odd type, timing, channel, urgency)", "Holds"]
+            - ["Out-of-band callback or dual authorization", "Holds"]
+            - ["A deepfake detector on the call", "Partial"]
+          opts: ["Holds", "Partial", "Fails"]
+          why: "A model writes flawless text. The attacker lacks the domain's signing key. An odd request stays odd however well written. A callback needs a step the attacker cannot complete. Detectors lose accuracy on fakes unlike their training data."
+        - type: open
+          q: On the call, what did the employee rely on, and why does a deepfake defeat exactly that?
+          a: "Seeing and hearing them. The people looked and sounded like the CFO and colleagues. The AI generated those faces and voices from public footage, so looking and sounding right no longer proves who is there."
+        - type: open
+          q: Pick the one control that would have stopped the loss, and say why it beats a better detector.
+          a: "A callback on a known number, with a second approver for large transfers. The attacker controlled the call but not an independent channel. A detector is an arms race the defender can lose. The process control works whether or not anyone spots the fake."
+        - type: open
+          q: The employee was suspicious, and the call removed the doubt. Why is better awareness training not enough on its own?
+          a: "A convincing live deepfake can beat good judgment in the moment. The employee did the right thing at first and was still overcome. So a required callback must work even when judgment fails."
+    - title: Round 3. Reading the report
+      info: "A report from an AI lab, November 2025, on an AI-orchestrated espionage operation tracked as GTG-1002. (1) 'The AI executed an estimated 80 to 90 percent of tactical work. Humans intervened at a small number of decision points.' (2) 'We assess with high confidence the operator was a state-linked group.' (3) 'The model frequently overstated findings and occasionally fabricated data, claiming access that did not work.'"
+      items:
+        - type: sort
+          q: "Capability or attribution?"
+          rows:
+            - ["(1) The model did 80 to 90 percent of the tactical work", "Capability"]
+            - ["(2) A state-linked operator was responsible", "Attribution"]
+            - ["(3) The model fabricated findings", "Capability"]
+          opts: ["Capability", "Attribution"]
+          why: "Line 1 comes from the vendor's own logs and is not independently verified. Line 2 rests on infrastructure and tradecraft analysis, a human judgment outsiders cannot easily check. Line 3 is a capability limit that cuts against the vendor's own headline, which makes it more credible."
+        - type: open
+          q: The author is the lab whose model was misused. Give one reason it might overstate the threat and one it might understate it.
+          a: "**Overstate.** A serious threat shows the value of the lab's safety work and products. **Understate.** A smaller threat reassures customers that the product is safe."
+        - type: open
+          q: "A RAND study found frontier models gave only limited help and could not run a full campaign without human direction. AI providers report attackers mostly run old playbooks faster. Write one calibrated sentence that places the report next to these."
+          a: "AI is helping real attackers work faster and at larger scale, but current systems still need human direction for complex operations and still make things up."
+    - title: Round 4. Where the line is
+      info: "Hawthorn runs an authorized test of its own systems, with documented permission, scoped to one network segment. A teammate wants an AI agent to run the whole test and pause for a person only at the very end. The four criteria are authorization, scope, reversibility and accountability."
+      items:
+        - type: sort
+          q: "May the agent run each action alone with logging, or does it need a human gate?"
+          rows:
+            - ["Scan the in-scope segment and log what is reachable", "Safe alone, with logging"]
+            - ["Rank possible weak points from the scan", "Safe alone, with logging"]
+            - ["Compare software against a vulnerability list", "Safe alone, with logging"]
+            - ["Run an exploit against a host", "Needs a human gate"]
+            - ["Move from a reached host deeper into the network", "Needs a human gate"]
+            - ["Copy data out to prove access", "Needs a human gate"]
+          opts: ["Safe alone, with logging", "Needs a human gate"]
+          why: "Reversibility is the line. The first three only produce information. The last three cannot be undone and the model can misjudge. The proposal gated only the very end, but the risk begins at the first exploit, so the gate moves earlier."
+        - type: sort
+          q: "Match each AI-enabled threat to the control that targets a weakness the attack cannot shed."
+          rows:
+            - ["AI-written phishing, a flawless tailored lure", "Enforce SPF, DKIM and DMARC"]
+            - ["Deepfake call fraud", "Callback on a known number and a second approver"]
+            - ["AI-accelerated recon of what you expose online", "Fix exposed services before an agent finds them"]
+            - ["Malware that asks an AI model to rewrite its own code", "Watch for programs that unexpectedly call AI services"]
+          opts: ["Fix exposed services before an agent finds them", "Watch for programs that unexpectedly call AI services", "Enforce SPF, DKIM and DMARC", "Callback on a known number and a second approver"]
+          why: "Each attack defeats one layer. The right control targets a weakness the attack keeps, such as a forged sender, an uncontrolled channel, an exposed service or the need to call an AI service."
+        - type: open
+          q: The CTO asks if this quarter's budget should go to an autonomous AI agent defense. Write your two or three sentence reply.
+          a: "Not first. Fund process controls for payments, email authentication and attack surface reduction now, because those target the attacks the evidence shows are rising. Keep watching autonomous offensive AI, which is not yet operating at scale, and revisit when independent evidence changes."
+  card: |
+    - Ask which lever moved, and by how much. Then confirm the capability is real.
+    - Writing quality is now evidence-neutral. Authentication and process survive.
+    - Split capability from attribution. Name the incentive both ways.
+    - A caveat that hurts the author's headline is strong evidence.
+    - Reversibility decides what runs alone. Gate every step that cannot be undone.
+other_fw:
+  - [MITRE ATLAS, "Section 5 classifies offensive AI behavior with ATLAS. Autonomous agents map to AML.T0116 Autonomous Reconnaissance and AML.T0124 Autonomous Attack Orchestration. [Open ATLAS](@atlas)."]
+  - [MITRE ATT&CK, "Phishing is T1566 and maps to the Initial Access tactic. [Open T1566](https://attack.mitre.org/techniques/T1566/)."]
+slides:
+  summary: |
+    The lecture runs the Hawthorn Group scenario with answer slides after each round. Lever ratings for two scenarios, the spending decision, the criminal AI tool market, the Arup deepfake case and the five signals, how to read the GTG-1002 report, the four criteria for safe automation, and matching threats to controls.
+  files: [M08_Lecture_Fall.pdf, M08_Threat_Desk_Workbook.pdf]
+quiz:
+  - q: Which signal still works when a phishing email is perfectly written?
+    opts: ["Spelling errors", "DMARC failure for a forged sender", "A generic greeting"]
+    a: 1
+    why: The attacker cannot sign as the real domain without its private key.
+  - q: Which agent action needs a human gate in an authorized test?
+    opts: ["Scanning the in-scope segment", "Running an exploit against a host", "Ranking weak points"]
+    a: 1
+    why: An exploit cannot be undone, so reversibility puts it behind a gate.

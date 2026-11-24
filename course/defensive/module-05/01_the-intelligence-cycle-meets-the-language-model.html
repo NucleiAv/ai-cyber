@@ -1,0 +1,437 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 5 · Section 1 · The Intelligence Cycle Meets the Language Model · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 5 · Section 1 of 7</div>
+      <h1 class="nyu-hero__title">The Intelligence Cycle Meets the Language Model</h1>
+      <p class="nyu-hero__subtitle">
+        Before any AI touches threat intelligence, we need to know what threat
+        intelligence actually is. This section defines the discipline, walks the
+        intelligence cycle, and distinguishes the user types. We'll look at which parts of this process a language model can potentially accelerate.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~18 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 5 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          1 knowledge check + 2 activities
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Data, Information, Intelligence</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Intelligence Cycle</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> One Question, Three Customers</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Where Does the Model Fit?</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Distinguish</strong> threat data, threat information, and threat intelligence using the analysis and decision criteria</span></li>
+          <li><span><strong>Describe</strong> the six phases of the intelligence cycle and assign concrete SOC work items to each phase</span></li>
+          <li><span><strong>Differentiate</strong> strategic, operational, and tactical intelligence products by their consumers</span></li>
+          <li><span><strong>Evaluate</strong> which phases of the cycle a language model plausibly accelerates and which require human ownership</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>When a security team says it "does threat intelligence," what process is actually running, and which parts of that process can a language model legitimately accelerate?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Data, Information, Intelligence</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+
+        <p>
+          You finished Module 4 inside the SOC, evaluating how (well) machines triage alerts. This week we move one desk over, to the analyst whose job it is to understand the adversary. Threat intelligence has a precise meaning that most of the industry's marketing ignores, and the precision starts with three terms that are routinely confused.
+        </p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title"><button type="button" class="nyu-define" data-term="threat-data">Threat Data</button></h3>
+              <p class="nyu-process__detail"><strong>Raw observables, zero context.</strong> Four thousand IPs flagged as malicious by an aggregator.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title"><button type="button" class="nyu-define" data-term="threat-information">Threat Information</button></h3>
+              <p class="nyu-process__detail"><strong>Data with context added: what, where, when.</strong> Thirty of those addresses connected to your VPN gateway since midnight.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step" data-tone="good">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title"><button type="button" class="nyu-define" data-term="cti">Cyber Threat Intelligence</button></h3>
+              <p class="nyu-process__detail"><strong>Information analyzed to support a decision.</strong> The pattern matches credential stuffing that has preceded ransomware in recent incidents; exposure is confirmed, and the action is to force MFA reenrollment for affected accounts today.</p>
+            </div>
+          </li>
+        </ol>
+
+        <p>
+          Analysis and decision orientation are what separates intelligence from information: it ends in a judgment a human can act on. NIST SP 800-150, the federal guide to cyber threat information sharing, formalizes this distinction, we will use its vocabulary throughout.
+        </p>
+
+        <p>
+          Two more terms belong in our vocabulary before the cycle: the raw components that intelligence is built from. An <button type="button" class="nyu-define" data-term="ioc">IoC</button> is the artifact the adversary left behind: a file hash, IP address, domain, or registry key that evidences their presence. A <button type="button" class="nyu-define" data-term="ttp">TTP</button> sits above the artifact and describes behavior rather than artifacts: not "this hash," but "this actor delivers ISO archives via phishing and establishes persistence with a scheduled task."
+        </p>
+
+        <p>
+          The distinction has real consequences. An adversary can replace a hash or rotate a domain in minutes; indicators are cheap to cycle. Behaviors (the tools, techniques, and operational habits behind those indicators) take much longer to change, because they reflect training, infrastructure investment, and established tradecraft. This asymmetry is why <button type="button" class="nyu-define" data-term="mitre-attack">MITRE ATT&amp;CK</button>, the field's shared catalog of adversary behaviors, carries so much operational weight; we will study it closer in Module 8. For now, A <button type="button" class="nyu-define" data-term="threat-actor">threat actor</button> is the person, group, or organization responsible for the observed activity.
+        </p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="why-matters-1">
+          <h3 class="nyu-callout__title" id="why-matters-1">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Why this matters
+          </h3>
+          <p>
+            If you cannot describe the intelligence workflow precisely, you cannot evaluate whether an AI actually improved it. This module's central skill is verification of AI-generated intelligence, and that verification requires knowing what a finished product should contain, who it serves, and which step of the cycle produced it. There is also a market reality: "AI-powered threat intelligence" is one of the most aggressively marketed phrases in the industry.<strong> A practitioner who can name the process phases can ask the only question that matters about any such product: which phase did you automate, and where did the judgment come from?</strong>
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Intelligence Cycle</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          The transformation from data to intelligence runs through a process called the <button type="button" class="nyu-define" data-term="intelligence-cycle">intelligence cycle</button>, a model inherited from national security practice and used, with local variations, by every mature <button type="button" class="nyu-define" data-term="cti">CTI</button> team. The cycle is iterative, not a one way conveyor: a finding during analysis routinely sends you back to collection.
+        </p>
+
+        <ol class="nyu-timeline">
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">1</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Direction</h3>
+              <div class="nyu-timeline__detail">Someone decides what questions matter. "Are we exposed to this ransomware campaign?" Intelligence requires a consumer (off-taker).</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">2</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Collection</h3>
+              <div class="nyu-timeline__detail">Gathering raw material: advisories, feeds, vendor reports, internal telemetry.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">3</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Processing</h3>
+              <div class="nyu-timeline__detail">Making collected material usable: deduplication, normalization, translation, formatting.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">4</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Analysis</h3>
+              <div class="nyu-timeline__detail">The judgment step. Evaluating evidence, weighing source reliability, connecting observations to actor behavior, assessing what it means for the organization.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">5</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Dissemination</h3>
+              <div class="nyu-timeline__detail">Delivering the product to the 'consumer' in a form they can use: a briefing, a blocklist, a patch priority list.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">6</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Feedback</h3>
+              <div class="nyu-timeline__detail">The 'consumer' tells us whether the product answered the question, which redirects the next cycle.</div>
+            </div>
+          </li>
+        </ol>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="cycle-tryit">
+          <h3 class="nyu-callout__title" id="cycle-tryit">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            Try it: walk the cycle
+          </h3>
+          <p>The diagram below animates the six phases as the loop they actually form. Press <strong>Run the cycle</strong> to watch a request travel from Direction all the way to Feedback and back, then toggle <strong>What can a model touch?</strong> to preview the asymmetry this module turns on: the phases that move and reshape text, where a model helps, versus the phases that produce a judgment someone must own.</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe id="intelligence-cycle-embed" src="interactive/intelligence_cycle/intelligence_cycle.html" title="Interactive: the six-phase intelligence cycle, animated as a loop" loading="lazy" style="height:730px;"></iframe>
+        </div>
+
+        <p>
+          There is one more distinction to carry through the module. Intelligence products serve three consumer levels: <button type="button" class="nyu-define" data-term="strategic-intel">strategic, operational, and tactical</button>. The same raw advisory becomes three different products depending on who asked, and understanding which product we are producing shapes everything about format and depth.
+        </p>
+
+        <p>
+          Let's walk the cycle with a concrete object. A new CISA advisory describes a ransomware campaign. Direction: Our <button type="button" class="nyu-define" data-term="ciso">CISO</button> asks whether the organization is exposed. Collection: we pull the advisory, the vendor writeups it references, and your own asset inventory. Processing: we extract the affected product list and the indicators into a normalized table. Analysis: we compare affected versions against your inventory, weigh whether the initial access technique applies to your environment, and form a judgment. Dissemination: a one-page exposure assessment to the CISO, a blocklist to the <button type="button" class="nyu-define" data-term="soc">SOC</button>. Feedback: the CISO says the assessment answered the question but arrived a day late, so we adjust.
+        </p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="asymmetry-tip">
+          <h3 class="nyu-callout__title" id="asymmetry-tip">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            The asymmetry to remember
+          </h3>
+          <p>
+            In that walkthrough, every phase except one moved or reshaped text. Analysis compared external claims against internal reality and produced a judgment. Keep that asymmetry in mind for the rest of the module: language models are text engines, as Module 4 established, and they are strong precisely where the work is moving and reshaping text. The cycle maps directly to that boundary.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">One Question, Three Customers</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          <em>Fictional scenario, modeled on routine advisory handling.</em> A ransomware advisory for a widely used file transfer product is published Monday morning. Three people ask for help before lunch... Same advisory, three products, three different mixes of cycle phases.
+        </p>
+
+        <div class="nyu-cards nyu-cards--3">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h3 class="nyu-card__title">The CISO asks</h3>
+            <p>"Are we exposed, and do I need to tell the board anything?" The product is <strong>strategic</strong>: two paragraphs, plain language, an exposure judgment, no indicators, no jargon. Production cost concentrates in analysis (advisory against asset inventory) and dissemination (writing for a non-technical reader).</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3 class="nyu-card__title">The SOC lead asks</h3>
+            <p>"What do we block and hunt for?" The product is <strong>tactical</strong>: a normalized indicator table and a hunting note describing the actor's post-access behavior. Production cost concentrates in processing (extraction, deduplication, defanging) with a thin analysis layer (which indicators are current and relevant).</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <h3 class="nyu-card__title">The vulnerability manager asks</h3>
+            <p>"Which of our systems patch first?" The product is <strong>tactical and operational</strong>: the affected version list joined against the inventory, ranked by exposure. Production cost is processing plus a judgment about priority.</p>
+          </div>
+        </div>
+
+        <p>
+          When we get to AI-assisted summarization, we will see that the model's usefulness differs across these three products for a reason we can now name: <strong>they demand different ratios of text transformation to judgment.</strong>
+        </p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="miscon-1">
+          <h3 class="nyu-callout__title" id="miscon-1">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Watch out: three common misconceptions
+          </h3>
+          <p><strong>"More feeds means better intelligence."</strong> Volume is data. Unconsumed feeds are cost, not capability. Direction, not collection, is where intelligence quality starts.</p>
+          <p><strong>"Intelligence is a deliverable format."</strong> A polished PDF that ends in no decision is information at best, and a wasteful paperweight otherwise. The decision orientation is the definition.</p>
+          <p><strong>"AI does threat intelligence now."</strong> A model can draft, summarize, extract, and reformat, exactly <span class="nyu-ref" data-ref="triage-pipeline">the pattern Module 4 mapped for AI-assisted security tasks</span>. The phases that own questions and judgments (direction, analysis conclusions, feedback) require human accountability for <span class="nyu-ref" data-ref="human-in-the-loop">the same reasons Module 4 identified</span>; The verification methodology later in the module applies that principle specifically to CTI.</p>
+        </aside>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Tradeoffs and limitations of the cycle model
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>
+              The intelligence cycle is a model, and real teams sometimes risk blurring its phases; a small team runs the whole cycle in one analyst's head before coffee. Critics inside the intelligence community have argued that the cycle idealizes a messier, more parallel reality. It does still remain the shared vocabulary of the discipline, and this course uses it as a map, not a law. Note also what this section deliberately defers, we're not touching on the adversary yet. The adversary's perspective on these same tools belongs to Module 8, and <button type="button" class="nyu-define" data-term="ttp">TTP</button> depth belongs to the <button type="button" class="nyu-define" data-term="mitre-attack">ATT&amp;CK </button> treatment there.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Where Does the Model Fit? Classify, Then Delegate</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          <strong>A reasoning task for you to try, in two parts.</strong> Part one has a correct answer: match each of the six work items below to its intelligence cycle phase. Part two does not: decide which items you would delegate to a language model today, and defend the call.
+        </p>
+
+        <h3 class="nyu-subsection-title">Part 1 · Match each work item to its cycle phase</h3>
+        <div class="nyu-match">
+          <p><strong>Two ways to match:</strong> click a work item then click its phase, or drag the item onto the phase. An arrow connects them.</p>
+          <div class="nyu-match__grid">
+            <svg class="nyu-match__svg" aria-hidden="true"></svg>
+            <div class="nyu-match__col">
+              <h4>Work item</h4>
+              <button class="nyu-match__term" data-match="a">Pull the day's advisories from CISA and three vendors</button>
+              <button class="nyu-match__term" data-match="b">Deduplicate and defang 900 indicators from four reports</button>
+              <button class="nyu-match__term" data-match="c">Decide whether a newly reported actor plausibly targets your sector</button>
+              <button class="nyu-match__term" data-match="d">Draft the executive summary of this week's threat landscape</button>
+              <button class="nyu-match__term" data-match="e">Choose next quarter's intelligence collection priorities</button>
+              <button class="nyu-match__term" data-match="f">Record the SOC's complaint that last week's indicators were stale</button>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap" aria-hidden="true"></div>
+            <div class="nyu-match__col">
+              <h4>Cycle phase</h4>
+              <button class="nyu-match__def" data-match="c">Analysis</button>
+              <button class="nyu-match__def" data-match="e">Direction</button>
+              <button class="nyu-match__def" data-match="a">Collection</button>
+              <button class="nyu-match__def" data-match="f">Feedback</button>
+              <button class="nyu-match__def" data-match="b">Processing</button>
+              <button class="nyu-match__def" data-match="d">Dissemination</button>
+            </div>
+          </div>
+          <p class="nyu-match__hint" data-default="Tip: drag a work item across the gap to its phase, or click both to link them.">Tip: drag a work item across the gap to its phase, or click both to link them.</p>
+          <div class="nyu-match__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check matches</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show correct answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Part 2 · Decide what you would delegate</h3>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Applied analysis: delegation judgment
+          </h3>
+          <p class="nyu-scenario__prompt">
+            For each of the six work items from Part 1, mark it: <strong>AI delegable today</strong>, <strong>AI assisted with human review</strong>, or <strong>human only</strong>. Write one sentence of justification per item in your course notes. There is no single right mapping; your justification is what counts. Hint: ask how much of each item is moving and reshaping text versus producing a judgment someone must own. Record your answers; you will revisit them when we reach the verification methodology, where the module gives you a principled framework for exactly this call.
+          </p>
+          <button class="nyu-scenario__btn">Show framework questions</button>
+          <div class="nyu-scenario__answer">
+            <p>Use these questions to pressure-test each call:</p>
+            <ul>
+              <li><strong>Text ratio:</strong> Is the output primarily reorganized or reformatted text, or does it require comparing claims against context the model has never seen?</li>
+              <li><strong>Ownership:</strong> Does a person need to sign this output and be accountable for it next quarter?</li>
+              <li><strong>Irreversibility:</strong> Could acting on this output without human review cause a cost that cannot be unspent?</li>
+              <li><strong>Access:</strong> Does producing a correct answer require your organization's internal data (asset inventory, telemetry, prior incidents)?</li>
+            </ul>
+            <p>The verification methodology formalizes these as four named properties. Compare your intuitive calls now against the framework then.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 1</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc-1-prompt">
+            Your team receives three artifacts: (1) a feed of 4,000 IP addresses flagged as malicious by an aggregator; (2) a note that 30 of those IPs connected to your VPN gateway since midnight; (3) an assessment that the connection pattern matches credential stuffing preceding ransomware deployment in recent incidents, with a recommendation to force MFA reenrollment. Which is intelligence?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="A curated commercial feed is still raw observables with no context about your environment. Source prestige does not turn data into intelligence; analysis and decision orientation do.">Item 1, because it comes from a curated commercial feed</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Environment specificity makes it information: it tells you what happened, where, and when. It does not yet support a decision. The analysis step is still missing.">Item 2, because it is specific to your environment</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Item 3, because it analyzes the information against threat behavior and supports a decision</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The three artifacts sit at three different rungs of the ladder: data, information, intelligence. Treating them as equivalent is exactly the confusion this section exists to remove.">All three equally, because all describe threats</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Item 1 is data, item 2 is information, item 3 is intelligence: analyzed, contextualized, decision oriented. Format and source prestige are irrelevant to the distinction."
+               data-incorrect-msg="Reconsider the ladder from Section 1. Data is raw observables, information is data with context, and intelligence is analyzed information that supports a decision. Only one artifact ends in a judgment someone can act on."></div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </span>
+            Going deeper: Pyramid of Pain and cycle critiques
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>
+              <strong>The Pyramid of Pain.</strong> A widely used community heuristic (David Bianco, 2013) ranking indicator types by how much it costs the adversary when you act on them: hash values are trivial to change, IPs cheap, domains moderate, and TTPs expensive. It is a practitioner heuristic, not a standard, but it explains why TTP-level intelligence is prized and why blocklists of hashes decay so fast.
+            </p>
+            <p>
+              <strong>History of the cycle.</strong> The intelligence cycle predates cybersecurity by decades; reading critiques of it from the national security literature is a good way to understand both its value as shared vocabulary and its limits as a description of real work.
+            </p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 2: Ground Truth: CVE, CVSS, NVD, and the KEV Catalog.</strong> Before you can verify anything an AI says about a vulnerability, you need to know what the authoritative sources are and what each one is actually authoritative about. Next we map the public vulnerability intelligence infrastructure end to end, using Log4Shell as the worked example.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../reference_tip/reference-tips.js"></script>
+</body>
+</html>

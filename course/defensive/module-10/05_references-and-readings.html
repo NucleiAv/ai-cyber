@@ -1,0 +1,260 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 10 · Section 5 · References &amp; Readings · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 10 · Section 5 of 5</div>
+<h1 class="nyu-hero__title">References &amp; Readings</h1>
+<p class="nyu-hero__subtitle">All sources, citations, and recommended readings referenced throughout Module 10: Adversarial AI: Data Poisoning, Supply Chain Attacks, and Evasion, organized by category and section.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Section type"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Reference</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 7 parts</span>
+      </div>
+</header><nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Recommended Readings</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Further Optional Readings</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Academic Papers &amp; Preprints</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Frameworks &amp; Standards</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Case Studies &amp; Incident Reports</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Source Caveats</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> References by Section</a></li>
+      </ol>
+</nav><main id="main" tabindex="-1"><!-- ============ RECOMMENDED ============ -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">Recommended Readings</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Three assigned readings, roughly 65 to 75 minutes total. Read them on the schedule noted so each lands before the section that uses it.</p>
+<h3 class="nyu-subsection-title">R1: NIST Adversarial ML Taxonomy (before Section 1)</h3>
+<p><strong>Title:</strong> "Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations" (NIST AI 100-2e2025), executive summary and attack-taxonomy overview only<br><strong>Author:</strong> NIST (2025)<br><strong>URL:</strong> <a href="https://csrc.nist.gov/pubs/ai/100/2/e2025/final" target="_blank" rel="noopener">csrc.nist.gov/pubs/ai/100/2/e2025</a><br><strong>Reading time:</strong> ~30 to 40 minutes<br><strong>When to read:</strong> Before Section 1. Read the assigned excerpt, not all 100-plus pages.</p>
+<p>Read for structure, not detail. This supplies the four attack classes and five classification dimensions used throughout the module. The full framework citation is under Frameworks &amp; Standards.</p>
+<h3 class="nyu-subsection-title">R2: OWASP LLM Top 10 entries (before Section 3)</h3>
+<p><strong>Title:</strong> OWASP Top 10 for LLM Applications (2025), entries for Supply Chain, Data and Model Poisoning, and Excessive Agency<br><strong>Author:</strong> OWASP Gen AI Security Project (2025)<br><strong>URL:</strong> <a href="https://genai.owasp.org/llm-top-10/" target="_blank" rel="noopener">genai.owasp.org/llm-top-10</a><br><strong>Reading time:</strong> ~20 minutes<br><strong>When to read:</strong> Before Section 3. Read each entry against the NIST class it corresponds to.</p>
+<p><strong>On the numbering.</strong> OWASP revises this list periodically and the identifiers are not stable across editions: entries change position, merge, or get renamed. Every OWASP citation in this course is the <strong>2025</strong> edition, so the numbers stay consistent from Module 9 through Module 11. Treat the set of failure modes as the durable content and the numbering as a citation detail, and name the edition whenever you quote an identifier in professional work.</p>
+<p>The deployment-risk lens used in the supply-chain audit and the taxonomy mapping. A living document that reflects current professional consensus; entry numbering can change between editions.</p>
+<h3 class="nyu-subsection-title">R3: A small number of samples can poison LLMs (during Section 1)</h3>
+<p><strong>Title:</strong> "A small number of samples can poison LLMs of any size"<br><strong>Author:</strong> Joint research from an AI lab, a national AI safety institute, and a research institute (2025)<br><strong>URL:</strong> <a href="https://www.anthropic.com/research/small-samples-poison" target="_blank" rel="noopener">anthropic.com/research/small-samples-poison</a><br><strong>Reading time:</strong> ~15 minutes<br><strong>When to read:</strong> During Section 1, as a critical-reading exercise.</p>
+<p>Reports that roughly 250 poisoned documents can backdoor models across a wide size range. Read it to practice naming the producers' incentive, noting the preprint status, and finding the authors' own caveats about how far the result generalizes. <em>Not peer-reviewed.</em></p>
+</section>
+
+<!-- ============ ENRICHMENT ============ -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">Further Optional Readings</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Optional, for going deeper on the mechanisms behind the module.</p>
+<ul class="ref-list">
+<li><strong>Goodfellow, I. J., et al.</strong> (2015). "Explaining and Harnessing Adversarial Examples." <em>ICLR 2015.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>The origin of the fast-gradient method behind the evasion optimization intuition in Section 2. ~30 minutes; moderate difficulty. The concept is foundational; specific defenses discussed are dated. <br><a href="https://arxiv.org/abs/1412.6572" target="_blank" rel="noopener">arXiv:1412.6572</a></li>
+<li><strong>Gu, T., et al.</strong> (2017). "BadNets: Identifying Vulnerabilities in the Machine Learning Model Supply Chain." <span class="ref-tag ref-tag--paper">Paper</span> <br>The original backdoor-poisoning demonstration and an early framing of the ML supply chain, behind Section 1 and Section 3. ~30 minutes; moderate. <br><a href="https://arxiv.org/abs/1708.06733" target="_blank" rel="noopener">arXiv:1708.06733</a></li>
+<li><strong>Biggio, B., &amp; Roli, F.</strong> (2018). "Wild Patterns: Ten Years After the Rise of Adversarial Machine Learning." <em>Pattern Recognition.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Field history and the evasion-versus-poisoning framing; useful context for the robustness debate. ~45 minutes; moderate survey. <br><a href="https://arxiv.org/abs/1712.03141" target="_blank" rel="noopener">arXiv:1712.03141</a></li>
+<li><strong>Carlini, N., et al.</strong> (2024). "Poisoning Web-Scale Training Datasets is Practical." <em>IEEE Symposium on Security and Privacy 2024.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>The split-view and frontrunning attacks and the low-cost result behind the Section 1 mini-case. The strongest peer-reviewed evidence that dataset poisoning is cheap and practical. <br><a href="https://arxiv.org/abs/2302.10149" target="_blank" rel="noopener">arXiv:2302.10149</a></li>
+<li><strong>ReversingLabs / JFrog.</strong> "Malicious ML models on public model hubs" (2024 to 2025). <span class="ref-tag ref-tag--practitioner">Industry Analysis</span> <br>Concrete detail on real malicious model files and scanner-evasion techniques behind Section 3. Vendor source; treat as directional, corroborated across more than one independent vendor and the format's own documentation. <br><a href="https://thehackernews.com/2025/02/malicious-ml-models-found-on-hugging.html" target="_blank" rel="noopener">thehackernews.com, malicious ML models</a></li>
+<li><strong>"Data Poisoning in Deep Learning: A Survey"</strong> (2025). <span class="ref-tag ref-tag--paper">Preprint</span> <br>A structured map of poisoning sub-types for readers who want the full landscape behind Section 1. ~40 minutes; moderate. <em>Not peer-reviewed.</em> <br><a href="https://arxiv.org/abs/2503.22759" target="_blank" rel="noopener">arXiv:2503.22759</a></li>
+<li><strong>IBM.</strong> "The Hidden Costs of AI: How Generative Models Are Reshaping Corporate Budgets." <span class="ref-tag ref-tag--practitioner">Industry Analysis</span> <br>Survey data on compute cost increases (89% climb between 2023 and 2025; 70% of executives cite generative AI) and project cancellations due to cost. Behind the Section 3 accordion on why organizations do not build base models. <br><a href="https://www.ibm.com/think/insights/ai-economics-compute-cost" target="_blank" rel="noopener">ibm.com, AI economics</a></li>
+<li><strong>Gartner.</strong> AI data readiness projection (through 2026): 60% of AI projects abandoned due to lack of AI-ready data. <span class="ref-tag ref-tag--practitioner">Industry Analysis</span> <br>Behind the data readiness argument in the Section 3 accordion. Analyst projection; treat as directional. <br>Cited via secondary reporting; primary Gartner access requires subscription.</li>
+<li><strong>CloudZero.</strong> "The State of AI Costs in 2025." <span class="ref-tag ref-tag--practitioner">Industry Analysis</span> <br>AI engineering salary benchmarks ($213k average for senior AI engineers; 25-45% premium over traditional software engineering) and monthly spend projections. Behind the talent scarcity discussion in the Section 3 accordion. <br><a href="https://www.cloudzero.com/state-of-ai-costs/" target="_blank" rel="noopener">cloudzero.com, state of AI costs</a></li>
+<li><strong>MIT.</strong> (2025). Study finding 95% failure rate among generative AI pilots, attributed to hidden costs rather than technology failure. <span class="ref-tag ref-tag--paper">Study</span> <br>Behind the failure rate argument in the Section 3 accordion. Institutional research; specific methodology should be verified against the primary publication. <br>Cited via secondary reporting.</li>
+<li><strong>MIT News.</strong> (2025). "Explained: Generative AI's Environmental Impact." <span class="ref-tag ref-tag--practitioner">Industry Analysis</span> <br>Environmental cost data: GPT-4 training estimated at roughly 7,100 metric tons of CO2 (peer-reviewed study); single GPU power draw of 300-400 watts; cooling accounting for up to 40% of data center energy; US data centers consuming about 4.4% of national electricity. Behind the energy and carbon discussion in the Section 3 accordion. <br><a href="https://news.mit.edu/2025/explained-generative-ai-environmental-impact-0117" target="_blank" rel="noopener">news.mit.edu, generative AI environmental impact</a></li>
+<li><strong>Generative Value.</strong> "The Future of Foundation Model Business Models." <span class="ref-tag ref-tag--practitioner">Industry Analysis</span> <br>Analysis of the "commoditize your complement" strategy and vendor-as-competitor dynamics (OpenAI and Anthropic launching managed agent platforms). Behind the counterargument in the Section 3 accordion on why some companies still build their own models. <br><a href="https://www.generativevalue.com/p/the-future-of-foundation-model-business" target="_blank" rel="noopener">generativevalue.com, foundation model business models</a></li>
+<li><strong>Hugging Face.</strong> Safetensors: a safe and fast file format for storing and loading tensors. <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>The repository and documentation for the safetensors format. Behind the format landscape discussion in Section 3: data-only storage, JSON header plus raw tensor bytes, no code execution path. Trail of Bits security audit completed May 2023; default in transformers v4.35.0 (October 2023). <br><a href="https://github.com/huggingface/safetensors" target="_blank" rel="noopener">github.com/huggingface/safetensors</a></li>
+<li><strong>llama.cpp project.</strong> GGUF format specification and implementation. <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>The source repository for GGUF (successor to GGML/GGMF/GGJT, August 2023). Behind the format landscape discussion in Section 3: quantized local inference format used by Ollama, LM Studio, and GPT4All. Tensor data is inert, but embedded Jinja2 chat templates carry SSTI risk (CVE-2024-34359 "Llama Drama"; CVE-2026-5760). <br><a href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">github.com/ggml-org/llama.cpp</a></li>
+<li><strong>ONNX.</strong> Open Neural Network Exchange: an open standard for machine learning interoperability. <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>The specification and community for the ONNX format (Facebook and Microsoft, September 2017). Behind the format landscape discussion in Section 3: Protocol Buffers-based computation graph, cross-framework interchange. Format itself does not embed arbitrary code; custom operators and external data references are separate trust surfaces. <br><a href="https://onnx.ai" target="_blank" rel="noopener">onnx.ai</a></li>
+<li><strong>Python Software Foundation.</strong> pickle: Python object serialization. <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>Official documentation for Python's pickle module, including the security warning: "never unpickle data received from an untrusted or unauthenticated source." Behind the serialization attack discussion in Section 3. <br><a href="https://docs.python.org/3/library/pickle.html" target="_blank" rel="noopener">docs.python.org/3/library/pickle.html</a></li>
+<li><strong>Trail of Bits.</strong> Safetensors security audit (May 2023). <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>Independent security audit of the safetensors format. Founded by Dan Guido, a former NYU OSIRIS Lab member. Behind the format landscape discussion in Section 3. <br><a href="https://github.com/trailofbits" target="_blank" rel="noopener">github.com/trailofbits</a></li>
+<li><strong>CVE-2024-34359.</strong> "Llama Drama": Jinja2 server-side template injection in llama-cpp-python. <span class="ref-tag ref-tag--paper">Vulnerability</span> <br>Demonstrated that GGUF files embedding malicious Jinja2 chat templates can achieve code execution through SSTI when the loading application renders templates without sandboxing. Behind the GGUF risk discussion in Section 3. <br><a href="https://nvd.nist.gov/vuln/detail/CVE-2024-34359" target="_blank" rel="noopener">nvd.nist.gov/vuln/detail/CVE-2024-34359</a></li>
+<li><strong>CVE-2026-5760.</strong> Jinja2 SSTI in GGUF chat template rendering. <span class="ref-tag ref-tag--paper">Vulnerability</span> <br>A second demonstration of the same attack class against GGUF metadata templates. Behind the GGUF risk discussion in Section 3. <br><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-5760" target="_blank" rel="noopener">nvd.nist.gov/vuln/detail/CVE-2026-5760</a></li>
+<li><strong>Ollama.</strong> Open-source tool for running LLMs locally. <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>Wraps llama.cpp and manages GGUF model downloads. Behind the GGUF ecosystem discussion in Section 3. <br><a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a></li>
+<li><strong>LM Studio.</strong> Desktop application for running local LLMs. <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>Loads GGUF models for local inference. Behind the GGUF ecosystem discussion in Section 3. <br><a href="https://lmstudio.ai" target="_blank" rel="noopener">lmstudio.ai</a></li>
+<li><strong>Nomic AI.</strong> GPT4All: open-source local LLM ecosystem. <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>Supports GGUF models for consumer-hardware inference. Behind the GGUF ecosystem discussion in Section 3. <br><a href="https://gpt4all.io" target="_blank" rel="noopener">gpt4all.io</a></li>
+<li><strong>Google.</strong> Protocol Buffers: a language-neutral, platform-neutral extensible mechanism for serializing structured data. <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>The serialization format ONNX uses to encode model graphs. A data-description format with no executable instructions, unlike pickle. Behind the ONNX discussion in Section 3. <br><a href="https://protobuf.dev" target="_blank" rel="noopener">protobuf.dev</a></li>
+<li><strong>Wiener, N.</strong> (1950). <em>The Human Use of Human Beings: Cybernetics and Society.</em> Houghton Mifflin. <span class="ref-tag ref-tag--paper">Book</span> <br>The foundational warning about autonomous systems acting too fast and irrevocably for humans to intervene. Behind the "Agency is not a new problem" discussion in Section 4. The key passage also appears in Wiener's 1960 paper "Some Moral and Technical Consequences of Automation" (<em>Science</em>, 131(3410), 1355-1358). <br><a href="https://mitpressbookstore.mit.edu/book/9780063423190" target="_blank" rel="noopener">MIT Press Bookstore</a></li>
+<li><strong>Reason, J.</strong> (1997). <em>Managing the Risks of Organizational Accidents.</em> Ashgate. <span class="ref-tag ref-tag--paper">Book</span> <br>The Swiss cheese model and the theory of organizational accidents: how latent conditions in staffing, maintenance, and management create paths for routine actions to become disasters, without anyone intending harm. Behind the "Agency is not a new problem" discussion in Section 4. <br><a href="https://www.amazon.com/Organizational-Accidents-Revisited-James-Reason/dp/1472447689" target="_blank" rel="noopener">Organizational Accidents Revisited (2016 edition)</a></li>
+<li><strong>Perrow, C.</strong> (1984). <em>Normal Accidents: Living with High-Risk Technologies.</em> Basic Books. <span class="ref-tag ref-tag--paper">Book</span> <br>The argument that cascading failures are a structural property of tightly coupled, complex systems, not a failure of individual operators. Behind the "Agency is not a new problem" discussion in Section 4. Updated edition: Princeton University Press, 1999. <br><a href="https://press.princeton.edu/books/paperback/9780691004129/normal-accidents" target="_blank" rel="noopener">Princeton University Press</a></li>
+<li><strong>Verizon.</strong> (2024). <em>2024 Data Breach Investigations Report.</em> <span class="ref-tag ref-tag--practitioner">Industry Report</span> <br>Analyzed 30,458 incidents and 10,626 confirmed breaches; found 68% involved a non-malicious human element (errors and social engineering; excludes malicious insiders). Behind the "Agency is not a new problem" discussion in Section 4. Methodology is published with the report. <br><a href="https://www.verizon.com/business/resources/reports/dbir/" target="_blank" rel="noopener">verizon.com/business, DBIR</a></li>
+</ul>
+</section>
+
+<!-- ============ ACADEMIC ============ -->
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Academic Papers &amp; Preprints</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Mechanism sources that ground specific claims in the body text.</p>
+<ul class="ref-list">
+<li><strong>Carlini, N., et al.</strong> (2021). "Extracting Training Data from Large Language Models." <em>USENIX Security 2021.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Grounds the privacy attack class named in Section 4 (training-data extraction). Treated at awareness level here; developed under governance later in the course. <br><a href="https://arxiv.org/abs/2012.07805" target="_blank" rel="noopener">arXiv:2012.07805</a></li>
+<li><strong>PickleBall.</strong> (2025). "Secure Deserialization of Pickle-based Machine Learning Models." <span class="ref-tag ref-tag--paper">Preprint</span> <br>Technical grounding for the load-time code-execution mechanism in Section 3. <em>Not peer-reviewed.</em> <br><a href="https://arxiv.org/abs/2508.15987" target="_blank" rel="noopener">arXiv:2508.15987</a></li>
+<li><strong>Malware-evasion literature.</strong> "Malware Evasion Attack and Defense" and related work on byte-based classifier evasion. <span class="ref-tag ref-tag--paper">Paper</span> <br>Grounds the functionality-preserving evasion example in Section 2. <br><a href="https://arxiv.org/abs/1904.05747" target="_blank" rel="noopener">arXiv:1904.05747</a></li>
+</ul>
+</section>
+
+<!-- ============ FRAMEWORKS ============ -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Frameworks &amp; Standards</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>NIST.</strong> <em>AI 100-2e2025: Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations.</em> Final, March 2025. <span class="ref-tag ref-tag--framework">Framework</span> <br>The module's primary taxonomy. Attack classes: evasion, poisoning, privacy, and abuse for generative systems. Also classifies by lifecycle stage and by attacker goal, capability, and knowledge. Used in Sections 1 through 4; assigned as R1. <br><a href="https://csrc.nist.gov/pubs/ai/100/2/e2025/final" target="_blank" rel="noopener">csrc.nist.gov/pubs/ai/100/2/e2025</a></li>
+<li><strong>OWASP Gen AI Security Project.</strong> <em>Top 10 for LLM Applications (2025).</em> <span class="ref-tag ref-tag--framework">Framework</span> <br>Deployment-risk lens. Entries used here: Supply Chain, Data and Model Poisoning, and Excessive Agency, with Prompt Injection carried from the previous module. Used in Sections 3 and 4; assigned as R2. <br><a href="https://genai.owasp.org/llm-top-10/" target="_blank" rel="noopener">genai.owasp.org/llm-top-10</a></li>
+<li><strong>MITRE ATLAS.</strong> <em>Adversarial Threat Landscape for AI Systems.</em> <span class="ref-tag ref-tag--framework">Framework</span> <br>The practitioner tactics-and-techniques lens for the taxonomy mapping in Section 4, connecting AI attacks to the broader tactics framework used across security. Verify the current version each term. <br><a href="https://atlas.mitre.org/" target="_blank" rel="noopener">atlas.mitre.org</a></li>
+</ul>
+</section>
+
+<!-- ============ CASES ============ -->
+<section class="nyu-section" id="sec-5">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">5</span>
+<h2 class="nyu-section__title">Case Studies &amp; Incident Reports</h2>
+</div>
+<hr class="nyu-section__rule">
+<ul class="ref-list">
+<li><strong>Mithril Security.</strong> (2023). "PoisonGPT: How We Hid a Lobotomized LLM on Hugging Face to Spread Fake News." <span class="ref-tag ref-tag--paper">Incident</span> <br>A targeted model edit uploaded to a public hub under a name typosquatting a well-known lab, with a negligible benchmark delta. The benchmark-parity case in Section 3. Vendor demonstration; the finding is sound, the framing is a demonstration. <br><a href="https://blog.mithrilsecurity.io/poisongpt-how-we-hid-a-lobotomized-llm-on-hugging-face-to-spread-fake-news/" target="_blank" rel="noopener">blog.mithrilsecurity.io, PoisonGPT</a></li>
+<li><strong>JFrog; ReversingLabs.</strong> (2024 to 2025). Malicious models on public model hubs, including broken-pickle and archive-format scanner evasion. <span class="ref-tag ref-tag--paper">Incident</span> <br>Real malicious model files carrying load-time payloads, behind Section 3's model-serialization discussion. Vendor security research; treat as directional, corroborated across two independent vendors. Verify specific CVE identifiers and scores before citing them. <br><a href="https://thehackernews.com/2025/02/malicious-ml-models-found-on-hugging.html" target="_blank" rel="noopener">thehackernews.com, malicious ML models</a></li>
+<li><strong>Carlini, N., et al.</strong> (2024). Web-scale dataset poisoning (split-view and frontrunning). <span class="ref-tag ref-tag--paper">Incident</span> <br>Peer-reviewed demonstration that poisoning about 0.01% of two popular datasets would have cost around 60 dollars. The Section 1 mini-case; full citation under Further Optional Readings. <br><a href="https://arxiv.org/abs/2302.10149" target="_blank" rel="noopener">arXiv:2302.10149</a></li>
+<li><strong>Near-constant-count poisoning finding.</strong> (2025). Roughly 250 documents backdoor models across a wide size range. <span class="ref-tag ref-tag--paper">Preprint</span> <br>The dated, provisional finding used as a critical-reading moment in Section 1; assigned as R3. <em>Not peer-reviewed.</em> <br><a href="https://arxiv.org/abs/2510.07192" target="_blank" rel="noopener">arXiv:2510.07192</a></li>
+<li><strong>Autonomous coding agent deletes a production database.</strong> (2025). Part of a documented cluster of similar agent failures. <span class="ref-tag ref-tag--practitioner">Primary Source</span> <br>The excessive-agency anchor in Section 4: an agent acting during a change freeze with no attacker involved. Figures are self-reported; the pattern is corroborated across multiple tools. Cite qualitatively unless specific figures are verified. <br><a href="https://www.securitymagazine.com/articles/102278-company-database-deleted-by-ai-agent-what-security-leaders-need-to-know" target="_blank" rel="noopener">securitymagazine.com, database deleted by AI agent</a></li>
+</ul>
+</section>
+
+<!-- ============ SOURCE CAVEATS ============ -->
+<section class="nyu-section" id="sec-6">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">6</span>
+<h2 class="nyu-section__title">Source Caveats</h2>
+</div>
+<hr class="nyu-section__rule">
+<aside class="nyu-callout nyu-callout--warning" role="note">
+<h3 class="nyu-callout__title">Reading Sources Critically</h3>
+<p>Every source has a context. When you read security research, keep these caveats in mind:</p>
+</aside>
+<table class="nyu-table nyu-table--even">
+<thead>
+<tr>
+<th scope="col">Source Category</th>
+<th scope="col">Key Caveat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Standards and frameworks (NIST AI 100-2e2025, OWASP LLM Top 10 2025, MITRE ATLAS)</td>
+<td>Current as of their edition; confirm the edition each term, since these update. A taxonomy standardizes language; it does not tell you what to deploy.</td>
+</tr>
+<tr>
+<td>Preprints (near-constant-count poisoning arXiv:2510.07192; PickleBall arXiv:2508.15987; poisoning survey arXiv:2503.22759)</td>
+<td>Not yet peer-reviewed. Treat claims as provisional; note the authors' own limits on how far a result generalizes.</td>
+</tr>
+<tr>
+<td>Vendor security research (PoisonGPT demonstration; JFrog and ReversingLabs malicious-model disclosures)</td>
+<td>Commercial and reputational incentives. Treat as directional; each consequential claim in this module is corroborated beyond a single vendor.</td>
+</tr>
+<tr>
+<td>Self-reported incident reporting (autonomous-agent database deletion)</td>
+<td>Figures are self-reported and relayed through trade press. Cite the pattern qualitatively unless specific numbers are independently verified.</td>
+</tr>
+<tr>
+<td>Industry surveys and analyst projections (IBM compute cost survey; Gartner data readiness projection; CloudZero salary benchmarks; MIT pilot failure rate study)</td>
+<td>Survey methodologies, sample sizes, and sponsor incentives vary. Gartner projections require paid access to the primary source; treat secondary citations as directional. IBM and CloudZero figures come from vendor-sponsored research. Use for order-of-magnitude context, not precise figures.</td>
+</tr>
+<tr>
+<td>Industry breach reports (Verizon DBIR 2024)</td>
+<td>Large-sample empirical report (30,458 incidents, 10,626 confirmed breaches) with published methodology. Year-over-year figures shift partly because the methodology changes: the 2024 edition excludes malicious insiders from the "human element" metric, which dropped the headline from 74% to 68%. Compare across editions carefully.</td>
+</tr>
+<tr>
+<td>Foundational books (Wiener 1950; Reason 1997; Perrow 1984)</td>
+<td>Established theoretical works in cybernetics, safety science, and organizational sociology. Ideas are well-cited and peer-validated across decades, but the specific systems they analyzed (nuclear plants, chemical plants, early automation) differ from modern AI deployments. The concepts transfer; the examples are analogies, not direct precedents.</td>
+</tr>
+<tr>
+<td>Benchmark results (any accuracy or F1 figure)</td>
+<td>Always specify: which dataset, which model, what conditions. Benchmark performance does not equal production performance, and a passing benchmark does not certify integrity.</td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<!-- ============ BY SECTION ============ -->
+<section class="nyu-section" id="sec-7">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">7</span>
+<h2 class="nyu-section__title">References by Section</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Use this index to find sources cited in each section of Module 10.</p>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 1: Data Poisoning</h3>
+<ul class="ref-list">
+<li>NIST AI 100-2e2025 (R1). Poisoning attack class and lifecycle framing.</li>
+<li>Carlini et al. (2024, IEEE S&amp;P). Web-scale dataset poisoning; ~$60 to poison ~0.01% of two datasets.</li>
+<li>Near-constant-count poisoning finding (R3). ~250 documents backdoor models across sizes. Preprint; not peer-reviewed.</li>
+<li>Gu et al. (2017), BadNets (E2). Backdoor poisoning mechanism.</li>
+<li>"Data Poisoning in Deep Learning: A Survey" (2025, E6). Poisoning sub-type taxonomy. Preprint; not peer-reviewed.</li>
+<li>Poisoning classification incident descriptions: fictional scenarios, labeled as such throughout the activity.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 2: Evasion Attacks</h3>
+<ul class="ref-list">
+<li>NIST AI 100-2e2025 (R1). Evasion attack class.</li>
+<li>Goodfellow et al. (2015), FGSM (E1). Adversarial-example optimization intuition.</li>
+<li>Malware-evasion literature (arXiv:1904.05747). Functionality-preserving evasion of byte-based classifiers.</li>
+<li>Evasion detector description: fictional scenario, labeled as such throughout the activity.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 3: The ML Supply Chain</h3>
+<ul class="ref-list">
+<li>OWASP LLM Top 10 2025 (R2). Supply Chain and Data and Model Poisoning entries.</li>
+<li>PickleBall (2025, arXiv:2508.15987). Load-time code-execution mechanism. Preprint; not peer-reviewed.</li>
+<li>Mithril Security (2023), PoisonGPT. Model-hub poisoning and the benchmark-parity trap. Vendor demonstration.</li>
+<li>JFrog; ReversingLabs (2024 to 2025). Malicious models and scanner evasion. Vendor source; treat as directional.</li>
+<li>IBM. Compute cost survey: 89% cost increase, 70% of executives attributing it to generative AI. Industry survey.</li>
+<li>Gartner. Data readiness projection: 60% of AI projects abandoned through 2026 due to unready data. Analyst projection; secondary citation.</li>
+<li>CloudZero (2025). AI salary benchmarks: $213k average senior AI engineer, 25-45% premium. Industry analysis.</li>
+<li>MIT (2025). Generative AI pilot study: 95% failure rate attributed to hidden costs. Institutional research.</li>
+<li>MIT News (2025). Environmental impact data: GPT-4 training at ~7,100 metric tons CO2; GPU power draw; data center electricity share.</li>
+<li>Generative Value. Foundation model business model analysis: "commoditize your complement" strategy and vendor-competitor dynamics.</li>
+<li>Hugging Face, safetensors. Data-only format: JSON header plus raw tensor bytes. Trail of Bits audit May 2023; default in transformers v4.35.0.</li>
+<li>llama.cpp project, GGUF. Quantized local inference format. Tensor data inert; Jinja2 SSTI risk via CVE-2024-34359 and CVE-2026-5760.</li>
+<li>ONNX (onnx.ai). Cross-framework interchange format. Protocol Buffers-based computation graph; custom operators and external data are separate trust surfaces.</li>
+<li>Python Software Foundation, pickle documentation. Official security warning and __reduce__ mechanism.</li>
+<li>Trail of Bits. Safetensors security audit (May 2023). Independent audit by firm founded by NYU OSIRIS Lab alumnus Dan Guido.</li>
+<li>CVE-2024-34359 "Llama Drama." Jinja2 SSTI in llama-cpp-python via malicious GGUF chat templates.</li>
+<li>CVE-2026-5760. Second Jinja2 SSTI demonstration in GGUF template rendering.</li>
+<li>Ollama, LM Studio, GPT4All. Local LLM inference tools that load GGUF files; inherit Jinja2 template risk.</li>
+<li>Google, Protocol Buffers (protobuf.dev). Data-description serialization used by ONNX; no executable instructions.</li>
+<li>Supply-chain deployment pipeline: fictional scenario, labeled as such throughout the activity.</li>
+</ul>
+</div>
+<div class="ref-section">
+<h3 class="ref-section__title">Section 4: Excessive Agency and the Adversarial-ML Taxonomy</h3>
+<ul class="ref-list">
+<li>Autonomous-agent database-deletion incident (2025). Excessive agency with no attacker. Self-reported figures.</li>
+<li>Wiener, N. (1950). <em>The Human Use of Human Beings.</em> Warning about systems acting too fast and irrevocably for intervention. "Agency is not a new problem" accordion.</li>
+<li>Reason, J. (1997). <em>Managing the Risks of Organizational Accidents.</em> Swiss cheese model; latent organizational conditions producing failures without malicious intent. "Agency is not a new problem" accordion.</li>
+<li>Perrow, C. (1984). <em>Normal Accidents.</em> Cascading failures as a structural property of tightly coupled, complex systems. "Agency is not a new problem" accordion.</li>
+<li>Verizon (2024). <em>Data Breach Investigations Report.</em> 68% of confirmed breaches involved a non-malicious human element. "Agency is not a new problem" accordion.</li>
+<li>OWASP LLM Top 10 2025 (R2). Excessive Agency entry and the application-risk lens.</li>
+<li>NIST AI 100-2e2025 (R1). The four attack-goal classes for the mapping exercise.</li>
+<li>MITRE ATLAS. Technique-level lens for the mapping exercise.</li>
+<li>Carlini et al. (2021, USENIX Security). Training-data extraction, grounding the privacy attack class.</li>
+<li>Autonomous-agent specification and six-attack mapping set: instructional materials for the activities.</li>
+</ul>
+</div>
+</section>
+</main><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a></footer><button class="nyu-fab" aria-label="Back to top of section"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg></button></div>
+<p>
+<script src="../tooltips/glossary.js"></script>
+<script src="../js/nyu-tandon-course.js"></script>
+</p></body></html>

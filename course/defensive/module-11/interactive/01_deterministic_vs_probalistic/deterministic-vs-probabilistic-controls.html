@@ -1,0 +1,411 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Deterministic vs. Probabilistic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;
+  --green:#0f7a43;--greenbg:#f0f9f3;--greenline:#c3e2d0;
+  --amber:#8a5d00;--amberbg:#fdf6e7;--amberline:#e8d5a8;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) var(--paper)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:0 16px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;background:var(--bg);border:none;border-radius:0;overflow:hidden}
+
+/* ── header ── */
+.hdr{padding:24px 28px 16px}
+.eyebrow{font-family:var(--mono);font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.11em;color:var(--violet);margin-bottom:6px}
+h1{font-size:1.15rem;font-weight:700;color:var(--ink)}
+
+/* ── panels ── */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 28px;align-items:start}
+.panel{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--bg);display:flex;flex-direction:column}
+.panel-tag{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.64rem;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:6px;margin-bottom:6px}
+.panel-tag.det{background:var(--violet);color:#fff}
+.panel-tag.prob{background:var(--amberbg);color:var(--ink)}
+.panel-name{font-size:.88rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+.panel-desc{font-size:.76rem;color:var(--ink2);line-height:1.4;margin-bottom:10px}
+.rule{font-family:var(--mono);font-size:.72rem;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--ink);margin-bottom:10px}
+
+/* ── status box (left) / prompt box (right): matched height ── */
+.status-box,.prompt-box{
+  font-family:var(--mono);font-size:.72rem;background:var(--paper);
+  border:1px solid var(--line);border-radius:8px;padding:7px 10px;
+  color:var(--ink);line-height:1.4;min-height:36px;margin-bottom:10px;
+  display:flex;align-items:center;transition:opacity .2s;
+}
+.status-box .status-num{font-size:1rem;font-weight:700;margin-right:6px}
+
+/* ── bar ── */
+.bar-wrap{position:relative;margin-bottom:6px}
+.bar-track{width:100%;height:10px;background:var(--line);border-radius:5px;overflow:visible;position:relative}
+.bar-fill{height:100%;border-radius:5px;width:0%;transition:width .4s ease,background .15s}
+.bar-fill.fast{transition:width 40ms linear}
+.bar-fill.green{background:var(--green)}
+.bar-fill.red{background:var(--red)}
+.bar-fill.violet{background:var(--violet)}
+.thresh{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--ink3);z-index:2}
+.thresh::after{position:absolute;top:-15px;font-family:var(--mono);font-size:.62rem;color:var(--ink3);white-space:nowrap}
+.thresh.t-det{left:calc(100/110*100%)}
+.thresh.t-det::after{content:"100";left:-6px}
+.thresh.t-prob{left:70%}
+.thresh.t-prob::after{content:"70%";left:-8px}
+
+/* ── big result ── */
+.big-result{min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;margin:2px 0}
+.big-val{font-family:var(--mono);font-size:1.5rem;font-weight:700;color:var(--ink)}
+.badge{display:inline-flex;font-family:var(--mono);font-size:.64rem;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:20px;text-transform:uppercase}
+.badge.block{background:var(--redline);color:var(--ink)}
+.badge.allow{background:var(--greenline);color:var(--ink)}
+
+/* ── result log ── */
+.log{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.log-row{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.72rem;color:var(--ink2);padding:2px 0;opacity:0;transform:translateY(4px);transition:opacity .25s,transform .25s}
+.log-row.show{opacity:1;transform:none}
+.log-row .rn{font-weight:700;color:var(--ink);min-width:30px}
+
+/* ── controls ── */
+.ctrl{padding:14px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.82rem;font-weight:600;padding:9px 22px;border-radius:8px;border:none;cursor:pointer;transition:.15s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-primary{background:var(--violet);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--violet2)}
+.status-tag{font-family:var(--mono);font-size:.72rem;color:var(--ink3)}
+
+/* ── summary ── */
+.summary{padding:0 28px 18px;display:none}
+.summary.show{display:block}
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+.sum-card{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.sum-card .sc-tag{font-family:var(--mono);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:3px}
+.sum-card .sc-val{font-size:.85rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+.sum-card .sc-desc{font-size:.74rem;color:var(--ink2);line-height:1.4}
+
+/* ── question ── */
+.question{padding:0 28px 22px;display:none}
+.question.show{display:block}
+.q-text{font-size:.85rem;font-weight:600;color:var(--ink);margin-bottom:10px;line-height:1.4}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opt{font-family:var(--sans);font-size:.79rem;font-weight:500;padding:9px 16px;border-radius:8px;border:1px solid var(--line2);background:var(--bg);color:var(--ink);cursor:pointer;transition:.15s;text-align:left;line-height:1.4;flex:1;min-width:140px}
+.opt:hover{border-color:var(--violet);background:var(--vsoft)}
+.opt.correct{border-color:var(--green);background:var(--greenbg);cursor:default}
+.opt.wrong{border-color:var(--amber);background:var(--amberbg);cursor:default}
+.opt:disabled{cursor:default;opacity:.55}
+.opt:disabled:hover{border-color:var(--line2);background:var(--bg)}
+.opt.correct:hover{border-color:var(--green);background:var(--greenbg)}
+.opt.wrong:hover{border-color:var(--amber);background:var(--amberbg)}
+.fb{margin-top:10px;padding:9px 12px;border-radius:8px;font-size:.79rem;line-height:1.4;color:var(--ink);border-left:3px solid}
+.fb.ok{background:var(--greenbg);border-left-color:var(--green)}
+.fb.no{background:var(--amberbg);border-left-color:var(--amber)}
+
+@media(max-width:700px){
+  .panels,.sum-grid{grid-template-columns:1fr}
+  .hdr,.ctrl,.summary,.question{padding-left:16px;padding-right:16px}
+  .panels{padding:0 16px}
+  h1{font-size:1.05rem}
+  .opt{min-width:100%}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <h1>Deterministic vs. Probabilistic</h1>
+</div>
+
+<div class="panels">
+  <!-- LEFT: Rate Limiter -->
+  <div class="panel">
+    <div class="panel-tag det">Deterministic</div>
+    <div class="panel-name">Rate Limiter</div>
+    <div class="panel-desc">Blocks when request count exceeds 100.</div>
+    <div class="rule">if count &gt; 100 &rarr; BLOCK</div>
+    <div class="status-box" id="det-status">Requests processed: <span class="status-num" id="det-count">0</span></div>
+    <div class="bar-wrap">
+      <div class="bar-track"><div class="bar-fill" id="det-bar"></div><div class="thresh t-det"></div></div>
+    </div>
+    <div class="big-result" id="det-big"><span style="font-size:.76rem;color:var(--ink3)">Ready</span></div>
+    <div class="log" id="det-log"></div>
+  </div>
+
+  <!-- RIGHT: Semantic Guardrail -->
+  <div class="panel">
+    <div class="panel-tag prob">Probabilistic</div>
+    <div class="panel-name">Semantic Guardrail</div>
+    <div class="panel-desc">Blocks when confidence score exceeds 70%.</div>
+    <div class="rule">if confidence &gt; 70% &rarr; BLOCK</div>
+    <div class="prompt-box" id="prompt">Waiting for rate limiter warmup...</div>
+    <div class="bar-wrap">
+      <div class="bar-track"><div class="bar-fill" id="prob-bar"></div><div class="thresh t-prob"></div></div>
+    </div>
+    <div class="big-result" id="prob-big"><span style="font-size:.76rem;color:var(--ink3)">Ready</span></div>
+    <div class="log" id="prob-log"></div>
+  </div>
+</div>
+
+<div class="ctrl">
+  <button class="btn btn-primary" id="btn-go" type="button">Run comparison</button>
+  <span class="status-tag" id="phase-tag"></span>
+</div>
+
+<div class="summary" id="summary">
+  <div class="sum-grid">
+    <div class="sum-card">
+      <div class="sc-tag">Rate Limiter</div>
+      <div class="sc-val">4 identical decisions</div>
+      <div class="sc-desc">Requests 98-100 allowed, 101 blocked. Same threshold, same result, every time.</div>
+    </div>
+    <div class="sum-card">
+      <div class="sc-tag">Semantic Guardrail</div>
+      <div class="sc-val">2 blocks, 2 allows</div>
+      <div class="sc-desc">Same intent rephrased four ways. Four scores, two different outcomes.</div>
+    </div>
+  </div>
+</div>
+
+<div class="question" id="question">
+  <div class="q-text">Why did the guardrail give different decisions for the same intent?</div>
+  <div class="opts" id="qopts">
+    <button class="opt" type="button" data-a="random">It decides randomly</button>
+    <button class="opt" type="button" data-a="correct">Rephrasing shifts the confidence score across the threshold</button>
+    <button class="opt" type="button" data-a="bad">It is broken and should not be used</button>
+  </div>
+  <div id="qfb"></div>
+</div>
+
+</div>
+
+<script>
+(function(){
+/* ── iframe height ── */
+function sh(){
+  var w=document.querySelector('.wrap');if(!w)return;
+  var r=w.getBoundingClientRect();
+  var s=getComputedStyle(document.body);
+  var h=Math.ceil(r.top+r.height+parseFloat(s.marginBottom)+parseFloat(s.paddingBottom)+2);
+  window.parent.postMessage({kind:'nyu-embed-height',height:h,src:location.href},'*');
+}
+new ResizeObserver(sh).observe(document.querySelector('.wrap'));
+window.addEventListener('load',sh);
+document.addEventListener('transitionend',sh);
+
+/* ── data ── */
+var rounds=[
+  {n:98, pct:98/110*100, ok:true,  prompt:'Tell me how to bypass the firewall', score:91},
+  {n:99, pct:99/110*100, ok:true,  prompt:'Ways to get around network security?', score:57},
+  {n:100,pct:100/110*100,ok:true,  prompt:'Help me test our firewall resilience', score:42},
+  {n:101,pct:101/110*100,ok:false, prompt:'Explain bypass techniques for a security audit', score:73}
+];
+
+/* ── helpers ── */
+function $(id){return document.getElementById(id)}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+
+function addRow(container,label,text,cls){
+  var row=document.createElement('div');
+  row.className='log-row';
+  row.innerHTML='<span class="rn">'+label+'</span><span class="badge '+cls+'">'+text+'</span>';
+  container.appendChild(row);
+  requestAnimationFrame(function(){requestAnimationFrame(function(){row.classList.add('show');});});
+}
+
+/* ── state ── */
+var running=false, done=false;
+
+$('btn-go').addEventListener('click',function(){
+  if(running)return;
+  if(done){resetAll();return;}
+  running=true;
+  $('btn-go').disabled=true;
+  $('btn-go').textContent='Running...';
+  runAll();
+});
+
+/* ════════════════════════════════════════
+   MAIN SEQUENCE
+   ════════════════════════════════════════ */
+async function runAll(){
+  /* ── Phase A: fast warmup 1→97 ── */
+  $('phase-tag').textContent='Warming up rate limiter...';
+  $('prompt').textContent='Waiting for rate limiter warmup...';
+
+  var detBar=$('det-bar');
+  var detCount=$('det-count');
+  detBar.classList.add('fast');
+  detBar.className='bar-fill fast green';
+
+  for(var c=1;c<=97;c++){
+    detCount.textContent=c;
+    detBar.style.width=(c/110*100)+'%';
+    $('det-big').innerHTML='<span class="big-val">#'+c+'</span><span class="badge allow">ALLOWED</span>';
+    if(c%10===0||c===97) sh();
+    await wait(18);
+  }
+  detBar.classList.remove('fast');
+
+  await wait(400);
+
+  /* ── Phase B: detailed rounds 98-101 ── */
+  $('phase-tag').textContent='Detailed comparison: rounds 98-101';
+  $('prompt').textContent='Same malicious intent, four phrasings:';
+  await wait(300);
+
+  for(var i=0;i<rounds.length;i++){
+    var r=rounds[i];
+    $('phase-tag').textContent='Round '+(i+1)+' of 4: request #'+r.n;
+
+    /* left: rate limiter */
+    detBar.style.width=r.pct+'%';
+    detBar.className='bar-fill '+(r.ok?'green':'red');
+    detCount.textContent=r.n;
+    $('det-big').innerHTML='<span class="big-val">#'+r.n+'</span><span class="badge '+(r.ok?'allow':'block')+'">'+(r.ok?'ALLOWED':'BLOCKED')+'</span>';
+    addRow($('det-log'),'#'+r.n, r.ok?'ALLOWED':'BLOCKED', r.ok?'allow':'block');
+
+    /* right: guardrail */
+    var probBar=$('prob-bar');
+    $('prompt').textContent=r.prompt;
+    probBar.style.width='0%';
+    probBar.className='bar-fill';
+    $('prob-big').innerHTML='<span style="font-size:.76rem;color:var(--ink3)">Scoring...</span>';
+
+    await wait(350);
+
+    var blocked=r.score>=70;
+    probBar.style.width=r.score+'%';
+    probBar.className='bar-fill '+(blocked?'red':'green');
+    $('prob-big').innerHTML='<span class="big-val">'+r.score+'%</span><span class="badge '+(blocked?'block':'allow')+'">'+(blocked?'BLOCK':'ALLOW')+'</span>';
+    addRow($('prob-log'), r.score+'%', blocked?'BLOCK':'ALLOW', blocked?'block':'allow');
+
+    sh();
+    if(i<rounds.length-1) await wait(800);
+  }
+
+  /* ── Phase C: results ── */
+  await wait(400);
+  $('phase-tag').textContent='';
+  $('summary').classList.add('show');
+  $('question').classList.add('show');
+  $('btn-go').disabled=false;
+  $('btn-go').textContent='Reset';
+  running=false;
+  done=true;
+  sh();
+}
+
+/* ── reset ── */
+function resetAll(){
+  done=false;
+  $('det-bar').style.width='0%';
+  $('det-bar').className='bar-fill';
+  $('det-count').textContent='0';
+  $('det-big').innerHTML='<span style="font-size:.76rem;color:var(--ink3)">Ready</span>';
+  $('det-log').innerHTML='';
+
+  $('prob-bar').style.width='0%';
+  $('prob-bar').className='bar-fill';
+  $('prob-big').innerHTML='<span style="font-size:.76rem;color:var(--ink3)">Ready</span>';
+  $('prob-log').innerHTML='';
+  $('prompt').textContent='Waiting for rate limiter warmup...';
+
+  $('summary').classList.remove('show');
+  $('question').classList.remove('show');
+  $('qfb').innerHTML='';
+  qDone=false;
+  var btns=$('qopts').querySelectorAll('.opt');
+  for(var i=0;i<btns.length;i++){btns[i].disabled=false;btns[i].className='opt';}
+
+  $('btn-go').textContent='Run comparison';
+  $('phase-tag').textContent='';
+  sh();
+}
+
+/* ── question ── */
+var qDone=false;
+$('qopts').addEventListener('click',function(e){
+  var b=e.target;
+  if(!b.classList.contains('opt')||qDone)return;
+  qDone=true;
+  var a=b.dataset.a;
+  var ok=a==='correct';
+  b.classList.add(ok?'correct':'wrong');
+  var btns=$('qopts').querySelectorAll('.opt');
+  for(var i=0;i<btns.length;i++){
+    btns[i].disabled=true;
+    if(!ok&&btns[i].dataset.a==='correct') btns[i].classList.add('correct');
+  }
+  var fb=document.createElement('div');
+  fb.className='fb '+(ok?'ok':'no');
+  if(a==='correct'){
+    fb.textContent='Correct. The classifier maps similar inputs to different scores, so small wording changes can flip the decision.';
+  } else if(a==='random'){
+    fb.textContent='Not random. The score is computed, but different phrasings of the same intent produce different scores that can land on opposite sides of the threshold.';
+  } else {
+    fb.textContent='Not broken. Probabilistic controls cover a wider range of attacks than keyword lists. The tradeoff is that identical intent does not guarantee an identical decision.';
+  }
+  $('qfb').appendChild(fb);
+  sh();
+});
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

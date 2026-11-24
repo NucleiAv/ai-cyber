@@ -1,0 +1,1163 @@
+/* General Styles */
+ /* Basic Reset */
+ * {
+  box-sizing: border-box;
+}
+
+body {
+font-family: 'Lato', sans-serif;
+font-size: 1.0625rem; /* 17px equivalent */
+color: #000;
+background-color: #fff;
+margin: 0;
+padding: 0;
+}
+
+/* Page Container */
+.page-container {
+max-width: 100%; /* Allow full width on small screens */
+width: 90%; /* Slight margin on larger screens */
+margin: 0 auto; /* Center content on wider screens */
+padding: 20px 30px; /* Standard padding for larger screens */
+background-color: #fff;
+border-radius: 8px;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+ overflow: hidden;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 992px) {
+.page-container {
+width: 95%; /* Slightly wider for medium screens */
+padding: 20px 30px; /* Reduce padding */
+}
+}
+
+@media (max-width: 768px) {
+.page-container {
+width: 98%; /* Full width on smaller screens */
+padding: 15px 20px; /* Further reduce padding */
+}
+}
+
+@media (max-width: 576px) {
+.page-container {
+width: 100%; /* Edge-to-edge on very small screens */
+padding: 10px 15px; /* Minimal padding */
+margin: 0; /* Remove outer margins */
+border-radius: 4px; /* Reduce border radius slightly */
+}
+}
+
+
+/* Typography */
+h2, h3 {
+color: #57068c;
+font-weight: bold;
+margin-top: 20px;
+}
+
+h2 {
+font-size: 1.5rem;
+}
+
+h3 {
+font-size: 1.25rem;
+}
+
+/* Background Image Header with Overlay */
+.header-banner {
+background-size: cover;
+background-position: center;
+padding: 60px 20px;
+color: #fff;
+text-align: center;
+font-weight: bold;
+font-size: 2rem;
+border-radius: 8px;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Subtle shadow */
+margin-bottom: 20px;
+position: relative;
+overflow: hidden;
+}
+
+/* Overlay styling */
+.header-banner::before {
+content: "";
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: rgba(0, 0, 0, 0.4); /* Adjust color and transparency here */
+z-index: 1;
+}
+
+/* Ensures text appears above overlay */
+.header-banner h1 {
+position: relative;
+z-index: 2;
+font-size: 2.5rem;
+font-weight: bold;
+color: #fff;
+text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.4);
+}
+
+/* Code snippets - allows text to wrap and avoids horizontal scroll bar */
+pre,
+pre.card {
+margin-top: 1.125rem;
+word-break: break-all;
+white-space: pre-wrap;
+white-space: -moz-pre-wrap;
+white-space: -pre-wrap;
+white-space: -o-pre-wrap;
+word-wrap: break-word;
+}
+
+pre code,
+pre.card code {
+white-space: pre-wrap;
+padding: 1.125rem;
+}
+
+/* Set images to resize by default */
+img {
+max-width: 100%;
+height: auto;
+}
+
+  .image-divider {
+    width: 100%; /* Full width */
+    height: 75px; /* Thinner than the header banner */
+    border-radius: 12px 12px 0 0;
+    background-size: cover; /* Ensure the image fills the space */
+    background-position: center; /* Keep focus on the central part of the image */
+   
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+}
+
+
+.card {
+box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+border-radius: 8px;
+}
+
+.card-body h2 {
+font-size: 1.5rem;
+margin-bottom: 15px;
+}
+
+a {
+color: #007bff;
+text-decoration: none;
+transition: color 0.3s ease;
+}
+
+a:hover {
+color: #0056b3;
+}
+
+/* Apply padding and hover effect only to top-level list items */
+li {
+padding-left: 5px; /* Base padding for top-level list items */
+transition: background-color 0.3s ease;
+}
+
+li:hover {
+background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Prevent padding and hover background on sub-bullets */
+li li {
+padding-left: 0; /* Remove padding for sub-bullets */
+background-color: transparent;
+}
+
+li li:hover {
+background-color: transparent; /* Ensure no background color on sub-bullet hover */
+}
+
+/* Remove styles for specific links and list items */
+.no-style a {
+color: inherit;
+text-decoration: inherit;
+transition: none;
+}
+
+.no-style a:hover {
+color: inherit;
+text-decoration: none;
+}
+
+.no-style:hover {
+background-color: transparent;
+padding-left: 0;
+transition: none;
+}
+
+/* Accordion Container */
+.accordion {
+  border: none;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+/* Accordion Item */
+.accordion-item {
+  margin-bottom: 10px;
+  border-radius: 5px;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+/* Accordion Header */
+.accordion-header {
+  background-color: #eaeaea;
+  padding: 0;
+  position: relative;
+  border-bottom: 1px solid #ddd;
+  margin: 0;
+}
+
+/* Accordion Button */
+.accordion .accordion-button {
+  font-size: 1.25rem; /* Adjusted for better readability */
+  line-height: 1; /* Aligns with h3 style */
+  font-weight: bold; /* Matches h3 font-weight */
+  font-family: "Lato", sans-serif; /* Use a clean font like Lato */
+  color: #57068c;
+  text-align: left;
+  width: 100%;
+  background-color: #f9f9fc;
+  border: none;
+  outline: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem; /* Spacious padding for better clickability */
+  word-wrap: break-word; /* Allow wrapping */
+  white-space: normal; /* Allow multi-line text */
+  overflow-wrap: break-word; /* Break long words */
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 5px;
+  margin: 0;
+}
+
+/* Accordion Button Hover */
+.accordion .accordion-button:hover {
+  background-color: #e8e2f7; /* Subtle hover effect */
+  color: #450470;
+}
+
+/* Arrow Icon */
+.accordion .accordion-button::after {
+  content: "▼";
+  position: relative;
+  margin-left: auto; /* Push arrow to the far right */
+  font-size: 1.25rem;
+  color: #57068c;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+/* Rotate Arrow on Collapse */
+.accordion .accordion-button.collapsed::after {
+  transform: rotate(-90deg);
+  color: #450470;
+}
+
+/* Accordion Body */
+.accordion-body {
+  padding: 15px;
+  background-color: #ffffff;
+  color: #333;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 5px;
+  font-size: 1.0625rem; /* 17px equivalent */;
+  font-family: "Lato", sans-serif;
+}
+
+/* Accordion Body Paragraph */
+.accordion-body p {
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .accordion .accordion-button {
+    font-size: 1.25rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .accordion .accordion-button {
+    font-size: 1.15rem;
+    padding: 0.6rem 0.9rem;
+  }
+
+  .accordion .accordion-button::after {
+    font-size: 1rem;
+  }
+}
+
+
+
+/* Tabs Styling */
+.nav-tabs .nav-link {
+color: #57068c;
+font-weight: bold;
+border: 1px solid #ddd;
+border-radius: 5px 5px 0 0;
+margin-right: 5px;
+padding: 10px 15px;
+background-color: #f9f9fc;
+transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+}
+
+/* Active and hover states */
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-link:hover {
+color: #fff;
+background-color: #57068c;
+border: 1px solid #57068c;
+border-bottom-color: #fff; /* Consistent border without shift */
+}
+
+
+/* Tab Content Area with Shadow Box */
+.tab-content {
+border-radius: 0 5px 5px 5px;
+padding: 20px;
+background-color: #ffffff;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Button Styling */
+.btn-custom {
+background-color: #57068c;
+color: #fff;
+font-weight: bold;
+border: none;
+border-radius: 4px;
+padding: 10px 20px;
+transition: box-shadow 0.2s ease-in-out;
+}
+
+.btn-custom:hover {
+background-color: #460565;
+color: #fff;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Remove outline on button focus */
+.btn-custom:focus {
+outline: none;
+}
+
+/* Next Button Styling */
+.btn-next {
+background-color: #57068c;
+color: #fff;
+font-weight: bold;
+font-size: 20px;
+border: none;
+border-radius: 8px;
+padding: 15px 30px;
+transition: box-shadow 0.2s ease-in-out;
+}
+.btn-next:hover {
+background-color: #460565;
+color: #fff;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+/* Remove outline on button focus */
+.btn-next:focus {
+outline: none;}
+
+
+/* Background Image Header */
+.header-banner {
+background-size: cover;
+background-position: center;
+padding: 60px 20px;
+color: #fff;
+text-align: center;
+font-weight: bold;
+font-size: 2rem;
+border-radius: 8px;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Subtle shadow for dimension */
+margin-bottom: 20px;
+position: relative;
+overflow: hidden;
+}
+
+/* Text Overlay Styling */
+.header-banner h1 {
+font-size: 2.5rem;
+font-weight: bold;
+margin: 0;
+color: #fff;
+text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.4); /* Subtle text shadow for readability */
+}
+/* Emphasis Card */
+.emphasis-card {
+background-color: #f9f9fc; /* Light background for contrast */
+border-left: 4px solid #57068c; /* Purple accent border on the left */
+border-radius: 8px;
+padding: 15px;
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+margin-top: 20px;
+margin-bottom: 20px;
+}
+
+.emphasis-card h4 {
+color: #57068c;
+font-size: 1.25rem;
+font-weight: bold;
+margin-bottom: 10px;
+}
+
+.emphasis-card p {
+font-size: 1.0625rem; /* 17px equivalent */;
+color: #333;
+}
+
+/*Purple border card*/
+.purple-border-card {
+ border: 2px solid #57068c;
+ border-radius: 12px;
+ padding: 15px;
+ margin-top: 20px;
+margin-bottom: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+/* Timeline Container */
+.timeline {
+position: relative;
+max-width: 800px;
+margin: 0 auto;
+}
+
+.timeline::after {
+content: '';
+position: absolute;
+width: 2px;
+background-color: #57068c;
+top: 0;
+bottom: 0;
+left: 50%;
+margin-left: -1px;
+}
+
+.timeline-event {
+padding: 20px;
+position: relative;
+width: 45%;
+background-color: #ffffff;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+border-radius: 8px;
+margin: 10px 0;
+}
+
+.timeline-event h4 {
+color: #57068c;
+font-size: 1.25rem;
+font-weight: bold;
+}
+
+.timeline-event p {
+color: #333;
+}
+
+.timeline-event::after {
+content: "";
+position: absolute;
+width: 10px;
+height: 10px;
+right: -5px;
+background-color: #57068c;
+border-radius: 50%;
+top: 15px;
+}
+
+/* Alternate timeline events from left to right */
+.timeline-event.left {
+left: 0;
+}
+
+.timeline-event.right {
+left: 50%;
+}
+
+.timeline-event.left::after {
+right: auto;
+left: -5px;
+}
+
+/* Flip Card Container for Responsive Grid */
+.flip-card-container {
+display: flex;
+flex-wrap: wrap;
+gap: 15px; /* Adjusted gap for smaller screens */
+justify-content: center; /* Center content */
+margin-top: 20px;
+}
+
+/* Flip Card */
+.flip-card {
+background-color: transparent;
+width: 15%; /* 3 cards per row on smaller screens */
+min-width: 50px;
+height: 250px;
+perspective: 1000px;
+margin-bottom: 20px;
+position: relative;
+}
+
+.flip-card-inner {
+position: relative;
+width: 100%;
+height: 100%;
+transition: transform 0.6s;
+transform-style: preserve-3d;
+transform: rotateY(0deg); /* Start unflipped */
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+border-radius: 8px;
+}
+
+.flip-card.flipped .flip-card-inner {
+transform: rotateY(180deg); /* Flip on click */
+}
+
+/* Flip Card Front and Back */
+.flip-card-front, .flip-card-back {
+position: absolute;
+width: 100%;
+height: 100%;
+-webkit-backface-visibility: hidden;
+backface-visibility: hidden;
+border-radius: 8px;
+padding: 15px; /* Adjusted padding for smaller cards */
+text-align: center;
+color: #fff;
+}
+
+.flip-card-front {
+background-color: #57068c;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+border-radius: 8px;
+}
+
+.flip-card-back {
+background-color: #4a056f;
+transform: rotateY(180deg);
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+border-radius: 8px;
+}
+
+
+/*========= Tables ==========*/
+.table-responsive,
+.table {
+overflow-y: hidden;
+padding: 1.25rem;
+}
+
+.table-responsive caption,
+.table caption {
+vertical-align: middle;
+min-height: 1.25rem;
+text-align: center;
+font-weight: bold;
+}
+
+.table-responsive th,
+.table th {
+font-size: 1.25rem;
+background-color: #F7F7F7;
+font-weight: bold;
+}
+
+.table-responsive tr, .table-responsive td,
+.table tr,
+.table td {
+padding: 1.25rem;
+}
+
+/* Create x equal columns that floats next to each other can be combined to make 100% i.e. -4 -2 -4*/
+.table-column-2 {
+  float: left;
+  width: 50%;
+  padding: 10px; 
+}
+.table-column-3 {
+  float: left;
+  width: 33.33%;
+  padding: 10px; 
+}
+  .table-column-4 {
+  float: left;
+  width: 25%;
+  padding: 4px;  
+}
+  .table-column-6 {
+  float: left;
+  width: 16.66%;
+  padding: 0px; 
+}
+/* Clear floats after the columns */
+.table-row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+/* mardins are shrunk */
+ .table-column-6 h3, 
+ .table-column-6 p, 
+ .table-column-3 h3, 
+ .table-column-3 p, 
+ .table-column-4 h3, 
+ .table-column-4 p, 
+ .table-column-2 h3, 
+ .table-column-2 p {
+  margin-bottom:0px;
+	margin-top:5px;
+ }
+
+/** Videos **/
+
+video-wrapper {
+position: relative;
+max-width: 100%;
+margin: 1.5rem 0;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+border-radius: 8px;
+overflow: hidden;
+background-color: #f9f9fc;
+display: flex;
+justify-content: center;
+align-items: center;
+aspect-ratio: unset; /* Remove automatic aspect-ratio */
+padding-top: 0; /* Remove padding-based aspect ratio */
+}
+
+.video-wrapper iframe {
+width: 100%;
+height: auto; /* Allow dynamic height adjustment */
+border: none;
+border-radius: 8px;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+aspect-ratio: 16 / 9; /* Add aspect ratio directly to iframe */
+} 
+
+/*========= HTML Editor Mode ==========*/
+/* switched .mce-content-body to *[contenteditable="true"] {} so we are 'editor agnostic' */
+*[contenteditable="true"] {
+/* Displays the hidden background image so it can be swapper out in the editor */
+/* Expands Accordions so content can be accessed in the editor */
+/* Expand Tabs */
+}
+
+*[contenteditable="true"] .accordion .collapse:not(.show) {
+  display: block;
+}
+
+*[contenteditable="true"] .accordion {
+  text-align: left;
+  color: #000000;
+  font-size: 1.0625rem; /* 17px equivalent */
+  padding: 1.25rem;
+
+  border-radius: 0;
+  background-color: #FFFFFF;
+}
+
+*[contenteditable="true"] .tab-content > .tab-pane {
+  opacity: 1;
+  display: block;
+  border: 2px solid #CDD5DC;
+  padding: 15px;
+}
+
+*[contenteditable="true"] .fade:not(.show) {
+  opacity: 1;
+}
+/*========= Media Query for Print ==========*/
+@media print {
+.accordion .collapse:not(.show) {
+  display: block;
+}
+.tab-content > .tab-pane {
+  opacity: 1;
+  display: block;
+  border: 2px solid #CDD5DC;
+  padding: 15px;
+}
+.fade:not(.show) {
+  opacity: 1;
+}
+}
+
+/* Responsive Layout Adjustments */
+@media (max-width: 992px) {
+.flip-card {
+width: 45%; /* 2 cards per row on medium screens */
+}
+}
+
+@media (max-width: 840px) {
+.flip-card {
+width: 30%; /* 3 cards per row on small screens */
+}
+}
+
+@media (max-width: 576px) {
+.flip-card {
+width: 100%; /* 1 card per row on extra small screens */
+}
+}
+.video-wrapper {
+  margin: 1rem 0; /* Reduce margin for smaller screens */
+}
+.video-wrapper iframe {
+  border-radius: 4px; /* Smaller radius for compact design */
+}
+}
+
+.resource-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px; /* Space between cards */
+  margin-top: 15px;
+}
+
+.resource-card {
+  flex: 1 1 calc(50% - 15px); /* Two cards per row */
+  background-color: #f9f9fc;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.resource-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.resource-card a {
+  text-decoration: none;
+  color: #57068c;
+}
+
+.resource-card h5 {
+  font-size: 1.25rem;
+  margin-bottom: 10px;
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px; /* Spacing between buttons */
+  margin-top: 15px;
+}
+
+ .btn-custom {
+  text-align: center;
+  padding: 10px 20px;
+  font-size: 1.0625rem; /* 17px equivalent */
+  font-weight: bold;
+  border-radius: 8px;
+}
+
+
+.emphasis-card-right {
+  background-color: #f9f9fc; /* Light background for contrast */
+  border-right: 4px solid #57068c; /* Purple accent border on the right*/
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.purple-border-card {
+  border: 2px solid #57068c; /* Elegant purple border */
+  border-radius: 12px; /* Smooth rounded corners */
+  padding: 15px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+}
+
+.horizontal-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.horizontal-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%; /* Ensures all cards are equal height */
+}
+
+
+.horizontal-card:hover {
+    transform: translateY(-5px);
+  }
+
+.horizontal-card h4 {
+    margin-bottom: 10px;
+
+}
+
+.horizontal-card p {
+    font-size: 14px;
+    color: #666;
+    flex-grow: 1;  /* Pushes the button to the bottom */
+}
+
+.horizontal-card button {
+    padding: 10px 15px;
+    background: #57068c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.3s;
+    margin-top: auto; /* Ensures button is always at the bottom */
+}
+
+.horizontal-card button:hover {
+    background: #460565;
+}
+
+/* Flashcard Container */
+.flashcard-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Flashcard Style */
+.flashcard {
+  position: relative;
+  width: 300px;
+  height: 250px;
+  perspective: 1000px; /* Enables 3D flipping */
+}
+.flashcard-front, .flashcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden; /* Hides the back when viewing the front */
+  transition: transform 0.6s ease-in-out;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+ .flashcard-front {
+  background-size: cover;
+  background-position: center;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+ 
+}
+
+/* Overlay styling */
+.flashcard-front::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4); /* Adjust color and transparency here */
+  z-index: 1;
+  }
+
+
+/* Ensures text appears above overlay */
+.flashcard-front h1 {
+  position: relative;
+  z-index: 2;
+  color: #fff;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1.5rem;
+    text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.4); /* Text shadow for readability */
+  }
+  
+
+.flashcard-back {
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  transform: rotateY(180deg); /* Initially flipped */
+}
+
+.flashcard.flipped .flashcard-front {
+  transform: rotateY(180deg); /* Front flips */
+}
+
+.flashcard.flipped .flashcard-back {
+  transform: rotateY(0deg); /* Back flips into view */
+}
+
+/* Three cards per row for 800px and above */
+@media (min-width: 800px) {
+  .flashcard {
+    width: calc(33.33% - 20px); /* Three cards per row, accounting for gap */
+  }
+}
+
+/* Two cards per row for medium screens (480px to 799px) */
+@media (max-width: 799px) {
+  .flashcard {
+    width: calc(50% - 20px); /* Two cards per row */
+  }
+}
+
+/* Single column for smaller devices (below 480px) */
+@media (max-width: 480px) {
+  .flashcard {
+    width: 100%; /* Full width for single-column layout */
+  }
+}
+
+/* Image Container */
+.image-container {
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping for smaller screens */
+  gap: 20px; /* Spacing between images */
+  justify-content: center; /* Center images */
+  padding: 20px;
+}
+
+ /* Image Container */
+.image-container {
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping for smaller screens */
+  gap: 20px; /* Spacing between images */
+  justify-content: center; /* Center images */
+  padding: 20px;
+  position: relative;
+}
+
+/* Image Wrapper */
+.image-wrapper {
+  position: relative; /* Enable positioning for the overlay */
+  width: 100%; /* Ensure full width for responsiveness */
+  border-radius: 8px; /* Rounded corners */
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+  transition: transform 0.3s ease; /* Smooth zoom effect */
+}
+
+.image-wrapper img {
+  width: 100%;
+  height: 100%; /* Force full height */
+  object-fit: cover; /* Ensures images fill the container without white gaps */
+  display: block;
+  transition: opacity 0.3s ease;
+}
+
+
+/* Overlay */
+.image-wrapper .overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6); /* Semi-transparent black overlay */
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0; /* Hidden by default */
+  transition: opacity 0.3s ease; /* Smooth appearance */
+  text-align: center; /* Center text inside overlay */
+  font-size: 1.2rem;
+  padding: 20px; /* Padding for better readability */
+  border-radius: 8px; /* Match the image's rounded corners */
+}
+
+/* Hover Effects */
+.image-wrapper:hover img {
+  opacity: 0.8; /* Slight fade on image */
+}
+
+.image-wrapper:hover .overlay {
+  opacity: 1; /* Show overlay */
+}
+
+/* Responsive Layout */
+
+/* Three images per row for larger screens (800px and above) */
+@media (min-width: 800px) {
+  .image-wrapper {
+    width: calc(33.33% - 20px); /* Three images per row */
+  }
+}
+
+/* Two images per row for medium screens (480px to 799px) */
+@media (max-width: 799px) {
+  .image-wrapper {
+    width: calc(50% - 20px); /* Two images per row */
+  }
+}
+
+/* Single image per row for smaller screens (below 480px) */
+@media (max-width: 480px) {
+  .image-wrapper {
+    width: 100%; /* Full width for single-column layout */
+  }
+}
+
+
+ /* Instructor Information Page Styles */
+
+.instructor-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+border-radius: 12px;
+  background-color: #f9f9f9;
+}
+
+.instructor-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background-color: #fff;
+  max-width: 800px;
+  padding: 20px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.instructor-photo {
+  width: 169px;
+  height: 169px;
+  border-radius: 50%;
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 8px;
+  flex-shrink: 0;
+}
+
+.instructor-info {
+  margin-left: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.instructor-name {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.instructor-name span {
+  color: #57068c;
+}
+
+.instructor-contact {
+  margin: 3px 0;
+}
+
+.button-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.horizontal-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.horizontal-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%; /* Ensures all cards are equal height */
+}
+
+
+.horizontal-card:hover {
+    transform: translateY(-5px);
+  }
+
+.horizontal-card h4 {
+    margin-bottom: 10px;
+
+}
+
+.horizontal-card p {
+    font-size: 14px;
+    color: #666;
+    flex-grow: 1;  /* Pushes the button to the bottom */
+}
+
+.horizontal-card button {
+    padding: 10px 15px;
+    background: #57068c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.3s;
+    margin-top: auto; /* Ensures button is always at the bottom */
+}
+
+.horizontal-card button:hover {
+    background: #460565;
+}
+
+  .image-divider {
+    width: 100%; /* Full width */
+    height: 75px; /* Thinner than the header banner */
+    border-radius: 12px 12px 0 0;
+    background-size: cover; /* Ensure the image fills the space */
+    background-position: center; /* Keep focus on the central part of the image */
+ 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+}
+
+

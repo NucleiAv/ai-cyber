@@ -1,0 +1,328 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Intelligence Cycle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --nyu-violet: #57068C; --nyu-violet-dark: #3D0461; --nyu-violet-50: #F5EDFA;
+      --nyu-violet-100: #E8D8F2; --nyu-violet-200: #D2B3E5;
+      --danger: #C42A2A; --danger-bg: #FBE8E8;
+      --success: #166B3A; --success-bg: #E6F4EC;
+      --warning: #8A5D00; --warning-bg: #FCF1DC;
+      --info: #1E5FA8;
+      --ink: #1A1A1A; --ink-soft: #3A3A3A; --ink-mute: #6B6B6B;
+      --rule: #E2E2E2; --surface: #FFFFFF; --surface-sunken: #F6F4F8;
+      --shadow: 0 10px 30px rgba(18, 22, 33, 0.06);
+      --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--surface-sunken); padding: 12px 16px 8px; }
+    main { width: min(880px, 100%); margin: 0 auto; }
+    .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; box-shadow: var(--shadow); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; margin-bottom: 12px; }
+    .topbar h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn { appearance: none; border: 1px solid var(--nyu-violet); background: var(--nyu-violet); color: #fff; border-radius: 8px; padding: 9px 16px; font: inherit; font-weight: 600; font-size: 0.84rem; cursor: pointer; transition: background 140ms ease, transform 140ms ease; }
+    .btn:hover { background: var(--nyu-violet-dark); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn--ghost { background: transparent; color: var(--nyu-violet); }
+    .btn--ghost:hover { background: var(--nyu-violet-50); }
+    .btn--ghost[aria-pressed="true"] { background: var(--nyu-violet); color: #fff; }
+
+    .stage { display: flex; justify-content: center; padding: 8px 10px 0; }
+    svg.cycle { width: 100%; height: auto; max-width: 660px; }
+
+    .node-hit { cursor: pointer; }
+    .node-hit:focus-visible { outline: none; }
+    .node-hit:focus-visible .nodeC { stroke: var(--nyu-violet); stroke-width: 3.5; }
+    .ring { fill: none; stroke: var(--nyu-violet-100); stroke-width: 2.5; }
+
+    .nodeC { fill: var(--surface); stroke: var(--rule); stroke-width: 2.5; transition: fill 250ms ease, stroke 250ms ease; }
+    .node.is-active .nodeC { stroke: var(--nyu-violet); fill: var(--nyu-violet); }
+    .node.is-done .nodeC { stroke: var(--nyu-violet-200); fill: var(--nyu-violet-50); }
+    .nodeNum { font-family: var(--mono); font-weight: 700; font-size: 17px; fill: var(--ink-mute); transition: fill 250ms ease; }
+    .node.is-active .nodeNum { fill: #fff; }
+    .node.is-done .nodeNum { fill: var(--nyu-violet); }
+    .nodeLbl { font-family: var(--sans); font-weight: 700; font-size: 15px; fill: var(--ink); }
+    .nodeKind { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.02em; opacity: 0; transition: opacity 250ms ease; }
+
+    /* lens: tint nodes by who owns the work */
+    .lens .node.kind-ai .nodeC { stroke: var(--success); fill: var(--success-bg); }
+    .lens .node.kind-ai .nodeNum { fill: #1A1A1A; }
+    .lens .node.kind-human .nodeC { stroke: var(--warning); fill: var(--warning-bg); }
+    .lens .node.kind-human .nodeNum { fill: #1A1A1A; }
+    .lens .nodeKind { opacity: 1; }
+    .lens .node.is-active .nodeC { stroke: var(--nyu-violet); fill: var(--nyu-violet); }
+    .lens .node.is-active .nodeNum { fill: #fff; }
+
+    .tok { fill: var(--nyu-violet); stroke: #fff; stroke-width: 2.5; filter: drop-shadow(0 2px 5px rgba(87,6,140,0.4)); opacity: 0; }
+    .tok.on { opacity: 1; }
+
+    .arc-fb { fill: none; stroke: var(--warning); stroke-width: 3; stroke-dasharray: 7 6; stroke-linecap: round; opacity: 0; transition: opacity 300ms ease; }
+    .arc-fb.on { opacity: 1; }
+    .arc-det { fill: none; stroke: var(--info); stroke-width: 2.4; stroke-dasharray: 4 6; stroke-linecap: round; opacity: 0; transition: opacity 300ms ease; }
+    .arc-det.on { opacity: 1; }
+    .centerNote { font-family: var(--sans); font-size: 12px; font-weight: 600; fill: var(--ink-mute); }
+    .centerNote.accent { fill: var(--nyu-violet); font-weight: 700; }
+
+    /* detail panel below the diagram */
+    .panel { padding: 4px 18px 16px; }
+    .panel__inner { max-width: 640px; margin: 0 auto; }
+    .phase-eyebrow { font-family: var(--mono); font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--nyu-violet); margin-bottom: 3px; }
+    .phase-title { font-size: 1.18rem; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.01em; }
+    .phase-body { font-size: 0.92rem; line-height: 1.5; color: var(--ink-soft); margin: 0 0 10px; }
+    .phase-eg { font-size: 0.84rem; line-height: 1.45; color: var(--ink-mute); background: var(--surface-sunken); border: 1px solid var(--rule); border-left: 3px solid var(--nyu-violet); border-radius: 8px; padding: 8px 11px; }
+    .phase-eg b { color: var(--ink); }
+    .kindbadge { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; font-family: var(--mono); font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; width: fit-content; }
+    .kindbadge.ai { background: #166534; color: #fff; }
+    .kindbadge.human { background: #854D0E; color: #fff; }
+    .kindbadge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+    .hint { text-align: center; font-size: 0.76rem; color: var(--ink-mute); margin: 2px 0 0; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; padding: 6px 16px 10px; font-size: 0.74rem; color: var(--ink-mute); }
+    .legend.hidden { display: none; }
+    .legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+    .legend .sw-ai { background: var(--success); } .legend .sw-human { background: var(--warning); }
+
+    @media (prefers-reduced-motion: reduce) { .nodeC, .nodeNum, .nodeKind, .arc-fb, .arc-det, .tok { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card topbar">
+      <h1>The Intelligence Cycle</h1>
+      <div class="controls">
+        <button class="btn btn--ghost" id="lensBtn" type="button" aria-pressed="false">What can a model touch?</button>
+        <button class="btn" id="playBtn" type="button">Run the cycle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="stage">
+        <svg class="cycle" id="cycle" viewBox="0 0 700 472" role="img" aria-label="Six-phase intelligence cycle: Direction, Collection, Processing, Analysis, Dissemination, Feedback, looping back to Direction.">
+          <circle class="ring" cx="350" cy="230" r="150" />
+          <path class="arc-det" id="detArc" d="" />
+          <path class="arc-fb" id="fbArc" d="" />
+          <g id="nodes"></g>
+          <circle class="tok" id="tok" r="9" cx="350" cy="80" />
+          <text class="centerNote" id="cn1" x="350" y="224" text-anchor="middle"></text>
+          <text class="centerNote accent" id="cn2" x="350" y="242" text-anchor="middle"></text>
+        </svg>
+      </div>
+
+      <p class="hint">Press <strong>Run the cycle</strong>, or click any phase to read it at your own pace.</p>
+
+      <div class="legend hidden" id="legend">
+        <span><span class="sw sw-ai"></span>Text work a model can accelerate</span>
+        <span><span class="sw sw-human"></span>Judgment a human must own</span>
+      </div>
+
+      <div class="panel">
+        <div class="panel__inner">
+          <div class="phase-eyebrow" id="pEyebrow">Phase 1 of 6</div>
+          <h2 class="phase-title" id="pTitle">Direction</h2>
+          <p class="phase-body" id="pBody"></p>
+          <div class="phase-eg" id="pEg"></div>
+          <div class="kindbadge" id="pKind"><span class="dot"></span><span id="pKindText"></span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    'use strict';
+    var $ = function (id) { return document.getElementById(id); };
+    var SVGNS = 'http://www.w3.org/2000/svg';
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var CX = 350, CY = 230, R = 150;
+    var PHASES = [
+      { n: 'Direction', kind: 'human',
+        body: 'Someone decides which questions matter. Intelligence without a consumer is a hobby.',
+        eg: '<b>Example:</b> the CISO asks, &ldquo;Are we exposed to this ransomware campaign?&rdquo;',
+        kindText: 'Human judgment: owns the question' },
+      { n: 'Collection', kind: 'ai',
+        body: 'Gathering raw material: advisories, feeds, vendor reports, and internal telemetry.',
+        eg: '<b>Example:</b> pull the advisory, the vendor write-ups it cites, and your asset inventory.',
+        kindText: 'Text work: a model can accelerate' },
+      { n: 'Processing', kind: 'ai',
+        body: 'Making collected material usable: deduplication, normalization, translation, formatting.',
+        eg: '<b>Example:</b> extract affected products and indicators into one normalized table.',
+        kindText: 'Text work: a model can accelerate' },
+      { n: 'Analysis', kind: 'human',
+        body: 'The judgment step: weighing source reliability, connecting observations to actor behavior, and deciding what it means for your organization.',
+        eg: '<b>Example:</b> compare affected versions against your inventory and form a judgment about exposure.',
+        kindText: 'Human judgment: the work the model cannot do' },
+      { n: 'Dissemination', kind: 'ai',
+        body: 'Delivering the product to the consumer in a form they can use: a briefing, a blocklist, a patch list.',
+        eg: '<b>Example:</b> a one-page exposure assessment for the CISO; a blocklist for the SOC.',
+        kindText: 'Drafting: a model can accelerate (a human signs it)' },
+      { n: 'Feedback', kind: 'human',
+        body: 'The consumer says whether the product answered the question, which redirects the next cycle.',
+        eg: '<b>Example:</b> &ldquo;Right answer, but a day late,&rdquo; so you adjust next time.',
+        kindText: 'Human judgment: closes and redirects the loop' }
+    ];
+
+    function ang(i) { return (-90 + i * 60) * Math.PI / 180; }
+    function pos(i) { var a = ang(i); return { x: CX + R * Math.cos(a), y: CY + R * Math.sin(a) }; }
+
+    function labelPlace(i, p) {
+      if (i === 0) return { anchor: 'middle', nx: p.x, ny: p.y - 52, kx: p.x, ky: p.y - 37 };
+      if (i === 3) return { anchor: 'middle', nx: p.x, ny: p.y + 47, kx: p.x, ky: p.y + 62 };
+      if (p.x > CX) return { anchor: 'start', nx: p.x + 37, ny: p.y - 1, kx: p.x + 37, ky: p.y + 14 };
+      return { anchor: 'end', nx: p.x - 37, ny: p.y - 1, kx: p.x - 37, ky: p.y + 14 };
+    }
+
+    var nodesG = $('nodes'), nodeEls = [];
+    PHASES.forEach(function (ph, i) {
+      var p = pos(i), L = labelPlace(i, p);
+      var g = document.createElementNS(SVGNS, 'g');
+      g.setAttribute('class', 'node node-hit kind-' + ph.kind);
+      g.setAttribute('tabindex', '0');
+      g.setAttribute('role', 'button');
+      g.setAttribute('aria-label', ph.n + ', phase ' + (i + 1));
+      var kindColor = ph.kind === 'ai' ? 'var(--success)' : 'var(--warning)';
+      var kindWord = ph.kind === 'ai' ? 'model can help' : 'human owns';
+      g.innerHTML =
+        '<circle class="nodeC" cx="' + p.x + '" cy="' + p.y + '" r="27"></circle>' +
+        '<text class="nodeNum" x="' + p.x + '" y="' + (p.y + 6) + '" text-anchor="middle">' + (i + 1) + '</text>' +
+        '<text class="nodeLbl" x="' + L.nx + '" y="' + L.ny + '" text-anchor="' + L.anchor + '">' + ph.n + '</text>' +
+        '<text class="nodeKind" x="' + L.kx + '" y="' + L.ky + '" text-anchor="' + L.anchor + '" fill="' + kindColor + '">' + kindWord + '</text>';
+      g.addEventListener('click', function () { stop(); select(i); });
+      g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); stop(); select(i); } });
+      nodesG.appendChild(g);
+      nodeEls.push(g);
+    });
+
+    // arcs (computed from node positions)
+    var p3 = pos(3), p1 = pos(1), p5 = pos(5), p0 = pos(0);
+    $('detArc').setAttribute('d', 'M ' + p3.x + ' ' + p3.y + ' Q ' + CX + ' ' + CY + ' ' + p1.x + ' ' + p1.y);
+    $('fbArc').setAttribute('d', 'M ' + p5.x + ' ' + p5.y + ' A ' + R + ' ' + R + ' 0 0 1 ' + p0.x + ' ' + p0.y);
+
+    var tok = $('tok'), cn1 = $('cn1'), cn2 = $('cn2');
+    var busy = false, raf = null;
+
+    function paintActive(i) { nodeEls.forEach(function (el, k) { el.classList.toggle('is-active', k === i); el.classList.toggle('is-done', k < i); }); }
+    function showDetail(i) {
+      var ph = PHASES[i];
+      $('pEyebrow').textContent = 'Phase ' + (i + 1) + ' of 6 · ' + (ph.kind === 'ai' ? 'text work' : 'human judgment');
+      $('pTitle').textContent = ph.n;
+      $('pBody').textContent = ph.body;
+      $('pEg').innerHTML = ph.eg;
+      $('pKind').className = 'kindbadge ' + ph.kind;
+      $('pKindText').textContent = ph.kindText;
+    }
+    function moveTok(i) { var p = pos(i); tok.setAttribute('cx', p.x); tok.setAttribute('cy', p.y); }
+    function notes(a, b) { cn1.textContent = a || ''; cn2.textContent = b || ''; }
+
+    function select(i) {
+      nodeEls.forEach(function (el) { el.classList.remove('is-active', 'is-done'); });
+      nodeEls[i].classList.add('is-active');
+      showDetail(i); tok.classList.add('on'); moveTok(i);
+    }
+
+    function glide(a, b, dur) {
+      return new Promise(function (resolve) {
+        if (reduce) { moveTok(b % 6); resolve(); return; }
+        var a0 = ang(a), a1 = ang(b); if (a1 <= a0) a1 += Math.PI * 2;
+        var t0 = null;
+        function fr(t) {
+          if (t0 === null) t0 = t;
+          var p = Math.min(1, (t - t0) / dur);
+          var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+          var a = a0 + (a1 - a0) * e;
+          tok.setAttribute('cx', CX + R * Math.cos(a)); tok.setAttribute('cy', CY + R * Math.sin(a));
+          if (p < 1) raf = requestAnimationFrame(fr); else resolve();
+        }
+        raf = requestAnimationFrame(fr);
+      });
+    }
+    function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    async function run() {
+      if (busy) return; busy = true; $('playBtn').disabled = true;
+      $('fbArc').classList.remove('on'); $('detArc').classList.remove('on'); notes('', '');
+      tok.classList.add('on'); moveTok(0);
+      for (var i = 0; i < PHASES.length; i++) {
+        paintActive(i); showDetail(i);
+        if (i === 3) { $('detArc').classList.add('on'); notes('A finding in analysis can', 'send you back to collection'); }
+        await wait(reduce ? 500 : 2100);
+        if (i < PHASES.length - 1) await glide(i, i + 1, 650);
+      }
+      $('fbArc').classList.add('on'); notes('Feedback redirects', 'the next cycle →');
+      await glide(5, 6, 720);
+      paintActive(0); showDetail(0);
+      $('playBtn').disabled = false; $('playBtn').textContent = 'Run again'; busy = false;
+    }
+    function stop() { if (raf) cancelAnimationFrame(raf); busy = false; $('playBtn').disabled = false; }
+
+    $('playBtn').addEventListener('click', run);
+    $('lensBtn').addEventListener('click', function () {
+      var on = $('cycle').classList.toggle('lens');
+      this.setAttribute('aria-pressed', on ? 'true' : 'false');
+      $('legend').classList.toggle('hidden', !on);
+    });
+
+    select(0);
+
+    /* ---------- Embed height reporting ---------- */
+    var mainEl = document.querySelector('main');
+    var lastReported = 0;
+    function reportHeight() {
+      var h = Math.ceil(mainEl.getBoundingClientRect().bottom + 10);
+      if (h > 50 && h !== lastReported) { lastReported = h; window.parent.postMessage({ kind: 'nyu-embed-height', height: h }, '*'); }
+    }
+    window.addEventListener('load', function () { lastReported = 0; reportHeight(); });
+    window.addEventListener('resize', function () { requestAnimationFrame(reportHeight); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { lastReported = 0; reportHeight(); });
+    if ('ResizeObserver' in window) new ResizeObserver(function () { requestAnimationFrame(reportHeight); }).observe(mainEl);
+    reportHeight();
+  </script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

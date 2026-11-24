@@ -1,0 +1,98 @@
+slug: f03
+num: "03"
+short: MITRE D3FEND
+title: MITRE D3FEND, the defense map
+time: about 1 hour
+lede: A knowledge graph of defensive techniques, linked to the things they protect and to the ATT&CK techniques they counter.
+headings: {attack: "How to use it, step by step", cases: "Real examples", defend: "Strengths and limits", map: "How it links to the others", lab: "Try it"}
+other_fw:
+  - [MITRE ATT&CK, "D3FEND links its defenses to ATT&CK techniques through the artifacts both touch. See [framework 02](f02.html)."]
+  - [MITRE ATLAS, "ATLAS mitigations play a similar role for AI attacks. See [framework 01](f01.html)."]
+
+idea: |
+  ATT&CK describes what attackers do. **D3FEND** describes what defenders can do about it. MITRE builds it with funding from the US National Security Agency, at [d3fend.mitre.org](https://d3fend.mitre.org/). The current version is 1.6.0.
+
+  Its key idea is the **digital artifact**. A file, a process, a network connection or a user account is an artifact. Attacks act on artifacts. Defenses watch or protect artifacts. So the artifact connects an attack to the defenses that fit it.
+
+  !eli5 If ATT&CK is a list of ways burglars get in, D3FEND is the hardware store catalog. Both mention "window". So when you read "burglar breaks a window", you can look up every product that protects a window.
+
+terms:
+  - [Defensive technique, "A specific defense, such as Multi-factor Authentication or Network Traffic Analysis."]
+  - [Digital artifact, "A thing in a system that attackers and defenders both act on, such as a file, a process or a network flow."]
+  - [Knowledge graph, "Data stored as things and the links between them, so you can follow a path from an attack to a defense."]
+  - [Tactic, "A family of defenses. D3FEND has seven."]
+
+how: |
+  ### Seven defensive tactics
+
+  1. **Model.** Know what you have, such as asset and network inventories.
+  2. **Harden.** Make attacks harder before they start, such as multi-factor authentication or application hardening.
+  3. **Detect.** Notice attacks, such as network traffic analysis or file analysis.
+  4. **Isolate.** Limit where an attacker can go, such as network segmentation.
+  5. **Deceive.** Mislead the attacker, such as decoy files or honeytokens.
+  6. **Evict.** Remove the attacker, such as ending a process or locking an account.
+  7. **Restore.** Return to a good state, such as restoring from backup.
+
+  ### From attack to defense in three hops
+
+  1. Start with an ATT&CK technique, such as phishing.
+  2. Find the artifacts it acts on, such as an email message and a URL.
+  3. List the D3FEND techniques that act on the same artifacts, such as message analysis or URL analysis.
+
+diagrams:
+  - type: flow
+    title: How D3FEND connects an attack to defenses
+    nodes: [["ATT&CK technique", "atk", "Phishing, T1566"], ["Digital artifact", "raised", "email and URL"], ["D3FEND techniques", "def", "analyze, filter, isolate"]]
+    edges: ["acts on", "protected by"]
+    caption: The shared artifact is the bridge between attack and defense.
+
+attack_steps:
+  - List the top ATT&CK techniques that worry you.
+  - For each, look up its artifacts in D3FEND.
+  - List the D3FEND techniques that cover those artifacts, across all seven tactics.
+  - Mark which you already run. Plan the rest, starting with Harden and Detect.
+  - Remember Restore. A defense plan that cannot recover is incomplete.
+
+cases:
+  - [The deepfake wire fraud in Module 8, "The attack acts on a payment request. A process defense, a callback on a known number, hardens that artifact without trying to detect the fake."]
+  - [Ransomware in Module 4 Case B, "Detect found it, but nobody acted. Isolate and Evict were missing, and Restore decided how long recovery took."]
+
+defense: |
+  **Strengths**
+
+  - Precise names for defenses, so teams stop arguing about vague product claims.
+  - Links to ATT&CK show which defense addresses which attack.
+  - Free and machine readable.
+
+  **Limits**
+
+  - It describes techniques, not products or settings. You still choose and configure tools.
+  - Coverage of AI-specific defenses is still small compared with classic IT.
+
+lab:
+  intro: |
+    Pick one attack and find its defenses.
+  steps:
+    - Open [d3fend.mitre.org](https://d3fend.mitre.org/).
+    - Search for an ATT&CK technique you met in this course, such as phishing.
+    - Write down two artifacts it acts on.
+    - List one D3FEND technique for at least four of the seven tactics.
+    - Circle the one you would fund first and say why.
+
+quiz:
+  - q: Which of these is a D3FEND tactic?
+    opts: ["Initial Access", "Restore", "AI Model Access"]
+    a: 1
+    why: Initial Access is ATT&CK, AI Model Access is ATLAS. D3FEND tactics are Model, Harden, Detect, Isolate, Deceive, Evict and Restore.
+  - q: What links an ATT&CK technique to a D3FEND technique?
+    opts: ["The vendor name", "A shared digital artifact", "The CVE number"]
+    a: 1
+    why: Both act on the same thing, such as a file or a process.
+  - q: A honeytoken that alerts when used belongs to which tactic?
+    opts: ["Deceive", "Restore", "Model"]
+    a: 0
+    why: It misleads the attacker into revealing themselves.
+
+refs:
+  - "MITRE. [D3FEND](https://d3fend.mitre.org/), version 1.6.0."
+  - "MITRE. [ATT&CK](https://attack.mitre.org/)."

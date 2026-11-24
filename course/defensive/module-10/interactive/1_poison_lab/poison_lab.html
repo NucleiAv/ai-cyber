@@ -1,0 +1,406 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Poison the Set, Then Audit It</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redsoft:#fcf1f1;
+  --green:#0f7a43;--greenline:#c3e2d0;--greensoft:#eef7f2;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:62ch}
+.body{padding:14px 22px 22px}
+.seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:4px}
+.segbtn{border:1px solid var(--line2);background:var(--bg);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left;transition:.16s;font-family:var(--sans)}
+.segbtn:hover{border-color:var(--violet2)}
+.segbtn[aria-pressed="true"]{border-color:var(--violet);box-shadow:inset 0 0 0 1px var(--violet)}
+.segbtn .fn{font-weight:700;font-size:.82rem;color:var(--ink)}
+.segbtn .fd{font-size:0.75rem;color:var(--ink2);margin-top:3px;line-height:1.3}
+.stagewrap{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#ffffff,#fcfcfd);overflow:hidden;line-height:0}
+canvas{display:block;width:100%}
+.cap{min-height:1.35em;margin-top:12px;font-size:.83rem;color:var(--ink);display:flex;align-items:center;gap:9px}
+.cap .cstep{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--violet);border-radius:5px;padding:3px 7px;flex:none}
+.cap.fired .cstep{background:var(--red)} .cap.done .cstep{background:var(--green)}
+.controls{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.83rem;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer;transition:.14s}
+.btn:hover{background:var(--violet2);border-color:var(--violet2)}
+.btn:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.btn.ghost{background:var(--bg);color:var(--violet);border-color:var(--vline)}
+.btn.ghost:hover{background:var(--vsoft)}
+.rehint{font-size:0.75rem;color:var(--ink3)}
+.verdict{margin-top:14px;border:1px solid var(--line);border-left-width:3px;border-radius:10px;padding:0 15px;background:var(--bg);opacity:0;max-height:0;overflow:hidden;transition:.4s}
+/* Reveal caps raised. These boxes animate open with max-height and keep overflow:hidden, so any content taller than the cap was silently cut off. At 440px wide with a 20px root font the poison-lab verdict lost 46px of its explanation, which is the clipping reported in the first-round review. 1200px is far above any realistic verdict, so the box now sizes to content at every width and text scale. */
+.verdict.show{opacity:1;max-height:1200px;padding:13px 15px}
+.verdict .vk{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.verdict .vt{font-size:.85rem;color:var(--ink);line-height:1.5}
+.verdict .vt b{font-weight:700}
+.verdict.bad{border-color:var(--redline);border-left-color:var(--red)}
+.verdict.bad .vk{color:var(--red)}
+.verdict.good{border-color:var(--greenline);border-left-color:var(--green)}
+.verdict.good .vk{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 1 · Data Poisoning</div>
+    <h1>Poison the set, then audit it</h1>
+    <p class="lede">Same training set, three ways to poison it. Each one corrupts the model. Then a label audit checks the data for tampering. Only one poison walks past the audit. Find out which, and why.</p>
+  </div>
+  <div class="body">
+
+    <div class="seg" id="seg">
+      <button class="segbtn" data-t="flip" aria-pressed="true">
+        <div class="fn">Label flip</div>
+        <div class="fd">Relabel attacks as safe</div>
+      </button>
+      <button class="segbtn" data-t="backdoor" aria-pressed="false">
+        <div class="fn">Backdoor</div>
+        <div class="fd">Add safe-labeled trigger rows</div>
+      </button>
+      <button class="segbtn" data-t="clean" aria-pressed="false">
+        <div class="fn">Clean-label</div>
+        <div class="fd">Nudge inputs, labels stay honest</div>
+      </button>
+    </div>
+
+    <div class="stagewrap"><canvas id="c"></canvas></div>
+
+    <div class="cap" id="cap"><span class="cstep" id="cstep">Ready</span><span id="captxt">Each dot is one training example. Press Start to build the set and poison it.</span></div>
+
+    <div class="controls">
+      <button class="btn ghost" id="backBtn" disabled>◀ Back</button>
+      <button class="btn" id="nextBtn">Start ▶</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+      <span class="rehint" id="rehint">Step through at your own pace.</span>
+    </div>
+
+    <div class="verdict" id="verdict"></div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+const W=720,H=392;
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const seg=document.getElementById('seg'),backBtn=document.getElementById('backBtn'),nextBtn=document.getElementById('nextBtn'),
+      resetBtn=document.getElementById('resetBtn'),rehint=document.getElementById('rehint'),
+      capEl=document.getElementById('cap'),cstep=document.getElementById('cstep'),captxt=document.getElementById('captxt'),
+      verdict=document.getElementById('verdict');
+const C={ink:'#15171C',ink2:'#565a63',ink3:'#5c6270',line:'#e5e7ec',line2:'#d3d6dd',paper:'#f5f6f9',
+  violet:'#57068C',violet2:'#8a3fb8',vsoft:'#f3e9fb',teal:'#155e63',tealsoft:'#e8f4f7',
+  red:'#cf2b2b',redsoft:'#fcecec',green:'#0f7a43',bg:'#ffffff'};
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;};}
+const MONO="'JetBrains Mono',monospace",SANS="'Inter',sans-serif";
+
+let tech='flip',T=0,busy=false;
+const state=fresh();
+function fresh(){return{step:-1,samples:[],t:1.0,reveal:0,injectP:0,probe:null,probeDrop:0,scanY:-1,scanDone:false};}
+
+/* geometry */
+const PLOT={x:64,y:54,s:292}; const RX={x:398,y:54,w:288,h:292};
+const T0=1.0,TC=1.15; const PROBE={fx:.55,fy:.53};
+function PX(fx){return PLOT.x+fx*PLOT.s;} function PY(fy){return PLOT.y+(1-fy)*PLOT.s;}
+
+/* base data (deterministic) */
+const BEN=[[.15,.20],[.22,.12],[.30,.28],[.12,.38],[.35,.15],[.25,.40],[.20,.25],[.33,.34],[.40,.30],[.28,.18]];
+const MAL=[[.70,.62],[.80,.55],[.62,.78],[.75,.72],[.85,.66],[.58,.68],[.72,.58],[.66,.74],[.82,.80],[.60,.63]];
+const CLEAN_MOVE={ // benign index -> nudged position (stays benign side, fx+fy<1)
+  8:[.52,.42],9:[.46,.46],7:[.50,.40],5:[.42,.50]
+};
+const FLIP_IDX=[0,1,4,6]; // malicious indices relabeled benign
+const BACKDOOR=[[.60,.52],[.64,.54],[.58,.56],[.66,.50],[.62,.58]]; // added benign+trigger, fx+fy>1
+
+function buildSamples(){
+  const s=[];
+  BEN.forEach((p,i)=>s.push({fx0:p[0],fy0:p[1],fx:p[0],fy:p[1],label:'ben',kind:'base',poison:false,trigger:false,added:false,flipMix:0,alpha:1,flagged:false,idx:i}));
+  MAL.forEach((p,i)=>s.push({fx0:p[0],fy0:p[1],fx:p[0],fy:p[1],label:'mal',kind:'base',poison:false,trigger:false,added:false,flipMix:0,alpha:1,flagged:false,idx:i}));
+  BACKDOOR.forEach((p)=>s.push({fx0:p[0],fy0:p[1],fx:p[0],fy:p[1],label:'ben',kind:'bd',poison:true,trigger:true,added:true,flipMix:0,alpha:0,flagged:false}));
+  return s;
+}
+function effLabel(d){ return (d.kind==='base'&&d.label==='mal'&&d.flipMix>=.5)?'ben':d.label; }
+function isPoison(d){ return d.poison || (d.kind==='base'&&FLIP_IDX.includes(d.idx)&&tech==='flip'&&d.flipMix>0); }
+
+/* ---------- helpers ---------- */
+function easeIO(p){return p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;}
+function easeOut(p){return 1-Math.pow(1-p,3);}
+function tween(o,to,dur,ease){ease=ease||easeIO;return new Promise(res=>{const f={};for(const k in to)f[k]=o[k];const t0=performance.now();(function fr(n){let p=Math.min(1,(n-t0)/dur),e=ease(p);for(const k in to)o[k]=f[k]+(to[k]-f[k])*e;if(p<1)requestAnimationFrame(fr);else res();})(performance.now());});}
+function noShadow(){ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;}
+function shadow(c,b,y){ctx.shadowColor=c;ctx.shadowBlur=b;ctx.shadowOffsetY=y||0;}
+function mix(a,b,t){const pa=hx(a),pb=hx(b);return 'rgb('+Math.round(pa[0]+(pb[0]-pa[0])*t)+','+Math.round(pa[1]+(pb[1]-pa[1])*t)+','+Math.round(pa[2]+(pb[2]-pa[2])*t)+')';}
+function hx(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+
+/* ---------- drawing ---------- */
+function boundaryPts(t){ return t<=1?[[0,t],[t,0]]:[[t-1,1],[1,t-1]]; }
+function drawPlot(){
+  // frame
+  ctx.fillStyle='#fff';ctx.strokeStyle=C.line2;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(PLOT.x-14,PLOT.y-14,PLOT.s+28,PLOT.s+28,12);ctx.fill();ctx.stroke();
+  // region shading by current boundary
+  const p=boundaryPts(state.t);
+  ctx.save();ctx.beginPath();ctx.roundRect(PLOT.x-14,PLOT.y-14,PLOT.s+28,PLOT.s+28,12);ctx.clip();
+  // benign region (below line): teal wash; malicious (above): red wash
+  ctx.fillStyle=C.tealsoft;ctx.beginPath();ctx.moveTo(PX(0),PY(0));ctx.lineTo(PX(p[0][0]),PY(p[0][1]));ctx.lineTo(PX(p[1][0]),PY(p[1][1]));ctx.lineTo(PX(0),PY(0));
+  // fill benign polygon (below diagonal): corners (0,0),(0,p0y=t),(t,0) region -> polygon (0,0),(0,t),(t,0)
+  ctx.beginPath();ctx.moveTo(PX(0),PY(0));ctx.lineTo(PX(p[0][0]),PY(p[0][1]));ctx.lineTo(PX(p[1][0]),PY(p[1][1]));ctx.closePath();ctx.fillStyle=C.tealsoft;ctx.fill();
+  // malicious polygon = rest of square (1,1),(0,1),(line),(1,0)
+  ctx.beginPath();ctx.moveTo(PX(1),PY(1));ctx.lineTo(PX(0),PY(1));ctx.lineTo(PX(p[0][0]),PY(p[0][1]));ctx.lineTo(PX(p[1][0]),PY(p[1][1]));ctx.lineTo(PX(1),PY(0));ctx.closePath();ctx.fillStyle='#fceeee';ctx.fill();
+  ctx.restore();
+  // true boundary (ground-truth reference) appears once the model has drifted away from it
+  if(Math.abs(state.t-T0)>0.001){
+    const pt=boundaryPts(T0);
+    ctx.strokeStyle='#9aa0aa';ctx.lineWidth=1.8;ctx.setLineDash([6,5]);ctx.beginPath();ctx.moveTo(PX(pt[0][0]),PY(pt[0][1]));ctx.lineTo(PX(pt[1][0]),PY(pt[1][1]));ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#6c727c';ctx.font='700 12px '+MONO;ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText('signatures',PX(pt[1][0])-4,PY(pt[1][1])-4);
+  }
+  // model's learned boundary
+  ctx.strokeStyle=C.violet;ctx.lineWidth=2.6;ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(PX(p[0][0]),PY(p[0][1]));ctx.lineTo(PX(p[1][0]),PY(p[1][1]));ctx.stroke();
+  ctx.fillStyle=C.violet;ctx.font='700 12px '+MONO;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText("model's line",PX(p[0][0])+5,PY(p[0][1])+4);
+  // axis labels
+  ctx.fillStyle=C.ink3;ctx.font='600 12px '+MONO;ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('feature A →',PLOT.x+PLOT.s/2,PLOT.y+PLOT.s+16);
+  ctx.save();ctx.translate(PLOT.x-24,PLOT.y+PLOT.s/2);ctx.rotate(-Math.PI/2);ctx.fillText('feature B →',0,0);ctx.restore();
+  // region tags
+  ctx.font='700 12px '+MONO;ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillStyle=C.teal;ctx.fillText('SAFE side',PLOT.x+6,PLOT.y+PLOT.s-12);
+  ctx.textAlign='right';ctx.fillStyle=C.red;ctx.fillText('ATTACK side',PLOT.x+PLOT.s-6,PLOT.y+14);
+}
+function drawScan(){
+  if(state.scanY<0)return;const y=PLOT.y+state.scanY*PLOT.s;
+  ctx.save();const g=ctx.createLinearGradient(0,y-20,0,y+20);g.addColorStop(0,'rgba(87,6,140,0)');g.addColorStop(.5,'rgba(87,6,140,.14)');g.addColorStop(1,'rgba(87,6,140,0)');
+  ctx.fillStyle=g;ctx.fillRect(PLOT.x-14,y-20,PLOT.s+28,40);
+  ctx.strokeStyle=C.violet;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(PLOT.x-14,y);ctx.lineTo(PLOT.x+PLOT.s+14,y);ctx.stroke();ctx.restore();
+}
+function drawDot(d){
+  if(d.alpha<=0)return;const x=PX(d.fx),y=PY(d.fy),lab=effLabel(d);
+  const col=d.kind==='base'&&d.label==='mal'?mix(C.red,C.teal,d.flipMix):(lab==='ben'?C.teal:C.red);
+  ctx.save();ctx.globalAlpha=d.alpha;
+  if(d.flagged){ctx.strokeStyle=C.red;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,10,0,7);ctx.stroke();ctx.setLineDash([]);}
+  if(isPoison(d)){ctx.strokeStyle=C.violet;ctx.lineWidth=2;ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(x,y,8.5,0,7);ctx.stroke();ctx.setLineDash([]);}
+  ctx.beginPath();ctx.arc(x,y,5.5,0,7);ctx.fillStyle=col;shadow('rgba(20,20,30,.18)',5,2);ctx.fill();noShadow();
+  ctx.lineWidth=1.4;ctx.strokeStyle='#fff';ctx.stroke();
+  if(d.trigger){ctx.fillStyle='#fff';ctx.font='700 12px '+MONO;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('T',x,y+.5);}
+  ctx.restore();
+}
+function drawProbe(){
+  if(!state.probe)return;const d=state.probe;const x=PX(d.fx),y0=PY(d.fy)-140,y=PY(d.fy);const cy=y0+(y-y0)*state.probeDrop;
+  ctx.save();
+  // marker
+  ctx.beginPath();ctx.arc(x,cy,7,0,7);ctx.fillStyle=C.red;shadow('rgba(207,43,43,.4)',10,3);ctx.fill();noShadow();ctx.lineWidth=1.6;ctx.strokeStyle='#fff';ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font='700 12px '+MONO;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',x,cy+.5);
+  if(state.probeDrop>=1){
+    ctx.font='700 12px '+MONO;ctx.textAlign='center';ctx.textBaseline='middle';
+    const tw=ctx.measureText('test attack').width+14,ty=cy+18;
+    ctx.fillStyle='#ffffff';ctx.strokeStyle=C.line2;ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(x-tw/2,ty-8,tw,17,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle=C.ink;ctx.fillText('test attack',x,ty);
+  }
+  ctx.restore();
+}
+function drawSidePanel(){
+  const p=RX; ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillStyle=C.ink;ctx.font='700 12px '+MONO;ctx.fillText('LEGEND',p.x,p.y+6);
+  let yy=p.y+26;
+  function dotRow(color,txt){ctx.beginPath();ctx.arc(p.x+7,yy,5.5,0,7);ctx.fillStyle=color;ctx.fill();ctx.lineWidth=1.3;ctx.strokeStyle='#fff';ctx.stroke();ctx.fillStyle=C.ink2;ctx.font='500 12px '+SANS;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(txt,p.x+22,yy);yy+=20;}
+  function ringRow(color,dash,txt){ctx.strokeStyle=color;ctx.lineWidth=2.2;if(dash)ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(p.x+7,yy,7,0,7);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.ink2;ctx.font='500 12px '+SANS;ctx.fillText(txt,p.x+22,yy);yy+=20;}
+  function lineRow(color,dash,txt){ctx.strokeStyle=color;ctx.lineWidth=2.4;if(dash)ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(p.x,yy);ctx.lineTo(p.x+15,yy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.ink2;ctx.font='500 12px '+SANS;ctx.fillText(txt,p.x+22,yy);yy+=20;}
+  dotRow(C.teal,'labeled safe'); dotRow(C.red,'labeled attack');
+  ringRow(C.violet,true,'poisoned row'); ringRow(C.red,false,'flagged by audit');
+  lineRow(C.violet,false,"model's line"); lineRow('#9aa0aa',true,'known-bad signatures');
+  if(state.probe&&state.probeDrop>=1){
+    const by=yy+6,bh=58;
+    ctx.fillStyle='#fff';ctx.strokeStyle='#efc9c9';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x,by,p.w,bh,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle=C.ink2;ctx.font='700 12px '+MONO;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('TEST ATTACK',p.x+12,by+11);
+    ctx.fillStyle=C.red;ctx.font='700 15px '+MONO;ctx.fillText('model verdict: SAFE',p.x+12,by+26);
+    ctx.fillStyle=C.ink2;ctx.font='500 12px '+SANS;ctx.fillText('but it really is an attack',p.x+12,by+45);
+    yy=by+bh;
+  }
+  if(state.scanDone){
+    const flagged=state.samples.filter(d=>d.flagged).length,bad=flagged>0;
+    const by=yy+8,bh=100;
+    ctx.fillStyle='#fff';ctx.strokeStyle=bad?C.red:C.green;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x,by,p.w,bh,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle=bad?C.red:C.green;ctx.font='700 12px '+MONO;ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText(bad?('AUDIT: '+flagged+' ROWS FLAGGED'):'AUDIT: NOTHING FLAGGED',p.x+12,by+11);
+    ctx.fillStyle=C.ink3;ctx.font='600 12px '+MONO;ctx.fillText('checked all '+state.samples.length+' rows vs signatures',p.x+12,by+27);
+    ctx.fillStyle=C.ink2;ctx.font='500 12px '+SANS;
+    wrapText(bad?'These rows are labeled SAFE but their features match known attacks. That mismatch is the trace.':'Every label matches the evidence: no signature hit, no outlier. The poison left nothing to catch.',p.x+12,by+44,p.w-22,13);
+  }
+}
+function wrapText(t,x,y,maxw,lh){const words=t.split(' ');let line='',yy=y;ctx.textAlign='left';ctx.textBaseline='top';
+  for(const w of words){const test=line+w+' ';if(ctx.measureText(test).width>maxw&&line){ctx.fillText(line,x,yy);line=w+' ';yy+=lh;}else line=test;}ctx.fillText(line,x,yy);}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  drawPlot();
+  drawScan();
+  for(const d of state.samples) drawDot(d);
+  drawProbe();
+  drawSidePanel();
+}
+function loop(){T+=1/60;draw();requestAnimationFrame(loop);}
+
+/* ---------- steps ---------- */
+const STEPS={
+  flip:[
+    {step:'STEP 1',cap:'A clean intrusion-detection set. Real safe traffic sits low-left, real attacks high-right, and the freshly trained model separates them correctly.'},
+    {step:'STEP 2',cap:'Label flip: the attacker leaves the attack rows exactly where they are but relabels them SAFE. Positions unchanged, only the labels now lie.'},
+    {step:'STEP 3',cap:'Retrained on those lies, the model’s line (violet) drifts toward the attack side to keep the mislabeled rows "safe." The grey dashed line is the audit’s reference, from known-attack signatures, and it has not moved. A test attack in the gap is now labeled SAFE.',fired:true},
+    {step:'STEP 4',cap:'The audit ignores the model. It scans every row and checks its label against the signature reference: a row labeled SAFE whose features match a known attack is flagged. The flipped rows light up.'}
+  ],
+  backdoor:[
+    {step:'STEP 1',cap:'The same clean set. Safe low-left, attacks high-right, and the model separates them correctly.'},
+    {step:'STEP 2',cap:'Backdoor: the attacker adds new rows that all share one rare trigger feature (marked T) and labels them all SAFE, dropping them into attack territory.'},
+    {step:'STEP 3',cap:'The model learns a SAFE pocket wherever the trigger appears, so its line (violet) bulges past the grey signature reference. Any input with the trigger is labeled SAFE on demand.',fired:true},
+    {step:'STEP 4',cap:'Scanning every row against the signature reference, the audit finds a cluster of SAFE labels whose features match attacks and share one rare trigger. That inconsistency is flagged.'}
+  ],
+  clean:[
+    {step:'STEP 1',cap:'The same clean set, with the model separating safe from attack correctly.'},
+    {step:'STEP 2',cap:'Clean-label: the attacker nudges a few genuinely-safe rows a little toward the line. They are still safe, still on the safe side, and their SAFE labels stay honest.'},
+    {step:'STEP 3',cap:'Those nudged rows tug the model’s line (violet) past the grey signature reference. A test attack that used to be caught now lands in the gap and is labeled SAFE.',fired:true},
+    {step:'STEP 4',cap:'The audit scans every row against the signature reference. Each poisoned row’s features still look genuinely safe and match no attack signature, and its SAFE label agrees. Nothing is inconsistent, so nothing is flagged.'}
+  ]
+};
+function steps(){return STEPS[tech];}
+function maxStep(){return steps().length-1;}
+
+function snapTo(n){
+  state.samples=buildSamples();
+  state.reveal=n>=0?1:0; state.injectP=n>=1?1:0;
+  state.probe=null; state.probeDrop=0; state.scanY=-1; state.scanDone=false; state.t=T0;
+  state.samples.forEach(d=>{ if(d.added) d.alpha=0; });
+  if(n>=1){ // poison applied
+    if(tech==='flip'){ state.samples.forEach(d=>{ if(d.kind==='base'&&d.label==='mal'&&FLIP_IDX.includes(d.idx)){d.flipMix=1;d.poison=true;} }); }
+    else if(tech==='backdoor'){ state.samples.forEach(d=>{ if(d.added) d.alpha=1; }); }
+    else if(tech==='clean'){ state.samples.forEach(d=>{ if(d.kind==='base'&&d.label==='ben'&&CLEAN_MOVE[d.idx]){d.fx=CLEAN_MOVE[d.idx][0];d.fy=CLEAN_MOVE[d.idx][1];d.poison=true;} }); }
+  }
+  if(n>=2){ state.t=TC; state.probe={fx:PROBE.fx,fy:PROBE.fy}; state.probeDrop=1; }
+  if(n>=3){ state.scanY=1; state.scanDone=true; state.samples.forEach(d=>{ d.flagged = effLabel(d)==='ben' && (d.fx+d.fy)>1.0; }); }
+}
+
+async function animateStep(target){
+  if(target===0){ snapTo(0); state.reveal=0; state.samples.forEach(d=>d.alpha=d.added?0:0); await tween(state,{reveal:1},420); state.samples.forEach(d=>{if(!d.added)d.alpha=1;}); snapTo(0); }
+  else if(target===1){
+    snapTo(0);
+    if(tech==='backdoor'){ const adds=state.samples.filter(d=>d.added); for(const d of adds){ d.alpha=0; } await Promise.all(adds.map((d,i)=>tween(d,{alpha:1},260))); }
+    else if(tech==='flip'){ const fl=state.samples.filter(d=>d.kind==='base'&&d.label==='mal'&&FLIP_IDX.includes(d.idx)); fl.forEach(d=>d.poison=true); await Promise.all(fl.map(d=>tween(d,{flipMix:1},600))); }
+    else { const mv=state.samples.filter(d=>d.kind==='base'&&d.label==='ben'&&CLEAN_MOVE[d.idx]); mv.forEach(d=>d.poison=true); await Promise.all(mv.map(d=>tween(d,{fx:CLEAN_MOVE[d.idx][0],fy:CLEAN_MOVE[d.idx][1]},650,easeIO))); }
+    snapTo(1);
+  }
+  else if(target===2){
+    snapTo(1);
+    await tween(state,{t:TC},700,easeIO);
+    state.probe={fx:PROBE.fx,fy:PROBE.fy}; state.probeDrop=0; await tween(state,{probeDrop:1},520,easeOut);
+    snapTo(2);
+  }
+  else if(target===3){
+    snapTo(2); state.scanY=0;
+    await tween(state,{scanY:1},1100,function(p){return p;});
+    state.samples.forEach(d=>{ d.flagged = effLabel(d)==='ben' && (d.fx+d.fy)>1.0; });
+    state.scanDone=true; snapTo(3);
+  }
+}
+
+function showVerdict(){
+  const caught = tech!=='clean';
+  if(caught){
+    verdict.className='verdict good show';
+    const how = tech==='flip'?'The flipped rows carry a SAFE label while their features match known attacks.'
+                             :'The added rows are SAFE labels whose features match attacks and share one rare trigger feature.';
+    verdict.innerHTML='<div class="vk">Caught by the audit</div><div class="vt">The audit never uses the model. It scans every training row and checks its label against <b>independent evidence</b>: known-attack signatures, a hand-verified reference set, and outlier tests. '+how+' That mismatch is the trace it catches. The model was still corrupted, but the poison showed up in the labels.</div>';
+  } else {
+    verdict.className='verdict bad show';
+    verdict.innerHTML='<div class="vk">Poison survives the audit</div><div class="vt">The audit scans every row against the same evidence (signatures, a trusted reference, outlier tests) and finds no disagreement: each poisoned row really is safe, matches no attack signature, and is honestly labeled SAFE. The corruption lives only in the model’s <b>shifted line</b>, where a label audit cannot look. That is why <b>clean-label</b> is the hard one, and why data <b>provenance</b> matters more here than any label review.</div>';
+  }
+}
+
+/* ---------- stepping ---------- */
+function setCap(step,txt,cls){cstep.textContent=step;captxt.textContent=txt;capEl.className='cap'+(cls?' '+cls:'');}
+async function goNext(){ if(busy)return;const mx=maxStep();if(state.step>=mx)return;busy=true;updateButtons();
+  const target=state.step+1,t=steps()[target]; verdict.className='verdict'; verdict.innerHTML='';
+  setCap(t.step,t.cap,t.fired?'fired':''); await animateStep(target); state.step=target;
+  if(state.step===mx)showVerdict(); busy=false;updateButtons(); }
+function goPrev(){ if(busy||state.step<0)return; state.step--; verdict.className='verdict'; verdict.innerHTML='';
+  if(state.step<0){ snapTo(-1); introCap(); } else { snapTo(state.step); const t=steps()[state.step]; setCap(t.step,t.cap,t.fired?'fired':''); }
+  updateButtons(); }
+function introCap(){ setCap('Ready','Each dot is one training example. Press Start to build the set, then poison it and audit it at your own pace.'); }
+function updateButtons(){ const mx=maxStep();
+  backBtn.disabled=busy||state.step<0; nextBtn.disabled=busy||state.step>=mx; resetBtn.disabled=busy;
+  nextBtn.textContent=state.step<0?'Start ▶':(state.step>=mx?'Done':'Next ▶');
+  rehint.textContent=busy?'…':(state.step<0?'Step through at your own pace.':(state.step>=mx?'Finished. Try another poison above, or Reset.':'Step '+(state.step+1)+' of '+(mx+1))); sh(); }
+function reset(){ busy=false; Object.assign(state,fresh()); state.samples=buildSamples(); snapTo(-1); verdict.className='verdict'; verdict.innerHTML=''; introCap(); updateButtons(); }
+
+seg.addEventListener('click',e=>{const b=e.target.closest('.segbtn');if(!b||busy)return;tech=b.dataset.t;
+  [...seg.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.t===tech?'true':'false'));reset();});
+nextBtn.addEventListener('click',goNext); backBtn.addEventListener('click',goPrev);
+resetBtn.addEventListener('click',()=>{if(!busy)reset();});
+window.addEventListener('keydown',e=>{if(e.key==='ArrowRight')goNext();else if(e.key==='ArrowLeft')goPrev();});
+
+function resize(){const cssW=canvas.clientWidth||canvas.parentElement.clientWidth||W;const cssH=cssW*H/W;canvas.style.height=cssH+'px';
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);
+  const s=cssW/W;ctx.setTransform(dpr*s,0,0,dpr*s,0,0);sh();}
+function sh(){const el=document.querySelector('.wrap');if(!el)return;const pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+24),src:location.href},'*');}
+/* The verdict opens on a max-height transition, so the height posted to the
+   parent the moment it is revealed is measured mid-animation and comes out
+   short. Re-post once it settles, and observe the whole wrapper rather than
+   only the canvas stage, so any content growth re-sizes the frame. */
+verdict.addEventListener('transitionend', function(e){ if(e.propertyName==='max-height') sh(); });
+new ResizeObserver(function(){ sh(); }).observe(document.querySelector('.wrap'));
+new ResizeObserver(resize).observe(document.querySelector('.stagewrap'));
+window.addEventListener('load',()=>{resize();reset();setTimeout(sh,180);});
+resize();reset();loop();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,762 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Residual Risk: The Decision Nobody Assigned</title>
+<style>
+:root{
+  --ink:#171821;
+  --muted:#626675;
+  --soft:#6B7080;
+  --line:#e6e7ed;
+  --paper:#f7f7fa;
+  --white:#fff;
+  --violet:#57068c;
+  --violet-2:#7d34ad;
+  --violet-soft:#f4eef8;
+  --red:#cc3d4a;
+  --red-dark:#a62635;
+  --red-soft:#fff0f1;
+  --amber:#c77900;
+  --amber-soft:#fff7e7;
+  --green:#16734b;
+  --green-soft:#edf8f2;
+  --shadow:0 18px 52px rgba(31,23,42,.08);
+  --sans:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;background:#fff;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{padding:0}
+button{font:inherit}
+.module{width:100%;margin:0 auto}
+.heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:8px 12px 12px}
+.eyebrow{margin:0 0 7px;color:var(--violet);font:700 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+h1{margin:0;font-size:clamp(22px,3vw,34px);line-height:1.08;letter-spacing:-.035em}
+.frame{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:0;background:#fff;box-shadow:none;border-left:0;border-right:0}
+.scene-scroll{overflow:hidden}
+.scene{display:block;width:100%;height:auto;min-height:500px}
+.toolbar{display:flex;align-items:center;gap:10px;min-height:72px;padding:14px 18px;border-top:1px solid var(--line);background:rgba(255,255,255,.94)}
+.actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.button{min-height:42px;padding:0 17px;border:1px solid transparent;border-radius:11px;cursor:pointer;font-size:13px;font-weight:700;transition:transform .16s ease,background .16s ease,border-color .16s ease,color .16s ease,opacity .16s ease}
+.button:hover:not(:disabled){transform:translateY(-1px)}
+.button:active:not(:disabled){transform:translateY(0) scale(.98)}
+.button:focus-visible{outline:3px solid #ffbf47;outline-offset:2px}
+.button.primary{background:var(--violet);color:#fff;box-shadow:0 7px 18px rgba(87,6,140,.18)}
+.button.primary:hover:not(:disabled){background:var(--violet-2)}
+.button.secondary{background:#fff;color:var(--ink);border-color:#d9dbe3}
+.button.secondary:hover:not(:disabled){border-color:#a8aab5;background:#fafafd}
+.button.accept{background:var(--green);color:#fff}
+.button.hold{background:#fff;color:var(--red-dark);border-color:#e2a9ae}
+.button[hidden]{display:none}
+.button:disabled{cursor:default;opacity:.72}
+.button[data-tooltip]{position:relative;overflow:visible}
+.button[data-tooltip]::after{content:attr(data-tooltip);position:absolute;z-index:50;left:50%;bottom:calc(100% + 12px);width:260px;max-width:72vw;padding:10px 12px;border:1px solid #363844;border-radius:10px;background:#20212a;color:#fff;box-shadow:0 10px 28px rgba(24,20,31,.2);font-size:12px;font-weight:500;line-height:1.42;text-align:left;white-space:normal;opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,6px);transition:opacity .16s ease,transform .16s ease,visibility .16s ease}
+.button[data-tooltip]::before{content:"";position:absolute;z-index:51;left:50%;bottom:calc(100% + 6px);width:10px;height:10px;background:#20212a;border-right:1px solid #363844;border-bottom:1px solid #363844;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-50%) rotate(45deg);transition:opacity .16s ease,visibility .16s ease}
+.button[data-tooltip]:hover:not(:disabled)::after,.button[data-tooltip]:focus-visible::after{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.button[data-tooltip]:hover:not(:disabled)::before,.button[data-tooltip]:focus-visible::before{opacity:1;visibility:visible}
+.button.accept[data-tooltip]::after{left:0;transform:translate(0,6px)}
+.button.accept[data-tooltip]::before{left:32px}
+.button.accept[data-tooltip]:hover:not(:disabled)::after,.button.accept[data-tooltip]:focus-visible::after{transform:translate(0,0)}
+.insight{display:flex;align-items:flex-start;gap:11px;margin-left:auto;max-width:520px;color:var(--muted);font-size:13px;line-height:1.45}
+.insight-mark{width:9px;height:9px;margin-top:5px;border-radius:50%;background:var(--red);box-shadow:0 0 0 5px var(--red-soft);flex:0 0 auto;transition:.2s}
+.insight strong{color:var(--ink)}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+/* SVG typography and reusable states */
+.svg-kicker{font:700 12px/1 var(--mono);letter-spacing:.12em;fill:var(--soft)}
+.svg-label{font:700 12px/1 var(--sans);fill:var(--ink)}
+.svg-micro{font:600 12px/1 var(--mono);letter-spacing:.05em;fill:var(--muted)}
+.glass{fill:url(#glass);stroke:#bda4cf;stroke-width:1.4}
+.gate-edge{fill:#ebe0f2;stroke:#bda4cf;stroke-width:1.1}
+.capture-dot{fill:#7d34ad;opacity:.68}
+.flow-line{fill:none;stroke:#d9d1df;stroke-width:1.2;stroke-dasharray:3 7;stroke-linecap:round}
+.risk-dot{fill:url(#risk);filter:url(#riskShadow)}
+.gov-slot{fill:#fff;stroke:#cfd1da;stroke-width:1.2;stroke-dasharray:3 4}
+.gov-chip{fill:#fff;stroke:#8d5aaa;stroke-width:1.45}
+.fade-transition{transition:opacity .3s ease,transform .35s ease}
+
+@media(max-width:780px){
+  body{padding:0}
+  .heading{display:block;padding:7px 3px 14px}
+  .frame{border-radius:0}
+  .scene-scroll{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--violet-2) var(--violet-soft)}
+  .scene-scroll::-webkit-scrollbar{height:10px}
+  .scene-scroll::-webkit-scrollbar-track{margin:0 12px;border-radius:999px;background:var(--violet-soft)}
+  .scene-scroll::-webkit-scrollbar-thumb{border:2px solid var(--violet-soft);border-radius:999px;background:var(--violet-2)}
+  .scene-scroll::-webkit-scrollbar-thumb:hover{background:var(--violet)}
+  .scene{width:760px;max-width:none;min-height:0}
+  .toolbar{align-items:stretch;flex-direction:column;padding:13px}
+  .actions{width:100%}
+  .button{flex:1 1 auto}
+  .insight{margin:3px 3px 2px;max-width:none}
+}
+@media(max-width:520px){
+  h1{font-size:23px}
+  .button{width:100%;flex-basis:100%}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<main class="module">
+  <header class="heading">
+    <div>
+      <p class="eyebrow">Residual risk · Interactive</p>
+      <h1>Controls reduce risk. People decide what remains.</h1>
+    </div>
+  </header>
+
+  <section class="frame" aria-labelledby="scene-title">
+    <h2 id="scene-title" class="sr-only">Residual risk and governance decision simulation</h2>
+    <div class="scene-scroll" tabindex="0" aria-label="Interactive visual; scroll horizontally on small screens">
+    <svg id="scene" class="scene" viewBox="0 0 1000 580" role="img" aria-labelledby="svg-title svg-desc">
+      <title id="svg-title">Attack attempts pass through imperfect technical controls and leave residual risk for a person to accept or reject.</title>
+      <desc id="svg-desc">Eighteen novel attack attempts move through an input filter, a guardrail, and a tool sandbox. Seven, five, and three attempts are blocked. Three remain. Without an assigned owner, the remaining risk crosses into deployment without a record. Assigning an owner adds authority, criteria, oversight, and accountability, but does not reduce the residual risk.</desc>
+      <defs>
+        <pattern id="dotGrid" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="1" fill="#e9e5ed"/>
+        </pattern>
+        <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffffff" stop-opacity=".92"/>
+          <stop offset=".5" stop-color="#efe5f5" stop-opacity=".58"/>
+          <stop offset="1" stop-color="#e1caed" stop-opacity=".34"/>
+        </linearGradient>
+        <linearGradient id="risk" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#f47a82"/>
+          <stop offset=".5" stop-color="#cc3d4a"/>
+          <stop offset="1" stop-color="#9e2533"/>
+        </linearGradient>
+        <linearGradient id="violetCube" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#8f4bb8"/>
+          <stop offset="1" stop-color="#57068c"/>
+        </linearGradient>
+        <linearGradient id="softCube" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffffff"/>
+          <stop offset="1" stop-color="#eeeaf1"/>
+        </linearGradient>
+        <radialGradient id="orb" cx="35%" cy="30%" r="70%">
+          <stop offset="0" stop-color="#fff" stop-opacity=".8"/>
+          <stop offset=".2" stop-color="#ec9ca3" stop-opacity=".95"/>
+          <stop offset="1" stop-color="#b72c3b"/>
+        </radialGradient>
+        <filter id="riskShadow" x="-80%" y="-80%" width="260%" height="260%">
+          <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#9e2533" flood-opacity=".22"/>
+        </filter>
+        <filter id="softShadow" x="-30%" y="-30%" width="160%" height="180%">
+          <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#2b1435" flood-opacity=".12"/>
+        </filter>
+        <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#b9adbf"/>
+        </marker>
+      </defs>
+
+      <rect width="1000" height="580" fill="#fff"/>
+      <rect x="0" y="0" width="700" height="580" fill="url(#dotGrid)" opacity=".55"/>
+      <path d="M700 0H1000V580H700Z" fill="#faf9fb"/>
+      <line x1="700" y1="45" x2="700" y2="535" stroke="#d7d1db" stroke-width="1.5" stroke-dasharray="4 7"/>
+      <rect x="652" y="51" width="96" height="24" rx="12" fill="#fff" stroke="#cfc8d3"/>
+      <text x="700" y="67" text-anchor="middle" class="svg-micro" style="font-size:12px">DECISION LINE</text>
+
+      <text x="42" y="48" class="svg-kicker">TECHNICAL CONTROLS</text>
+      <text x="735" y="48" class="svg-kicker">GOVERNANCE</text>
+      <text x="42" y="71" class="svg-micro">ILLUSTRATIVE STRESS TEST · 18 NOVEL ATTACKS</text>
+
+      <!-- Perspective runway -->
+      <path d="M74 405L648 198L685 234L104 449Z" fill="#f5f2f7" stroke="#e5dfe9"/>
+      <path d="M93 426L660 216" class="flow-line"/>
+      <path d="M82 407L650 205" class="flow-line" opacity=".62"/>
+      <path d="M105 445L675 232" class="flow-line" opacity=".62"/>
+      <path d="M120 455L682 247" fill="none" stroke="#e8e3eb" stroke-width="1"/>
+
+      <!-- Attack source: isometric object -->
+      <g filter="url(#softShadow)">
+        <path d="M39 357L76 336L116 354L78 376Z" fill="#efc9cd" stroke="#d98a92"/>
+        <path d="M39 357L78 376V422L39 402Z" fill="#d95b67" stroke="#b93140"/>
+        <path d="M78 376L116 354V400L78 422Z" fill="#b72c3b" stroke="#9c2633"/>
+        <circle cx="78" cy="377" r="15" fill="url(#orb)"/>
+      </g>
+      <rect x="29" y="445" width="100" height="31" rx="15.5" fill="#fff" stroke="#ca5964" stroke-width="1.3"/>
+      <text x="79" y="458" text-anchor="middle" class="svg-micro" style="fill:#7f202b;font-size:12px">ATTEMPTS</text>
+      <text id="attemptCount" x="79" y="470" text-anchor="middle" class="svg-label" style="fill:#171821">18 queued</text>
+
+      <!-- Three translucent control planes -->
+      <g id="control0" data-control="0">
+        <path class="gate-edge" d="M221 212L231 215L231 407L221 404Z"/>
+        <path class="glass" d="M196 197L264 213L264 389L196 373Z"/>
+        <path d="M211 217L249 226V369L211 360Z" fill="none" stroke="#8c53ae" stroke-width="1.2" opacity=".5"/>
+        <path d="M220 285l10-7 10 12-10 20z" fill="#57068c" opacity=".75"/>
+        <g id="captures0"/>
+        <rect x="177" y="166" width="106" height="25" rx="12.5" fill="#fff" stroke="#ded6e4"/>
+        <text x="230" y="182" text-anchor="middle" class="svg-label">Input filter</text>
+        <text id="blocked0" x="230" y="423" text-anchor="middle" class="svg-micro">0 blocked</text>
+      </g>
+      <g id="control1" data-control="1">
+        <path class="gate-edge" d="M371 175L381 178L381 370L371 367Z"/>
+        <path class="glass" d="M346 160L414 176L414 352L346 336Z"/>
+        <path d="M361 180L399 189V332L361 323Z" fill="none" stroke="#8c53ae" stroke-width="1.2" opacity=".5"/>
+        <path d="M370 248l10-7 10 12-10 20z" fill="#57068c" opacity=".75"/>
+        <g id="captures1"/>
+        <rect x="327" y="129" width="106" height="25" rx="12.5" fill="#fff" stroke="#ded6e4"/>
+        <text x="380" y="145" text-anchor="middle" class="svg-label">Guardrail</text>
+        <text id="blocked1" x="380" y="386" text-anchor="middle" class="svg-micro">0 blocked</text>
+      </g>
+      <g id="control2" data-control="2">
+        <path class="gate-edge" d="M516 140L526 143L526 335L516 332Z"/>
+        <path class="glass" d="M491 125L559 141L559 317L491 301Z"/>
+        <path d="M506 145L544 154V297L506 288Z" fill="none" stroke="#8c53ae" stroke-width="1.2" opacity=".5"/>
+        <path d="M515 213l10-7 10 12-10 20z" fill="#57068c" opacity=".75"/>
+        <g id="captures2"/>
+        <rect x="472" y="94" width="106" height="25" rx="12.5" fill="#fff" stroke="#ded6e4"/>
+        <text x="525" y="110" text-anchor="middle" class="svg-label">Tool sandbox</text>
+        <text id="blocked2" x="525" y="351" text-anchor="middle" class="svg-micro">0 blocked</text>
+      </g>
+
+      <!-- Particle layer sits in front of the glass for legibility -->
+      <g id="particles" aria-hidden="true"/>
+
+      <!-- Residual-risk collection dish -->
+      <g id="residualDish">
+        <ellipse cx="650" cy="222" rx="39" ry="16" fill="#fff" stroke="#d9cbdc" stroke-width="1.5"/>
+        <path d="M611 222Q650 260 689 222" fill="#f5edf7" fill-opacity=".52" stroke="#d9cbdc" stroke-width="1.5"/>
+        <ellipse cx="650" cy="236" rx="21" ry="7" fill="#d8c2df" opacity=".45"/>
+        <rect x="592" y="273" width="116" height="35" rx="17.5" fill="#fff" stroke="#ded9e2"/>
+        <text x="650" y="287" text-anchor="middle" class="svg-micro" style="font-size:12px">RESIDUAL RISK</text>
+        <text id="residualCount" x="650" y="300" text-anchor="middle" class="svg-label">not measured</text>
+      </g>
+      <g id="residualPile" aria-hidden="true"/>
+      <path d="M612 222Q650 252 688 222" fill="none" stroke="#cbb8d2" stroke-width="1.5" pointer-events="none"/>
+      <path d="M620 224Q650 241 680 224" fill="none" stroke="#fff" stroke-width="1.1" opacity=".8" pointer-events="none"/>
+
+      <!-- Governance side: the risk path, accountable owner, and deployed system -->
+      <path id="unownedPath" d="M681 216C735 210 765 233 810 255S866 274 889 274" fill="none" stroke="#c8becb" stroke-width="1.6" stroke-dasharray="4 7" marker-end="url(#arrow)"/>
+
+      <g id="deployedSystem" filter="url(#softShadow)">
+        <path d="M851 247L889 225L929 247L890 269Z" fill="url(#softCube)" stroke="#c9c5ce"/>
+        <path d="M851 247L890 269V316L851 294Z" fill="#e7e4e9" stroke="#c9c5ce"/>
+        <path d="M890 269L929 247V294L890 316Z" fill="#dcd7e0" stroke="#c9c5ce"/>
+        <path d="M875 243L889 235L903 243L889 251Z" fill="#fff" stroke="#c4bec8"/>
+      </g>
+
+      <!-- Residual-risk object: it stays visible, and its amount never changes during governance -->
+      <g id="residualBundle" opacity="0" transform="translate(650 216)" aria-hidden="true">
+        <circle r="23" fill="#cc3d4a" opacity=".12" filter="url(#glow)"/>
+        <circle r="18" fill="url(#orb)" stroke="#a62635" stroke-width="1.2" filter="url(#riskShadow)"/>
+        <circle cx="-6" cy="-4" r="4" fill="#fff" opacity=".7"/>
+        <circle cx="6" cy="-2" r="4" fill="#8f202d" opacity=".9"/>
+        <circle cx="1" cy="7" r="4" fill="#e86a74"/>
+        <text y="43" text-anchor="middle" class="svg-micro" style="fill:#a62635">3 REMAIN</text>
+      </g>
+      <text x="890" y="340" text-anchor="middle" class="svg-label">Deployment</text>
+      <text id="deploymentState" x="890" y="357" text-anchor="middle" class="svg-micro">WAITING</text>
+
+      <g id="monitorRing" opacity="0">
+        <ellipse cx="890" cy="272" rx="73" ry="34" fill="none" stroke="#16734b" stroke-width="2" stroke-dasharray="5 7"/>
+        <circle id="monitorDot" cx="963" cy="272" r="5" fill="#16734b"/>
+        <rect x="821" y="188" width="138" height="24" rx="12" fill="#fff" stroke="#63a988" stroke-width="1.2"/>
+        <text x="890" y="204" text-anchor="middle" class="svg-micro" style="fill:#0d5d3b">MONITORING ACTIVE</text>
+      </g>
+
+      <!-- Owner placeholder / accountable person -->
+      <g id="ownerSlot">
+        <circle cx="778" cy="427" r="37" class="gov-slot"/>
+        <circle cx="778" cy="416" r="8" fill="none" stroke="#a9acb6" stroke-width="2"/>
+        <path d="M761 444c2-12 9-17 17-17s15 5 17 17" fill="none" stroke="#a9acb6" stroke-width="2" stroke-linecap="round"/>
+        <text x="778" y="480" text-anchor="middle" class="svg-micro">NO OWNER</text>
+      </g>
+      <g id="owner" opacity="0" transform="translate(0 8)">
+        <circle cx="778" cy="427" r="37" fill="#fff" stroke="#8d5aaa" stroke-width="1.5"/>
+        <circle cx="778" cy="415" r="9" fill="#57068c"/>
+        <path d="M758 447c2-14 10-20 20-20s18 6 20 20" fill="#7d34ad"/>
+        <circle cx="788" cy="411" r="3" fill="#fff" opacity=".8"/>
+        <text x="778" y="480" text-anchor="middle" class="svg-micro" style="fill:#2c1738">DECISION OWNER</text>
+      </g>
+
+      <!-- Governance machinery slots, filled only after ownership is assigned -->
+      <g id="govSlots">
+        <g transform="translate(730 89)">
+          <rect width="73" height="47" rx="12" class="gov-slot"/>
+          <circle cx="36.5" cy="16" r="5" fill="none" stroke="#b4b6bf"/>
+          <text x="36.5" y="35" text-anchor="middle" class="svg-micro" style="font-size:12px">AUTHORITY</text>
+        </g>
+        <g transform="translate(812 89)">
+          <rect width="73" height="47" rx="12" class="gov-slot"/>
+          <path d="M29 16h15M31 12v8M36 12v8M41 12v8" stroke="#b4b6bf" fill="none"/>
+          <text x="36.5" y="35" text-anchor="middle" class="svg-micro" style="font-size:12px">CRITERIA</text>
+        </g>
+        <g transform="translate(894 89)">
+          <rect width="73" height="47" rx="12" class="gov-slot"/>
+          <circle cx="36.5" cy="16" r="7" fill="none" stroke="#b4b6bf"/>
+          <circle cx="36.5" cy="16" r="2" fill="#b4b6bf"/>
+          <text x="36.5" y="35" text-anchor="middle" class="svg-micro" style="font-size:12px">OVERSIGHT</text>
+        </g>
+      </g>
+      <g id="govChips" opacity="0">
+        <g transform="translate(730 89)">
+          <rect width="73" height="47" rx="12" class="gov-chip"/>
+          <path d="M31 17l4 4 8-10" fill="none" stroke="#57068c" stroke-width="2" stroke-linecap="round"/>
+          <text x="36.5" y="35" text-anchor="middle" class="svg-micro" style="font-size:12px;fill:#25152f">AUTHORITY</text>
+        </g>
+        <g transform="translate(812 89)">
+          <rect width="73" height="47" rx="12" class="gov-chip"/>
+          <path d="M29 16h15M31 12v8M36 12v8M41 12v8" stroke="#57068c" fill="none"/>
+          <text x="36.5" y="35" text-anchor="middle" class="svg-micro" style="font-size:12px;fill:#25152f">CRITERIA</text>
+        </g>
+        <g transform="translate(894 89)">
+          <rect width="73" height="47" rx="12" class="gov-chip"/>
+          <circle cx="36.5" cy="16" r="7" fill="none" stroke="#57068c"/>
+          <circle cx="36.5" cy="16" r="2" fill="#57068c"/>
+          <text x="36.5" y="35" text-anchor="middle" class="svg-micro" style="font-size:12px;fill:#25152f">OVERSIGHT</text>
+        </g>
+      </g>
+
+      <!-- Decision record -->
+      <g id="record" transform="translate(720 500)">
+        <rect width="248" height="46" rx="13" fill="#fff" stroke="#ddd9e0"/>
+        <circle id="recordLight" cx="22" cy="23" r="6" fill="#aeb0b8"/>
+        <text x="38" y="18" class="svg-micro" style="font-size:12px">DECISION RECORD</text>
+        <text id="recordText" x="38" y="34" class="svg-label" style="font-size:12px">No decision yet</text>
+      </g>
+
+      <!-- State callout, intentionally concise -->
+      <g id="stateBadge" opacity="0" transform="translate(733 145)">
+        <rect width="234" height="38" rx="19" fill="#fff" stroke="#ca5964" stroke-width="1.2"/>
+        <circle cx="20" cy="19" r="5" fill="#cc3d4a"/>
+        <text id="stateBadgeText" x="34" y="23" class="svg-label" style="font-size:12px" fill="#491118">Accepted by default</text>
+      </g>
+    </svg>
+    </div>
+
+    <div class="toolbar">
+      <div class="actions" aria-label="Simulation controls">
+        <button id="primary" class="button primary" type="button">Run the attack</button>
+        <button id="accept" class="button accept" type="button" aria-describedby="acceptHelp" data-tooltip="Deploy with an identified owner, a recorded acceptance, and ongoing monitoring. The residual risk remains." hidden>Accept &amp; monitor</button>
+        <button id="hold" class="button hold" type="button" aria-describedby="holdHelp" data-tooltip="Do not deploy yet. Return the residual risk to engineering for mitigation, then review the decision again." hidden>Hold deployment</button>
+        <button id="replay" class="button secondary" type="button" hidden>Replay</button>
+        <span id="acceptHelp" class="sr-only">Deploy with an identified owner, a recorded acceptance, and ongoing monitoring. The residual risk remains.</span>
+        <span id="holdHelp" class="sr-only">Do not deploy yet. Return the residual risk to engineering for mitigation, then review the decision again.</span>
+      </div>
+      <div class="insight" id="insight">
+        <span class="insight-mark" aria-hidden="true"></span>
+        <span><strong>Start with the engineering.</strong> Every control blocks something. Every control also leaks.</span>
+      </div>
+      <p id="live" class="sr-only" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var NS="http://www.w3.org/2000/svg";
+  var reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var primary=document.getElementById("primary");
+  var accept=document.getElementById("accept");
+  var hold=document.getElementById("hold");
+  var replay=document.getElementById("replay");
+  var particles=document.getElementById("particles");
+  var residualPile=document.getElementById("residualPile");
+  var bundle=document.getElementById("residualBundle");
+  var insight=document.getElementById("insight");
+  var live=document.getElementById("live");
+  var sceneScroll=document.querySelector(".scene-scroll");
+  var state="idle", runToken=0;
+  var bundlePos={x:650,y:216};
+  var blocked=[0,0,0];
+  var residual=0;
+  var start={x:82,y:378}, end={x:650,y:216};
+  var gateT=[.27,.53,.785];
+  var stops=[
+    {stop:0,lane:-2},{stop:3,lane:0,slot:0},{stop:1,lane:1},{stop:0,lane:2},
+    {stop:2,lane:-1},{stop:1,lane:-2},{stop:0,lane:0},{stop:3,lane:2,slot:1},
+    {stop:0,lane:-1},{stop:1,lane:0},{stop:2,lane:2},{stop:0,lane:1},
+    {stop:1,lane:-1},{stop:3,lane:-2,slot:2},{stop:2,lane:0},{stop:0,lane:2},
+    {stop:1,lane:2},{stop:0,lane:-2}
+  ];
+  var residualSlots=[{x:642,y:232},{x:658,y:232},{x:650,y:223}];
+
+  function text(id,value){document.getElementById(id).textContent=value;}
+  function show(el,on){el.hidden=!on;}
+  function setOpacity(id,value){document.getElementById(id).setAttribute("opacity",String(value));}
+  function setInsight(html,color){
+    insight.querySelector("span:last-child").innerHTML=html;
+    insight.querySelector(".insight-mark").style.background=color||"var(--red)";
+    insight.querySelector(".insight-mark").style.boxShadow="0 0 0 5px "+(color==="var(--green)"?"var(--green-soft)":color==="var(--violet)"?"var(--violet-soft)":"var(--red-soft)");
+  }
+  function announce(message){live.textContent=message;}
+  function panScene(side){
+    if(sceneScroll.scrollWidth<=sceneScroll.clientWidth)return;
+    sceneScroll.scrollTo({
+      left:side==="governance"?sceneScroll.scrollWidth-sceneScroll.clientWidth:0,
+      behavior:reduced?"auto":"smooth"
+    });
+  }
+  function wait(ms){return new Promise(function(resolve){setTimeout(resolve,reduced?0:ms);});}
+  function ease(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+  function pointAt(t,lane){
+    var dx=end.x-start.x,dy=end.y-start.y,len=Math.sqrt(dx*dx+dy*dy);
+    var laneWeight=t<=gateT[2]?1:Math.max(0,1-(t-gateT[2])/(1-gateT[2]));
+    var off=lane*13*laneWeight;
+    return {x:start.x+dx*t+(-dy/len)*off,y:start.y+dy*t+(dx/len)*off};
+  }
+  function animate(duration,draw,token){
+    return new Promise(function(resolve){
+      if(reduced||duration===0){draw(1);resolve();return;}
+      var t0=null;
+      function frame(ts){
+        if(token!==runToken){resolve();return;}
+        if(t0===null)t0=ts;
+        var p=Math.min(1,(ts-t0)/duration);
+        draw(p);
+        if(p<1)requestAnimationFrame(frame);else resolve();
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+  function pulseControl(index){
+    var panel=document.querySelector("#control"+index+" .glass");
+    panel.style.transition="fill .12s ease";
+    panel.style.fill="#e4cef0";
+    setTimeout(function(){panel.style.fill="url(#glass)";},reduced?0:150);
+  }
+  function capture(index,lane){
+    blocked[index]++;
+    text("blocked"+index,blocked[index]+" blocked");
+    pulseControl(index);
+    var target=document.getElementById("captures"+index);
+    var p=pointAt(gateT[index],lane);
+    var c=document.createElementNS(NS,"circle");
+    c.setAttribute("cx",p.x-(index===0?196:index===1?346:491));
+    c.setAttribute("cy",p.y-(index===0?197:index===1?160:125));
+    c.setAttribute("r","3.5");
+    c.setAttribute("class","capture-dot");
+    /* captures groups are nested inside translated-looking absolute panels, so place globally via inverse group-free coordinates */
+    c.setAttribute("transform","translate("+(index===0?196:index===1?346:491)+" "+(index===0?197:index===1?160:125)+")");
+    target.appendChild(c);
+  }
+  function createRiskDot(){
+    var c=document.createElementNS(NS,"circle");
+    c.setAttribute("r","5.5");
+    c.setAttribute("class","risk-dot");
+    particles.appendChild(c);
+    return c;
+  }
+  async function fly(item,index,token){
+    await wait(index*72);
+    if(token!==runToken)return;
+    var c=createRiskDot();
+    var targetT=item.stop===3?1:gateT[item.stop];
+    var duration=520+targetT*1050;
+    await animate(duration,function(raw){
+      var t=targetT*ease(raw);
+      var p=pointAt(t,item.lane);
+      c.setAttribute("cx",p.x.toFixed(2));
+      c.setAttribute("cy",p.y.toFixed(2));
+      c.setAttribute("r",String(4.2+t*2.2));
+      c.setAttribute("opacity",String(Math.min(1,raw*4)));
+    },token);
+    if(token!==runToken||!c.isConnected)return;
+    if(item.stop<3){
+      capture(item.stop,item.lane);
+      var p0=pointAt(targetT,item.lane);
+      await animate(260,function(raw){
+        var dir=index%2?1:-1;
+        c.setAttribute("cx",String(p0.x-18*raw));
+        c.setAttribute("cy",String(p0.y+dir*30*raw));
+        c.setAttribute("opacity",String(1-raw));
+      },token);
+      c.remove();
+    }else{
+      var rim=pointAt(1,item.lane),slot=residualSlots[item.slot];
+      residualPile.appendChild(c);
+      await animate(420,function(raw){
+        var k=ease(raw);
+        c.setAttribute("cx",String(rim.x+(slot.x-rim.x)*k));
+        c.setAttribute("cy",String(rim.y+(slot.y-rim.y)*k-Math.sin(Math.PI*k)*9));
+        c.setAttribute("r",String(6.4-.4*k));
+        c.setAttribute("opacity","1");
+      },token);
+      if(token!==runToken||!c.isConnected)return;
+      c.setAttribute("cx",String(slot.x));c.setAttribute("cy",String(slot.y));
+      c.setAttribute("class","risk-dot landed-risk");
+      residual++;
+      text("residualCount",residual+" of 18 remain");
+    }
+  }
+  async function consolidateResidual(token){
+    var landed=Array.prototype.slice.call(residualPile.querySelectorAll(".landed-risk"));
+    var origins=landed.map(function(c){return{x:parseFloat(c.getAttribute("cx")),y:parseFloat(c.getAttribute("cy"))};});
+    bundle.setAttribute("opacity","0");
+    await animate(360,function(raw){
+      var k=ease(raw);
+      bundle.setAttribute("opacity",String(raw));
+      landed.forEach(function(c,i){
+        c.setAttribute("cx",String(origins[i].x+(end.x-origins[i].x)*k));
+        c.setAttribute("cy",String(origins[i].y+(end.y-origins[i].y)*k));
+        c.setAttribute("opacity",String(1-raw));
+      });
+    },token);
+    landed.forEach(function(c){if(c.isConnected)c.remove();});
+  }
+  function setBundle(x,y){
+    bundlePos={x:x,y:y};
+    bundle.setAttribute("transform","translate("+x+" "+y+")");
+  }
+  async function moveBundle(x,y,duration,token){
+    var from={x:bundlePos.x,y:bundlePos.y};
+    await animate(duration,function(raw){
+      var k=ease(raw);
+      setBundle(from.x+(x-from.x)*k,from.y+(y-from.y)*k);
+    },token);
+  }
+  function setRecord(label,color){
+    text("recordText",label);
+    document.getElementById("recordLight").setAttribute("fill",color);
+  }
+  function clearCaptures(){
+    [0,1,2].forEach(function(i){
+      var g=document.getElementById("captures"+i);
+      while(g.firstChild)g.removeChild(g.firstChild);
+    });
+  }
+  function resetScene(){
+    runToken++;
+    state="idle";blocked=[0,0,0];residual=0;
+    while(particles.firstChild)particles.removeChild(particles.firstChild);
+    while(residualPile.firstChild)residualPile.removeChild(residualPile.firstChild);
+    clearCaptures();
+    [0,1,2].forEach(function(i){text("blocked"+i,"0 blocked");});
+    text("attemptCount","18 queued");text("residualCount","not measured");
+    text("deploymentState","WAITING");
+    setRecord("No decision yet","#aeb0b8");
+    setBundle(650,216);bundle.setAttribute("opacity","0");
+    setOpacity("ownerSlot",1);setOpacity("owner",0);setOpacity("govChips",0);
+    setOpacity("monitorRing",0);setOpacity("stateBadge",0);
+    var resetBadge=document.querySelector("#stateBadge rect");
+    resetBadge.setAttribute("fill","#fff");resetBadge.setAttribute("stroke","#ca5964");
+    document.querySelector("#stateBadge circle").setAttribute("fill","#cc3d4a");
+    var resetBadgeText=document.getElementById("stateBadgeText");
+    resetBadgeText.textContent="Accepted by default";resetBadgeText.setAttribute("fill","#491118");
+    document.getElementById("deployedSystem").style.opacity="1";
+    primary.disabled=false;accept.disabled=false;hold.disabled=false;replay.disabled=false;
+    primary.textContent="Run the attack";
+    show(primary,true);show(accept,false);show(hold,false);show(replay,false);
+    panScene("controls");
+    setInsight("<strong>Start with the engineering.</strong> Every control blocks something. Every control also leaks.","var(--red)");
+    announce("Simulation reset. Eighteen attack attempts are ready.");
+  }
+  async function runAttack(){
+    if(state!=="idle")return;
+    state="running";var token=++runToken;
+    primary.disabled=true;primary.textContent="Attacks moving…";
+    text("attemptCount","18 moving");
+    setInsight("<strong>Defense in depth is working.</strong> Watch each translucent control catch some attacks while others continue.","var(--violet)");
+    await Promise.all(stops.map(function(item,index){return fly(item,index,token);}));
+    if(token!==runToken)return;
+    text("attemptCount","18 tested");
+    text("residualCount","3 of 18 remain");
+    setInsight("<strong>Three attack paths remain.</strong> The controls reduced risk from 18 to 3. They did not make the deployment safe.","var(--red)");
+    announce("Technical controls blocked fifteen of eighteen attacks. Three remain as residual risk.");
+    await wait(520);
+    if(token!==runToken)return;
+    await consolidateResidual(token);
+    await wait(500);
+    if(token!==runToken)return;
+    state="unowned";
+    setRecord("No owner · no record","#cc3d4a");
+    text("deploymentState","PROCEEDS BY DEFAULT");
+    panScene("governance");
+    await moveBundle(890,270,950,token);
+    if(token!==runToken)return;
+    setOpacity("stateBadge",1);
+    text("stateBadgeText","Risk accepted by default");
+    primary.disabled=false;primary.textContent="Assign a decision owner";
+    show(replay,true);
+    setInsight("<strong>Nobody signed, but a decision still happened.</strong> The deployment crossed the line and accepted all 3 residual risks without criteria, oversight, or a record.","var(--red)");
+    announce("With no assigned owner, deployment proceeded and accepted the three residual risks by default.");
+  }
+  async function assignOwner(){
+    if(state!=="unowned")return;
+    state="assigning";var token=++runToken;
+    primary.disabled=true;replay.disabled=true;
+    panScene("governance");
+    setOpacity("stateBadge",0);
+    await moveBundle(762,267,620,token);
+    if(token!==runToken)return;
+    setOpacity("ownerSlot",0);setOpacity("owner",1);
+    await wait(180);
+    setOpacity("govChips",1);
+    setRecord("Owner assigned · pending","#57068c");
+    text("deploymentState","DECISION PENDING");
+    state="owned";
+    accept.disabled=false;hold.disabled=false;
+    show(primary,false);show(accept,true);show(hold,true);show(replay,true);
+    replay.disabled=false;
+    setInsight("<strong>The same 3 risks remain.</strong> Governance adds authority, criteria, oversight, and an accountable owner. It does not erase the risk.","var(--violet)");
+    announce("A decision owner is now assigned. Authority, criteria, and oversight are explicit. Three residual risks still remain.");
+  }
+  async function acceptRisk(){
+    if(state!=="owned")return;
+    state="accepted";var token=++runToken;
+    accept.disabled=true;hold.disabled=true;replay.disabled=true;
+    await moveBundle(890,270,700,token);
+    if(token!==runToken)return;
+    setOpacity("monitorRing",1);
+    text("deploymentState","ACCEPTED · MONITORED");
+    setRecord("Accepted · owner recorded","#16734b");
+    setOpacity("stateBadge",1);
+    var badge=document.querySelector("#stateBadge rect");
+    badge.setAttribute("fill","#fff");badge.setAttribute("stroke","#2b8a61");
+    document.querySelector("#stateBadge circle").setAttribute("fill","#16734b");
+    var badgeText=document.getElementById("stateBadgeText");
+    badgeText.textContent="Accepted with oversight";badgeText.setAttribute("fill","#16734b");
+    setInsight("<strong>Accepted is not the same as eliminated.</strong> All 3 residual risks remain inside the deployment, now with an owner, a record, and monitoring.","var(--green)");
+    show(accept,false);show(hold,false);replay.disabled=false;
+    announce("The owner accepted the residual risk. The three risks remain in deployment with a decision record and active monitoring.");
+  }
+  async function holdRisk(){
+    if(state!=="owned")return;
+    state="held";var token=++runToken;
+    accept.disabled=true;hold.disabled=true;replay.disabled=true;
+    document.getElementById("deployedSystem").style.opacity=".35";
+    await moveBundle(650,335,760,token);
+    if(token!==runToken)return;
+    text("deploymentState","HELD");
+    setRecord("Held · mitigation required","#c77900");
+    setOpacity("stateBadge",1);
+    var badge=document.querySelector("#stateBadge rect");
+    badge.setAttribute("fill","#fff");badge.setAttribute("stroke","#bd7908");
+    document.querySelector("#stateBadge circle").setAttribute("fill","#c77900");
+    var badgeText=document.getElementById("stateBadgeText");
+    badgeText.textContent="Deployment held";badgeText.setAttribute("fill","#995d00");
+    setInsight("<strong>The owner held the deployment.</strong> Residual risk returns to engineering for mitigation, followed by another explicit review.","var(--violet)");
+    show(accept,false);show(hold,false);replay.disabled=false;
+    announce("The owner held deployment and returned the residual risk for mitigation and reassessment.");
+  }
+
+  primary.addEventListener("click",function(){
+    if(state==="idle")runAttack();
+    else if(state==="unowned")assignOwner();
+  });
+  accept.addEventListener("click",acceptRisk);
+  hold.addEventListener("click",holdRisk);
+  replay.addEventListener("click",resetScene);
+  resetScene();
+})();
+
+/* ── Pill auto-fit ────────────────────────────────────────────────
+   The pill backgrounds in this diagram are hand-sized SVG rects. Raising the
+   label type to the 12px legibility floor made several labels wider than the
+   rect drawn behind them, so white pill text spilled onto the near-white card
+   and became unreadable. Measure each label after layout and widen its pill to
+   match, keeping the pill centred where it was. Runs again on resize because
+   getBBox depends on the rendered font. */
+function fitPills(){
+  document.querySelectorAll('svg g').forEach(function(g){
+    var rect = g.querySelector(':scope > rect');
+    var text = g.querySelector(':scope > text');
+    if(!rect || !text) return;
+    var bb;
+    try { bb = text.getBBox(); } catch(e){ return; }
+    if(!bb || !bb.width) return;
+    var pad = 12;
+    var need = Math.ceil(bb.width + pad * 2);
+    var cur  = parseFloat(rect.getAttribute('width')) || 0;
+    if(!cur || need <= cur) return;
+    var x = parseFloat(rect.getAttribute('x')) || 0;
+    var cx = x + cur / 2;
+    rect.setAttribute('width', need);
+    rect.setAttribute('x', cx - need / 2);
+  });
+}
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fitPills); }
+window.addEventListener('load', function(){ setTimeout(fitPills, 60); });
+window.addEventListener('resize', function(){ setTimeout(fitPills, 60); });
+
+/* ── Report height to the parent page ──────────────────────────────
+   Four of this module's five interactives never told the parent iframe how
+   tall they were, so the frame stayed at the fixed height declared in the
+   module page and anything taller was silently cut off. That is the clipped
+   bottom line the first-round review reported in the ADOPTED tab: the panel
+   grows to 557px there against a 520px frame. ResizeObserver covers content
+   that changes after load, such as switching tabs. */
+(function(){
+  var _lastH = 0;
+  function sendHeight(){
+    /* Measure the content element, not documentElement. Once the parent has
+       sized the iframe to a reported height, documentElement.scrollHeight is
+       pinned to that height, so it can never report that the content now wants
+       to be taller. Switching to the ADOPTED tab grows the panel past the
+       frame, and measuring the wrapper is what notices. */
+    var el = document.querySelector('.wrap, main.module, .card') || document.body;
+    var cs = getComputedStyle(document.body);
+    var pad = (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0);
+    var h = Math.ceil(el.getBoundingClientRect().height + pad + 4);
+    if(h === _lastH) return;
+    _lastH = h;
+    if(window.parent!==window && h>50){
+      window.parent.postMessage({kind:"nyu-embed-height",height:h},"*");
+    }
+  }
+  if("ResizeObserver" in window){
+    var _obs=new ResizeObserver(sendHeight);_obs.observe(document.documentElement);
+    var _t=document.querySelector(".wrap, main.module, .card"); if(_t) _obs.observe(_t);
+  }
+  /* Poll as well. ResizeObserver did not fire for the panel growth caused by
+     switching to the ADOPTED tab, so the frame stayed at its loaded height and
+     clipped the last line. sendHeight only posts when the number actually
+     changes, so this costs one measurement per tick and no messages at rest. */
+  setInterval(sendHeight, 600);
+  window.addEventListener("load",function(){sendHeight();setTimeout(sendHeight,300);setTimeout(sendHeight,1000);});
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

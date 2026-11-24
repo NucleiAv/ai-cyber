@@ -1,0 +1,266 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Benchmark Mirage Collapse</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+/* same-hue: coloured text on its own tint; near-black instead */
+    :root{--v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+    .top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em;flex:1 1 auto}
+    .body-wrap{padding:0 18px 14px}
+
+    /* Score banner */
+    .score-banner{text-align:center;margin-bottom:14px;padding:12px;border-radius:10px;border:1.5px solid var(--rule);transition:all .6s}
+    .score-banner.collapsed{border-color:var(--red);background:var(--red-bg)}
+    .score-title{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin-bottom:4px}
+    .score-row{display:flex;align-items:center;justify-content:center;gap:12px}
+    .score-num{font-size:1.8rem;font-weight:700;font-family:var(--mono);transition:color .6s}
+    .score-num.high{color:var(--grn)}
+    .score-num.low{color:var(--ink)}
+    .score-arrow{font-size:1.2rem;color:var(--ink);opacity:0;transition:opacity .5s}
+    .score-arrow.show{opacity:1}
+    .score-after{opacity:0;transition:opacity .5s}
+    .score-after.show{opacity:1}
+    .score-sub{font-size:.7rem;color:var(--ink2);margin-top:4px;transition:all .4s}
+    .score-sub b{color:var(--ink)}
+
+    /* Progress */
+    .audit-prog{font-size:.68rem;font-weight:700;color:var(--ink2);text-align:center;margin-bottom:10px}
+    .audit-prog .hl{color:var(--v)}
+
+    /* Sample cards */
+    .samples{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    @media(max-width:600px){.samples{grid-template-columns:1fr}}
+    .sample{border:1.5px solid var(--rule);border-radius:10px;overflow:hidden;transition:all .4s}
+    .sample.audited{opacity:1}
+    .sample.problem{border-color:var(--red)}
+    .sample.ok{border-color:var(--grn)}
+    .sample-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--rule)}
+    .sample-id{font-size:.66rem;font-weight:700;color:var(--ink2)}
+    .sample-label{font-size:.64rem;font-weight:700;padding:2px 8px;border-radius:5px}
+    .sample-label.vuln{background:#991B1B;color:#fff}
+    .sample-label.clean{background:#166534;color:#fff}
+    .sample-label.wrong{background:#854D0E;color:#fff;text-decoration:line-through}
+    .sample-code{background:#1E2028;padding:8px 10px;font-family:var(--mono);font-size:.64rem;line-height:1.7;color:#D4D4D8;overflow-x:auto;min-height:60px}
+    .sample-code .kw{color:#C586C0}
+    .sample-code .fn{color:#DCDCAA}
+    .sample-code .str{color:#CE9178}
+    .sample-code .cm{color:#6A9955}
+    .sample-code .hl-bad{background:rgba(196,42,42,.25);display:inline;border-radius:2px;padding:0 2px}
+
+    .sample-action{padding:8px 10px;text-align:center}
+    .audit-btn{appearance:none;border:1.5px solid var(--v200);background:#57068C;color:#fff;border-radius:7px;padding:5px 14px;font:inherit;font-size:.68rem;font-weight:600;cursor:pointer;transition:all .2s;width:100%}
+    .audit-btn:hover{background:var(--v);color:#fff}
+    .audit-btn:disabled{opacity:.5;cursor:default;background:var(--sk);color:var(--ink2);border-color:var(--rule)}
+
+    .sample-verdict{padding:8px 10px;font-size:.68rem;line-height:1.45;animation:fadeUp .3s ease;display:none}
+    .sample-verdict.mis{background:#854D0E;color:#fff}
+    .sample-verdict.leak{background:#991B1B;color:#fff}
+    .sample-verdict.correct{background:#166534;color:#fff}
+    .sample-verdict b{font-weight:700}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Final button */
+    .eval-btn{appearance:none;border:none;background:var(--v);color:#fff;border-radius:8px;padding:8px 20px;font:inherit;font-size:.74rem;font-weight:600;cursor:pointer;display:none;margin:10px auto 0;transition:background .2s}
+    .eval-btn:hover{background:var(--v-d)}
+
+    .restart-btn{appearance:none;border:1.5px solid var(--v200);background:#57068C;color:#fff;border-radius:8px;padding:6px 14px;font:inherit;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s;display:none;margin:8px auto 0}
+    .restart-btn:hover{background:var(--v);color:#fff}
+
+    .insight{padding:12px 18px;font-size:.76rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.5}
+    .insight b{color:var(--ink);font-weight:700}
+  </style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>Benchmark Mirage Collapse</h1>
+  </div>
+  <div class="body-wrap">
+    <div class="score-banner" id="scoreBanner">
+      <div class="score-title">Published Model Performance (BigVul Dataset)</div>
+      <div class="score-row">
+        <div><span class="score-num high" id="scoreMain">68%</span><div style="font-size:.62rem;font-weight:700;color:var(--ink2)" id="scoreMainLabel">F1 Score</div></div>
+        <span class="score-arrow" id="scoreArrow">&#x2192;</span>
+        <div class="score-after" id="scoreAfter"><span class="score-num low">3%</span><div style="font-size:.62rem;font-weight:700;color:var(--ink2)">F1 on PrimeVul</div></div>
+      </div>
+      <div class="score-sub" id="scoreSub">Evaluated on BigVul benchmark. <b>Audit the dataset below.</b></div>
+    </div>
+
+    <div class="audit-prog" id="auditProg">Audited: <span class="hl" id="auditCount">0</span> / 4 samples</div>
+
+    <div class="samples" id="samples"></div>
+
+    <button class="eval-btn" id="evalBtn" onclick="reEvaluate()">Re-evaluate with Corrected Labels</button>
+    <button class="restart-btn" id="restartBtn" onclick="restart()">Restart</button>
+  </div>
+  <div class="insight" id="ins">This model scored 68% F1 on the BigVul benchmark. Click <b>Audit</b> on each code sample to check whether the benchmark labels are correct.</div>
+</div></div>
+
+<script>
+const SAMPLES = [
+  {
+    id:"Sample A",
+    label:"Vulnerable",
+    code:'<span class="kw">def</span> <span class="fn">get_user</span>(user_id):\n    query = <span class="str">"SELECT * FROM users WHERE id = %s"</span>\n    <span class="kw">return</span> db.<span class="fn">execute</span>(query, (user_id,))',
+    problem:"mislabel",
+    verdict:'<b>MISLABELED.</b> This code uses a parameterized query (%s placeholder). There is no injection vulnerability. The benchmark labeled safe code as "Vulnerable," so the model learned a wrong pattern.',
+    trueLabel:"Clean"
+  },
+  {
+    id:"Sample B",
+    label:"Vulnerable",
+    code:'<span class="kw">def</span> <span class="fn">search</span>(term):\n    query = <span class="hl-bad">f"SELECT * FROM items WHERE name LIKE \'%{term}%\'"</span>\n    <span class="kw">return</span> db.<span class="fn">execute</span>(query)',
+    problem:null,
+    verdict:'<b>Correct label.</b> The f-string injects user input directly into SQL. This is a real SQL injection vulnerability, and the "Vulnerable" label is accurate.',
+    trueLabel:"Vulnerable"
+  },
+  {
+    id:"Sample C",
+    label:"Clean",
+    code:'<span class="kw">def</span> <span class="fn">set_cookie</span>(resp, token):\n    resp.<span class="fn">set_cookie</span>(<span class="str">"session"</span>, token)\n    <span class="kw">return</span> resp  <span class="cm"># no flags set</span>',
+    problem:"mislabel",
+    verdict:'<b>MISLABELED.</b> The cookie is set without HttpOnly, Secure, or SameSite flags. This exposes the session token to XSS theft. The benchmark labeled vulnerable code as "Clean."',
+    trueLabel:"Vulnerable"
+  },
+  {
+    id:"Sample D",
+    label:"Vulnerable",
+    code:'<span class="kw">def</span> <span class="fn">search</span>(term):\n    query = <span class="hl-bad">f"SELECT * FROM items WHERE name LIKE \'%{term}%\'"</span>\n    <span class="kw">return</span> db.<span class="fn">execute</span>(query)',
+    problem:"leakage",
+    verdict:'<b>DATA LEAKAGE.</b> This is identical to Sample B. The same code appears in both the training set and the test set. The model memorized this example; its "correct" classification is not evidence of generalization.',
+    trueLabel:"Vulnerable"
+  }
+];
+
+let audited = 0;
+let collapsed = false;
+
+function buildSamples(){
+  const el = document.getElementById('samples');
+  el.innerHTML = '';
+  SAMPLES.forEach((s,i) => {
+    const div = document.createElement('div');
+    div.className = 'sample';
+    div.id = 'samp'+i;
+    div.innerHTML =
+      '<div class="sample-head">'
+        +'<span class="sample-id">'+s.id+'</span>'
+        +'<span class="sample-label '+(s.label==='Vulnerable'?'vuln':'clean')+'" id="lbl'+i+'">'+s.label+'</span>'
+      +'</div>'
+      +'<div class="sample-code">'+s.code.replace(/\n/g,'<br>')+'</div>'
+      +'<div class="sample-verdict" id="verd'+i+'">'+s.verdict+'</div>'
+      +'<div class="sample-action"><button class="audit-btn" id="abtn'+i+'" onclick="auditSample('+i+')">Audit This Sample</button></div>';
+    el.appendChild(div);
+  });
+  sendHeight();
+}
+
+function auditSample(i){
+  const s = SAMPLES[i];
+  const btn = document.getElementById('abtn'+i);
+  const samp = document.getElementById('samp'+i);
+  const verd = document.getElementById('verd'+i);
+  const lbl = document.getElementById('lbl'+i);
+  btn.disabled = true;
+  btn.textContent = 'Audited';
+
+  verd.style.display = 'block';
+  if(s.problem === 'mislabel'){
+    verd.className = 'sample-verdict mis';
+    samp.classList.add('problem');
+    lbl.className = 'sample-label wrong';
+    lbl.textContent = s.label + ' → ' + s.trueLabel;
+  } else if(s.problem === 'leakage'){
+    verd.className = 'sample-verdict leak';
+    samp.classList.add('problem');
+  } else {
+    verd.className = 'sample-verdict correct';
+    samp.classList.add('ok');
+  }
+
+  audited++;
+  document.getElementById('auditCount').textContent = audited;
+
+  if(audited === 1){
+    document.getElementById('ins').innerHTML = s.problem
+      ? '<b>Problem found.</b> Keep auditing the remaining samples.'
+      : '<b>This one checks out.</b> Keep auditing the remaining samples.';
+  } else if(audited < 4){
+    const problems = SAMPLES.filter((_,j) => {
+      const v = document.getElementById('verd'+j);
+      return v.style.display==='block' && SAMPLES[j].problem;
+    }).length;
+    document.getElementById('ins').innerHTML = '<b>'+problems+' problem(s) found so far.</b> '+(4-audited)+' sample(s) remaining.';
+  } else {
+    document.getElementById('ins').innerHTML = '<b>Audit complete.</b> 2 mislabeled samples and 1 data leakage case. The model was trained and tested on broken ground truth. Click below to re-evaluate.';
+    document.getElementById('evalBtn').style.display = 'block';
+    document.getElementById('scoreSub').innerHTML = '<b>2 mislabeled, 1 data leakage.</b> What happens when you fix the labels?';
+  }
+  sendHeight();
+}
+
+function reEvaluate(){
+  collapsed = true;
+  document.getElementById('evalBtn').style.display = 'none';
+  const banner = document.getElementById('scoreBanner');
+  banner.classList.add('collapsed');
+  document.getElementById('scoreMainLabel').textContent = 'F1 on Flawed Labels';
+  document.getElementById('scoreMain').classList.remove('high');
+  document.getElementById('scoreMain').classList.add('low');
+  setTimeout(function(){
+    document.getElementById('scoreArrow').classList.add('show');
+    setTimeout(function(){
+      document.getElementById('scoreAfter').classList.add('show');
+    }, 300);
+  }, 300);
+
+  document.getElementById('scoreSub').innerHTML = '<b>Same model. Corrected labels, duplicates removed, newer test code.</b> Much of the original score was measuring label noise and memorized duplicates, not detection ability.';
+  document.getElementById('ins').innerHTML = '<b>The model did not get worse. The measurement got honest.</b> This is why you ask how the ground truth was established before trusting any published benchmark score.';
+  document.getElementById('restartBtn').style.display = 'block';
+  sendHeight();
+}
+
+function restart(){
+  audited = 0;
+  collapsed = false;
+  document.getElementById('auditCount').textContent = '0';
+  document.getElementById('scoreBanner').classList.remove('collapsed');
+  document.getElementById('scoreArrow').classList.remove('show');
+  document.getElementById('scoreAfter').classList.remove('show');
+  const mainEl = document.getElementById('scoreMain');
+  mainEl.textContent = '68%';
+  mainEl.classList.add('high');
+  mainEl.classList.remove('low');
+  document.getElementById('scoreMainLabel').textContent = 'F1 Score';
+  document.getElementById('scoreSub').innerHTML = 'Evaluated on BigVul benchmark. <b>Audit the dataset below.</b>';
+  document.getElementById('evalBtn').style.display = 'none';
+  document.getElementById('restartBtn').style.display = 'none';
+  document.getElementById('ins').innerHTML = 'This model scored 68% F1 on the BigVul benchmark. Click <b>Audit</b> on each code sample to check whether the benchmark labels are correct.';
+  buildSamples();
+}
+
+buildSamples();
+
+function sendHeight(){
+  var el=document.querySelector('.w');if(!el)return;
+  var r=el.getBoundingClientRect();
+  var pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+pad),src:location.href},'*');
+}
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  if(window.ResizeObserver){new ResizeObserver(sendHeight).observe(document.querySelector('.w')||body);}else{setInterval(sendHeight,500);}
+  window.addEventListener('load',function(){setTimeout(sendHeight,200);});setTimeout(sendHeight,50);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+title: Write policy an agent cannot argue with
+lede: Turn company rules into Rego decisions, and spot which rules need human judgment.
+blurb: Predict OPA decisions for real inputs, and sort rules into exact checks and judgment calls.
+situation: |
+  The shop agent's policy has three rules. Allow GET on products. Deny DELETE on any path. Allow POST on orders only for admins. The policy starts with `default allow := false`.
+rounds:
+  - title: Round 1. Predict the decision
+    items:
+      - type: sort
+        q: What does OPA return for each input?
+        rows:
+          - ["GET products, role guest", "allow"]
+          - ["POST orders, role admin", "allow"]
+          - ["POST orders, role guest", "deny"]
+          - ["DELETE products, role admin", "deny"]
+          - ["PUT products, role admin", "deny"]
+        opts: ["allow", "deny"]
+        why: "Only the two allow rules can open a request. DELETE is denied explicitly. PUT matches no rule, so default deny applies."
+      - q: Why can prompt injection not change these decisions?
+        opts: ["OPA reads the system prompt", "The policy runs in code outside the model, on structured input", "OPA is encrypted"]
+        a: 1
+        why: "The model can only shape the request. The decision comes from fixed rules over JSON fields."
+  - title: Round 2. Exact rule or judgment?
+    items:
+      - type: sort
+        q: Can Rego enforce each rule directly?
+        rows:
+          - ["Refunds above 500 dollars need a manager", "Exact rule"]
+          - ["Never call the delete endpoint", "Exact rule"]
+          - ["Replies must not be rude", "Needs a judge or a person"]
+          - ["Do not discriminate between customers", "Needs a judge or a person"]
+        opts: ["Exact rule", "Needs a judge or a person"]
+        why: "Rego checks facts in the input. Meaning and fairness need a classifier or judge that writes a score into the input, plus review across many decisions."
+      - type: open
+        q: Is a voluntary policy such as Anthropic's RSP enough on its own? One argument for and one against.
+        a: "For. It moves faster than law and is written by people close to the technology. Against. Nothing forces a company to keep it under competition, so hard law such as the EU AI Act sets a floor that applies to everyone."

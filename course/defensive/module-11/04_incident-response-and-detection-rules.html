@@ -1,0 +1,410 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 11 &middot; Section 4 &middot; Incident Response and Detection Rules &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 11 &middot; Section 4 of 7</div>
+      <h1 class="nyu-hero__title">Incident Response and Detection Rule Design</h1>
+      <p class="nyu-hero__subtitle">How AI incident response departs from the traditional playbook, and how detection rules are written, tested, and tuned against log evidence.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~17 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 3 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          1 interactive comparison + 1 exercise + 1 knowledge check</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> AI-Specific Incident Response</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Detection Rule Design</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Describe</strong> how AI-specific incident response differs from traditional incident response, and why containment does not end the harm.</span></li>
+          <li><span><strong>Write</strong> and tune a detection rule against log evidence, and judge the false-positive cost of the threshold chosen.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">AI-Specific Incident Response</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The process is familiar: detect, contain, eradicate, recover, learn. The <button type="button" class="nyu-define" data-term="nist-sp-800-61">NIST SP 800-61</button> framework provides the structure, and most organizations have adapted it to their needs. AI systems do not invalidate that framework, but they break specific assumptions that traditional incident response takes for granted.</p>
+
+        <p>Traditional incident response assumes deterministic systems with static evidence. A compromised server produces forensic images, log files, network captures. The evidence generally does not change after collection. Running the same malware in a sandbox tends to produce the same behavior. The incident is typically contained once the compromised system is isolated.</p>
+
+        <p>AI systems violate each of those assumptions. The <button type="button" class="nyu-define" data-term="cosai-ai-ir">CoSAI AI Incident Response Framework</button> names three ways they break:</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Probabilistic evidence</h4>
+              <p class="nyu-process__detail">The same input to an LLM may produce a different output on replay. Reproducing an incident for forensic analysis may not be possible. An attacker's successful prompt injection might fail on replay because the model's response depends on the full <button type="button" class="nyu-define" data-term="context-window">context window</button>, including previous conversation turns that may not have been logged.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Ephemeral state</h4>
+              <p class="nyu-process__detail">Context windows, session state, and in-memory caches may not be preserved after the session ends. Unlike a hard drive image, the model's internal state during the incident may be unrecoverable.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Continuous harm</h4>
+              <p class="nyu-process__detail">A poisoned <button type="button" class="nyu-define" data-term="rag">RAG</button> knowledge base can continue serving adversarial content to users until the poisoned documents are identified and removed. A compromised model may not stop producing harmful output when the team "isolates" it from the network. Containment requires remediating the model or data source itself, not just the network path.</p>
+            </div>
+          </li>
+        </ol>
+
+        <p>These differences change how an incident response team operates at each phase.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/03_continuous_harm/continuous-harm-visualizer.html" title="Interactive: side-by-side comparison of traditional and AI incident response showing how network isolation stops harm on a traditional server but a poisoned RAG knowledge base continues serving adversarial content until the data source itself is quarantined" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <p><strong>Logging:</strong> Capture full prompts and responses, not just metadata. In traditional incident response, you can often reconstruct an attack from network logs and file system changes. In AI incident response, the model's behavior during the incident may be irreproducible, so the primary evidence is what you logged at the time. "User sent a message, model responded" gives you little to investigate. Full prompts, full responses, guardrail verdicts, retrieval results, and session context let you reconstruct what happened and why.</p>
+
+        <p><strong>Containment:</strong> Network isolation is necessary but not sufficient. Containment must include model-level actions: disable the endpoint, revert to a known-good checkpoint, quarantine the knowledge base if retrieval content is suspected. A poisoned RAG knowledge base can keep serving adversarial content even after you cut the network cable, because the poisoned documents are inside the system's own data store.</p>
+
+        <p><strong>Recovery:</strong> Verify that the root cause is remediated in the model or data, not just in the infrastructure. If the incident was <button type="button" class="nyu-define" data-term="corpus-poisoning">corpus poisoning</button>, recovery means identifying and removing every poisoned document, verifying the model's behavior returns to baseline, and monitoring for re-injection. If the incident was a compromised model, recovery means replacing it with a known-good version and auditing how the compromise occurred.</p>
+
+        <h3 class="nyu-subsection-title">Denial-of-wallet as a monitoring problem</h3>
+
+        <p><button type="button" class="nyu-define" data-term="denial-of-wallet">Denial-of-wallet</button> attacks exploit pay-per-use pricing to generate massive bills. Documented incidents have produced compute costs in the tens of thousands of dollars per day from a single compromised API credential.</p>
+
+        <p>This is a monitoring problem because the technical behavior (API calls, model responses) may look entirely normal. The attacker is using the API exactly as intended; they are just not authorized to do so, or they are consuming resources at a financially destructive rate. Request-count rate limiting is insufficient because one long-context request can cost as much as dozens of small ones. <button type="button" class="nyu-define" data-term="token-based-rate-limiting">Token-based rate limiting</button>, per-user spending caps, and billing anomaly alerts are the relevant controls.</p>
+
+        <h3 class="nyu-subsection-title">The monitoring-privacy tension</h3>
+
+        <p>Effective abuse monitoring requires logging user interactions: prompts, responses, session metadata. <button type="button" class="nyu-define" data-term="nist-ai-600-1">NIST AI 600-1</button> recommends prompt log retention for security monitoring. Privacy regulations may constrain how long logs can be retained, who can access them, and whether users must be informed. Those two requirements pull in opposite directions.</p>
+
+        <p>This tension is unresolved in the field. Different organizations, jurisdictions, and deployment contexts will draw the line between security monitoring and user privacy in different places. What matters here is recognizing that the tension exists and being able to articulate both sides when making or evaluating monitoring design decisions.</p>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Detection Rule Design</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario: Financial Services Chatbot Anomaly
+          </h3>
+          <p class="nyu-scenario__prompt">A monitoring dashboard for a financial services chatbot shows the following anomaly from a single user session:</p>
+          <ul>
+            <li>847 queries in one day (system average: 12 per user per day)</li>
+            <li>38% of queries flagged by the input guardrail</li>
+            <li>Average response length: 1,842 tokens (system average: 340 tokens)</li>
+            <li>14 queries contained Base64-encoded segments</li>
+            <li>Session topic distribution: 72% "internal procedures," 18% "system configuration," 10% "product information"</li>
+          </ul>
+          <p class="nyu-scenario__prompt">Design a compound detection rule. For each element, specify: (a) the detection type, (b) the specific indicator and threshold, (c) the alert action, and (d) one false-positive scenario where a legitimate user might trigger this indicator.</p>
+          <button class="nyu-scenario__btn">Show Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p>A well-designed compound rule might combine three signals:</p>
+            <p><em>First, rate-based:</em> daily query count exceeding 100 (847 is 70x the average). Catches volume-based attacks. False-positive: a power user conducting extensive product research before a major purchase.</p>
+            <p><em>Second, content-based:</em> more than 5 Base64-encoded segments per session. Catches encoding-based evasion attempts. False-positive: a developer asking the chatbot technical questions about Base64 encoding itself.</p>
+            <p><em>Third, behavioral:</em> average response length exceeding 3x the system average (1,020+ tokens when the average is 340). Catches successful data extraction where the model returns more content than intended. False-positive: a user asking complex multi-part questions that legitimately require detailed responses.</p>
+            <p>The compound rule triggers an alert only when two or more of these three signals fire simultaneously. The 38% guardrail flag rate is informative but should not be part of the compound rule itself because it indicates the guardrails are working. The 62% of queries that passed guardrails while the user was clearly probing is more concerning.</p>
+            <p><em>Alert action:</em> flag the session for human review, temporarily reduce the user's rate limit, and preserve the full prompt/response log for investigation.</p>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Apply It: Log Analysis Exercise</h3>
+
+        <p>You are a security analyst for a financial services company that deployed a customer-facing chatbot three months ago. The chatbot uses <button type="button" class="nyu-define" data-term="rag">RAG</button> to answer questions about products, policies, and account procedures with access to 12,000 internal documents and application-level <button type="button" class="nyu-define" data-term="metadata-filtering">metadata filtering</button>. The following log entries are from a 24-hour extract. Your job: analyze each entry, identify the detection signals, and classify the session.</p>
+
+        <!-- ---- Annotated log entries ---- -->
+        <h4>Read the logs</h4>
+        <p>Hover or focus the highlighted lines to see what each field tells you:</p>
+        <div class="nyu-annot-code" aria-label="Annotated example: chatbot application log">
+          <div class="nyu-annot-code__line" data-note="<strong>Session A: normal customer.</strong> Low query count, standard timing, product-related topic. Nothing suspicious here.">
+            <span class="nyu-annot-code__num">1</span>
+            <span class="nyu-annot-code__code"><span class="c-meta">session_a</span> | queries: <span class="c-ok">3</span> over <span class="c-ok">12 min</span> | avg_resp: <span class="c-ok">340 tok</span> | topic: <span class="c-string">"return policy"</span> | guardrail: <span class="c-ok">0 flags</span> | encoding: <span class="c-ok">none</span></span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__line" data-note="<strong>Session B: rate anomaly + behavioral anomaly.</strong> 14 queries in 3 minutes is over 4x the normal rate. Response length is 5.5x the average, suggesting the model returned far more content than a normal answer. But zero guardrail flags means input controls did not catch it.">
+            <span class="nyu-annot-code__num">2</span>
+            <span class="nyu-annot-code__code"><span class="c-meta">session_b</span> | queries: <span class="c-keyword">14</span> over <span class="c-keyword">3 min</span> | avg_resp: <span class="c-keyword">2,100 tok</span> | topic: <span class="c-string">"system config"</span> | guardrail: <span class="c-ok">0 flags</span> | encoding: <span class="c-keyword">Base64 x3</span></span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__line" data-note="<strong>Session C: content anomaly.</strong> Role impersonation attempt ('you are now DAN') combined with system prompt keywords. Guardrail caught 2 of 5 queries. Query count and response length are within normal bounds, so rate-based and behavioral signals would not fire.">
+            <span class="nyu-annot-code__num">3</span>
+            <span class="nyu-annot-code__code"><span class="c-meta">session_c</span> | queries: <span class="c-ok">5</span> over <span class="c-ok">8 min</span> | avg_resp: <span class="c-ok">410 tok</span> | topic: <span class="c-string">"role override"</span> | guardrail: <span class="c-keyword">2 flags</span> | encoding: <span class="c-ok">none</span></span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__line" data-note="<strong>Session D: behavioral anomaly only.</strong> Normal rate, no encoding tricks, guardrails passed everything. But the topic distribution is far outside normal: 'employee contacts' is internal data. And the response length is 3x average, possibly indicating full document retrieval. This is the hardest to catch; only behavioral detection would flag it.">
+            <span class="nyu-annot-code__num">4</span>
+            <span class="nyu-annot-code__code"><span class="c-meta">session_d</span> | queries: <span class="c-ok">7</span> over <span class="c-ok">15 min</span> | avg_resp: <span class="c-keyword">1,020 tok</span> | topic: <span class="c-string">"employee contacts"</span> | guardrail: <span class="c-ok">0 flags</span> | encoding: <span class="c-ok">none</span></span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__line" data-note="<strong>Session E: compound signals.</strong> High volume (847 queries), encoding anomalies (14 Base64 segments), massive response lengths (5.4x average), and the topic distribution is 72% internal procedures. The guardrail flagged 38% of queries, but the remaining 62% got through. This session has signals across all three detection layers.">
+            <span class="nyu-annot-code__num">5</span>
+            <span class="nyu-annot-code__code"><span class="c-meta">session_e</span> | queries: <span class="c-keyword">847</span> over <span class="c-keyword">24 hr</span> | avg_resp: <span class="c-keyword">1,842 tok</span> | topic: <span class="c-string">"internal procs 72%"</span> | guardrail: <span class="c-keyword">38% flagged</span> | encoding: <span class="c-keyword">Base64 x14</span></span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__line" data-note="<strong>Session F: normal power user.</strong> Higher-than-average queries and longer responses, but the topic is product-related and the pattern is consistent with someone doing thorough product research. No encoding anomalies, no guardrail flags, no suspicious topics.">
+            <span class="nyu-annot-code__num">6</span>
+            <span class="nyu-annot-code__code"><span class="c-meta">session_f</span> | queries: <span class="c-ok">22</span> over <span class="c-ok">45 min</span> | avg_resp: <span class="c-ok">580 tok</span> | topic: <span class="c-string">"product comparison"</span> | guardrail: <span class="c-ok">0 flags</span> | encoding: <span class="c-ok">none</span></span>
+            <span class="nyu-annot-code__marker" aria-hidden="true">ⓘ</span>
+          </div>
+          <div class="nyu-annot-code__notes" aria-live="polite">Hover or tap a highlighted line to see the analysis.</div>
+        </div>
+
+        <!-- ---- Sort: classify sessions ---- -->
+        <h4>Classify each session</h4>
+        <p>Drag each session into the correct classification bin. Consider all three detection layers before deciding.</p>
+        <div class="nyu-sort">
+          <div class="nyu-sort__pool" aria-label="Sessions to classify">
+            <span class="nyu-sort__chip" data-bin="benign" data-hint="Benign. Low query count, standard timing, and a product-related topic. None of the three detection layers registers anything.">Session A</span>
+            <span class="nyu-sort__chip" data-bin="suspicious" data-hint="Suspicious. Rate and behavioral signals fire together: 14 queries in 3 minutes is over 4x the normal rate, and responses run 5.5x the average length. Two layers, so it warrants investigation rather than immediate escalation.">Session B</span>
+            <span class="nyu-sort__chip" data-bin="suspicious" data-hint="Suspicious. A content signal fires on its own: role impersonation plus system prompt keywords, with the guardrail catching 2 of 5 queries. Rate and response length stay normal, so investigate rather than escalate.">Session C</span>
+            <span class="nyu-sort__chip" data-bin="suspicious" data-hint="Suspicious. Only the behavioral layer fires. The rate is normal, there are no encoding tricks, and guardrails passed everything, but the topic distribution sits far outside the norm. This is the session a content-only or rate-only rule misses.">Session D</span>
+            <span class="nyu-sort__chip" data-bin="escalate" data-hint="Escalate immediately. Signals fire across all three layers at once: 847 queries in 24 hours, 14 Base64 segments, and responses 5.4x the average, with the topic concentrated on internal procedures. Any two-of-three compound rule catches this.">Session E</span>
+            <span class="nyu-sort__chip" data-bin="benign" data-hint="Benign. A power user, not an attacker. Query count and response length run above average, but the topic is product research and there are no encoding anomalies, guardrail flags, or suspicious topics. Volume alone is not a signal.">Session F</span>
+          </div>
+          <div class="nyu-sort__bins">
+            <div class="nyu-sort__bin" data-bin="benign">
+              <h4>Benign</h4>
+              <div class="nyu-sort__bin-list"></div>
+            </div>
+            <div class="nyu-sort__bin" data-bin="suspicious">
+              <h4>Suspicious: investigate</h4>
+              <div class="nyu-sort__bin-list"></div>
+            </div>
+            <div class="nyu-sort__bin" data-bin="escalate">
+              <h4>Escalate immediately</h4>
+              <div class="nyu-sort__bin-list"></div>
+            </div>
+          </div>
+          <div class="nyu-sort__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check sorting</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+            <span class="nyu-sort__score" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <!-- ---- Match: signature → detection layer ---- -->
+        <h4>Match the signature to the detection layer</h4>
+        <p>Each log signature below maps to one of the three detection layers. Click a signature, then click its layer, or drag across.</p>
+        <div class="nyu-match">
+          <div class="nyu-match__grid">
+            <svg class="nyu-match__svg" aria-hidden="true"></svg>
+            <div class="nyu-match__col">
+              <h4>Log Signature</h4>
+              <button class="nyu-match__term" data-match="a">Base64-encoded segments in user input</button>
+              <button class="nyu-match__term" data-match="b">847 queries in 24 hours</button>
+              <button class="nyu-match__term" data-match="c">Response topic shifts to internal procedures</button>
+              <button class="nyu-match__term" data-match="d">"Ignore previous instructions" in prompt</button>
+              <button class="nyu-match__term" data-match="e">Average response length 5.5x system average</button>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap" aria-hidden="true"></div>
+            <div class="nyu-match__col">
+              <h4>Detection Layer</h4>
+              <button class="nyu-match__def" data-match="b">Rate-based detection</button>
+              <button class="nyu-match__def" data-match="c">Behavioral detection</button>
+              <button class="nyu-match__def" data-match="a">Content-based detection (encoding)</button>
+              <button class="nyu-match__def" data-match="e">Behavioral detection (response length)</button>
+              <button class="nyu-match__def" data-match="d">Content-based detection (role impersonation)</button>
+            </div>
+          </div>
+          <p class="nyu-match__hint" data-default="Tip: drag a signature across the gap to its detection layer, or click both to link them.">Tip: drag a signature across the gap to its detection layer, or click both to link them.</p>
+          <div class="nyu-match__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check matches</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show correct answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+          </div>
+        </div>
+
+        <!-- ---- Scenario: write a compound rule ---- -->
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Design a Compound Rule for Session E
+          </h3>
+          <p class="nyu-scenario__prompt">Session E triggered signals across all three detection layers. Design a compound detection rule that would catch this session while minimizing <button type="button" class="nyu-define" data-term="false-positive">false positives</button>. Specify: (a) which signals to combine, (b) the threshold for each, (c) how many must fire before alerting, and (d) what the alert action should be.</p>
+          <button class="nyu-scenario__btn">Show Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p>A well-designed compound rule for this scenario combines three signals with a two-of-three trigger:</p>
+            <p><em>Rate-based:</em> daily query count exceeding 100 (Session E's 847 is 70x the system average of 12). Threshold set high enough that power users like Session F (22 queries) do not trigger it.</p>
+            <p><em>Content-based:</em> more than 5 Base64-encoded segments per session. Session E had 14. Legitimate use of Base64 in a financial services chatbot is rare; a threshold of 5 allows some margin for edge cases like developers pasting encoded data.</p>
+            <p><em>Behavioral:</em> average response length exceeding 3x the system average (1,020+ tokens when the average is 340). Session E's 1,842-token average clears this threshold. High response length combined with anomalous topic distribution (72% internal procedures) strongly suggests data extraction.</p>
+            <p><em>Trigger:</em> alert when two or more of these three signals fire simultaneously. Session E fires all three. The 38% guardrail flag rate is informative context but should not be part of the compound rule because it indicates controls are partially working; the 62% that got through is the concern.</p>
+            <p><em>Alert action:</em> flag the session for immediate human review, temporarily reduce the user's rate limit to 10 queries per hour, and preserve the full prompt/response log for forensic investigation.</p>
+          </div>
+        </div>
+
+        <!-- ---- Quiz: which session is hardest to detect? ---- -->
+        <div class="nyu-quiz" aria-labelledby="log-quiz-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Think About It</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="log-quiz-prompt">Which session from the log extract above is the hardest to detect, and why?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="log-quiz-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Session B triggers three signals simultaneously: rate (14 queries in 3 minutes), content (Base64 encoding), and behavioral (response length 5.5x average). It is relatively easy to detect with compound rules.">Session B, because the guardrail flagged 0% of queries.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Session C is caught by content-based detection: role impersonation phrases and system prompt keywords are well-known patterns. The guardrail even flagged 2 of 5 queries. This is one of the easier attacks to detect.">Session C, because it used role impersonation.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Session D, because only behavioral signals are present.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Session E is the easiest to detect: it fires signals across all three detection layers (rate, content, and behavioral). Any compound rule would catch it.">Session E, because it has the highest volume.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Session D has a normal query rate, no encoding anomalies, and zero guardrail flags. Content-based and rate-based detection would likely both miss it. The remaining signals are behavioral: the topic distribution (employee contacts is internal data) and response length (3x average). Behavioral detection requires a calibrated baseline and is the slowest detection layer to deploy, which means Session D could operate undetected for weeks in a system that only has content-based and rate-based monitoring."
+               data-incorrect-msg="Not quite. Think about which session produces the fewest detection signals. The hardest-to-detect attacks tend to be the ones that avoid triggering content-based and rate-based rules, leaving only behavioral anomalies as evidence."></div>
+        </div>
+
+        <!-- ---- Sequence: incident response steps ---- -->
+        <h4>Order the response</h4>
+        <p>Your compound rule fired on Session E. Drag these incident response steps into the correct order.</p>
+        <div class="nyu-sequence">
+          <div class="nyu-sequence__header">
+            <span class="nyu-sequence__badge">Sequence</span>
+          </div>
+          <p class="nyu-sequence__prompt">Drag the steps into the correct order, then check your answer.</p>
+          <ol class="nyu-sequence__list" aria-label="Incident response steps for Session E">
+            <li class="nyu-sequence__item" data-correct="3">
+              <span class="nyu-sequence__handle" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+              <span class="nyu-sequence__pos" aria-hidden="true">1</span>
+              <span class="nyu-sequence__label">Review the full prompt/response logs for Session E to determine what data was accessed</span>
+              <span class="nyu-sequence__nudge">
+                <button data-nudge="up" aria-label="Move up">▲</button>
+                <button data-nudge="down" aria-label="Move down">▼</button>
+              </span>
+            </li>
+            <li class="nyu-sequence__item" data-correct="5">
+              <span class="nyu-sequence__handle" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+              <span class="nyu-sequence__pos" aria-hidden="true">2</span>
+              <span class="nyu-sequence__label">Update detection rules based on the techniques observed in this session</span>
+              <span class="nyu-sequence__nudge">
+                <button data-nudge="up" aria-label="Move up">▲</button>
+                <button data-nudge="down" aria-label="Move down">▼</button>
+              </span>
+            </li>
+            <li class="nyu-sequence__item" data-correct="1">
+              <span class="nyu-sequence__handle" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+              <span class="nyu-sequence__pos" aria-hidden="true">3</span>
+              <span class="nyu-sequence__label">Preserve the full session logs before any system changes</span>
+              <span class="nyu-sequence__nudge">
+                <button data-nudge="up" aria-label="Move up">▲</button>
+                <button data-nudge="down" aria-label="Move down">▼</button>
+              </span>
+            </li>
+            <li class="nyu-sequence__item" data-correct="2">
+              <span class="nyu-sequence__handle" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+              <span class="nyu-sequence__pos" aria-hidden="true">4</span>
+              <span class="nyu-sequence__label">Revoke the user's API credentials and reduce their rate limit</span>
+              <span class="nyu-sequence__nudge">
+                <button data-nudge="up" aria-label="Move up">▲</button>
+                <button data-nudge="down" aria-label="Move down">▼</button>
+              </span>
+            </li>
+            <li class="nyu-sequence__item" data-correct="4">
+              <span class="nyu-sequence__handle" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>
+              <span class="nyu-sequence__pos" aria-hidden="true">5</span>
+              <span class="nyu-sequence__label">Assess whether retrieved documents contained customer PII or confidential data</span>
+              <span class="nyu-sequence__nudge">
+                <button data-nudge="up" aria-label="Move up">▲</button>
+                <button data-nudge="down" aria-label="Move down">▼</button>
+              </span>
+            </li>
+          </ol>
+          <div class="nyu-sequence__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check order</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show correct order</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ====================== KC-4 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc3-q2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc3-q2-prompt">Your team confirms that a RAG-based chatbot was successfully exploited via corpus poisoning: adversarial documents were injected into the knowledge base and served to users for 48 hours. You isolate the server from the network. Why is this containment step insufficient?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc3-q2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Network isolation does prevent new inbound document injections, but the poisoned documents are already in the knowledge base. The problem is what the system is serving, not what new data can arrive.">The attacker may have other network paths into the system.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The poisoned documents remain in the knowledge base and can continue influencing responses even after network isolation.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="While evidence preservation matters, this does not explain why network isolation fails as containment. The core issue is that the harmful content persists inside the system's own data store.">Network isolation destroys log evidence needed for forensic analysis.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="This confuses model weights with retrieval data. Corpus poisoning targets the knowledge base, not the model's training. The model itself is unchanged; the documents it retrieves are the problem.">The model has already learned the adversarial patterns and must be retrained.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. This illustrates the continuous harm difference in AI incident response. Unlike a compromised server that typically stops serving malicious content once isolated, a poisoned knowledge base can continue producing adversarial responses to user queries that retrieve those documents. Containment requires identifying and removing the poisoned documents from the knowledge base, not just isolating the network."
+               data-incorrect-msg="Not quite. Think about what the CoSAI framework calls continuous harm: even after network isolation, the poisoned content is still in the knowledge base, still being retrieved, and still influencing responses."></div>
+        </div>
+
+        <!-- Up Next -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 5: The OWASP Defensive Assessment.</strong> We turn the OWASP LLM Top 10 around and use it as a defensive checklist, then run a full assessment against a deployed system.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

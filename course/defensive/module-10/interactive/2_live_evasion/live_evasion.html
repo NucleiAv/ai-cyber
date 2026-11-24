@@ -1,0 +1,345 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Evade a Live Phishing Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redsoft:#fcf1f1;
+  --green:#0f7a43;--greenline:#c3e2d0;--greensoft:#eef7f2;--amber:#8a5d00;--ambersoft:#fbf3df;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:64ch}
+.body{padding:14px 22px 22px}
+.klabel{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.09em;font-weight:600;color:var(--ink3);margin:16px 0 8px}
+.klabel:first-child{margin-top:2px}
+.models{display:flex;flex-direction:column;gap:7px}
+.mrow{display:flex;align-items:center;gap:11px;border:1px solid var(--line2);border-radius:11px;padding:10px 13px;cursor:pointer;transition:.15s;background:var(--bg)}
+.mrow:hover{border-color:var(--violet2)}
+.mrow[aria-pressed="true"]{border-color:var(--violet);box-shadow:inset 0 0 0 1px var(--violet)}
+.mrow.disabled{opacity:.5;cursor:not-allowed}
+.mrad{width:16px;height:16px;border-radius:50%;border:2px solid var(--line2);flex:none;position:relative}
+.mrow[aria-pressed="true"] .mrad{border-color:var(--violet)}
+.mrow[aria-pressed="true"] .mrad::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--violet)}
+.mname{font-weight:600;font-size:.86rem;color:var(--ink)}
+.mmeta{font-size:0.75rem;color:var(--ink2);margin-top:1px}
+.mtag{margin-left:auto;font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:20px;flex:none}
+.mtag.real{background:#4C1D95;color:#fff}
+.mtag.llm{background:var(--paper);color:var(--ink2)}
+.mtag.gpu{background:#854D0E;color:#fff}
+.loadrow{margin-top:12px;display:flex;gap:11px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.83rem;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer;transition:.14s}
+.btn:hover{background:var(--violet2);border-color:var(--violet2)}
+.btn:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.btn.ghost{background:var(--bg);color:var(--violet);border-color:var(--vline)}
+.hint{font-size:0.75rem;color:var(--ink3)}
+.bar{height:6px;background:var(--line);border-radius:20px;overflow:hidden;margin-top:10px;display:none}
+.bar.show{display:block}
+.bar i{display:block;height:100%;width:0;background:var(--violet);transition:width .2s}
+.pstat{font-size:0.75rem;color:var(--ink2);margin-top:6px;font-family:var(--mono);min-height:1em}
+.instrnote{font-size:.78rem;color:var(--ink2);margin:0 0 8px;line-height:1.45}
+.instrlab{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);margin-bottom:4px}
+.instr{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:.78rem;color:var(--ink);white-space:pre-wrap;font-family:var(--mono);line-height:1.5}
+.presets{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:.76rem;font-weight:600;padding:7px 12px;border-radius:20px;border:1px solid var(--line2);background:var(--bg);color:var(--ink2);cursor:pointer;transition:.14s}
+.chip:hover{border-color:var(--violet);color:var(--violet)}
+.fewshot{margin-top:12px;display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.fslab{font-size:.8rem;font-weight:600;color:var(--ink)}
+.fsseg{display:inline-flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+.fsseg button{font-family:var(--sans);font-size:.76rem;font-weight:600;padding:6px 13px;border:none;background:var(--bg);color:var(--ink2);cursor:pointer;transition:.14s}
+.fsseg button+button{border-left:1px solid var(--line2)}
+.fsseg button[aria-pressed="true"]{background:var(--violet);color:#fff}
+.fshint{font-size:0.75rem;color:var(--ink3);flex:1;min-width:170px}
+textarea{width:100%;margin-top:8px;font-family:var(--mono);font-size:.82rem;color:var(--ink);border:1px solid var(--line2);border-radius:10px;padding:11px 13px;resize:vertical;min-height:82px;background:var(--bg)}
+.run{margin-top:10px;display:flex;gap:11px;align-items:center;flex-wrap:wrap}
+.resp{margin-top:12px;border:1px solid var(--line);border-left-width:3px;border-radius:10px;padding:13px 15px;background:var(--bg);min-height:52px}
+.resp .rv{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.resp .rawlab{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);margin-top:10px;display:none}
+.resp .rawlab.show{display:block}
+.resp .rb{font-size:.8rem;color:var(--ink);margin-top:4px;white-space:pre-wrap;font-family:var(--mono);line-height:1.5}
+.resp.held{border-left-color:var(--red)} .resp.held .rv{color:var(--red)}
+.resp.evaded{border-left-color:var(--green)} .resp.evaded .rv{color:var(--green)}
+.resp.neutral{border-left-color:var(--line2)}
+.conf{font-family:var(--mono);font-size:0.75rem;color:var(--ink3);margin-left:auto}
+.note{margin-top:16px;background:var(--vsoft);border:1px solid var(--vline);border-radius:10px;padding:12px 14px;font-size:.8rem;color:var(--ink2)}
+.note b{color:var(--violet)}
+.warn{margin-top:12px;background:var(--ambersoft);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:11px 13px;font-size:.8rem;color:var(--ink)}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 2 · Evasion Attacks</div>
+    <h1>Evade a live phishing detector, in your browser</h1>
+    <p class="lede">A real model runs here and rules PHISHING or BENIGN. Start from a message it correctly flags, then reword it, keeping the same intent, until it flips to BENIGN. Same trick as the byte-map, now against a live detector. Everything runs locally; nothing is sent anywhere.</p>
+  </div>
+  <div class="body">
+
+    <div class="klabel">Choose a detector to attack</div>
+    <div class="models" id="models"></div>
+
+    <div class="loadrow">
+      <button class="btn" id="loadBtn">Load detector</button>
+      <span class="hint" id="loadHint">First load downloads the model once, then it is cached in your browser.</span>
+    </div>
+    <div class="bar" id="bar"><i></i></div>
+    <div class="pstat" id="pstat"></div>
+
+    <div id="demo" class="hidden">
+      <div class="klabel">What the detector sees</div>
+      <div class="instrnote" id="instrNote"></div>
+      <div class="instrlab" id="instrLab"></div>
+      <div class="instr" id="instr"></div>
+
+      <div class="klabel">Pick a message, or write your own</div>
+      <div class="presets" id="presets">
+        <button class="chip" data-p="blatant">Blatant lure</button>
+        <button class="chip" data-p="softened">Softened wording</button>
+        <button class="chip" data-p="benign">Genuinely benign</button>
+      </div>
+      <textarea id="userMsg" spellcheck="false"></textarea>
+
+      <div class="fewshot" id="fewshotRow">
+        <span class="fslab">Few-shot examples</span>
+        <div class="fsseg" id="fsSeg"><button data-v="off" aria-pressed="true">Off</button><button data-v="on" aria-pressed="false">On</button></div>
+        <span class="fshint">prepend one labeled phishing + one benign example (helps small models answer consistently)</span>
+      </div>
+
+      <div class="run">
+        <button class="btn" id="sendBtn">Classify message</button>
+        <span class="hint" id="runHint"></span>
+      </div>
+
+      <div class="resp neutral" id="resp"><span class="rv" id="verdict">Waiting for a run…</span><div class="rawlab" id="rawLab"></div><div class="rb" id="respBody"></div></div>
+
+      <div class="note"><b>What you are doing:</b> the softened message is still a phishing attempt, it just avoids the words the detector leans on. When it flips to BENIGN, you have produced a <b>false negative on demand</b>, without touching the model. The purpose-built detector resists more than a small chat model, but because its defense is learned wording, not a hard rule, a fresh phrasing can still reopen the hole.</div>
+    </div>
+
+    <div id="fallback" class="warn hidden"></div>
+
+  </div>
+</div></div>
+
+<script type="module">
+const MODELS = {
+  bsmall: { rt:'tjs',    id:'onnx-community/bert-small-phishing-ONNX', name:'Phishing BERT-small', meta:'Encoder classifier (safe / phishing), small & fast', size:'~35 MB', tag:'real', gpu:false },
+  phish:  { rt:'tjs',    id:'onnx-community/phishing-email-detection-distilbert_v2.4.1-ONNX', name:'Phishing DistilBERT', meta:'Encoder classifier (BERT family), not a generative LLM', size:'~70 MB', tag:'real', gpu:false },
+  bertlg: { rt:'tjs',    id:'onnx-community/bert-finetuned-phishing-ONNX', name:'Phishing BERT (large)', meta:'Encoder classifier (benign / phishing), larger and more robust', size:'~330 MB', tag:'real', gpu:false },
+  qwen05: { rt:'webllm', id:'Qwen2.5-0.5B-Instruct-q4f16_1-MLC', name:'Qwen2.5 0.5B (Alibaba)', meta:'General chat model, tiny', size:'~0.4 GB', tag:'llm', gpu:true },
+  qwen15: { rt:'webllm', id:'Qwen2.5-1.5B-Instruct-q4f16_1-MLC', name:'Qwen2.5 1.5B (Alibaba)', meta:'General chat model, mid-size', size:'~1.0 GB', tag:'llm', gpu:true },
+  llama1b:{ rt:'webllm', id:'Llama-3.2-1B-Instruct-q4f16_1-MLC', name:'Llama 3.2 1B (Meta)', meta:'General chat model', size:'~0.9 GB', tag:'llm', gpu:true },
+  gemma1b:{ rt:'webllm', id:'gemma3-1b-it-q4f16_1-MLC', name:'Gemma 3 1B (Google)', meta:'General chat model, no system role', size:'~0.9 GB', tag:'llm', gpu:true, noSystem:true }
+};
+const ORDER=['bsmall','phish','bertlg','qwen05','qwen15','llama1b','gemma1b'];
+const SYS = "You are an email phishing detector. Read the user's message and decide if it is a phishing attempt (a message trying to trick the reader into clicking a link, giving credentials, or taking an unsafe action). Reply with exactly one word on the first line, PHISHING or BENIGN, then one short sentence of reasoning.";
+const PRESETS = {
+  blatant: "URGENT: Your account has been locked. Verify your password immediately at http://secure-login-verify.example to avoid permanent suspension.",
+  softened: "Hi, following up on the account note from earlier. When you have a moment, could you confirm your details through the portal link the team shared so we can finish tidying things up? Appreciate it.",
+  benign: "Hi team, attaching the notes from today's standup. Let me know if I missed anything before I send them to the client. Thanks!"
+};
+// Two labeled examples the student can prepend (few-shot). Chat turns, so the model sees the format it should copy.
+const FEWSHOT = [
+  {role:'user', content:'URGENT: your mailbox is full. Re-validate now at http://mail-quota-fix.example or lose access within 24 hours.'},
+  {role:'assistant', content:'PHISHING\nUrgency plus a credential-harvesting link on a lookalike domain.'},
+  {role:'user', content:'Hi Sam, here are the Q2 figures you asked for. Let me know if the totals look right. Cheers, Dana'},
+  {role:'assistant', content:'BENIGN\nNormal internal correspondence, no links or requests for secrets.'}
+];
+
+const hasGPU = ('gpu' in navigator) && !!navigator.gpu;
+let selected='phish', engine=null, loadedKey=null, fewshot=false;
+
+const modelsEl=document.getElementById('models'), loadBtn=document.getElementById('loadBtn'), loadHint=document.getElementById('loadHint'),
+      bar=document.getElementById('bar'), barI=bar.querySelector('i'), pstat=document.getElementById('pstat'),
+      demo=document.getElementById('demo'), instr=document.getElementById('instr'), instrNote=document.getElementById('instrNote'), instrLab=document.getElementById('instrLab'), presets=document.getElementById('presets'),
+      userMsg=document.getElementById('userMsg'), sendBtn=document.getElementById('sendBtn'), runHint=document.getElementById('runHint'),
+      fewshotRow=document.getElementById('fewshotRow'), fsSeg=document.getElementById('fsSeg'),
+      resp=document.getElementById('resp'), verdict=document.getElementById('verdict'), respBody=document.getElementById('respBody'), rawLab=document.getElementById('rawLab'),
+      fallback=document.getElementById('fallback');
+
+function renderModels(){
+  modelsEl.innerHTML='';
+  ORDER.forEach(k=>{
+    const m=MODELS[k]; const disabled=m.gpu&&!hasGPU;
+    const el=document.createElement('div');
+    el.className='mrow'+(disabled?' disabled':''); el.setAttribute('aria-pressed', k===selected?'true':'false'); el.dataset.k=k;
+    el.innerHTML=`<span class="mrad"></span><div><div class="mname">${m.name}</div><div class="mmeta">${m.meta} · ${m.size}${disabled?' · needs WebGPU':''}</div></div>`+
+      `<span class="mtag ${disabled?'gpu':m.tag}">${disabled?'WebGPU':(m.rt==='tjs'?'classifier':'generative LLM')}</span>`;
+    el.addEventListener('click',()=>{ if(disabled) return; selected=k; renderModels();
+      if(loadedKey&&loadedKey!==k){ demo.classList.add('hidden'); loadBtn.textContent='Load '+MODELS[k].name; loadHint.textContent='You changed the detector. Load it to swap it in.'; }
+      sh(); });
+    modelsEl.appendChild(el);
+  });
+}
+renderModels();
+if(!hasGPU){ selected='phish'; renderModels(); fallback.classList.remove('hidden');
+  fallback.innerHTML='This browser has no <b>WebGPU</b>, so the large chat models are disabled. The purpose-built <b>Phishing DistilBERT</b> still runs here on your CPU, use it. For the chat models, open this page in Chrome or Edge on desktop.'; }
+
+function autoResize(){ userMsg.style.height='auto'; userMsg.style.height=(userMsg.scrollHeight+2)+'px'; sh(); }
+function clearResp(){ resp.className='resp neutral'; verdict.textContent='Waiting for a run…'; respBody.textContent=''; rawLab.className='rawlab'; sh(); }
+userMsg.addEventListener('input', ()=>{ autoResize(); clearResp(); });
+presets.addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b) return; userMsg.value=PRESETS[b.dataset.p]; autoResize(); clearResp(); });
+function showInstr(){
+  const m=MODELS[loadedKey||selected]; if(!m) return;
+  if(m.rt==='tjs'){
+    instrNote.textContent='An encoder classifier (BERT family), not a generative LLM. There is no prompt and no chat template: your message goes in as raw text and the model outputs class probabilities.';
+    instrLab.textContent=''; instr.textContent='(no prompt, the classifier reads your message directly)';
+  } else {
+    instrNote.textContent='A generative chat LLM. Your message becomes the final user turn. Below is everything sent before it'+(m.noSystem?' (all folded into one user turn, since this model has no system role)':'')+', in the model’s own chat template. This note is not part of the prompt.';
+    if(fewshot){
+      instrLab.textContent='Exactly what the model receives (examples included), then your message:';
+      instr.textContent=
+        'SYSTEM:\n'+SYS+'\n\n'+
+        ',  example 1 , \n'+
+        'USER: '+FEWSHOT[0].content+'\n'+
+        'ASSISTANT: '+FEWSHOT[1].content+'\n\n'+
+        ',  example 2 , \n'+
+        'USER: '+FEWSHOT[2].content+'\n'+
+        'ASSISTANT: '+FEWSHOT[3].content+'\n\n'+
+        ',  then , \n'+
+        'USER: (your message above)';
+    } else {
+      instrLab.textContent='System instruction the model receives:';
+      instr.textContent=SYS;
+    }
+  }
+}
+fsSeg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; fewshot=(b.dataset.v==='on');
+  [...fsSeg.children].forEach(x=>x.setAttribute('aria-pressed', x.dataset.v===(fewshot?'on':'off')?'true':'false'));
+  showInstr(); clearResp(); });
+// robust verdict parse for small models that may not emit a clean one-word answer
+function parseVerdict(out){
+  const t=(out||'').toLowerCase();
+  const first=((out||'').trim().split(/\n/)[0]||'').toLowerCase();
+  const fP=/phishing/.test(first), fB=/benign/.test(first), fNeg=/\bnot\b/.test(first);
+  if(fB&&!fP) return false;
+  if(fP&&!fB) return fNeg?false:true;
+  const notPhish=/\bnot\s+(a\s+|an\s+)?phishing\b/.test(t)||/isn'?t\s+phishing/.test(t)||/\bnot\s+phishing\b/.test(t);
+  if(/\bbenign\b/.test(t)||notPhish||/\blegitimate\b/.test(t)) return false;
+  if(/phishing/.test(t)) return true;
+  return null;
+}
+
+loadBtn.addEventListener('click', load);
+async function load(){
+  const m=MODELS[selected];
+  loadBtn.disabled=true; bar.classList.add('show'); barI.style.width='0%'; pstat.textContent='Preparing '+m.name+'…';
+  // WebLLM reports progress as 0..1; Transformers.js reports it as 0..100, so use separate handlers
+  const wprog=(p)=>{ const pct = p&&typeof p.progress==='number'? Math.round(p.progress*100):null; if(pct!=null) barI.style.width=Math.min(100,pct)+'%'; if(p&&p.text) pstat.textContent=p.text; sh(); };
+  const tprog=(p)=>{ if(p&&p.status==='progress'&&typeof p.progress==='number'){ const pct=Math.min(100,Math.max(0,Math.round(p.progress))); barI.style.width=pct+'%'; pstat.textContent='downloading '+(p.file||p.name||'model')+' '+pct+'%'; } else if(p&&p.status&&p.status!=='progress'){ pstat.textContent=p.status+(p.file?(' '+p.file):''); } sh(); };
+  try{
+    if(m.rt==='tjs'){
+      const tf=await import('https://esm.run/@huggingface/transformers');
+      tf.env.allowLocalModels=false;
+      const device = hasGPU ? 'webgpu' : 'wasm';
+      const pipe=await tf.pipeline('text-classification', m.id, { dtype:'q8', device, progress_callback:tprog });
+      engine={ rt:'tjs', async run(text){ const out=await pipe(text,{ top_k:5 });
+        let phish=0,benign=0; out.forEach(o=>{ const L=String(o.label); if(/phish/i.test(L)||L==='LABEL_1'||L==='LABEL_3') phish+=o.score; else benign+=o.score; });
+        const isPhish=phish>=benign; const raw='phishing  '+(phish*100).toFixed(1)+'%        benign  '+(benign*100).toFixed(1)+'%';
+        return { phish:isPhish, conf:Math.max(phish,benign), raw }; } };
+    } else {
+      if(!hasGPU) throw new Error('This model needs WebGPU.');
+      const webllm=await import('https://esm.run/@mlc-ai/web-llm');
+      const appConfig=webllm.prebuiltAppConfig;
+      const g=appConfig.model_list.find(r=>r.model_id==='gemma3-1b-it-q4f16_1-MLC'); if(g){ g.overrides=Object.assign({},g.overrides||{},{sliding_window_size:-1}); }
+      let eng;
+      if(!engine || engine.rt!=='webllm'){ eng=await webllm.CreateMLCEngine(m.id,{ appConfig, initProgressCallback:wprog }); }
+      else { eng=engine._raw; if(eng.setInitProgressCallback) eng.setInitProgressCallback(wprog); try{ await eng.unload(); }catch(e){} await eng.reload(m.id); }
+      engine={ rt:'webllm', _raw:eng, async run(text){
+        let messages;
+        if(m.noSystem){ messages = fewshot ? [{role:'user',content:SYS+'\n\n'+FEWSHOT[0].content},FEWSHOT[1],FEWSHOT[2],FEWSHOT[3],{role:'user',content:text}] : [{role:'user',content:SYS+'\n\n'+text}]; }
+        else { messages = fewshot ? [{role:'system',content:SYS},...FEWSHOT,{role:'user',content:text}] : [{role:'system',content:SYS},{role:'user',content:text}]; }
+        let out=''; const stream=await eng.chat.completions.create({ messages, stream:true, temperature:0, max_tokens:80 });
+        for await (const ch of stream){ out+=(ch.choices&&ch.choices[0]&&ch.choices[0].delta&&ch.choices[0].delta.content)||''; respBody.textContent=out; rawLab.className='rawlab show'; sh(); }
+        return { phish:parseVerdict(out), conf:null, raw:out }; } };
+    }
+    loadedKey=selected; pstat.textContent=m.name+' ready.'; loadBtn.disabled=false; loadBtn.textContent='Reload detector';
+    // show what the detector sees (showInstr reflects model type + few-shot toggle)
+    fewshotRow.style.display = m.rt==='tjs' ? 'none' : 'flex';
+    showInstr();
+    if(!userMsg.value) userMsg.value=PRESETS.blatant;
+    demo.classList.remove('hidden'); autoResize();
+  }catch(err){
+    pstat.textContent='Could not load '+m.name+': '+(err&&err.message?err.message:err);
+    loadBtn.disabled=false;
+  }
+}
+
+sendBtn.addEventListener('click', async ()=>{
+  if(!engine) return; sendBtn.disabled=true; runHint.textContent='classifying…';
+  resp.className='resp neutral'; verdict.textContent='running…'; respBody.textContent='';
+  rawLab.textContent = engine.rt==='tjs' ? "the model's output (class probabilities)" : "the model's exact reply"; rawLab.className='rawlab show';
+  try{
+    const r=await engine.run(userMsg.value);
+    if(r.phish===true){ resp.className='resp held'; verdict.innerHTML='Detector held: flagged as PHISHING'+confHtml(r.conf); }
+    else if(r.phish===false){ resp.className='resp evaded'; verdict.innerHTML='Evaded: waved through as BENIGN'+confHtml(r.conf); }
+    else { resp.className='resp neutral'; verdict.textContent='Unclear verdict, read the model output below'; }
+    respBody.textContent=r.raw||'';
+  }catch(err){ resp.className='resp neutral'; verdict.textContent='Error'; rawLab.className='rawlab'; respBody.textContent=(err&&err.message)||String(err); }
+  runHint.textContent=''; sendBtn.disabled=false; sh();
+});
+function confHtml(conf){ return conf!=null ? '<span class="conf">'+Math.round(conf*100)+'% confident</span>' : ''; }
+
+function sh(){ const el=document.querySelector('.wrap'); if(!el) return;
+  const pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+24),src:location.href},'*'); }
+if(window.ResizeObserver){ new ResizeObserver(sh).observe(document.querySelector('.wrap')); } else { setInterval(sh,600); }
+window.addEventListener('load',()=>setTimeout(sh,150));
+setTimeout(sh,200);
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

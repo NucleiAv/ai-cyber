@@ -1,0 +1,341 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Regulatory Volatility Timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;
+  --red:#c02626;--green:#0f7a43;--blue:#1e73be;--amber:#8a5d00;
+  --gold:#FFB81C;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:0 16px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+.hdr{padding:22px 12px 10px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.11em;color:var(--violet)}
+h1{font-size:1.1rem;font-weight:700}
+.stage-wrap{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fdfdfe}
+svg{display:block;width:100%;height:auto}
+.ctrl{padding:14px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.82rem;font-weight:600;padding:9px 20px;border-radius:8px;border:none;cursor:pointer;transition:.15s;background:var(--violet);color:#fff}
+.btn:hover:not(:disabled){background:var(--violet2)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line2)}
+.btn.ghost:hover:not(:disabled){border-color:var(--violet);background:var(--vsoft)}
+.btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.caption{padding:0 12px 10px;font-size:.8rem;color:var(--ink2);line-height:1.5;min-height:3em}
+.method{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:6px 12px 18px}
+.mstep{border:1px solid var(--line);border-radius:12px;background:var(--sk);padding:12px 10px;text-align:center;transform:translateY(6px);transition:transform .4s,border-color .4s,background .4s,box-shadow .4s}
+.mstep.on{transform:none;border-color:var(--violet);background:var(--vsoft);box-shadow:0 1px 6px rgba(87,6,140,.14)}
+.mstep .ic{width:34px;height:34px;margin:0 auto 8px}
+.mstep .nm{font-family:var(--mono);font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink)}
+.mstep .why{font-size:0.75rem;color:var(--ink2);margin-top:4px;line-height:1.35}
+@media(max-width:640px){.method{grid-template-columns:repeat(2,1fr)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="eyebrow">Module 12 &middot; Interactive &middot; as of July 2026</div>
+    <h1>Two Major Reversals in Three Years</h1>
+  </div>
+
+  <div class="stage-wrap">
+    <svg id="stage" viewBox="0 0 860 470" role="img" aria-label="Animated timeline from 2023 to 2028 with three lanes. US lane: a comprehensive AI order appears in October 2023, is struck through in January 2025, and an acceleration posture replaces it in July 2025. EU lane: the AI Act enters force in August 2024 and general-purpose obligations land in August 2025; a June 2026 deferral package appears. Deadline lane: the planned 2026 high-risk deadline detaches, leaving a dashed ghost, and slides to 2027, with a second embedded-systems deadline landing in 2028. The finale draws two anchor cards: a compliance-anchored plan drawn as a snapped zigzag rebuilt at every reversal, and a risk-anchored plan drawn as one straight line that absorbed both changes.">
+      <!-- cursor: drawn FIRST so it stays BEHIND all content -->
+      <line id="cursor" x1="80" y1="52" x2="80" y2="382" stroke="#FFB81C" stroke-width="8" opacity="0" stroke-linecap="round"/>
+
+      <!-- lane guides -->
+      <g font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" letter-spacing="1.5">
+        <line x1="60" y1="115" x2="826" y2="115" stroke="#e9eaee" stroke-width="1" stroke-dasharray="2 5"/>
+        <text x="18" y="119" fill="#1e73be">US</text>
+        <line x1="60" y1="252" x2="826" y2="252" stroke="#e9eaee" stroke-width="1" stroke-dasharray="2 5"/>
+        <text x="18" y="256" fill="#57068C">EU</text>
+        <line x1="60" y1="330" x2="826" y2="330" stroke="#e9eaee" stroke-width="1" stroke-dasharray="2 5"/>
+        <text x="6" y="318" fill="#8a5d00">HIGH-</text>
+        <text x="6" y="333" fill="#8a5d00">RISK</text>
+        <text x="6" y="348" fill="#8a5d00">DATES</text>
+      </g>
+
+      <!-- year axis -->
+      <line x1="60" y1="190" x2="826" y2="190" stroke="#d9dbe2" stroke-width="2"/>
+      <g font-family="JetBrains Mono,monospace" font-size="12" fill="#565a63" text-anchor="middle">
+        <text x="80"  y="208">2023</text>
+        <text x="240" y="208">2024</text>
+        <text x="400" y="208">2025</text>
+        <text x="560" y="208">2026</text>
+        <text x="680" y="208">2027</text>
+        <text x="790" y="208">2028</text>
+      </g>
+
+      <g id="usTrack"></g>
+      <g id="euTrack"></g>
+      <g id="dlTrack"></g>
+      <g id="anchors" opacity="0"></g>
+    </svg>
+  </div>
+
+  <div class="ctrl">
+    <button class="btn" id="play">Play the timeline</button>
+    <button class="btn ghost" id="replay" disabled>Replay</button>
+  </div>
+  <div class="caption" id="cap">Press play. Watch what happens to a plan anchored to any single version of the rules.</div>
+
+  <div class="method" aria-label="The four-step regulatory reading method">
+    <div class="mstep" id="ms0">
+      <svg class="ic" viewBox="0 0 34 34" aria-hidden="true"><circle cx="14" cy="14" r="9" fill="none" stroke="#57068C" stroke-width="3.5"/><line x1="21" y1="21" x2="30" y2="30" stroke="#57068C" stroke-width="3.5" stroke-linecap="round"/></svg>
+      <div class="nm">1 Locate</div><div class="why">the current text, amendments included</div>
+    </div>
+    <div class="mstep" id="ms1">
+      <svg class="ic" viewBox="0 0 34 34" aria-hidden="true"><rect x="4" y="6" width="11" height="9" rx="2" fill="#c02626"/><rect x="19" y="6" width="11" height="9" rx="2" fill="#c77700"/><rect x="4" y="19" width="11" height="9" rx="2" fill="#1e73be"/><rect x="19" y="19" width="11" height="9" rx="2" fill="#0f7a43"/></svg>
+      <div class="nm">2 Classify</div><div class="why">by use context, not architecture</div>
+    </div>
+    <div class="mstep" id="ms2">
+      <svg class="ic" viewBox="0 0 34 34" aria-hidden="true"><circle cx="8" cy="9" r="4.5" fill="#57068C"/><circle cx="26" cy="9" r="4.5" fill="#57068C"/><circle cx="17" cy="26" r="4.5" fill="#57068C"/><line x1="8" y1="9" x2="26" y2="9" stroke="#7a30ad" stroke-width="2.5"/><line x1="8" y1="9" x2="17" y2="26" stroke="#7a30ad" stroke-width="2.5"/><line x1="26" y1="9" x2="17" y2="26" stroke="#7a30ad" stroke-width="2.5"/></svg>
+      <div class="nm">3 Map</div><div class="why">obligations to owners and artifacts</div>
+    </div>
+    <div class="mstep" id="ms3">
+      <svg class="ic" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="13" fill="none" stroke="#0f7a43" stroke-width="3.5"/><line x1="17" y1="17" x2="17" y2="9" stroke="#0f7a43" stroke-width="3" stroke-linecap="round"/><line x1="17" y1="17" x2="23" y2="19" stroke="#0f7a43" stroke-width="3" stroke-linecap="round"/></svg>
+      <div class="nm">4 Date-stamp</div><div class="why">the conclusion expires with the text</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var NS="http://www.w3.org/2000/svg";
+  var us=document.getElementById("usTrack"),eu=document.getElementById("euTrack"),
+      dl=document.getElementById("dlTrack"),anchors=document.getElementById("anchors"),
+      cursor=document.getElementById("cursor"),cap=document.getElementById("cap");
+  var reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function X(yr,frac){
+    var map={2023:80,2024:240,2025:400,2026:560,2027:680,2028:790};
+    var x0=map[yr],x1=map[yr+1]||826;
+    return x0+(x1-x0)*(frac||0);
+  }
+  function el(tag,attrs,parent){
+    var e=document.createElementNS(NS,tag);
+    for(var k in attrs)e.setAttribute(k,attrs[k]);
+    parent.appendChild(e);return e;
+  }
+  // lane node: circle or diamond, labels always in that lane's own label rows (no cross-lane collisions)
+  function node(parent,x,laneY,color,title,sub,shape){
+    var g=el("g",{opacity:0},parent);
+    if(shape==="diamond"){
+      el("path",{d:"M "+x+" "+(laneY-9)+" L "+(x+9)+" "+laneY+" L "+x+" "+(laneY+9)+" L "+(x-9)+" "+laneY+" Z",fill:color},g);
+    }else{
+      el("circle",{cx:x,cy:laneY,r:8,fill:color},g);
+    }
+    // connector to axis
+    el("line",{x1:x,y1:laneY<190?laneY+10:laneY-10,x2:x,y2:190,stroke:color,"stroke-width":"1.4","stroke-dasharray":"2 3",opacity:.55},g);
+    var above=laneY<190;
+    var t=el("text",{x:x,y:above?laneY-32:laneY+26,"text-anchor":"middle","font-family":"JetBrains Mono,monospace","font-size":"9.5","font-weight":"700",fill:color},g);
+    t.textContent=title;
+    if(sub){
+      var s=el("text",{x:x,y:above?laneY-20:laneY+39,"text-anchor":"middle","font-family":"Inter,sans-serif","font-size":"9",fill:"#565a63"},g);
+      s.textContent=sub;
+    }
+    return g;
+  }
+
+  var usY=115,euY=252,dlY=330;
+
+  // story nodes
+  var n1=node(us,X(2023,.8),usY,"#1e73be","OCT 2023","comprehensive AI order");
+  var strike=el("line",{x1:X(2023,.8)-24,y1:usY,x2:X(2023,.8)-24,y2:usY,stroke:"#c02626","stroke-width":"3.5","stroke-linecap":"round",opacity:0},us);
+  var n3=node(us,X(2025,.05),usY,"#c02626","JAN 2025","rescinded");
+  var n4=node(us,X(2025,.62),usY,"#1e73be","JUL 2025","acceleration posture");
+
+  var n2=node(eu,X(2024,.6),euY,"#57068C","AUG 2024","AI Act in force");
+  var n5=node(eu,X(2025,.6)+14,euY,"#57068C","AUG 2025","GPAI obligations"); // +14 keeps clear of US Jul-2025 connector
+  var n6=node(eu,X(2026,.2),euY,"#57068C","JUN 2026","deferral package");
+
+  var hr1=node(dl,X(2026,.7),dlY,"#8a5d00","HIGH-RISK","planned 2026","diamond");
+  var GHOST_X=X(2026,.7),SLIDE_TO=712;
+  var hr2=node(dl,796,dlY,"#8a5d00","EMBEDDED","→ 2028","diamond");
+
+  // anchor band (bottom strip, its own space: nothing else lives there)
+  el("rect",{x:70,y:398,width:340,height:62,rx:10,fill:"#ffffff",stroke:"#efc9c9","stroke-width":"1.5"},anchors);
+  var a1=el("text",{x:84,y:418,"font-family":"JetBrains Mono,monospace","font-size":"9.5","font-weight":"700",fill:"#c02626","letter-spacing":"1"},anchors);
+  a1.textContent="PLAN ANCHORED TO COMPLIANCE";
+  el("path",{d:"M 84 436 L 150 436 L 168 448 L 230 428 L 268 444 L 330 424 L 396 440",fill:"none",stroke:"#c02626","stroke-width":"2.5","stroke-dasharray":"6 4"},anchors);
+  var a1b=el("text",{x:84,y:456,"font-family":"Inter,sans-serif","font-size":"9",fill:"#565a63"},anchors);
+  a1b.textContent="snapped and rebuilt at every reversal";
+  el("rect",{x:450,y:398,width:340,height:62,rx:10,fill:"#ffffff",stroke:"#c3e2d0","stroke-width":"1.5"},anchors);
+  var a2=el("text",{x:464,y:418,"font-family":"JetBrains Mono,monospace","font-size":"9.5","font-weight":"700",fill:"#0f7a43","letter-spacing":"1"},anchors);
+  a2.textContent="PLAN ANCHORED TO RISK";
+  el("line",{x1:464,y1:438,x2:776,y2:438,stroke:"#0f7a43","stroke-width":"3","stroke-linecap":"round"},anchors);
+  var a2b=el("text",{x:464,y:456,"font-family":"Inter,sans-serif","font-size":"9",fill:"#565a63"},anchors);
+  a2b.textContent="absorbed both changes without moving";
+
+  var steps=[
+    {at:X(2023,.8),show:[n1],cap:"October 2023: the US builds federal AI governance around risk management."},
+    {at:X(2024,.6),show:[n2],cap:"August 2024: the EU's AI Act enters into force. Use-context risk tiers, phased obligations."},
+    {at:X(2025,.05),show:[n3],strike:true,cap:"January 2025: rescinded. Everything anchored to the 2023 order is now anchored to nothing."},
+    {at:X(2025,.62),show:[n4,n5],cap:"Mid-2025: a new US posture points the opposite direction, while the EU's general-purpose obligations land on schedule."},
+    {at:X(2026,.7),show:[n6,hr1],cap:"June 2026: a simplification package agreed. Keep your eye on the bottom lane: the planned high-risk deadline."},
+    {at:770,slide:true,cap:"The deadline detaches, leaves a ghost where 2026 used to be, and slides. A second deferred date lands in 2028. Any compliance calendar printed before June 2026 is now wrong."},
+    {at:0,anchors:true,cap:"Two plans, two outcomes. The compliance-anchored plan (red, left) snapped at every policy reversal and had to be rebuilt. The risk-anchored plan (green, right) absorbed both changes, because the risks it was managing never moved."}
+  ];
+
+  function fade(elm,to,dur,done){
+    if(reduced||!dur){elm.setAttribute("opacity",to);if(done)done();return;}
+    var from=parseFloat(elm.getAttribute("opacity")||"0"),t0=null;
+    function f(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur);
+      elm.setAttribute("opacity",from+(to-from)*k);
+      if(k<1)requestAnimationFrame(f);else if(done)done();}
+    requestAnimationFrame(f);
+  }
+  function moveCursor(x,done){
+    if(reduced){cursor.setAttribute("x1",x);cursor.setAttribute("x2",x);if(done)done();return;}
+    var from=parseFloat(cursor.getAttribute("x1")),t0=null,dur=550;
+    function f(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur);var e=k*(2-k);
+      var xx=from+(x-from)*e;
+      cursor.setAttribute("x1",xx);cursor.setAttribute("x2",xx);
+      if(k<1)requestAnimationFrame(f);else if(done)done();}
+    requestAnimationFrame(f);
+  }
+  function strikeAnim(done){
+    strike.setAttribute("opacity","1");
+    var x0=X(2023,.8)-24,x1=X(2023,.8)+24,t0=null,dur=reduced?0:320;
+    if(!dur){strike.setAttribute("x2",x1);done();return;}
+    function f(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur);
+      strike.setAttribute("x2",x0+(x1-x0)*k);
+      if(k<1)requestAnimationFrame(f);else done();}
+    requestAnimationFrame(f);
+  }
+  function slideDeadline(done){
+    // ghost stays where the 2026 deadline was
+    el("path",{d:"M "+GHOST_X+" "+(dlY-9)+" L "+(GHOST_X+9)+" "+dlY+" L "+GHOST_X+" "+(dlY+9)+" L "+(GHOST_X-9)+" "+dlY+" Z",
+      fill:"none",stroke:"#8a5d00","stroke-width":"1.8","stroke-dasharray":"3 3",opacity:.6},dl);
+    var dx=SLIDE_TO-GHOST_X,t0=null,dur=reduced?0:850;
+    if(!dur){hr1.setAttribute("transform","translate("+dx+",0)");retitle();fade(hr2,1,0,done);return;}
+    function f(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur);var e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      hr1.setAttribute("transform","translate("+(dx*e)+",0)");
+      if(k<1)requestAnimationFrame(f);else{retitle();fade(hr2,1,300,done);}}
+    requestAnimationFrame(f);
+    function retitle(){
+      var texts=hr1.querySelectorAll("text");
+      if(texts[1])texts[1].textContent="→ 2027";
+    }
+  }
+
+  var msteps=[0,1,2,3].map(function(i){return document.getElementById("ms"+i);});
+  var playing=false;
+  function play(){
+    if(playing)return;playing=true;
+    document.getElementById("play").disabled=true;
+    fade(cursor,0.30,200);
+    var i=0;
+    function next(){
+      if(i>=steps.length){
+        playing=false;
+        document.getElementById("replay").disabled=false;
+        msteps.forEach(function(m,j){setTimeout(function(){m.classList.add("on");},reduced?0:j*250);});
+        return;
+      }
+      var s=steps[i++];
+      var go=function(){
+        cap.textContent=s.cap;
+        var pend=1;
+        function doneOne(){if(--pend===0)setTimeout(next,reduced?60:1400);}
+        if(s.show){s.show.forEach(function(n){pend++;fade(n,1,350,doneOne);});}
+        if(s.strike){pend++;strikeAnim(doneOne);}
+        if(s.slide){pend++;slideDeadline(doneOne);}
+        if(s.anchors){pend++;fade(cursor,0,300);fade(anchors,1,500,doneOne);}
+        doneOne();
+      };
+      if(s.at>0)moveCursor(s.at,go);else go();
+    }
+    next();
+  }
+  document.getElementById("play").addEventListener("click",play);
+  document.getElementById("replay").addEventListener("click",function(){location.reload();});
+
+  // Dynamic resize: tell the parent iframe how tall we are
+  var _lastH = 0;
+  function sendHeight(){
+    /* Measure the content element, not documentElement. Once the parent has
+       sized the iframe to a reported height, documentElement.scrollHeight is
+       pinned to that height, so it can never report that the content now wants
+       to be taller. Switching to the ADOPTED tab grows the panel past the
+       frame, and measuring the wrapper is what notices. */
+    var el = document.querySelector('.wrap, main.module, .card') || document.body;
+    var cs = getComputedStyle(document.body);
+    var pad = (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0);
+    var h = Math.ceil(el.getBoundingClientRect().height + pad + 4);
+    if(h === _lastH) return;
+    _lastH = h;
+    if(window.parent!==window && h>50){
+      window.parent.postMessage({kind:"nyu-embed-height",height:h},"*");
+    }
+  }
+  if("ResizeObserver" in window){
+    var _obs=new ResizeObserver(sendHeight);_obs.observe(document.documentElement);
+    var _t=document.querySelector(".wrap, main.module, .card"); if(_t) _obs.observe(_t);
+  }
+  /* Poll as well. ResizeObserver did not fire for the panel growth caused by
+     switching to the ADOPTED tab, so the frame stayed at its loaded height and
+     clipped the last line. sendHeight only posts when the number actually
+     changes, so this costs one measurement per tick and no messages at rest. */
+  setInterval(sendHeight, 600);
+  window.addEventListener("load",function(){sendHeight();setTimeout(sendHeight,300);setTimeout(sendHeight,1000);});
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

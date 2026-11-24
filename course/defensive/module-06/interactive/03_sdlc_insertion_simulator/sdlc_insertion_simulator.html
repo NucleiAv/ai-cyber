@@ -1,0 +1,451 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDLC AI Review Insertion Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+/* same-hue: coloured text on its own tint; near-black instead */
+    :root{--v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+
+    /* Header */
+    .top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap;border-bottom:1px solid var(--rule)}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em;flex:1 1 auto}
+    .top .tag{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:5px;background:#4C1D95;color:#fff}
+
+    .body-wrap{padding:18px}
+
+    /* Instruction */
+    .instruction{font-size:.72rem;color:var(--ink2);text-align:center;margin-bottom:16px;font-weight:600}
+
+    /* ====== Pipeline ====== */
+    .pipeline-container{position:relative;width:100%;margin-bottom:22px;overflow-x:auto;overflow-y:visible;padding:14px 0 18px}
+    .pipeline{display:flex;align-items:center;justify-content:center;gap:0;position:relative;min-width:680px;padding:0 10px}
+
+    /* Pipeline node */
+    .p-node{display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;z-index:2;flex-shrink:0;width:80px}
+    .p-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--sf);border:2px solid var(--rule);transition:all .4s ease;position:relative}
+    .p-icon svg{width:22px;height:22px;stroke:var(--ink2);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;transition:stroke .4s}
+    .p-label{font-size:.58rem;font-weight:700;text-align:center;color:var(--ink2);transition:color .4s;line-height:1.2;white-space:nowrap}
+
+    /* Pulse on nodes */
+    .p-node.active .p-icon{border-color:var(--v);box-shadow:0 0 0 5px rgba(87,6,140,.1);background:var(--v50)}
+    .p-node.active .p-icon svg{stroke:var(--v)}
+    .p-node.active .p-label{color:var(--v)}
+
+    @keyframes nodePulse{
+      0%,100%{box-shadow:0 0 0 0 rgba(87,6,140,.08)}
+      50%{box-shadow:0 0 0 6px rgba(87,6,140,.04)}
+    }
+    .p-icon{animation:nodePulse 3s ease-in-out infinite}
+
+    /* Connector arrows */
+    .p-connector{flex:1 1 0;min-width:20px;max-width:60px;height:2px;position:relative;z-index:1}
+    .p-connector-line{width:100%;height:2px;background:var(--rule);position:relative;overflow:hidden}
+    .p-connector-line::after{content:'';position:absolute;top:0;left:-30%;width:30%;height:100%;background:linear-gradient(90deg,transparent,var(--v200),transparent);animation:flowDot 2.5s linear infinite}
+    @keyframes flowDot{0%{left:-30%}100%{left:100%}}
+    .p-connector-arrow{position:absolute;right:-3px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:6px solid var(--rule)}
+
+    /* ====== AI Review Shield ====== */
+    .shield-track{position:relative;min-width:680px;height:42px;margin-bottom:4px;padding:0 10px}
+    .shield{position:absolute;top:0;display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;background:var(--v);color:#fff;font-size:.6rem;font-weight:700;white-space:nowrap;transition:left .6s cubic-bezier(.34,1.56,.64,1),opacity .4s;opacity:0;z-index:10;box-shadow:0 4px 14px rgba(87,6,140,.35)}
+    .shield.visible{opacity:1}
+    .shield svg{width:16px;height:16px;fill:#fff;flex-shrink:0}
+    .shield::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid var(--v)}
+
+    @keyframes shieldGlow{
+      0%,100%{box-shadow:0 4px 14px rgba(87,6,140,.35)}
+      50%{box-shadow:0 4px 20px rgba(87,6,140,.55)}
+    }
+    .shield.visible{animation:shieldGlow 2s ease-in-out infinite}
+
+    /* ====== Checkpoint Buttons ====== */
+    .checkpoints{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+    .cp-btn{flex:1 1 0;min-width:160px;display:flex;align-items:center;gap:8px;padding:10px 14px;border:2px solid var(--rule);border-radius:10px;cursor:pointer;transition:all .3s ease;font-family:var(--sans);font-size:.7rem;font-weight:600;background:var(--sf);color:var(--ink);user-select:none;justify-content:center;position:relative;overflow:hidden}
+    .cp-btn::before{content:'';position:absolute;inset:0;background:var(--v);opacity:0;transition:opacity .3s}
+    .cp-btn:hover{border-color:var(--v200);transform:translateY(-1px);box-shadow:0 4px 12px rgba(87,6,140,.1)}
+    .cp-btn.active{border-color:var(--v);background:var(--v);color:#fff;box-shadow:0 4px 16px rgba(87,6,140,.25)}
+    .cp-reset{appearance:none;font:inherit;cursor:pointer;border:1.5px solid var(--rule);background:#fff;color:var(--ink);border-radius:8px;padding:6px 14px;font-size:.78rem;font-weight:600;align-self:center}
+    .cp-reset:hover{border-color:var(--v);background:var(--v);color:#fff}
+    .cp-btn .cp-num{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.6rem;font-weight:700;background:#4C1D95;color:#fff;transition:all .3s;flex-shrink:0}
+    .cp-btn.active .cp-num{background:rgba(255,255,255,.2);color:#fff}
+    .cp-btn .cp-text{line-height:1.2}
+
+    /* ====== Metrics ====== */
+    .metrics{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+    .metric{display:flex;align-items:center;gap:10px}
+    .m-label{width:130px;flex-shrink:0;display:flex;align-items:center;gap:6px;font-size:.62rem;font-weight:700;color:var(--ink2)}
+    .m-label svg{width:14px;height:14px;flex-shrink:0}
+    .m-bar-wrap{flex:1;height:22px;background:var(--sk);border-radius:6px;position:relative;overflow:hidden;border:1px solid var(--rule)}
+    .m-bar{height:100%;border-radius:5px;transition:width .7s cubic-bezier(.34,1.56,.64,1),background .5s;width:0;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;min-width:30px}
+    .m-val{font-family:var(--mono);font-size:.58rem;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+    .m-qual{font-size:.56rem;font-weight:600;margin-left:6px;flex-shrink:0;width:70px;text-align:right}
+
+    /* ====== Insight ====== */
+    .insight-box{padding:12px 16px;border-radius:10px;border:1.5px solid var(--rule);background:var(--sk);text-align:center;transition:all .4s;min-height:44px;display:flex;align-items:center;justify-content:center}
+    .insight-box.active{border-color:var(--v200);background:var(--v50)}
+    .insight-text{font-size:.72rem;font-weight:600;color:var(--ink);transition:all .4s;line-height:1.4}
+    .insight-box.active .insight-text{color:var(--ink)}
+
+    /* ====== Responsive ====== */
+    @media(max-width:700px){
+      .pipeline-container{overflow-x:auto;-webkit-overflow-scrolling:touch}
+      .checkpoints{flex-direction:column}
+      .cp-btn{min-width:0}
+      .metric{flex-wrap:wrap}
+      .m-label{width:100%;margin-bottom:2px}
+      .m-bar-wrap{width:100%}
+      .m-qual{width:auto}
+    }
+  
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="card">
+    <div class="top">
+      <h1>SDLC AI Review Insertion Point</h1>
+      <span class="tag">Interactive</span>
+    </div>
+    <div class="body-wrap">
+
+      <div class="instruction">Choose where to insert AI-powered code review in the pipeline</div>
+
+      <!-- Pipeline -->
+      <div class="pipeline-container">
+        <!-- Shield overlay (above pipeline) -->
+        <div class="shield-track" id="shieldTrack">
+          <div class="shield" id="shield">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            AI Review
+          </div>
+        </div>
+
+        <div class="pipeline" id="pipeline">
+          <!-- Node: Developer -->
+          <div class="p-node" data-stage="0">
+            <div class="p-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div class="p-label">Developer</div>
+          </div>
+          <div class="p-connector"><div class="p-connector-line"><div class="p-connector-arrow"></div></div></div>
+
+          <!-- Node: Commit -->
+          <div class="p-node" data-stage="1">
+            <div class="p-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="22.95" y2="12"/></svg>
+            </div>
+            <div class="p-label">Commit</div>
+          </div>
+          <div class="p-connector"><div class="p-connector-line"><div class="p-connector-arrow"></div></div></div>
+
+          <!-- Node: Pull Request -->
+          <div class="p-node" data-stage="2">
+            <div class="p-icon">
+              <svg viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+            </div>
+            <div class="p-label">Pull Request</div>
+          </div>
+          <div class="p-connector"><div class="p-connector-line"><div class="p-connector-arrow"></div></div></div>
+
+          <!-- Node: CI -->
+          <div class="p-node" data-stage="3">
+            <div class="p-icon">
+              <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <div class="p-label">CI</div>
+          </div>
+          <div class="p-connector"><div class="p-connector-line"><div class="p-connector-arrow"></div></div></div>
+
+          <!-- Node: Deploy -->
+          <div class="p-node" data-stage="4">
+            <div class="p-icon">
+              <svg viewBox="0 0 24 24"><path d="M22 12l-10 7V5l10 7z"/><line x1="2" y1="5" x2="2" y2="19"/></svg>
+            </div>
+            <div class="p-label">Deploy</div>
+          </div>
+          <div class="p-connector"><div class="p-connector-line"><div class="p-connector-arrow"></div></div></div>
+
+          <!-- Node: Production -->
+          <div class="p-node" data-stage="5">
+            <div class="p-icon">
+              <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div class="p-label">Production</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checkpoint buttons -->
+      <div class="checkpoints" id="checkpoints">
+        <button class="cp-btn" data-cp="pre" onclick="selectCheckpoint('pre')">
+          <span class="cp-num">1</span>
+          <span class="cp-text">Pre-Commit</span>
+        </button>
+        <button class="cp-btn" data-cp="pr" onclick="selectCheckpoint('pr')">
+          <span class="cp-num">2</span>
+          <span class="cp-text">Pull Request / CI</span>
+        </button>
+        <button class="cp-btn" data-cp="post" onclick="selectCheckpoint('post')">
+          <span class="cp-num">3</span>
+          <span class="cp-text">Post-Deployment</span>
+        </button>
+        <button class="cp-reset" type="button" onclick="resetSimulator()">Reset</button>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics" id="metrics">
+        <!-- Feedback Speed -->
+        <div class="metric" data-metric="speed">
+          <div class="m-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Feedback Speed
+          </div>
+          <div class="m-bar-wrap"><div class="m-bar" id="bar-speed"><span class="m-val"></span></div></div>
+          <span class="m-qual" id="qual-speed"></span>
+        </div>
+        <!-- Code Context -->
+        <div class="metric" data-metric="context">
+          <div class="m-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Code Context
+          </div>
+          <div class="m-bar-wrap"><div class="m-bar" id="bar-context"><span class="m-val"></span></div></div>
+          <span class="m-qual" id="qual-context"></span>
+        </div>
+        <!-- Remediation Cost -->
+        <div class="metric" data-metric="cost">
+          <div class="m-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Remediation Cost
+          </div>
+          <div class="m-bar-wrap"><div class="m-bar" id="bar-cost"><span class="m-val"></span></div></div>
+          <span class="m-qual" id="qual-cost"></span>
+        </div>
+        <!-- Developer Interruption -->
+        <div class="metric" data-metric="interrupt">
+          <div class="m-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Dev Interruption
+          </div>
+          <div class="m-bar-wrap"><div class="m-bar" id="bar-interrupt"><span class="m-val"></span></div></div>
+          <span class="m-qual" id="qual-interrupt"></span>
+        </div>
+        <!-- Triage Burden -->
+        <div class="metric" data-metric="triage">
+          <div class="m-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Triage Burden
+          </div>
+          <div class="m-bar-wrap"><div class="m-bar" id="bar-triage"><span class="m-val"></span></div></div>
+          <span class="m-qual" id="qual-triage"></span>
+        </div>
+      </div>
+
+      <!-- Insight -->
+      <div class="insight-box" id="insightBox">
+        <div class="insight-text" id="insightText">Select an insertion point above to explore the tradeoffs</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Data for each checkpoint
+  var data = {
+    pre: {
+      speed:     { value: 95, label: 'Fast',      good: true  },
+      context:   { value: 25, label: 'Low',        good: false },
+      cost:      { value: 15, label: 'Cheap',      good: true  },
+      interrupt: { value: 85, label: 'High',       good: false },
+      triage:    { value: 20, label: 'Low',        good: true  },
+      insight: 'Fastest fixes, but limited context and high developer friction',
+      shieldBetween: [0, 1], // between Developer and Commit
+      activeStages: [0, 1]
+    },
+    pr: {
+      speed:     { value: 50, label: 'Moderate',   good: null  },
+      context:   { value: 70, label: 'Good',       good: true  },
+      cost:      { value: 45, label: 'Moderate',   good: null  },
+      interrupt: { value: 30, label: 'Low',        good: true  },
+      triage:    { value: 60, label: 'Moderate',   good: null  },
+      insight: 'Best balance of context and gating, but requires triage capacity',
+      shieldBetween: [2, 3], // between PR and CI
+      activeStages: [2, 3]
+    },
+    post: {
+      speed:     { value: 15, label: 'Slow',       good: false },
+      context:   { value: 90, label: 'Full',       good: true  },
+      cost:      { value: 90, label: 'Expensive',  good: false },
+      interrupt: { value: 10, label: 'Minimal',    good: true  },
+      triage:    { value: 85, label: 'High',       good: false },
+      insight: 'Full context for explanation, but the vulnerability already shipped',
+      shieldBetween: [4, 5], // between Deploy and Production
+      activeStages: [4, 5]
+    }
+  };
+
+  var currentCp = null;
+
+  function getBarColor(good) {
+    if (good === true)  return 'var(--grn)';
+    if (good === false) return 'var(--red)';
+    return 'var(--amb)';
+  }
+  function getQualColor(good) {
+    if (good === true)  return 'var(--grn)';
+    if (good === false) return 'var(--red)';
+    return 'var(--amb)';
+  }
+
+  // Calculate shield position
+  function getShieldLeft(between) {
+    var pipeline = document.getElementById('pipeline');
+    var nodes = pipeline.querySelectorAll('.p-node');
+    var connectors = pipeline.querySelectorAll('.p-connector');
+
+    var nodeA = nodes[between[0]];
+    var nodeB = nodes[between[1]];
+
+    if (!nodeA || !nodeB) return 0;
+
+    var pipeRect = pipeline.getBoundingClientRect();
+    var rectA = nodeA.getBoundingClientRect();
+    var rectB = nodeB.getBoundingClientRect();
+
+    // Find the connector between these two nodes
+    // Connectors are interleaved: node0, conn0, node1, conn1, ...
+    var connIdx = between[0]; // connector index = first node index
+    var conn = connectors[connIdx];
+    var connRect = conn ? conn.getBoundingClientRect() : null;
+
+    var shield = document.getElementById('shield');
+    var shieldWidth = shield.offsetWidth || 90;
+
+    // Center of connector
+    var center;
+    if (connRect) {
+      center = connRect.left + connRect.width / 2 - pipeRect.left;
+    } else {
+      center = (rectA.right + rectB.left) / 2 - pipeRect.left;
+    }
+
+    return center - shieldWidth / 2;
+  }
+
+  window.selectCheckpoint = function(cp) {
+    if (currentCp === cp) return;
+    currentCp = cp;
+
+    var d = data[cp];
+
+    // Update buttons
+    document.querySelectorAll('.cp-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-cp') === cp);
+    });
+
+    // Update pipeline node highlights
+    var nodes = document.querySelectorAll('.p-node');
+    nodes.forEach(function(n) {
+      var stage = parseInt(n.getAttribute('data-stage'));
+      n.classList.toggle('active', d.activeStages.indexOf(stage) !== -1);
+    });
+
+    // Position shield
+    var shield = document.getElementById('shield');
+    // Delay positioning to allow layout
+    requestAnimationFrame(function() {
+      var left = getShieldLeft(d.shieldBetween);
+      shield.style.left = left + 'px';
+      shield.classList.add('visible');
+    });
+
+    // Update metric bars
+    var metrics = ['speed', 'context', 'cost', 'interrupt', 'triage'];
+    metrics.forEach(function(m) {
+      var bar = document.getElementById('bar-' + m);
+      var qual = document.getElementById('qual-' + m);
+      var md = d[m];
+
+      bar.style.width = md.value + '%';
+      bar.style.background = getBarColor(md.good);
+      bar.querySelector('.m-val').textContent = md.value + '%';
+
+      qual.textContent = md.label;
+      qual.style.color = getQualColor(md.good);
+    });
+
+    // Update insight
+    var box = document.getElementById('insightBox');
+    var text = document.getElementById('insightText');
+    box.classList.add('active');
+    text.textContent = d.insight;
+  };
+
+  /* Full reset: the simulator mutates button state, pipeline nodes, the shield,
+     five metric bars and the insight box, so all of them have to be undone. */
+  window.resetSimulator = function () {
+    currentCp = null;
+    document.querySelectorAll('.cp-btn').forEach(function (btn) { btn.classList.remove('active'); });
+    document.querySelectorAll('.p-node').forEach(function (n) { n.classList.remove('active'); });
+
+    var shield = document.getElementById('shield');
+    if (shield) { shield.classList.remove('visible'); shield.style.left = ''; }
+
+    ['speed', 'context', 'cost', 'interrupt', 'triage'].forEach(function (m) {
+      var bar = document.getElementById('bar-' + m);
+      var qual = document.getElementById('qual-' + m);
+      if (bar) {
+        bar.style.width = '0%';
+        bar.style.background = '';
+        var v = bar.querySelector('.m-val');
+        if (v) v.textContent = '';
+      }
+      if (qual) { qual.textContent = ''; qual.style.color = ''; }
+    });
+
+    var box = document.getElementById('insightBox');
+    var text = document.getElementById('insightText');
+    if (box) box.classList.remove('active');
+    if (text) text.textContent = '';
+  };
+
+  // Reposition shield on resize
+  window.addEventListener('resize', function() {
+    if (!currentCp) return;
+    var d = data[currentCp];
+    var shield = document.getElementById('shield');
+    var left = getShieldLeft(d.shieldBetween);
+    shield.style.left = left + 'px';
+  });
+})();
+</script>
+
+<script>
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  function send(){var el=document.querySelector('.w');if(!el)return;var r=el.getBoundingClientRect();var pad=parseFloat(getComputedStyle(body).paddingTop)+parseFloat(getComputedStyle(body).paddingBottom);window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+pad),src:location.href},'*');}
+  if(window.ResizeObserver){new ResizeObserver(send).observe(document.querySelector('.w')||body);}else{setInterval(send,500);}
+  window.addEventListener('load',function(){setTimeout(send,200);});setTimeout(send,50);
+})();
+</script>
+</body>
+</html>

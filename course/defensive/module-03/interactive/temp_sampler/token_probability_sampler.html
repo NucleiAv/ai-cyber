@@ -1,0 +1,576 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Token Probability Sampler</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f6f6f8;
+      --card: #ffffff;
+      --text: #15161a;
+      --muted: #6A6D77;
+      --line: #e7e8ee;
+      --soft: #f2f3f7;
+      --accent: #57068c;
+      --shadow: 0 10px 30px rgba(18, 22, 33, 0.06);
+      --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background: var(--bg);
+      padding: 10px 18px 4px;
+    }
+
+    main {
+      width: min(900px, 100%);
+      margin: 0 auto;
+    }
+
+    .input,
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .input {
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+
+    .logline {
+      font-family: var(--mono);
+      font-size: clamp(0.82rem, 1.6vw, 0.92rem);
+      line-height: 1.45;
+      padding: 10px 13px;
+      border-radius: 10px;
+      background: #111216;
+      color: #f7f7fa;
+      overflow-wrap: anywhere;
+    }
+
+    .panel {
+      padding: 14px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .decision {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .decision .label {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+
+    .decision .value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      color: var(--accent);
+      min-width: 84px;
+    }
+
+    .temp {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .temp input {
+      width: 140px;
+      accent-color: var(--accent);
+    }
+
+    .rows {
+      display: grid;
+      gap: 8px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 110px 1fr 54px;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 0;
+    }
+
+    .name {
+      font-family: var(--mono);
+      font-size: 0.84rem;
+    }
+
+    .track {
+      position: relative;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+
+    .fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0;
+      border-radius: inherit;
+      background: var(--accent);
+      transition: width 360ms ease;
+    }
+
+    .marker {
+      position: absolute;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 3px solid #fff;
+      box-shadow: 0 2px 10px rgba(87, 6, 140, 0.18);
+      transform: translate(-50%, -50%) scale(0.65);
+      opacity: 0;
+    }
+
+    .row.active .marker {
+      animation: pop 520ms ease forwards;
+    }
+
+    @keyframes pop {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.45); }
+      35% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .pct {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 140ms ease, transform 140ms ease, border-color 140ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #d9dbe5;
+      background: #fcfcfe;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    .run {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .run:hover {
+      background: #4d067d;
+      border-color: #4d067d;
+    }
+
+    .samples {
+      min-height: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .samples:empty {
+      margin-top: 0;
+    }
+
+    .sample-chip {
+      padding: 6px 9px;
+      border-radius: 8px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text);
+      opacity: 0;
+      transform: translateY(4px);
+      animation: chipIn 240ms ease forwards;
+    }
+
+    @keyframes chipIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .summary {
+      margin-top: 4px;
+      text-align: center;
+      font-size: clamp(1rem, 2vw, 1.15rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 300ms ease;
+    }
+
+    .summary:not(.show) {
+      height: 0;
+      overflow: hidden;
+      margin: 0;
+    }
+
+    .summary.show {
+      opacity: 1;
+    }
+
+    .summary strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 10px; }
+      .panel, .input { padding: 10px; }
+      .topbar { flex-direction: column; align-items: stretch; }
+      .decision { justify-content: space-between; }
+      .temp { justify-content: space-between; }
+      .row { grid-template-columns: 88px 1fr 44px; gap: 8px; }
+      .name { font-size: 0.8rem; }
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 8px; }
+      .logline { padding: 9px 11px; }
+      .row { grid-template-columns: 78px 1fr 40px; }
+      .decision .label,
+      .decision .value { font-size: 1.15rem; }
+      .temp { font-size: 0.84rem; }
+      .temp input { width: 110px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="input" aria-label="Input">
+      <div class="logline">Failed password for root from 192.0.2.51 port 33001 ssh2</div>
+    </section>
+
+    <section class="panel" aria-label="Token probability sampler">
+      <div class="topbar">
+        <div class="decision">
+          <div class="label">label</div>
+          <div class="value" id="pickedLabel">?</div>
+        </div>
+        <label class="temp">
+          <span>temperature</span>
+          <input id="tempSlider" type="range" min="0" max="1.4" step="0.1" value="0.7" />
+          <span id="tempValue">0.7</span>
+        </label>
+      </div>
+
+      <div class="rows" aria-label="Probability rows">
+        <div class="row" id="row-malicious">
+          <div class="name">malicious</div>
+          <div class="track">
+            <div class="fill" id="fill-malicious"></div>
+            <div class="marker" id="marker-malicious"></div>
+          </div>
+          <div class="pct" id="pct-malicious">55%</div>
+        </div>
+        <div class="row" id="row-suspicious">
+          <div class="name">suspicious</div>
+          <div class="track">
+            <div class="fill" id="fill-suspicious"></div>
+            <div class="marker" id="marker-suspicious"></div>
+          </div>
+          <div class="pct" id="pct-suspicious">40%</div>
+        </div>
+        <div class="row" id="row-benign">
+          <div class="name">benign</div>
+          <div class="track">
+            <div class="fill" id="fill-benign"></div>
+            <div class="marker" id="marker-benign"></div>
+          </div>
+          <div class="pct" id="pct-benign">5%</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="run" id="sampleBtn">Sample</button>
+        <button id="multiBtn">5 runs</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+
+      <div class="samples" id="samples"></div>
+      <div class="summary" id="summary"><strong>One run</strong> is one sample.</div>
+    </section>
+  </main>
+
+  <script>
+    const base = {
+      malicious: 0.55,
+      suspicious: 0.40,
+      benign: 0.05
+    };
+
+    const labels = ['malicious', 'suspicious', 'benign'];
+    const fills = {
+      malicious: document.getElementById('fill-malicious'),
+      suspicious: document.getElementById('fill-suspicious'),
+      benign: document.getElementById('fill-benign')
+    };
+    const pcts = {
+      malicious: document.getElementById('pct-malicious'),
+      suspicious: document.getElementById('pct-suspicious'),
+      benign: document.getElementById('pct-benign')
+    };
+    const rows = {
+      malicious: document.getElementById('row-malicious'),
+      suspicious: document.getElementById('row-suspicious'),
+      benign: document.getElementById('row-benign')
+    };
+    const markers = {
+      malicious: document.getElementById('marker-malicious'),
+      suspicious: document.getElementById('marker-suspicious'),
+      benign: document.getElementById('marker-benign')
+    };
+
+    const sampleBtn = document.getElementById('sampleBtn');
+    const multiBtn = document.getElementById('multiBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const tempSlider = document.getElementById('tempSlider');
+    const tempValue = document.getElementById('tempValue');
+    const pickedLabel = document.getElementById('pickedLabel');
+    const samples = document.getElementById('samples');
+    const summary = document.getElementById('summary');
+
+    let busy = false;
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function normalize(weights) {
+      const total = Object.values(weights).reduce((a, b) => a + b, 0);
+      const out = {};
+      for (const k in weights) out[k] = weights[k] / total;
+      return out;
+    }
+
+    function adjustForTemperature(temp) {
+      if (temp === 0) {
+        return { malicious: 1, suspicious: 0, benign: 0 };
+      }
+      const adjusted = {};
+      for (const label of labels) {
+        adjusted[label] = Math.pow(base[label], 1 / temp);
+      }
+      return normalize(adjusted);
+    }
+
+    function renderDistribution() {
+      const temp = Number(tempSlider.value);
+      tempValue.textContent = temp.toFixed(1);
+      const dist = adjustForTemperature(temp);
+      for (const label of labels) {
+        const pct = Math.round(dist[label] * 100);
+        fills[label].style.width = pct + '%';
+        pcts[label].textContent = pct + '%';
+        markers[label].style.left = pct + '%';
+      }
+      return dist;
+    }
+
+    function clearActive() {
+      labels.forEach(label => rows[label].classList.remove('active'));
+    }
+
+    function weightedPick(dist) {
+      const temp = Number(tempSlider.value);
+      if (temp === 0) return 'malicious';
+      const r = Math.random();
+      let acc = 0;
+      for (const label of labels) {
+        acc += dist[label];
+        if (r <= acc) return label;
+      }
+      return labels[labels.length - 1];
+    }
+
+    function pushSample(label) {
+      const chip = document.createElement('div');
+      chip.className = 'sample-chip';
+      chip.textContent = label;
+      samples.appendChild(chip);
+    }
+
+    function updateSummary() {
+      const chips = [...samples.children].map(el => el.textContent);
+      if (!chips.length) {
+        summary.classList.remove('show');
+        summary.innerHTML = '<strong>One run</strong> is one sample.';
+        return;
+      }
+      const counts = { malicious: 0, suspicious: 0, benign: 0 };
+      chips.forEach(c => counts[c]++);
+      const shown = labels.filter(l => counts[l] > 0).map(l => `${counts[l]} ${l}`).join(' · ');
+      summary.innerHTML = `<strong>${chips.length} run${chips.length > 1 ? 's' : ''}</strong> · ${shown}`;
+      summary.classList.add('show');
+    }
+
+    async function doSample(push = true) {
+      const dist = renderDistribution();
+      clearActive();
+      await sleep(120);
+      const pick = weightedPick(dist);
+      rows[pick].classList.add('active');
+      pickedLabel.textContent = pick;
+      if (push) pushSample(pick);
+      updateSummary();
+      await sleep(420);
+      rows[pick].classList.remove('active');
+      return pick;
+    }
+
+    function setDisabled(v) {
+      busy = v;
+      sampleBtn.disabled = v;
+      multiBtn.disabled = v;
+      tempSlider.disabled = v;
+    }
+
+    async function runOnce() {
+      if (busy) return;
+      setDisabled(true);
+      await doSample(true);
+      setDisabled(false);
+    }
+
+    async function runFive() {
+      if (busy) return;
+      setDisabled(true);
+      for (let i = 0; i < 5; i++) {
+        await doSample(true);
+        await sleep(140);
+      }
+      setDisabled(false);
+    }
+
+    function reset() {
+      clearActive();
+      pickedLabel.textContent = '?';
+      samples.innerHTML = '';
+      summary.classList.remove('show');
+      summary.innerHTML = '<strong>One run</strong> is one sample.';
+      renderDistribution();
+    }
+
+    tempSlider.addEventListener('input', () => {
+      renderDistribution();
+      if (!busy) {
+        pickedLabel.textContent = '?';
+        clearActive();
+      }
+    });
+
+    sampleBtn.addEventListener('click', runOnce);
+    multiBtn.addEventListener('click', runFive);
+    resetBtn.addEventListener('click', reset);
+
+    renderDistribution();
+    updateSummary();
+
+    function reportHeight() {
+      var h = document.documentElement.scrollHeight;
+      window.parent.postMessage({ kind: 'nyu-embed-height', height: h }, '*');
+    }
+    window.addEventListener('load', reportHeight);
+    new ResizeObserver(reportHeight).observe(document.body);
+  </script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

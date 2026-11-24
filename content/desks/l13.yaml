@@ -1,0 +1,33 @@
+title: Catch misinformation before it ships
+lede: An AI writes release notes, security advisories and package suggestions. Decide what must be checked, and how.
+blurb: Route claims to the right source, spot slopsquatting, and weigh watermarks against signed credentials.
+situation: |
+  **Ridgeline Software** uses an assistant to draft security advisories and to suggest Python packages to developers. Marketing also uses AI images on the blog.
+rounds:
+  - title: Round 1. Check the claims
+    items:
+      - type: sort
+        q: Where do you check each claim?
+        rows:
+          - ["CVE-2025-12345 has CVSS 9.8", "NVD record"]
+          - ["Fixed in version 3.4.2", "Vendor advisory, latest revision"]
+          - ["Actively exploited in the wild", "CISA KEV catalog"]
+          - ["The package 'fastjsonx' is the right library", "The package registry and project page"]
+        opts: ["NVD record", "Vendor advisory, latest revision", "CISA KEV catalog", "The package registry and project page"]
+        why: "Route each claim to the source that owns it, as Module 5 teaches. A model's confident tone is not a source."
+      - q: The assistant suggests a package that does not exist on the registry. What is the risk?
+        opts: ["None", "An attacker may register that name with malware, which is slopsquatting", "The build gets faster"]
+        a: 1
+        why: "Models repeat the same invented names, so attackers can register them in advance."
+  - title: Round 2. Provenance for images
+    items:
+      - type: sort
+        q: Which weakness belongs to which method?
+        rows:
+          - ["Statistical watermark such as SynthID", "Heavy edits or regeneration can wash it out"]
+          - ["C2PA signed content credentials", "A screenshot or re-upload drops the metadata"]
+        opts: ["Heavy edits or regeneration can wash it out", "A screenshot or re-upload drops the metadata"]
+        why: "They fail in different ways, so use both, and treat a missing mark as unknown, not as human-made."
+      - type: open
+        q: Write one rule for publishing AI-drafted advisories.
+        a: "No AI-drafted advisory ships until a named person checks every identifier, version and link against its source and records the source date in the advisory."

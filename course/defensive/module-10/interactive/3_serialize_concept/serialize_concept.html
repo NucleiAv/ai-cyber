@@ -1,0 +1,1043 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serialization &amp; Deserialization: The Pickle Attack Surface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { color-scheme: light; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    background: #ffffff;
+    color: #15171C;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .card {
+    max-width: 960px;
+    margin: 0 auto;
+    border: 1px solid #e9eaee;
+    border-radius: 16px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid #e9eaee;
+    background: #f7f8fa;
+  }
+
+  .card-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #15171C;
+    margin-bottom: 4px;
+  }
+
+  .phase-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: #565a63;
+    letter-spacing: 0.02em;
+  }
+
+  .canvas-wrap {
+    position: relative;
+    width: 100%;
+    background: #ffffff;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .caption-area {
+    padding: 16px 24px;
+    min-height: 72px;
+    border-top: 1px solid #e9eaee;
+    background: #f7f8fa;
+  }
+
+  .caption-text {
+    font-size: 14px;
+    line-height: 1.55;
+    color: #15171C;
+  }
+
+  .caption-text code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    background: #f0e8f6;
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #15171C;
+  }
+
+  .verdict-box {
+    margin-top: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #c02626;
+    background: #fcecec;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #15171C;
+  }
+
+  .verdict-box strong {
+    color: #15171C;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px 16px;
+    border-top: 1px solid #e9eaee;
+  }
+
+  .step-indicator {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #565a63;
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 18px;
+    border-radius: 8px;
+    border: 1px solid #e9eaee;
+    background: #ffffff;
+    color: #15171C;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+
+  .btn:hover { background: #f7f8fa; border-color: #d0d1d5; }
+  .btn:active { background: #eef0f3; }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn:disabled:hover { background: #ffffff; border-color: #e9eaee; }
+
+  .btn-primary {
+    background: #57068C;
+    color: #ffffff;
+    border-color: #57068C;
+  }
+  .btn-primary:hover { background: #6b1aa3; border-color: #6b1aa3; }
+  .btn-primary:active { background: #4a0577; }
+  .btn-primary:disabled { opacity: 0.4; }
+  .btn-primary:disabled:hover { background: #57068C; border-color: #57068C; }
+
+  .btn-reset {
+    font-size: 12px;
+    padding: 7px 12px;
+    color: #565a63;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #f7f8fa; }
+  ::-webkit-scrollbar-thumb { background: #d0d1d5; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #b0b2b8; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="card-header">
+    <h2 id="phaseTitle">Serialization &amp; Deserialization</h2>
+    <span class="phase-label" id="phaseLabel">PHASE 1: SERIALIZATION</span>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+  </div>
+  <div class="caption-area">
+    <div class="caption-text" id="caption"></div>
+  </div>
+  <div class="controls">
+    <span class="step-indicator" id="stepIndicator">Step 1 of 9</span>
+    <div class="btn-group">
+      <button class="btn btn-reset" id="btnReset">Reset</button>
+      <button class="btn" id="btnBack" disabled>Back</button>
+      <button class="btn btn-primary" id="btnNext">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  /* ------------------------------------------------------------------ */
+  /*  CONSTANTS                                                          */
+  /* ------------------------------------------------------------------ */
+  const VIOLET   = "#57068C";
+  const VIOLET_L = "#8a3fb8";
+  const VIOLET_S = "#f6effb";
+  const RED      = "#c02626";
+  const RED_S    = "#fcecec";
+  const GREEN    = "#0f7a43";
+  const GREEN_S  = "#eef7f2";
+  const INK      = "#15171C";
+  const INK2     = "#565a63";
+  const LINE     = "#e9eaee";
+  const BG       = "#ffffff";
+  const PAPER    = "#f7f8fa";
+
+  const FONT_SANS = "'Inter','Helvetica Neue',Arial,sans-serif";
+  const FONT_MONO = "'JetBrains Mono',monospace";
+
+  const TOTAL_STEPS = 9;
+  const CANVAS_LOGICAL_W = 920;
+  const CANVAS_LOGICAL_H = 480;
+
+  /* ------------------------------------------------------------------ */
+  /*  DOM refs                                                           */
+  /* ------------------------------------------------------------------ */
+  const canvas      = document.getElementById("c");
+  const ctx         = canvas.getContext("2d");
+  const btnNext     = document.getElementById("btnNext");
+  const btnBack     = document.getElementById("btnBack");
+  const btnReset    = document.getElementById("btnReset");
+  const captionEl   = document.getElementById("caption");
+  const stepIndEl   = document.getElementById("stepIndicator");
+  const phaseTitleEl= document.getElementById("phaseTitle");
+  const phaseLabelEl= document.getElementById("phaseLabel");
+
+  let step = 0;          // 0-indexed internally, displayed 1-indexed
+  let dpr  = 1;
+  let cW, cH;            // actual canvas CSS size
+  let scaleX, scaleY;    // mapping from logical → physical
+
+  /* ------------------------------------------------------------------ */
+  /*  ANIMATION STATE                                                    */
+  /* ------------------------------------------------------------------ */
+  let animT     = 1;     // 0..1 tween progress; 1 = done
+  let animDir   = 1;     // +1 forward, -1 backward (unused for now)
+  let animRAF   = null;
+  let animStart = 0;
+  const ANIM_MS = 600;
+
+  function easeInOut(t) {
+    return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+  }
+
+  function startAnim() {
+    animT = 0;
+    animStart = performance.now();
+    if (!animRAF) tick();
+  }
+
+  function tick() {
+    const elapsed = performance.now() - animStart;
+    animT = Math.min(1, elapsed / ANIM_MS);
+    draw();
+    if (animT < 1) {
+      animRAF = requestAnimationFrame(tick);
+    } else {
+      animRAF = null;
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  RESIZE                                                             */
+  /* ------------------------------------------------------------------ */
+  function resize() {
+    const card = document.getElementById("card");
+    const w = card.clientWidth;
+    dpr = window.devicePixelRatio || 1;
+    cW = w;
+    cH = Math.round(w * (CANVAS_LOGICAL_H / CANVAS_LOGICAL_W));
+    canvas.width  = Math.round(cW * dpr);
+    canvas.height = Math.round(cH * dpr);
+    canvas.style.width  = cW + "px";
+    canvas.style.height = cH + "px";
+    scaleX = cW / CANVAS_LOGICAL_W;
+    scaleY = cH / CANVAS_LOGICAL_H;
+    draw();
+    postHeight();
+  }
+
+  function postHeight() {
+    try {
+      const h = document.getElementById("card").offsetHeight;
+      window.parent.postMessage({kind:"nyu-embed-height", height: h, src: location.href}, "*");
+    } catch(e) {}
+  }
+
+  window.addEventListener("resize", resize);
+  new ResizeObserver(resize).observe(document.getElementById("card"));
+
+  /* ------------------------------------------------------------------ */
+  /*  DRAWING HELPERS                                                    */
+  /* ------------------------------------------------------------------ */
+  function lx(v) { return v * scaleX; }
+  function ly(v) { return v * scaleY; }
+
+  function setFont(size, weight, mono) {
+    const fam = mono ? FONT_MONO : FONT_SANS;
+    ctx.font = weight + " " + (size * scaleY * dpr) + "px " + fam;
+  }
+
+  function roundRect(x, y, w, h, r, fillColor, strokeColor, shadowBlur) {
+    ctx.save();
+    if (shadowBlur) {
+      ctx.shadowColor = "rgba(0,0,0,0.08)";
+      ctx.shadowBlur = shadowBlur * dpr;
+      ctx.shadowOffsetY = 2 * dpr;
+    }
+    ctx.beginPath();
+    const rx = lx(x)*dpr, ry = ly(y)*dpr, rw = lx(w)*dpr, rh = ly(h)*dpr, rr = lx(r)*dpr;
+    ctx.moveTo(rx+rr, ry);
+    ctx.arcTo(rx+rw, ry,    rx+rw, ry+rh, rr);
+    ctx.arcTo(rx+rw, ry+rh, rx,    ry+rh, rr);
+    ctx.arcTo(rx,    ry+rh, rx,    ry,    rr);
+    ctx.arcTo(rx,    ry,    rx+rw, ry,    rr);
+    ctx.closePath();
+    if (fillColor) { ctx.fillStyle = fillColor; ctx.fill(); }
+    ctx.shadowColor = "transparent";
+    if (strokeColor) { ctx.strokeStyle = strokeColor; ctx.lineWidth = 1*dpr; ctx.stroke(); }
+    ctx.restore();
+  }
+
+  function drawText(text, x, y, color, size, weight, mono, align) {
+    ctx.save();
+    setFont(size || 13, weight || "500", mono || false);
+    ctx.fillStyle = color || INK;
+    ctx.textAlign = align || "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, lx(x)*dpr, ly(y)*dpr);
+    ctx.restore();
+  }
+
+  function drawArrow(x1, y1, x2, y2, color, lineW, progress) {
+    const p = progress === undefined ? 1 : progress;
+    const px1 = lx(x1)*dpr, py1 = ly(y1)*dpr;
+    const px2 = lx(x1 + (x2-x1)*p)*dpr, py2 = ly(y1 + (y2-y1)*p)*dpr;
+    ctx.save();
+    ctx.strokeStyle = color || INK2;
+    ctx.lineWidth = (lineW || 2) * dpr;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(px1, py1);
+    ctx.lineTo(px2, py2);
+    ctx.stroke();
+    // arrowhead
+    if (p > 0.9) {
+      const angle = Math.atan2(py2-py1, px2-px1);
+      const hl = 10 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(px2, py2);
+      ctx.lineTo(px2 - hl*Math.cos(angle-0.4), py2 - hl*Math.sin(angle-0.4));
+      ctx.moveTo(px2, py2);
+      ctx.lineTo(px2 - hl*Math.cos(angle+0.4), py2 - hl*Math.sin(angle+0.4));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function lerp(a, b, t) { return a + (b-a)*t; }
+
+  /* ------------------------------------------------------------------ */
+  /*  OBJECT BOX                                                         */
+  /* ------------------------------------------------------------------ */
+  function drawObjectBox(x, y, w, h, alpha, label, highlight) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const border = highlight === "green" ? GREEN : highlight === "red" ? RED : VIOLET;
+    const bg     = highlight === "green" ? GREEN_S : highlight === "red" ? RED_S : VIOLET_S;
+    const titleH = 28;
+    const r = 10;
+
+    // Body (full rounded rect with shadow)
+    roundRect(x, y, w, h, r, bg, border, 6);
+
+    // Title bar: clip to parent shape so bottom corners stay square
+    ctx.save();
+    const rx = lx(x)*dpr, ry = ly(y)*dpr, rw = lx(w)*dpr, rh = ly(h)*dpr, rr = lx(r)*dpr;
+    ctx.beginPath();
+    ctx.moveTo(rx+rr, ry);
+    ctx.arcTo(rx+rw, ry,    rx+rw, ry+rh, rr);
+    ctx.arcTo(rx+rw, ry+rh, rx,    ry+rh, rr);
+    ctx.arcTo(rx,    ry+rh, rx,    ry,    rr);
+    ctx.arcTo(rx,    ry,    rx+rw, ry,    rr);
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = border;
+    ctx.fillRect(rx, ry, rw, ly(titleH)*dpr);
+    ctx.restore();
+
+    // Re-stroke the border over the title bar fill
+    ctx.beginPath();
+    ctx.moveTo(rx+rr, ry);
+    ctx.arcTo(rx+rw, ry,    rx+rw, ry+rh, rr);
+    ctx.arcTo(rx+rw, ry+rh, rx,    ry+rh, rr);
+    ctx.arcTo(rx,    ry+rh, rx,    ry,    rr);
+    ctx.arcTo(rx,    ry,    rx+rw, ry,    rr);
+    ctx.closePath();
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1*dpr;
+    ctx.stroke();
+
+    const titleColor = "#ffffff";
+    drawText(label || "Python Object", x + w/2, y + 14, titleColor, 12, "600", false, "center");
+
+    // Clip field text to the box interior
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(rx + 2*dpr, ry + ly(titleH)*dpr, rw - 4*dpr, rh - ly(titleH)*dpr);
+    ctx.clip();
+
+    // Fields
+    const fields = [
+      { k: "weights:", v: "[0.3, 0.7, ...]" },
+      { k: "layers:",  v: "4" },
+      { k: "config:",  v: "{lr: 0.01}" },
+    ];
+    let fy = y + 42;
+    for (const f of fields) {
+      drawText(f.k, x + 14, fy, INK, 10.5, "500", true);
+      drawText(f.v, x + 88, fy, INK2, 10.5, "400", true);
+      fy += 22;
+    }
+    ctx.restore(); // end clip
+
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  BYTE STREAM                                                        */
+  /* ------------------------------------------------------------------ */
+  const HEX_CHARS = "0123456789abcdef";
+  let hexCache = [];
+  for (let i = 0; i < 80; i++) {
+    hexCache.push(
+      HEX_CHARS[Math.floor(Math.random()*16)] +
+      HEX_CHARS[Math.floor(Math.random()*16)]
+    );
+  }
+
+  function drawByteStream(x, y, w, h, alpha, highlightReduce, reduceAlpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const bg = highlightReduce ? "#fff8f0" : PAPER;
+    roundRect(x, y, w, h, 8, bg, LINE, 4);
+
+    // Title
+    drawText("Byte Stream", x + w/2, y + 16, INK2, 10, "600", false, "center");
+
+    // Hex grid, 3 data rows + dedicated __reduce__ row below
+    const padX = 12;
+    const cellW = 30, cellH = 18, rowGap = 5;
+    const cols = Math.floor((w - padX*2) / cellW);
+    let idx = 0;
+    for (let row = 0; row < 3; row++) {
+      const by = y + 34 + row * (cellH + rowGap);
+      for (let col = 0; col < cols; col++) {
+        const bx = x + padX + col * cellW;
+        const isReduce = highlightReduce && row === 2 && col >= 1 && col <= 4;
+        if (isReduce) {
+          const ra = reduceAlpha !== undefined ? reduceAlpha : 1;
+          ctx.save();
+          ctx.globalAlpha = alpha * ra;
+          roundRect(bx, by - 7, cellW - 4, cellH, 3, RED_S, RED, 0);
+          drawText(hexCache[idx % hexCache.length], bx + 4, by + 1, RED, 9, "600", true);
+          ctx.restore();
+        } else {
+          drawText(hexCache[idx % hexCache.length], bx + 4, by + 1, INK2, 9, "400", true);
+        }
+        idx++;
+      }
+    }
+
+    // __reduce__ label on its own line, well below row 3
+    if (highlightReduce && (reduceAlpha === undefined || reduceAlpha > 0.3)) {
+      const ra = reduceAlpha !== undefined ? reduceAlpha : 1;
+      ctx.save();
+      ctx.globalAlpha = alpha * ra;
+      const labelY = y + 34 + 3*(cellH + rowGap) + 2;
+      const labelCenterX = x + padX + 1*cellW + (4*cellW - 4)/2;
+      drawText("__reduce__", labelCenterX, labelY, RED, 10, "700", true, "center");
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  FILE ICON                                                          */
+  /* ------------------------------------------------------------------ */
+  function drawFileIcon(x, y, w, h, alpha, label, danger) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const border = danger ? RED : LINE;
+    const bg2 = danger ? RED_S : BG;
+
+    // File shape with folded corner
+    const fold = 16;
+    const px = lx(x)*dpr, py = ly(y)*dpr, pw = lx(w)*dpr, ph = ly(h)*dpr;
+    const pf = lx(fold)*dpr;
+    const pr = lx(6)*dpr;
+
+    ctx.save();
+    if (!danger) {
+      ctx.shadowColor = "rgba(0,0,0,0.07)";
+      ctx.shadowBlur = 8*dpr;
+      ctx.shadowOffsetY = 2*dpr;
+    }
+    ctx.beginPath();
+    ctx.moveTo(px + pr, py);
+    ctx.lineTo(px + pw - pf, py);
+    ctx.lineTo(px + pw, py + pf);
+    ctx.lineTo(px + pw, py + ph - pr);
+    ctx.arcTo(px + pw, py + ph, px + pw - pr, py + ph, pr);
+    ctx.lineTo(px + pr, py + ph);
+    ctx.arcTo(px, py + ph, px, py + ph - pr, pr);
+    ctx.lineTo(px, py + pr);
+    ctx.arcTo(px, py, px + pr, py, pr);
+    ctx.closePath();
+    ctx.fillStyle = bg2;
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1*dpr;
+    ctx.stroke();
+    ctx.restore();
+
+    // Fold triangle
+    ctx.beginPath();
+    ctx.moveTo(px + pw - pf, py);
+    ctx.lineTo(px + pw - pf, py + pf);
+    ctx.lineTo(px + pw, py + pf);
+    ctx.closePath();
+    ctx.fillStyle = danger ? "#f5d5d5" : "#eef0f3";
+    ctx.fill();
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1*dpr;
+    ctx.stroke();
+
+    // File lines
+    const lineY1 = y + fold + 12;
+    for (let i = 0; i < 3; i++) {
+      const lw2 = w * (0.6 - i*0.1);
+      ctx.beginPath();
+      ctx.moveTo(lx(x + 10)*dpr, ly(lineY1 + i*10)*dpr);
+      ctx.lineTo(lx(x + 10 + lw2)*dpr, ly(lineY1 + i*10)*dpr);
+      ctx.strokeStyle = danger ? "#e8a0a0" : "#d8dae0";
+      ctx.lineWidth = 2*dpr;
+      ctx.lineCap = "round";
+      ctx.stroke();
+    }
+
+    // Label
+    drawText(label || "model.bin", x + w/2, y + h + 14, INK2, 11, "500", true, "center");
+
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  TERMINAL / SHELL                                                   */
+  /* ------------------------------------------------------------------ */
+  function drawTerminal(x, y, w, h, alpha, cmdText) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    roundRect(x, y, w, h, 8, "#1e1e2e", null, 8);
+
+    // Title bar: clip to parent shape so bottom corners stay square
+    {
+      const rx = lx(x)*dpr, ry = ly(y)*dpr, rw = lx(w)*dpr, rh = ly(h)*dpr, rr = lx(8)*dpr;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(rx+rr, ry);
+      ctx.arcTo(rx+rw, ry,    rx+rw, ry+rh, rr);
+      ctx.arcTo(rx+rw, ry+rh, rx,    ry+rh, rr);
+      ctx.arcTo(rx,    ry+rh, rx,    ry,    rr);
+      ctx.arcTo(rx,    ry,    rx+rw, ry,    rr);
+      ctx.closePath();
+      ctx.clip();
+      ctx.fillStyle = "#2a2a3c";
+      ctx.fillRect(rx, ry, rw, ly(22)*dpr);
+      ctx.restore();
+    }
+
+    // Dots
+    const dotColors = ["#ff5f56","#ffbd2e","#27c93f"];
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.arc(lx(x+12+i*14)*dpr, ly(y+11)*dpr, 4*dpr, 0, Math.PI*2);
+      ctx.fillStyle = dotColors[i];
+      ctx.fill();
+    }
+
+    drawText("Terminal", x+w/2, y+11, "#8888aa", 9, "500", false, "center");
+
+    // Command
+    drawText("$", x+10, y+40, "#27c93f", 11, "600", true);
+    const cmd = cmdText || 'os.system("curl ...|sh")';
+    drawText(cmd, x+24, y+40, "#ff6b6b", 11, "400", true);
+
+    // Cursor blink
+    if (Math.floor(Date.now()/500) % 2 === 0) {
+      const cursorX = x + 24 + cmd.length * 6.5;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(lx(Math.min(cursorX, x+w-14))*dpr, ly(y+34)*dpr, 2*dpr, ly(14)*dpr);
+    }
+
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  DANGER BADGE                                                       */
+  /* ------------------------------------------------------------------ */
+  function drawDangerBadge(x, y, w, h, alpha, text) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    roundRect(x, y, w, h, 6, RED, null, 4);
+    drawText(text || "CODE EXECUTION", x+w/2, y+h/2, "#ffffff", 10, "700", true, "center");
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  FLOWING PARTICLES                                                  */
+  /* ------------------------------------------------------------------ */
+  function drawParticles(x1, y1, x2, y2, progress, color, count) {
+    ctx.save();
+    const n = count || 6;
+    for (let i = 0; i < n; i++) {
+      const offset = i / n;
+      let t = (progress + offset) % 1;
+      if (t > progress && progress < 1) continue; // only show particles up to progress
+      const px = lerp(x1, x2, t);
+      const py = lerp(y1, y2, t) + Math.sin(t * Math.PI * 3) * 3;
+      ctx.beginPath();
+      ctx.arc(lx(px)*dpr, ly(py)*dpr, 3*dpr, 0, Math.PI*2);
+      ctx.fillStyle = color || VIOLET_L;
+      ctx.globalAlpha = 0.3 + 0.7 * Math.sin(t * Math.PI);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  PHASE LABEL BANNER                                                 */
+  /* ------------------------------------------------------------------ */
+  function drawPhaseBanner(x, y, text, color) {
+    ctx.save();
+    setFont(11, "600", true);
+    const m = ctx.measureText(text);
+    const pw = m.width / dpr / scaleX + 20;
+    roundRect(x, y, pw, 24, 5, color || VIOLET, null, 0);
+    drawText(text, x + pw/2, y + 12, "#ffffff", 11, "600", true, "center");
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  STEP DEFINITIONS                                                   */
+  /* ------------------------------------------------------------------ */
+  const captions = [
+    // Step 1 (index 0): Show the Python object
+    'A trained ML model lives in memory as a <code>Python object</code> with weights, layer counts, and configuration. To save it, we need to convert it to bytes.',
+
+    // Step 2 (index 1): Object → Byte stream
+    'During <code>serialization</code>, the object is converted into a flat stream of bytes. Each field is encoded into a portable binary format that no longer depends on live Python objects.',
+
+    // Step 3 (index 2): Byte stream → File
+    'The byte stream is written to a file on disk (e.g., <code>model.bin</code> or <code>model.pkl</code>). The model is now saved and can be shared, uploaded, or stored.',
+
+    // Step 4 (index 3): File → Byte stream (safe)
+    'To reload the model, the file is read back into a byte stream. In a safe format (like <code>safetensors</code>), the bytes contain only numeric data with no executable instructions.',
+
+    // Step 5 (index 4): Byte stream → Object rebuilt (safe)
+    'The deserializer rebuilds the Python object field by field from the byte data. No code is executed; only data is copied. The object is restored exactly as it was saved.',
+
+    // Step 6 (index 5): File → Byte stream (pickle), __reduce__ appears
+    'With <code>pickle</code>, the byte stream can contain more than data. The pickle protocol includes an instruction called <code>__reduce__</code> that tells the deserializer to <em>call a function</em>.',
+
+    // Step 7 (index 6): __reduce__ highlighted
+    'The <code>__reduce__</code> instruction is embedded right in the byte stream, among normal data. It specifies a callable (like <code>os.system</code>) and arguments to pass to it.',
+
+    // Step 8 (index 7): Code execution
+    'When the deserializer encounters <code>__reduce__</code>, it obediently calls the specified function. The attacker\'s payload runs with the full privileges of the loading process, <em>before</em> the model object even finishes loading.',
+
+    // Step 9 (index 8): Verdict
+    'The attack is invisible: the model file still loads a valid-looking model object. The malicious code has already executed in the background.'
+  ];
+
+  const phaseTitles = [
+    "Serialization: Object to File",
+    "Serialization: Object to File",
+    "Serialization: Object to File",
+    "Safe Deserialization: File to Object",
+    "Safe Deserialization: File to Object",
+    "Pickle Deserialization: The __reduce__ Attack",
+    "Pickle Deserialization: The __reduce__ Attack",
+    "Pickle Deserialization: The __reduce__ Attack",
+    "Pickle Deserialization: The __reduce__ Attack",
+  ];
+
+  const phaseLabels = [
+    "PHASE 1, SERIALIZATION: object → bytes → file",
+    "PHASE 1, SERIALIZATION: object → bytes → file",
+    "PHASE 1, SERIALIZATION: object → bytes → file",
+    "PHASE 2, DESERIALIZATION: file → bytes → object",
+    "PHASE 2, DESERIALIZATION: file → bytes → object",
+    "PHASE 3, PICKLE DESERIALIZATION: the __reduce__ attack",
+    "PHASE 3, PICKLE DESERIALIZATION: the __reduce__ attack",
+    "PHASE 3, PICKLE DESERIALIZATION: the __reduce__ attack",
+    "PHASE 3, PICKLE DESERIALIZATION: the __reduce__ attack",
+  ];
+
+  /* ------------------------------------------------------------------ */
+  /*  MAIN DRAW                                                          */
+  /* ------------------------------------------------------------------ */
+  function draw() {
+    const t = easeInOut(animT);
+    ctx.save();
+    // Clear
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Layout constants
+    const objX = 30, objY = 60, objW = 220, objH = 110;
+    const bsX = 350, bsY = 55, bsW = 230, bsH = 120;
+    const fileX = 700, fileY = 70, fileW = 80, fileH = 100;
+
+    // Phase 3 positions (mirrored)
+    const p3FileX = 30, p3FileY = 70;
+    const p3BsX = 220, p3BsY = 55;
+    const p3ObjX = 570, p3ObjY = 55;
+    // Terminal sits centered under the callout box
+    const calloutCX = p3BsX + bsW/2;         // 335
+    const termW = 250, termH = 70;
+    const termX = calloutCX - termW/2;        // 210
+    const termY = 310;
+
+    switch(step) {
+      case 0: // Step 1: Show Python Object
+        drawPhaseBanner(objX, 20, "SERIALIZATION", VIOLET);
+        drawObjectBox(objX, objY, objW, objH, 1);
+        // Faded placeholders
+        drawByteStream(bsX, bsY, bsW, bsH, 0.15);
+        drawFileIcon(fileX, fileY, fileW, fileH, 0.15, "model.bin");
+        break;
+
+      case 1: // Step 2: Object → Byte stream
+        drawPhaseBanner(objX, 20, "SERIALIZATION", VIOLET);
+        drawObjectBox(objX, objY, objW, objH, 1);
+        drawArrow(objX+objW+10, objY+objH/2, bsX-10, bsY+bsH/2, VIOLET_L, 2, t);
+        drawParticles(objX+objW+10, objY+objH/2, bsX-10, bsY+bsH/2, t, VIOLET_L, 8);
+        drawByteStream(bsX, bsY, bsW, bsH, t);
+        drawFileIcon(fileX, fileY, fileW, fileH, 0.15, "model.bin");
+        break;
+
+      case 2: // Step 3: Byte stream → File
+        drawPhaseBanner(objX, 20, "SERIALIZATION", VIOLET);
+        drawObjectBox(objX, objY, objW, objH, 0.5);
+        drawArrow(objX+objW+10, objY+objH/2, bsX-10, bsY+bsH/2, VIOLET_L, 2, 1);
+        drawByteStream(bsX, bsY, bsW, bsH, 1);
+        drawArrow(bsX+bsW+10, bsY+bsH/2, fileX-10, fileY+fileH/2, VIOLET_L, 2, t);
+        drawParticles(bsX+bsW+10, bsY+bsH/2, fileX-10, fileY+fileH/2, t, VIOLET_L, 8);
+        drawFileIcon(fileX, fileY, fileW, fileH, t, "model.bin");
+        break;
+
+      case 3: // Step 4: File → Byte stream (safe deserialization)
+        drawPhaseBanner(40, 20, "SAFE DESERIALIZATION", GREEN);
+        drawFileIcon(p3FileX, p3FileY, fileW, fileH, 1, "model.bin");
+        drawArrow(p3FileX+fileW+10, p3FileY+fileH/2, p3BsX-10, p3BsY+bsH/2, GREEN, 2, t);
+        drawParticles(p3FileX+fileW+10, p3FileY+fileH/2, p3BsX-10, p3BsY+bsH/2, t, GREEN, 8);
+        drawByteStream(p3BsX, p3BsY, bsW, bsH, t);
+        drawObjectBox(p3ObjX, p3ObjY, objW, objH, 0.15, "Rebuilt Object", "green");
+        // Safe badge
+        if (t > 0.5) {
+          const ba = (t - 0.5) * 2;
+          ctx.save();
+          ctx.globalAlpha = ba;
+          roundRect(p3BsX + bsW/2 - 50, p3BsY + bsH + 10, 100, 22, 5, GREEN, null, 0);
+          drawText("DATA ONLY", p3BsX + bsW/2, p3BsY + bsH + 21, "#ffffff", 10, "700", true, "center");
+          ctx.restore();
+        }
+        break;
+
+      case 4: // Step 5: Byte stream → Object (safe)
+        drawPhaseBanner(40, 20, "SAFE DESERIALIZATION", GREEN);
+        drawFileIcon(p3FileX, p3FileY, fileW, fileH, 0.5, "model.bin");
+        drawArrow(p3FileX+fileW+10, p3FileY+fileH/2, p3BsX-10, p3BsY+bsH/2, GREEN, 2, 1);
+        drawByteStream(p3BsX, p3BsY, bsW, bsH, 1);
+        roundRect(p3BsX + bsW/2 - 50, p3BsY + bsH + 10, 100, 22, 5, GREEN, null, 0);
+        drawText("DATA ONLY", p3BsX + bsW/2, p3BsY + bsH + 21, "#ffffff", 10, "700", true, "center");
+        drawArrow(p3BsX+bsW+10, p3BsY+bsH/2, p3ObjX-10, p3ObjY+objH/2, GREEN, 2, t);
+        drawParticles(p3BsX+bsW+10, p3BsY+bsH/2, p3ObjX-10, p3ObjY+objH/2, t, GREEN, 8);
+        drawObjectBox(p3ObjX, p3ObjY, objW, objH, t, "Rebuilt Object", "green");
+        // Checkmark
+        if (t > 0.7) {
+          const ca = (t - 0.7) / 0.3;
+          ctx.save();
+          ctx.globalAlpha = ca;
+          ctx.strokeStyle = GREEN;
+          ctx.lineWidth = 3 * dpr;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          const cx2 = p3ObjX + objW + 20, cy2 = p3ObjY + 20;
+          ctx.beginPath();
+          ctx.moveTo(lx(cx2)*dpr, ly(cy2)*dpr);
+          ctx.lineTo(lx(cx2+8)*dpr, ly(cy2+10)*dpr);
+          ctx.lineTo(lx(cx2+22)*dpr, ly(cy2-6)*dpr);
+          ctx.stroke();
+          ctx.restore();
+        }
+        break;
+
+      case 5: // Step 6: File → Byte stream (pickle) with __reduce__
+        drawPhaseBanner(40, 20, "PICKLE DESERIALIZATION", RED);
+        drawFileIcon(p3FileX, p3FileY, fileW, fileH, 1, "model.pkl", true);
+        drawArrow(p3FileX+fileW+10, p3FileY+fileH/2, p3BsX-10, p3BsY+bsH/2, RED, 2, t);
+        drawParticles(p3FileX+fileW+10, p3FileY+fileH/2, p3BsX-10, p3BsY+bsH/2, t, RED, 8);
+        drawByteStream(p3BsX, p3BsY, bsW, bsH, t, true, t);
+        drawObjectBox(p3ObjX, p3ObjY, objW, objH, 0.15, "Rebuilt Object", "red");
+        break;
+
+      case 6: // Step 7: __reduce__ highlighted
+        drawPhaseBanner(40, 20, "PICKLE DESERIALIZATION", RED);
+        drawFileIcon(p3FileX, p3FileY, fileW, fileH, 0.5, "model.pkl", true);
+        drawArrow(p3FileX+fileW+10, p3FileY+fileH/2, p3BsX-10, p3BsY+bsH/2, RED, 2, 1);
+        drawByteStream(p3BsX, p3BsY, bsW, bsH, 1, true, 1);
+
+        // Callout from __reduce__
+        {
+          const boxW2 = 260, boxH2 = 56;
+          const boxX2 = calloutCX - boxW2/2;
+          const boxY2 = p3BsY + bsH + 16;
+
+          // Dashed line from __reduce__ label down to callout
+          const lineStartY = p3BsY + bsH - 4;
+          ctx.save();
+          ctx.globalAlpha = t;
+          ctx.strokeStyle = RED;
+          ctx.lineWidth = 1*dpr;
+          ctx.setLineDash([4*dpr, 3*dpr]);
+          ctx.beginPath();
+          ctx.moveTo(lx(calloutCX)*dpr, ly(lineStartY)*dpr);
+          ctx.lineTo(lx(calloutCX)*dpr, ly(boxY2)*dpr);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          roundRect(boxX2, boxY2, boxW2, boxH2, 6, RED_S, RED, 4);
+          drawText("__reduce__ instruction:", boxX2+10, boxY2+16, INK, 11, "600", true);
+          drawText('CALL  os.system("curl ...|sh")', boxX2+10, boxY2+38, RED, 11, "500", true);
+          ctx.restore();
+        }
+
+        drawObjectBox(p3ObjX, p3ObjY, objW, objH, 0.15, "Rebuilt Object", "red");
+        break;
+
+      case 7: { // Step 8: Code execution, terminal appears
+        drawPhaseBanner(40, 20, "PICKLE DESERIALIZATION", RED);
+        drawFileIcon(p3FileX, p3FileY, fileW, fileH, 0.4, "model.pkl", true);
+        drawArrow(p3FileX+fileW+10, p3FileY+fileH/2, p3BsX-10, p3BsY+bsH/2, RED, 2, 1);
+        drawByteStream(p3BsX, p3BsY, bsW, bsH, 1, true, 1);
+
+        // __reduce__ callout (faded)
+        const boxW2_7 = 260, boxH2_7 = 56;
+        const boxX2_7 = calloutCX - boxW2_7/2;
+        const boxY2_7 = p3BsY + bsH + 16;
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+        roundRect(boxX2_7, boxY2_7, boxW2_7, boxH2_7, 6, RED_S, RED, 4);
+        drawText("__reduce__ instruction:", boxX2_7+10, boxY2_7+16, INK, 11, "600", true);
+        drawText('CALL  os.system("curl ...|sh")', boxX2_7+10, boxY2_7+38, RED, 11, "500", true);
+        ctx.restore();
+
+        // Perfectly vertical arrow from callout bottom to terminal top
+        drawArrow(calloutCX, boxY2_7 + boxH2_7 + 4, calloutCX, termY - 4, RED, 2, t);
+
+        // Terminal
+        drawTerminal(termX, termY, termW, termH, t);
+
+        // Danger badge
+        if (t > 0.5) {
+          drawDangerBadge(calloutCX - 60, termY - 26, 120, 22, (t-0.5)*2, "CODE EXECUTION");
+        }
+
+        // Object still faded
+        drawObjectBox(p3ObjX, p3ObjY, objW, objH, 0.15, "Rebuilt Object", "red");
+
+        // Warning triangle
+        if (t > 0.7) {
+          ctx.save();
+          ctx.globalAlpha = (t-0.7)/0.3;
+          const wx7 = termX + termW + 16, wy7 = termY + 14;
+          ctx.beginPath();
+          ctx.moveTo(lx(wx7+12)*dpr, ly(wy7)*dpr);
+          ctx.lineTo(lx(wx7+24)*dpr, ly(wy7+22)*dpr);
+          ctx.lineTo(lx(wx7)*dpr, ly(wy7+22)*dpr);
+          ctx.closePath();
+          ctx.fillStyle = "#ffc107";
+          ctx.fill();
+          ctx.strokeStyle = "#e6a800";
+          ctx.lineWidth = 1.5*dpr;
+          ctx.stroke();
+          drawText("!", wx7+12, wy7+14, INK, 12, "700", false, "center");
+          ctx.restore();
+        }
+        break;
+      }
+
+      case 8: { // Step 9: Verdict / summary
+        drawPhaseBanner(40, 20, "PICKLE DESERIALIZATION", RED);
+        drawFileIcon(p3FileX, p3FileY, fileW, fileH, 0.5, "model.pkl", true);
+        drawArrow(p3FileX+fileW+10, p3FileY+fileH/2, p3BsX-10, p3BsY+bsH/2, RED, 2, 1);
+        drawByteStream(p3BsX, p3BsY, bsW, bsH, 1, true, 1);
+
+        // Terminal stays visible (no orphan arrow from invisible callout)
+        drawTerminal(termX, termY, termW, termH, 1);
+        drawDangerBadge(calloutCX - 60, termY - 26, 120, 22, 1, "CODE EXECUTION");
+
+        // Arrow from byte stream to object (it also loads despite attack)
+        drawArrow(p3BsX+bsW+10, p3BsY+bsH/2, p3ObjX-10, p3ObjY+objH/2, INK2, 1.5, t);
+        drawObjectBox(p3ObjX, p3ObjY, objW, objH, 0.5 + 0.5*t, "Rebuilt Object", "red");
+
+        // Warning triangle next to terminal
+        const wx9 = termX + termW + 16, wy9 = termY + 14;
+        ctx.beginPath();
+        ctx.moveTo(lx(wx9+12)*dpr, ly(wy9)*dpr);
+        ctx.lineTo(lx(wx9+24)*dpr, ly(wy9+22)*dpr);
+        ctx.lineTo(lx(wx9)*dpr, ly(wy9+22)*dpr);
+        ctx.closePath();
+        ctx.fillStyle = "#ffc107";
+        ctx.fill();
+        ctx.strokeStyle = "#e6a800";
+        ctx.lineWidth = 1.5*dpr;
+        ctx.stroke();
+        drawText("!", wx9+12, wy9+14, INK, 12, "700", false, "center");
+
+        // "Looks normal" label on object
+        if (t > 0.6) {
+          ctx.save();
+          ctx.globalAlpha = (t-0.6)/0.4;
+          roundRect(p3ObjX + objW/2 - 55, p3ObjY + objH + 8, 110, 22, 5, "#e8a000", null, 0);
+          drawText("LOOKS NORMAL", p3ObjX + objW/2, p3ObjY + objH + 19, "#ffffff", 10, "700", true, "center");
+          ctx.restore();
+        }
+        break;
+      }
+    }
+
+    ctx.restore();
+
+    // For steps with terminal, keep animating the cursor blink
+    if ((step === 7 || step === 8) && animT >= 1) {
+      setTimeout(() => draw(), 500);
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  STEP NAVIGATION                                                    */
+  /* ------------------------------------------------------------------ */
+  function updateUI() {
+    stepIndEl.textContent = "Step " + (step+1) + " of " + TOTAL_STEPS;
+    phaseTitleEl.textContent = phaseTitles[step];
+    phaseLabelEl.textContent = phaseLabels[step];
+    btnBack.disabled = (step === 0);
+    btnNext.disabled = (step === TOTAL_STEPS - 1);
+
+    let cap = captions[step];
+    if (step === TOTAL_STEPS - 1) {
+      cap += '<div class="verdict-box"><strong>Key takeaway:</strong> Pickle\'s <code>__reduce__</code> instruction can call <em>any</em> Python function during deserialization. A model file is not inert data; loading it is executing code. Use safe formats like <code>safetensors</code> or verify file hashes before loading.</div>';
+    }
+    captionEl.innerHTML = cap;
+    postHeight();
+  }
+
+  function goTo(newStep) {
+    if (newStep < 0 || newStep >= TOTAL_STEPS) return;
+    step = newStep;
+    updateUI();
+    startAnim();
+  }
+
+  btnNext.addEventListener("click",  () => goTo(step + 1));
+  btnBack.addEventListener("click",  () => goTo(step - 1));
+  btnReset.addEventListener("click", () => goTo(0));
+
+  // Keyboard
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); goTo(step+1); }
+    if (e.key === "ArrowLeft")  { e.preventDefault(); goTo(step-1); }
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  INIT                                                               */
+  /* ------------------------------------------------------------------ */
+  updateUI();
+  // Wait for fonts
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { resize(); });
+  } else {
+    setTimeout(resize, 200);
+  }
+  resize();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

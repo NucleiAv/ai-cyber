@@ -1,0 +1,333 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>One Rule, Four Drafts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;
+  --red:#c02626;--redbg:#fbeeee;
+  --green:#0f7a43;--greenbg:#f0f9f3;
+  --amber:#8a5d00;--amberbg:#fdf6e7;
+  --blue:#1e73be;--bluebg:#e7f0fa;
+  --orange:#e65100;--orangebg:#fff3e0;
+  --gold:#FFB81C;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:0 16px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+.hdr{padding:22px 12px 10px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.11em;color:var(--violet)}
+h1{font-size:1.1rem;font-weight:700}
+.sub{font-size:.78rem;color:var(--ink2);margin-top:4px}
+
+/* draft stepper */
+.stepper{display:flex;align-items:center;gap:0;padding:14px 12px 16px;flex-wrap:wrap}
+.step{font-family:var(--mono);font-size:0.75rem;font-weight:700;padding:9px 16px;border-radius:20px;border:2px solid var(--line2);background:var(--bg);color:var(--ink2);cursor:pointer;transition:.2s;position:relative;z-index:1}
+.step:hover{border-color:var(--violet)}
+.step.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.step.done{border-color:var(--violet);color:var(--violet)}
+.step:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.arrow{width:34px;height:2px;background:var(--line2);position:relative;flex:none}
+.arrow::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left-color:var(--line2)}
+.arrow.done{background:var(--violet)}
+.arrow.done::after{border-left-color:var(--violet)}
+.playbtn{margin-left:auto;font-family:var(--sans);font-size:.8rem;font-weight:600;padding:8px 18px;border-radius:8px;border:1px solid var(--line2);background:var(--bg);color:var(--ink);cursor:pointer;transition:.15s}
+.playbtn:hover{border-color:var(--violet);background:var(--vsoft)}
+.playbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* statement */
+.statement{margin:0 12px 16px;padding:18px 20px;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-size:.95rem;line-height:1.8;min-height:6em}
+.statement .tk{border-radius:5px;padding:1px 4px}
+.statement .new{animation:pop .5s ease}
+@keyframes pop{0%{background:#FFB81C55}100%{background:transparent}}
+.statement .hl-actor{background:var(--bluebg);box-shadow:0 0 0 1.5px #1e73be66}
+.statement .hl-object{background:var(--vsoft);box-shadow:0 0 0 1.5px #57068C55}
+.statement .hl-cond{background:var(--amberbg);box-shadow:0 0 0 1.5px #c7770066}
+.statement .hl-evid{background:var(--greenbg);box-shadow:0 0 0 1.5px #0f7a4355}
+.statement .hl-enf{background:var(--orangebg);box-shadow:0 0 0 1.5px #e6510066}
+
+/* sockets */
+.sockets{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:0 12px 16px}
+.socket{border:2px dashed var(--line2);border-radius:12px;padding:12px 8px 10px;text-align:center;background:var(--bg);transition:border-color .3s,background .3s;cursor:pointer}
+.socket:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.socket .shape{width:36px;height:36px;margin:0 auto 8px;opacity:.2;transform:translateY(-6px) scale(.85);transition:opacity .4s,transform .45s cubic-bezier(.2,1.4,.4,1)}
+.socket .nm{font-family:var(--mono);font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink)}
+.socket .st{font-family:var(--mono);font-size:0.75rem;font-weight:700;margin-top:4px;color:var(--ink2)}
+.socket.filled{border-style:solid}
+.socket.filled .shape{opacity:1;transform:none}
+.socket.filled .st{color:var(--green)}
+.socket.missing .st{color:var(--red)}
+.socket.filled.s-actor{border-color:#1e73be}
+.socket.filled.s-object{border-color:var(--violet)}
+.socket.filled.s-cond{border-color:#c77700}
+.socket.filled.s-evid{border-color:var(--green)}
+.socket.filled.s-enf{border-color:#e65100}
+
+/* horizontal meter: 5 segments */
+.meter{padding:2px 12px 6px}
+.mtrack{display:flex;gap:6px;align-items:center}
+.mlabel{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;color:var(--ink);width:64px;flex:none}
+.mlabel.right{text-align:right}
+.seg{flex:1;height:16px;border-radius:8px;background:var(--line);transition:background .4s,transform .3s}
+.seg.f1{background:#1e73be}.seg.f2{background:#57068C}.seg.f3{background:#c77700}.seg.f4{background:#0f7a43}.seg.f5{background:#e65100}
+.seg.pop{transform:scaleY(1.35)}
+.verdict{display:flex;justify-content:center;padding:10px 12px 18px}
+.vbadge{font-family:var(--mono);font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 22px;border-radius:22px;border:2px solid;transition:.3s}
+.vbadge.wish{background:#991B1B;border-color:#991B1B;color:#fff}
+.vbadge.partial{background:#854D0E;border-color:#854D0E;color:#fff}
+.vbadge.control{background:#166534;border-color:#166534;color:#fff}
+.hint{padding:0 12px 18px;font-size:.76rem;color:var(--ink2);line-height:1.45;text-align:center}
+@media(max-width:640px){.sockets{grid-template-columns:repeat(2,1fr)}.sockets .socket:last-child{grid-column:1/-1}.playbtn{margin-left:0}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="eyebrow">Module 12 &middot; Interactive</div>
+    <h1>One Rule, Four Drafts</h1>
+    <div class="sub">The same policy intent, rewritten three times. Watch which anatomy parts each draft adds, and what the statement becomes when all five are in place.</div>
+  </div>
+
+  <div class="stepper" role="tablist" aria-label="Drafts of the same rule">
+    <button class="step on" data-i="0" role="tab" aria-selected="true">DRAFT 1</button>
+    <span class="arrow" id="a0" aria-hidden="true"></span>
+    <button class="step" data-i="1" role="tab" aria-selected="false">DRAFT 2</button>
+    <span class="arrow" id="a1" aria-hidden="true"></span>
+    <button class="step" data-i="2" role="tab" aria-selected="false">DRAFT 3</button>
+    <span class="arrow" id="a2" aria-hidden="true"></span>
+    <button class="step" data-i="3" role="tab" aria-selected="false">ADOPTED</button>
+    <button class="playbtn" id="play">&#9655; Play the evolution</button>
+  </div>
+
+  <div class="statement" id="stmt" aria-live="polite"></div>
+
+  <div class="sockets" id="sockets">
+    <button class="socket" data-part="actor" aria-label="Actor: highlight who the rule binds">
+      <svg class="shape" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="12" r="7" fill="#1e73be"/><path d="M5 32c1.5-8.5 8.5-11 13-11s11.5 2.5 13 11z" fill="#1e73be"/></svg>
+      <div class="nm">Actor</div><div class="st" data-role="status">&middot;</div>
+    </button>
+    <button class="socket" data-part="object" aria-label="Object: highlight what the rule is about">
+      <svg class="shape" viewBox="0 0 36 36" aria-hidden="true"><rect x="6" y="9" width="24" height="20" rx="3.5" fill="#57068C"/><rect x="11" y="4" width="14" height="7" rx="2.5" fill="#7a30ad"/></svg>
+      <div class="nm">Object</div><div class="st" data-role="status">&middot;</div>
+    </button>
+    <button class="socket" data-part="cond" aria-label="Condition: highlight when the rule applies">
+      <svg class="shape" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3 33 18 18 33 3 18z" fill="#c77700"/><circle cx="18" cy="18" r="4.5" fill="#fff"/></svg>
+      <div class="nm">Condition</div><div class="st" data-role="status">&middot;</div>
+    </button>
+    <button class="socket" data-part="evid" aria-label="Evidence: highlight how anyone would know">
+      <svg class="shape" viewBox="0 0 36 36" aria-hidden="true"><circle cx="15" cy="15" r="9.5" fill="none" stroke="#0f7a43" stroke-width="4.5"/><line x1="22" y1="22" x2="32" y2="32" stroke="#0f7a43" stroke-width="4.5" stroke-linecap="round"/></svg>
+      <div class="nm">Evidence</div><div class="st" data-role="status">&middot;</div>
+    </button>
+    <button class="socket" data-part="enf" aria-label="Enforcement: highlight the mechanism and owner">
+      <svg class="shape" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3l12 4.5V17c0 8.5-5.5 14-12 16C11.5 31 6 25.5 6 17V7.5z" fill="#e65100"/><path d="M12.5 18l4.5 4.5 8-9" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="nm">Enforcement</div><div class="st" data-role="status">&middot;</div>
+    </button>
+  </div>
+
+  <div class="meter" aria-hidden="true">
+    <div class="mtrack">
+      <span class="mlabel">WISH</span>
+      <span class="seg" id="sg0"></span><span class="seg" id="sg1"></span><span class="seg" id="sg2"></span><span class="seg" id="sg3"></span><span class="seg" id="sg4"></span>
+      <span class="mlabel right">CONTROL</span>
+    </div>
+  </div>
+
+  <div class="verdict"><span class="vbadge wish" id="verdict">&middot;</span></div>
+  <div class="hint">Tap a part card to light its words in the draft. Empty sockets are what the next rewrite must add.</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var ORDER=["actor","object","cond","evid","enf"];
+  var HL={actor:"hl-actor",object:"hl-object",cond:"hl-cond",evid:"hl-evid",enf:"hl-enf"};
+
+  // The SAME rule, four drafts. seg[1] = part slug or null; "newAt" = draft index where the segment first appears.
+  var DRAFTS=[
+    { parts:{actor:1,object:0,cond:0,evid:0,enf:0}, verdict:["wish","a wish"],
+      text:[["Analysts","actor",0],[" should use AI tools responsibly.",null,0]] },
+    { parts:{actor:1,object:1,cond:0,evid:0,enf:0}, verdict:["wish","still a wish"],
+      text:[["Analysts","actor",0],[" must protect ",null,1],["case data",'object',1],[" when using AI tools.",null,1]] },
+    { parts:{actor:1,object:1,cond:1,evid:0,enf:0}, verdict:["partial","testable · unenforced"],
+      text:[["No ",null,2],["case data classified CONFIDENTIAL or above",'object',2],[" may be entered by ",null,2],["any analyst",'actor',2],[" into ",null,2],["any AI tool not listed in Appendix A",'cond',2],[".",null,2]] },
+    { parts:{actor:1,object:1,cond:1,evid:1,enf:1}, verdict:["control","a control"],
+      text:[["No ",null,2],["case data classified CONFIDENTIAL or above",'object',2],[" may be entered by ",null,2],["any analyst",'actor',2],[" into ",null,2],["any AI tool not listed in Appendix A",'cond',2],["; violations are ",null,3],["logged by the DLP gateway",'evid',3],[" and ",null,3],["reviewed weekly by the security manager",'enf',3],[".",null,3]] }
+  ];
+
+  var stmt=document.getElementById("stmt"),verdict=document.getElementById("verdict");
+  var sockets={};document.querySelectorAll(".socket").forEach(function(s){sockets[s.getAttribute("data-part")]=s;});
+  var steps=Array.prototype.slice.call(document.querySelectorAll(".step"));
+  var segs=[0,1,2,3,4].map(function(i){return document.getElementById("sg"+i);});
+  var current=0;
+
+  function render(i){
+    current=i;
+    var d=DRAFTS[i];
+    steps.forEach(function(b,j){
+      b.classList.toggle("on",j===i);
+      b.classList.toggle("done",j<i);
+      b.setAttribute("aria-selected",j===i?"true":"false");
+    });
+    [0,1,2].forEach(function(j){document.getElementById("a"+j).classList.toggle("done",j<i);});
+
+    stmt.innerHTML="";
+    d.text.forEach(function(seg){
+      var sp=document.createElement("span");
+      sp.textContent=seg[0];
+      sp.className="tk"+(seg[1]?" part-"+seg[1]:"")+(seg[2]===i&&i>0&&!reduced?" new":"");
+      stmt.appendChild(sp);
+    });
+
+    var filled=0;
+    ORDER.forEach(function(p,idx){
+      var s=sockets[p],has=!!d.parts[p];
+      var st=s.querySelector('[data-role="status"]');
+      s.classList.remove("filled","missing","s-actor","s-object","s-cond","s-evid","s-enf");
+      st.textContent="·";
+      setTimeout(function(){
+        if(has){s.classList.add("filled","s-"+p);st.textContent="present";}
+        else{s.classList.add("missing");st.textContent="missing";}
+      },reduced?0:120+idx*140);
+      if(has)filled++;
+    });
+
+    segs.forEach(function(sg,idx){
+      sg.className="seg";
+      setTimeout(function(){
+        if(idx<filled){
+          sg.classList.add("f"+(idx+1),"pop");
+          setTimeout(function(){sg.classList.remove("pop");},reduced?0:260);
+        }
+      },reduced?0:200+idx*150);
+    });
+
+    setTimeout(function(){
+      verdict.className="vbadge "+d.verdict[0];
+      verdict.textContent=d.verdict[1];
+    },reduced?0:200+filled*150);
+  }
+
+  // socket click -> highlight words
+  ORDER.forEach(function(p){
+    var s=sockets[p];
+    s.addEventListener("click",function(){
+      document.querySelectorAll(".statement .tk").forEach(function(t){
+        Object.keys(HL).forEach(function(k){t.classList.remove(HL[k]);});
+      });
+      var hits=document.querySelectorAll(".statement .part-"+p);
+      hits.forEach(function(t){t.classList.add(HL[p]);});
+      setTimeout(function(){hits.forEach(function(t){t.classList.remove(HL[p]);});},1800);
+    });
+  });
+
+  steps.forEach(function(b){
+    b.addEventListener("click",function(){render(+b.getAttribute("data-i"));});
+  });
+
+  var playing=false;
+  document.getElementById("play").addEventListener("click",function(){
+    if(playing)return;playing=true;
+    var i=0;
+    render(0);
+    var iv=setInterval(function(){
+      i++;
+      if(i>3){clearInterval(iv);playing=false;return;}
+      render(i);
+    },reduced?500:2400);
+  });
+
+  render(0);
+})();
+
+/* ── Report height to the parent page ──────────────────────────────
+   Four of this module's five interactives never told the parent iframe how
+   tall they were, so the frame stayed at the fixed height declared in the
+   module page and anything taller was silently cut off. That is the clipped
+   bottom line the first-round review reported in the ADOPTED tab: the panel
+   grows to 557px there against a 520px frame. ResizeObserver covers content
+   that changes after load, such as switching tabs. */
+(function(){
+  var _lastH = 0;
+  function sendHeight(){
+    /* Measure the content element, not documentElement. Once the parent has
+       sized the iframe to a reported height, documentElement.scrollHeight is
+       pinned to that height, so it can never report that the content now wants
+       to be taller. Switching to the ADOPTED tab grows the panel past the
+       frame, and measuring the wrapper is what notices. */
+    var el = document.querySelector('.wrap, main.module, .card') || document.body;
+    var cs = getComputedStyle(document.body);
+    var pad = (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0);
+    var h = Math.ceil(el.getBoundingClientRect().height + pad + 4);
+    if(h === _lastH) return;
+    _lastH = h;
+    if(window.parent!==window && h>50){
+      window.parent.postMessage({kind:"nyu-embed-height",height:h},"*");
+    }
+  }
+  if("ResizeObserver" in window){
+    var _obs=new ResizeObserver(sendHeight);_obs.observe(document.documentElement);
+    var _t=document.querySelector(".wrap, main.module, .card"); if(_t) _obs.observe(_t);
+  }
+  /* Poll as well. ResizeObserver did not fire for the panel growth caused by
+     switching to the ADOPTED tab, so the frame stayed at its loaded height and
+     clipped the last line. sendHeight only posts when the number actually
+     changes, so this costs one measurement per tick and no messages at rest. */
+  setInterval(sendHeight, 600);
+  window.addEventListener("load",function(){sendHeight();setTimeout(sendHeight,300);setTimeout(sendHeight,1000);});
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

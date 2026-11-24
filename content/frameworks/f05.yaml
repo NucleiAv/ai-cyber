@@ -1,0 +1,108 @@
+slug: f05
+num: "05"
+short: OWASP LLM and Agentic Top 10
+title: OWASP Top 10 for LLM and Agentic Applications
+time: about 1 hour
+lede: The two risk lists most teams use for AI applications. What each list is for, how they were built, and how to use them in a review.
+headings: {attack: "How to use it, step by step", cases: "Real examples", defend: "Strengths and limits", map: "How it links to the others", lab: "Try it"}
+owasp: [LLM01, LLM02, LLM03, LLM04, LLM05, LLM06, LLM07, LLM08, LLM09, LLM10]
+agentic: [ASI01, ASI02, ASI03, ASI04, ASI05, ASI06, ASI07, ASI08, ASI09, ASI10]
+other_fw:
+  - [The Risks page, "Every entry in plain words with defenses and practice links. [Open the ten risks](../risks.html)."]
+
+idea: |
+  **OWASP** is a non-profit community known for the web application Top 10. Its **GenAI Security Project** publishes two lists for AI.
+
+  - **Top 10 for LLM Applications 2025.** Risks in apps built on large language models, such as chatbots and RAG systems.
+  - **Top 10 for Agentic Applications 2026**, published in December 2025. Risks in systems that plan, use tools, keep memory and work with other agents.
+
+  !eli5 These lists are a pre-flight checklist. They do not fly the plane for you. They make sure you did not forget the ten things that most often go wrong.
+
+terms:
+  - [Risk entry, "One item on a list, with a description, examples, prevention and references."]
+  - [LLM01 to LLM10, "The IDs of the LLM list. LLM01 is prompt injection, LLM10 is unbounded consumption."]
+  - [ASI01 to ASI10, "The IDs of the Agentic list. ASI01 is agent goal hijack, ASI10 is rogue agents."]
+
+how: |
+  ### The LLM list, 2025
+
+  1. LLM01 Prompt injection
+  2. LLM02 Sensitive information disclosure
+  3. LLM03 Supply chain
+  4. LLM04 Data and model poisoning
+  5. LLM05 Improper output handling
+  6. LLM06 Excessive agency
+  7. LLM07 System prompt leakage
+  8. LLM08 Vector and embedding weaknesses
+  9. LLM09 Misinformation
+  10. LLM10 Unbounded consumption
+
+  The attack track teaches one lesson per entry, in this order.
+
+  ### The Agentic list, 2026
+
+  ASI01 Agent goal hijack, ASI02 Tool misuse and exploitation, ASI03 Identity and privilege abuse, ASI04 Agentic supply chain vulnerabilities, ASI05 Unexpected code execution, ASI06 Memory and context poisoning, ASI07 Insecure inter-agent communication, ASI08 Cascading failures, ASI09 Human-agent trust exploitation, ASI10 Rogue agents.
+
+  ### When to use which
+
+  Use the LLM list for any app that calls a model. Add the Agentic list when the app has tools, memory or more than one agent.
+
+diagrams:
+  - type: split
+    title: Which list for which system
+    source: ["Your AI system", "box"]
+    targets:
+      - ["Chatbot or RAG app", "def", "LLM Top 10"]
+      - ["Agent with tools or memory", "def", "LLM Top 10 plus Agentic Top 10"]
+      - ["Classic ML model", "box", "ATLAS and NIST AI 100-2"]
+    caption: The lists add up. An agent still has every LLM risk.
+
+attack_steps:
+  - List the parts of your app, such as prompts, retrieval, tools, output destinations and model files.
+  - Walk the ten LLM entries. For each, write whether it applies and what control you have.
+  - If the app has tools or memory, walk the ten Agentic entries too.
+  - Classify each finding by **outcome**, as Module 9 teaches. A leaked prompt is LLM07 even when the technique was injection.
+  - Track the gaps as work items with owners.
+
+cases:
+  - [Module 11, the MedAssist assessment, "The defend track turns the LLM list into a defensive checklist and runs a full assessment on a sample medical assistant."]
+  - [Module 9 classification, "Four attacks that share techniques get four different categories, LLM07, LLM01, LLM06 and LLM05, by their outcome."]
+
+defense: |
+  **Strengths**
+
+  - Short, shared and free. Developers and auditors read the same list.
+  - Each entry has prevention advice and examples.
+
+  **Limits**
+
+  - A list of risks is not a threat model. It does not see your design. Pair it with STRIDE.
+  - Entries overlap. Injection is the technique behind many of them.
+  - Lists change. Record the version you used.
+
+lab:
+  intro: |
+    Classify by outcome.
+  steps:
+    - Open the [Module 9 practice desk](../defend/m09-desk.html#r4) and do Round 4.
+    - Then open [the ten risks](../risks.html) and read the entry for each answer.
+    - Write one sentence for each on why the outcome, not the technique, decides the category.
+
+quiz:
+  - q: An attacker uses injection to make a bot print its hidden instructions. Which entry is the primary category?
+    opts: ["LLM01 Prompt injection", "LLM07 System prompt leakage", "LLM10 Unbounded consumption"]
+    a: 1
+    why: Classify by outcome. The outcome was a leaked system prompt.
+  - q: Your app is an agent with email and file tools. Which lists apply?
+    opts: ["Only the Agentic list", "Only the LLM list", "Both lists"]
+    a: 2
+    why: An agent is still an LLM app, so every LLM risk applies too.
+  - q: Which entry covers a bot that can promise refunds with no limit?
+    opts: ["LLM06 Excessive agency", "LLM08 Vector and embedding weaknesses", "LLM03 Supply chain"]
+    a: 0
+    why: The bot has more power than its task needs.
+
+refs:
+  - "OWASP. [Top 10 for LLM Applications 2025](@owasptop10)."
+  - "OWASP. [Top 10 for Agentic Applications 2026](@owaspagentic)."
+  - "OWASP. [GenAI Security Project](@owaspgenai)."

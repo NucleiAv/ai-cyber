@@ -1,0 +1,232 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three Tools, One Vulnerability</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--v:#57068C;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--blu:#1E73BE;--blu-bg:#E7F0FA;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+
+    .top{display:flex;align-items:center;gap:10px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em}
+
+    .content{padding:14px 18px 10px}
+
+    /* Tool selector tabs */
+    .tabs{display:flex;gap:3px;margin-bottom:14px;background:var(--sk);border-radius:10px;padding:3px}
+    .tab{appearance:none;border:none;background:transparent;border-radius:8px;padding:8px 14px;font:inherit;font-size:.76rem;font-weight:600;cursor:pointer;transition:all .16s;color:var(--ink2);flex:1;text-align:center}
+    .tab:hover{color:var(--v)}
+    .tab.on{color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+    .tab.t0.on{background:#2B7A3E}
+    .tab.t1.on{background:var(--blu)}
+    .tab.t2.on{background:var(--v)}
+
+    /* Code block with annotations */
+    .code-area{background:#1E2127;border-radius:10px;padding:14px 16px;margin-bottom:14px;overflow-x:auto;position:relative}
+    .code-area pre{font-family:var(--mono);font-size:.68rem;line-height:1.9;color:#C8C8CC;margin:0;white-space:pre}
+    .ln{color:#9099A8;user-select:none;display:inline-block;width:20px;text-align:right;margin-right:12px}
+
+    /* Highlights on code lines */
+    .hl{border-radius:3px;padding:1px 3px;transition:all .4s}
+    .hl-pattern{background:rgba(43,122,62,.25);color:#ffffff}
+    .hl-source{background:rgba(30,115,190,.2);color:#ffffff}
+    .hl-flow{background:rgba(30,115,190,.15);color:#ffffff}
+    .hl-sink{background:rgba(196,42,42,.25);color:#ffffff}
+    .hl-llm{background:rgba(87,6,140,.2);color:#D4A8F0}
+
+    /* Annotation arrows from code to explanation */
+    .annot{position:absolute;right:14px;font-size:.6rem;font-weight:600;padding:3px 8px;border-radius:5px;white-space:nowrap;opacity:0;transform:translateX(5px);transition:all .4s}
+    .annot.show{opacity:1;transform:translateX(0)}
+    .annot.a-pattern{background:rgba(43,122,62,.85);color:#fff}
+    .annot.a-semantic{background:rgba(30,115,190,.85);color:#fff}
+    .annot.a-llm{background:rgba(87,6,140,.85);color:#fff}
+
+    /* What the tool sees panel */
+    .panel{border:1.5px solid var(--rule);border-radius:10px;padding:14px;margin-bottom:6px;transition:all .3s}
+    .panel h3{font-size:.8rem;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+    .panel h3 .dot{width:10px;height:10px;border-radius:50%}
+    .panel .mechanism{font-size:.74rem;line-height:1.55;color:var(--ink2);margin-bottom:8px}
+    .panel .mechanism b{color:var(--ink)}
+    .panel .verdict{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;font-size:.72rem;font-weight:600}
+    .panel .verdict.found{background:#166534;color:#fff;border:1px solid var(--grn)}
+
+    .panel.t0{border-color:#2B7A3E}
+    .panel.t0 .dot{background:#2B7A3E}
+    .panel.t1{border-color:var(--blu)}
+    .panel.t1 .dot{background:var(--blu)}
+    .panel.t2{border-color:var(--v)}
+    .panel.t2 .dot{background:var(--v)}
+
+    .insight{padding:12px 18px;font-size:.78rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.55}
+    .insight b{color:var(--ink)}
+  </style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>Three Tools, One Vulnerability</h1>
+  </div>
+
+  <div class="content">
+    <div class="tabs">
+      <button class="tab t0 on" onclick="show(0)">Pattern SAST</button>
+      <button class="tab t1" onclick="show(1)">Semantic SAST</button>
+      <button class="tab t2" onclick="show(2)">LLM Review</button>
+    </div>
+
+    <div class="code-area" id="codeArea">
+      <pre id="codeBlock"></pre>
+    </div>
+
+    <div id="panelArea"></div>
+  </div>
+
+  <div class="insight" id="ins"><b>Click each tab</b> to see how each tool inspects the same code. Watch the code highlights change: each tool looks at different aspects of the same vulnerability.</div>
+</div></div>
+
+<script>
+const LINES = [
+  {n:1, code:'@app.route(\'/search\')'},
+  {n:2, code:'def search():'},
+  {n:3, code:'    query = request.args.get(\'q\')'},
+  {n:4, code:'    sql = "SELECT * FROM products"'},
+  {n:5, code:'        + " WHERE name LIKE \'%"'},
+  {n:6, code:'        + query + "%\'"'},
+  {n:7, code:'    results = db.engine.execute(sql)'},
+  {n:8, code:'    return render_template(...)'}
+];
+
+const TOOLS = [
+  {
+    name: 'Pattern-Based SAST',
+    color: 'pattern',
+    cls: 't0',
+    highlights: {
+      4: {wrap:'hl-pattern', annot:'Rule: string concat', aclass:'a-pattern', atop:'62px'},
+      5: {wrap:'hl-pattern'},
+      6: {wrap:'hl-pattern', annot:'+ user variable', aclass:'a-pattern', atop:'100px'},
+      7: {wrap:'hl-pattern', annot:'Rule: execute() with concat arg', aclass:'a-pattern', atop:'119px'},
+    },
+    mechanism: '<b>How it works:</b> The tool scans for structural patterns defined in rules. Rule says: "flag any call to execute() where the argument is built by string concatenation with a variable." It matches lines 4-7 against this pattern.',
+    question: 'Does this code match a known-bad pattern?',
+    strength: 'Fast, deterministic. If a rule exists for this pattern, it will always find it.',
+    limit: 'Does not trace where <code>query</code> came from. Cannot confirm it is untrusted user input.',
+    insight: '<b>Pattern SAST found the structural match.</b> It sees the dangerous concatenation pattern but does not know whether the data is actually untrusted. A constant concatenated the same way would also be flagged.'
+  },
+  {
+    name: 'Semantic SAST',
+    color: 'semantic',
+    cls: 't1',
+    highlights: {
+      2: {wrap:'hl-source', annot:'Source: untrusted input', aclass:'a-semantic', atop:'43px'},
+      3: {wrap:'hl-flow'},
+      5: {wrap:'hl-flow', annot:'Taint flows through', aclass:'a-semantic', atop:'81px'},
+      6: {wrap:'hl-sink', annot:'Sink: execute()', aclass:'a-semantic', atop:'119px'},
+    },
+    mechanism: '<b>How it works:</b> A semantic analysis engine builds a data-flow graph of the entire codebase. It traces: <code>request.args.get(\'q\')</code> (untrusted source) flows into <code>query</code>, which flows through string concat into <code>sql</code>, which reaches <code>db.engine.execute()</code> (sensitive sink). No sanitization function exists on this path.',
+    question: 'Does untrusted data flow from source to sink without sanitization?',
+    strength: 'Formal taint proof. Traces across functions and files. Can verify sanitizers actually break the flow.',
+    limit: 'Requires a buildable codebase and expertise writing queries in a specialized language.',
+    insight: '<b>Semantic SAST traced the full data-flow path.</b> It proved that untrusted user input reaches a dangerous function without sanitization. This is a formal guarantee, not a guess.'
+  },
+  {
+    name: 'LLM-Based Review',
+    color: 'llm',
+    cls: 't2',
+    highlights: {
+      2: {wrap:'hl-llm', annot:'Recognized: user input', aclass:'a-llm', atop:'43px'},
+      5: {wrap:'hl-llm', annot:'Pattern: string concat', aclass:'a-llm', atop:'81px'},
+      6: {wrap:'hl-llm', annot:'Pattern: SQL execution', aclass:'a-llm', atop:'119px'},
+    },
+    mechanism: '<b>How it works:</b> The LLM tokenizes the code and compares it against patterns from training data. It has seen thousands of SQL injection examples that look like this. It recognizes the pattern: user input + string concat + execute = probable CWE-89. It generates a natural-language explanation with a remediation suggestion.',
+    question: 'Does this code look like vulnerable code I was trained on?',
+    strength: 'Works across languages, handles novel patterns, produces human-readable explanations.',
+    limit: 'Has not formally verified the taint path. Recognized a statistical pattern. May hallucinate classifications for unfamiliar code.',
+    insight: '<b>The LLM recognized a familiar vulnerability pattern.</b> Its classification is correct here because this is a textbook example. For subtler variants (custom sanitizers, cross-file flows), pattern recognition becomes unreliable.'
+  }
+];
+
+function renderCode(toolIdx){
+  const t = TOOLS[toolIdx];
+  const pre = document.getElementById('codeBlock');
+  document.querySelectorAll('.annot').forEach(a => a.remove());
+
+  let html = '';
+  LINES.forEach((l,i) => {
+    const h = t.highlights[i];
+    if(h){
+      html += `<span class="ln">${l.n}</span><span class="${h.wrap}">${escH(l.code)}</span>\n`;
+      if(h.annot){
+        const an = document.createElement('div');
+        an.className = 'annot ' + h.aclass;
+        an.textContent = h.annot;
+        an.style.top = h.atop;
+        document.getElementById('codeArea').appendChild(an);
+        setTimeout(() => an.classList.add('show'), 80);
+      }
+    } else {
+      html += `<span class="ln">${l.n}</span>${escH(l.code)}\n`;
+    }
+  });
+  pre.innerHTML = html;
+}
+
+function renderPanel(toolIdx){
+  const t = TOOLS[toolIdx];
+  const area = document.getElementById('panelArea');
+  area.innerHTML = `
+    <div class="panel ${t.cls}">
+      <h3><span class="dot"></span>${t.name}</h3>
+      <div class="mechanism">${t.mechanism}</div>
+      <div style="margin-bottom:6px;font-size:.72rem;color:var(--ink2)"><b>Question it answers:</b> "${t.question}"</div>
+      <div style="margin-bottom:6px;font-size:.72rem;color:var(--ink2)"><b>Strength:</b> ${t.strength}</div>
+      <div style="margin-bottom:8px;font-size:.72rem;color:var(--ink2)"><b>Limitation:</b> ${t.limit}</div>
+      <div class="verdict found">Vulnerability Found: CWE-89 SQL Injection</div>
+    </div>
+  `;
+}
+
+function show(idx){
+  document.querySelectorAll('.tab').forEach((b,i) => {
+    b.classList.toggle('on', i === idx);
+  });
+  renderCode(idx);
+  renderPanel(idx);
+  document.getElementById('ins').innerHTML = TOOLS[idx].insight;
+}
+
+function escH(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+show(0);
+
+(function(){
+  var root = document.documentElement;
+  var body = document.body;
+  root.style.height = 'auto';
+  body.style.height = 'auto';
+  root.style.overflow = 'visible';
+  body.style.overflow = 'visible';
+  function send(){
+    var el = document.querySelector('.w');
+    if(!el) return;
+    var r = el.getBoundingClientRect();
+    var pad = parseFloat(getComputedStyle(body).paddingTop) + parseFloat(getComputedStyle(body).paddingBottom);
+    var h = Math.ceil(r.height + pad);
+    window.parent.postMessage({type:'iframeHeight', height:h, src:location.href},'*');
+  }
+  if(window.ResizeObserver){
+    new ResizeObserver(send).observe(document.querySelector('.w') || body);
+  } else {
+    setInterval(send, 500);
+  }
+  window.addEventListener('load', function(){ setTimeout(send,200); });
+  setTimeout(send, 50);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 11 &middot; Section 5 &middot; The OWASP Defensive Assessment &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 11 &middot; Section 5 of 7</div>
+      <h1 class="nyu-hero__title">The OWASP Defensive Assessment</h1>
+      <p class="nyu-hero__subtitle">Turning the OWASP LLM Top 10 around and using it as a defensive checklist, then running a full assessment against a deployed system.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~18 min including the lab</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 3 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          1 assessment lab
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Reversing the Direction</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Assessment Methodology</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Assessment Lab: MedAssist</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Conduct</strong> a systematic OWASP-based defensive assessment of an LLM deployment, determining applicability, identifying controls and gaps, and rating risk priority for each category.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1: REVERSING THE DIRECTION ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Reversing the Direction</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>This section completes the OWASP thread by reversing the direction: instead of classifying attacks after they happen, we assess defenses before they are tested. Section 6 then surveys AI applications in cybersecurity defense. Both share a method: pair every capability claim with its documented limitation.</p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="thread3-callout-title">
+          <h3 class="nyu-callout__title" id="thread3-callout-title">Thread 3: OWASP as Defensive Checklist</h3>
+          <p>In the attacks modules, we used the <button type="button" class="nyu-define" data-term="owasp-llm-top10">OWASP LLM Top 10</button> as a classification instrument: given an attack, identify which category it targets. That skill organizes knowledge and enables communication across teams. Now we reverse it. Given a deployment, we ask: for each OWASP category, what controls does this system have, and where are the gaps? This is the <button type="button" class="nyu-define" data-term="owasp-defensive-assessment">defensive assessment</button>, using the same framework to evaluate defenses rather than classify attacks.</p>
+        </aside>
+
+        <p>This reversal, from reactive ("what category was this attack?") to proactive ("what attacks are we not prepared for?"), is how security teams use the OWASP Top 10 when assessing real systems.</p>
+      </section>
+
+      <!-- ====================== SECTION 2: METHODOLOGY ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Assessment Methodology</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Classification asks "what happened?" Assessment asks "what could happen, and are we ready?" The methodology below gives a repeatable process for answering that second question. For each relevant OWASP category, walk through four steps:</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Applicability assessment</h4>
+              <p class="nyu-process__detail">Not every OWASP category applies to every deployment. A chatbot with no tool access faces LLM06 (<button type="button" class="nyu-define" data-term="excessive-agency">Excessive Agency</button>) differently than a system with API integrations. Start by determining which categories are relevant to this specific architecture.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Existing controls identification</h4>
+              <p class="nyu-process__detail">For each applicable category, identify what controls the deployment currently has in place. Be specific: "input validation" is too vague; "regex-based keyword filtering on user input with a blocklist of 47 known injection patterns" is assessable.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Gap analysis</h4>
+              <p class="nyu-process__detail">For each applicable category, identify what controls are missing or insufficient. The <button type="button" class="nyu-define" data-term="deterministic-control">deterministic</button>/<button type="button" class="nyu-define" data-term="probabilistic-control">probabilistic</button> distinction from Section 1 is useful here: a probabilistic control with known degradation under distribution shift is a different kind of gap than a completely absent control.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Mitigation recommendation</h4>
+              <p class="nyu-process__detail">For each gap, recommend specific, implementable controls. Recommendations should be prioritized by risk (likelihood and impact) and feasibility (cost, complexity, timeline).</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ====================== SECTION 3: ASSESSMENT LAB ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Assessment Lab: MedAssist</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>MedAssist is a patient-facing AI assistant for a regional healthcare network. It uses <button type="button" class="nyu-define" data-term="rag">RAG</button> to answer patient questions about symptoms, medications, and procedures from the hospital's medical knowledge base. It integrates with a scheduling API to book and modify appointments. It uses application-level metadata filtering to restrict responses to patient-appropriate content, and it handles about 2,000 patient interactions per day.</p>
+
+        <p>Apply the four-step methodology to MedAssist across all ten OWASP LLM Top 10 (2025) categories. For each category, you will decide whether it applies to MedAssist's architecture, identify existing controls, find gaps, and rate the risk priority. The assessment is deployment-specific: your answers should reflect MedAssist's particular architecture, not generic LLM risks.</p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="owasp-ref-title" style="display:flex; align-items:flex-start; gap:var(--sp-3); border-left:3px solid var(--accent-primary);">
+          <span class="nyu-icon" aria-hidden="true" style="flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </span>
+          <div>
+            <h3 class="nyu-callout__title" id="owasp-ref-title" style="margin-bottom:4px;">Reference: OWASP Top 10 for LLM Applications (2025)</h3>
+            <p>The full list of categories, descriptions, and recommended mitigations is maintained by OWASP. Keep it open as you work through the assessment below.</p>
+              <p>Every identifier in this course is from the <strong>2025</strong> edition. OWASP revises the list periodically, and entries move position, merge, or get renamed between releases, so a bare number is ambiguous. The failure modes are the durable part; the numbering is not. Name the edition whenever you cite one, and confirm the current release before putting a number in front of a stakeholder.</p>
+            <p style="margin-bottom:0;"><a href="https://genai.owasp.org/llm-top-10/" target="_blank" rel="noopener" style="font-weight:600;">genai.owasp.org/llm-top-10 ↗</a></p>
+          </div>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/04_owasp_assessment/owasp-defensive-assessment-lab.html" title="Interactive: OWASP defensive assessment lab where students evaluate MedAssist across all ten OWASP LLM Top 10 categories by deciding applicability, identifying controls and gaps, and rating risk priority" loading="lazy" style="height:900px; border:none; width:100%;"></iframe>
+        </div>
+
+        <p>The assessment is deployment-specific. MedAssist's scheduling API access makes LLM06 high priority; a chatbot without tool access would deprioritize it. The metadata filtering gap in LLM08 is specific to MedAssist's architecture; a system with database-level isolation would have a different gap profile entirely. When you assess a different system, the same methodology applies, but the answers change.</p>
+      </section>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 6: AI for Defense.</strong> The assessment asked what an AI system needs protecting from. Section 6 asks the opposite question: where AI is useful on the defensive side, and where the published evidence says its output still needs checking.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

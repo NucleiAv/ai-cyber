@@ -1,0 +1,85 @@
+n: 12
+short: AI governance and ethics
+title: AI governance, ethics and regulation
+time: 5 sections · about 3.5 hours
+lede: Who decides to deploy an AI system that no control fully protects, how to measure ethics instead of debating it, how to write a policy people can follow, and how to read regulations that keep changing.
+idea: |
+  Earlier modules showed that no technical control fully stops attacks on AI. So someone must decide what to deploy anyway, under what limits, and who owns the risk that remains. That decision is **governance**.
+
+  This module makes governance practical. Use the **NIST AI RMF** as an instrument, measure bias with the same confusion matrix as Module 1, write policy statements that are real controls, and assess one deployment against all four RMF functions.
+
+  !eli5 Governance is the house rules plus a named adult in charge. "Be careful" is a wish. "Nobody uses the stove without an adult in the room" is a rule someone can check.
+primer: |
+  ### Step 1. Residual risk needs an owner
+
+  After every control, some risk remains. If nobody is named to accept it, the decision is made by default. Section 1 calls this "the decision nobody assigned".
+
+  ### Step 2. The NIST AI RMF
+
+  The NIST AI Risk Management Framework 1.0 (2023) has four functions.
+
+  - **Govern.** Policies, roles and accountability. It is the hub that touches the other three.
+  - **Map.** Understand the context, the uses and the risks.
+  - **Measure.** Test and track the risks with numbers.
+  - **Manage.** Decide, act, and watch over time.
+
+  ### Step 3. Ethics you can measure
+
+  **Bias** shows up when you slice the confusion matrix by group. A model can have good overall accuracy and much higher false positive rates for one group. An aggregate number can hide this. **Automation bias** is the habit of trusting machine output too much, so "a human in the loop" is not a fix if the human just clicks yes.
+
+  ### Step 4. A policy is a control or a wish
+
+  A good AI use policy statement says who must do what, when, and how anyone can check it. "Analysts should use AI responsibly" is a wish. "Before an AI-drafted finding enters a ticket, the analyst attaches the source log line that supports it" is a control.
+
+  ### Step 5. Regulations
+
+  The **EU AI Act** sorts systems into risk tiers. Some practices are banned, high-risk systems carry strict duties, some systems have transparency duties, and the rest have few rules. Dates have moved, so read the current timeline, not a memory of it. **ISO/IEC 42001** is a certifiable AI management system standard, built like ISO 27001.
+diagrams:
+  - type: split
+    title: The four functions of the NIST AI RMF
+    source: ["Govern. Policy, roles, accountability", "def"]
+    targets:
+      - ["Map", "box", "context, uses and risks"]
+      - ["Measure", "box", "test and track with numbers"]
+      - ["Manage", "box", "decide, act, monitor"]
+    caption: Govern is the hub. It runs through the other three.
+  - type: flow
+    title: Turning a wish into a control
+    nodes: [["Wish. Use AI responsibly", "atk"], ["Name who", "box"], ["Name what and when", "box"], ["Name the evidence", "box"], ["Control a reviewer can check", "def"]]
+    edges: ["", "", "", ""]
+terms:
+  - [Residual risk, "The risk that remains after controls."]
+  - [AI RMF, "NIST's AI Risk Management Framework, with Govern, Map, Measure and Manage."]
+  - [Disparity, "A difference in error rates between groups."]
+  - [Automation bias, "Trusting automated output too much, even when it is wrong."]
+  - [Proportionality, "A legal test. A measure that limits rights must be necessary and not excessive for its aim."]
+  - [Gap assessment, "Comparing what a deployment does against what a framework expects."]
+  - [ISO/IEC 42001, "An international standard for an AI management system."]
+sections:
+  01_from-bypass-rates-to-boardrooms.html: "No control fully stops attacks on AI, so someone must decide what to deploy. Residual risk, the four NIST AI RMF functions with Govern as the hub, and a worked map of a triage pipeline."
+  02_ethics-you-can-measure.html: "Each ethical concern has a measurable footprint. Bias in a sliced confusion matrix, two documented cases, an aggregate that hides a disparity, surveillance and proportionality in case law, dual use, and why a human in the loop is not a fix by itself."
+  03_the-responsible-ai-use-policy.html: "What separates a policy an analyst can follow from a mission statement, the parts of a security team's AI policy, a validation mandate that works, and a test for whether a statement is a control."
+  04_governance-gap-assessment-and-regulatory-landscape.html: "Assess one deployment, NorthShore Mutual, across all four RMF functions, read the regulatory landscape as of July 2026, classify systems without memorizing, and decide whether to publish a jailbreak."
+  05_references-and-readings.html: "Every reading, framework, government source, case and dataset used in Module 12."
+other_fw:
+  - [NIST AI RMF 1.0, "Govern, Map, Measure and Manage. [Read it](@nistrmf)."]
+  - [NIST AI 600-1, "The generative AI profile with 12 risks. [Read it](@nist6001)."]
+  - [EU AI Act, "Risk tiers and transparency duties. [Read it](@euaiact) and [the current timeline](@sigeuact)."]
+  - [ISO/IEC 42001, "AI management system standard. [Read it](@iso42001)."]
+  - [OWASP LLM06, "Governance answers excessive agency with policy and approval. [Read LLM06](https://genai.owasp.org/llmrisk/llm062025-excessive-agency/)."]
+refs:
+  - "NIST. [AI Risk Management Framework 1.0](@nistrmf), 2023."
+  - "Parasuraman and Manzey. [Complacency and bias in human use of automation](https://journals.sagepub.com/doi/10.1177/0018720810376055), Human Factors, 2010."
+quiz:
+  - q: Which NIST AI RMF function is the hub that runs through the others?
+    opts: ["Map", "Govern", "Measure"]
+    a: 1
+    why: Govern sets policy, roles and accountability for the other three.
+  - q: Overall accuracy is 92 percent, but one group has three times the false positive rate. What is this?
+    opts: ["A good model", "A disparity that the aggregate hides", "Random noise"]
+    a: 1
+    why: Slice the confusion matrix by group to see it.
+  - q: Which statement is a control, not a wish?
+    opts: ["Use AI responsibly", "Before an AI-drafted finding enters a ticket, the analyst attaches the source log line", "Be careful with AI output"]
+    a: 1
+    why: It names who, what, when and the evidence a reviewer can check.

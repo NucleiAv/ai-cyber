@@ -1,0 +1,282 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Three Lenses on Every Attack</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--green:#0f7a43;--greenline:#c3e2d0;--amber:#8a5d00;--ambersoft:#fbf3df;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{overflow:visible;height:100%;background:#fff}body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:64ch}
+.body{padding:14px 22px 22px}
+.klabel{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.09em;font-weight:600;color:var(--ink3);margin:4px 0 9px}
+.matrix{width:100%;border-collapse:separate;border-spacing:0;font-size:0.75rem}
+.matrix th{padding:6px 6px 8px;text-align:left;vertical-align:bottom}
+.matrix th.lh{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);font-weight:700;line-height:1.25}
+.matrix th.lh span{display:block;font-size:0.75rem;color:var(--ink3);font-weight:500;text-transform:none;letter-spacing:0;margin-top:1px}
+.matrix td{padding:4px}
+.arow td:first-child{font-weight:600;font-size:.76rem;color:var(--ink);cursor:pointer;border-radius:8px;padding:8px 8px}
+.arow:hover td:first-child{background:var(--paper)}
+.arow.sel td:first-child{color:var(--violet);box-shadow:inset 0 0 0 1px var(--vline);background:var(--vsoft)}
+.arow.done td:first-child::after{content:" ✓";color:var(--green);font-weight:700}
+.cell{border:1px solid var(--line2);border-radius:8px;padding:7px 8px;min-height:34px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--mono);font-size:0.75rem;color:var(--ink3);background:var(--bg);transition:.2s}
+.cell.filled{color:var(--ink);border-color:var(--vline);background:var(--bg);font-weight:600}
+.cell.none{color:var(--amber);border-color:#ecd9a3;background:var(--bg)}
+.cell.none b{font-weight:700}
+.tracker{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.75rem;color:var(--ink2)}
+.tbar{flex:1;height:6px;background:var(--line);border-radius:20px;overflow:hidden}
+.tbar i{display:block;height:100%;width:0;background:var(--green);transition:width .4s}
+.panel{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:80px}
+.panel .ph{font-weight:700;font-size:.86rem;margin-bottom:2px}
+.panel .psub{font-size:.75rem;color:var(--ink2);margin-bottom:10px}
+.lens{margin-bottom:12px}
+.lens:last-child{margin-bottom:0}
+.lens .ln{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.lens .lname{font-weight:700;font-size:.78rem}
+.lens .lmeta{font-size:0.75rem;color:var(--ink3);font-family:var(--mono)}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{border:1px solid var(--line2);background:var(--bg);border-radius:8px;padding:6px 10px;cursor:pointer;font-family:var(--sans);font-size:0.75rem;color:var(--ink);transition:.14s}
+.chip:hover{border-color:var(--violet)}
+.chip.correct{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}
+.chip.correct.none{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber);color:var(--amber)}
+.chip.wrong{border-color:var(--red);animation:shake .5s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.chip.lock{cursor:default;opacity:0.6}
+.chip.correct.lock{opacity:1}
+.lexpl{font-size:0.75rem;color:var(--ink2);margin-top:7px;display:none;border-left:2px solid var(--greenline);padding-left:9px}
+.lexpl.none{border-left-color:#ecd9a3}
+.lexpl.bad{border-left-color:var(--redline)}
+.lexpl.show{display:block}
+.placeholder{color:var(--ink3);font-size:.82rem;text-align:center;padding:22px 8px}
+.final{margin-top:16px;border:1px solid var(--greenline);border-left-width:3px;border-radius:10px;padding:0 15px;background:var(--bg);opacity:0;max-height:0;overflow:hidden;transition:.4s}
+/* Reveal caps raised. These boxes animate open with max-height and keep overflow:hidden, so any content taller than the cap was silently cut off. At 440px wide with a 20px root font the poison-lab verdict lost 46px of its explanation, which is the clipping reported in the first-round review. 1200px is far above any realistic verdict, so the box now sizes to content at every width and text scale. */
+.reset-row{margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.reset-btn{font-family:var(--sans);font-size:0.78rem;font-weight:600;color:#fff;background:#57068C;border:1.5px solid #57068C;border-radius:9px;padding:7px 14px;cursor:pointer}
+.reset-btn:hover{background:#3D0461;border-color:#3D0461}
+.reset-btn:focus-visible{outline:3px solid #FFB81C;outline-offset:2px}
+.reset-hint{font-size:0.75rem;color:var(--ink2)}
+.final.show{opacity:1;max-height:1200px;padding:13px 15px}
+.final .vk{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;color:var(--green)}
+.final .vt{font-size:.85rem;color:var(--ink);line-height:1.5}
+.final .vt b{font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 4 · Adversarial-ML Taxonomy</div>
+    <h1>Three lenses on every attack</h1>
+    <p class="lede">Six attacks, three frameworks. Classify each attack in every lens and watch the matrix fill in. Sometimes the honest answer is “no clean fit,” and saying so is correct, not a gap in your knowledge. Classify all six.</p>
+  </div>
+  <div class="body">
+
+    <div class="klabel">The matrix (click an attack to classify it)</div>
+    <table class="matrix"><thead><tr>
+      <th></th>
+      <th class="lh">NIST AI 100-2<span>attack-goal taxonomy</span></th>
+      <th class="lh">OWASP LLM Top 10<span>application risks</span></th>
+      <th class="lh">MITRE ATLAS<span>adversary techniques</span></th>
+    </tr></thead><tbody id="mbody"></tbody></table>
+
+    <div class="tracker"><span id="tcount">0 of 6 classified</span><div class="tbar"><i id="tbar"></i></div></div>
+
+    <div class="panel" id="panel"><div class="placeholder">Select an attack in the matrix above to classify it in each lens.</div></div>
+
+    <div class="final" id="final"></div>
+
+      <div class="reset-row">
+        <button type="button" class="reset-btn" id="resetBtn">Reset this activity</button>
+        <span class="reset-hint">Clears every classification so you can work through the matrix again.</span>
+      </div>
+  </div>
+</div></div>
+
+<script>
+const LENSES=[
+ {key:'nist',name:'NIST AI 100-2',meta:'attack-goal class',opts:['Evasion','Poisoning','Abuse','No clean class']},
+ {key:'owasp',name:'OWASP LLM Top 10',meta:'application risk entry',opts:['Prompt Injection (LLM01)','Data & Model Poisoning (LLM04)','Supply Chain (LLM03)','No clean entry']},
+ {key:'atlas',name:'MITRE ATLAS',meta:'technique',opts:['LLM Prompt Injection','Poison Training Data','Publish/Ingest a Compromised Model','Evade ML Model']}
+];
+const SHORT={
+ 'Evasion':'Evasion','Poisoning':'Poisoning','Abuse':'Abuse','No clean class':'no clean fit',
+ 'Prompt Injection (LLM01)':'LLM01 · Prompt Inj.','Data & Model Poisoning (LLM04)':'LLM04 · Poisoning','Supply Chain (LLM03)':'LLM03 · Supply Chain','No clean entry':'no clean fit',
+ 'LLM Prompt Injection':'Prompt Injection','Poison Training Data':'Poison Data','Publish/Ingest a Compromised Model':'Compromised Model','Evade ML Model':'Evade Model'
+};
+const ATTACKS=[
+ {id:'direct',name:'Direct prompt injection',nist:'Abuse',owasp:'Prompt Injection (LLM01)',atlas:'LLM Prompt Injection',note:'A clean overlap. Misuse of a generative system (abuse), the textbook prompt-injection entry, and a matching ATLAS technique. All three agree.'},
+ {id:'indirect',name:'Indirect prompt injection',nist:'Abuse',owasp:'Prompt Injection (LLM01)',atlas:'LLM Prompt Injection',note:'Same family as direct injection: the instruction just arrives through retrieved content instead of the user. Still abuse, still prompt injection, still an ATLAS technique.'},
+ {id:'backdoor',name:'Backdoor poisoning',nist:'Poisoning',owasp:'Data & Model Poisoning (LLM04)',atlas:'Poison Training Data',note:'The cleanest overlap of all: training-time poisoning, the poisoning application entry, and the ATLAS poison-training-data technique. One attack, three lenses, each at its own altitude.'},
+ {id:'clean',name:'Clean-label poisoning',nist:'Poisoning',owasp:'Data & Model Poisoning (LLM04)',atlas:'Poison Training Data',note:'Still poisoning, even though the labels stay correct. What changed is the inputs, not the goal, so the class is unchanged across all three frameworks.'},
+ {id:'serial',name:'Model-serialization attack',nist:'No clean class',owasp:'Supply Chain (LLM03)',atlas:'Publish/Ingest a Compromised Model',note:'The instructive divergence: it is a delivery vector, not an attack goal, so the adversarial-ML taxonomy has no clean class for it. It still lands as a supply-chain risk and an ATLAS technique. Naming the NIST gap is the correct move.'},
+ {id:'evasion',name:'Evasion of a detector',nist:'Evasion',owasp:'No clean entry',atlas:'Evade ML Model',note:'The other divergence: it is inference-time evasion and an ATLAS technique, but the LLM-application list targets LLM apps and has no clean home for classifier evasion. Say so rather than forcing it into the nearest box.'}
+];
+// what each option means, per lens (used to explain wrong picks)
+const DEFS={
+ nist:{'Evasion':'Evasion is changing an input at inference time so the model misjudges it.',
+       'Poisoning':'Poisoning is corrupting the training data or model so the fault is baked in before deployment.',
+       'Abuse':'Abuse is misusing a working generative system through its normal interface.',
+       'No clean class':'Choosing this says the taxonomy names no attack goal for it (a delivery vector, or out of scope).'},
+ owasp:{'Prompt Injection (LLM01)':'LLM01 is prompt injection: untrusted instructions reaching the model through its input.',
+        'Data & Model Poisoning (LLM04)':'LLM04 is poisoning: corrupted training data or a tampered model.',
+        'Supply Chain (LLM03)':'LLM03 is supply chain: risk from third-party models, adapters, data or components you did not build.',
+        'No clean entry':'Choosing this says the LLM-application list has no category that fits.'},
+ atlas:{'LLM Prompt Injection':'This ATLAS technique feeds adversarial instructions to an LLM through its input.',
+        'Poison Training Data':'This ATLAS technique tampers with training data to implant a fault.',
+        'Publish/Ingest a Compromised Model':'This ATLAS technique slips a tampered model or artifact into a victim pipeline.',
+        'Evade ML Model':'This ATLAS technique perturbs an input so a classifier misjudges it.'}
+};
+// one-line description of what each attack actually does (used to steer wrong picks)
+const WHAT={
+ direct:'here the attacker feeds instructions straight through the model’s input',
+ indirect:'here the malicious instruction arrives through retrieved content the model reads',
+ backdoor:'here the fault is planted during training and fires on a secret trigger',
+ clean:'here the training inputs are nudged while their labels stay honest',
+ serial:'here code runs when a crafted model file is loaded, before any inference',
+ evasion:'here an input is perturbed to slip past a trained detector'
+};
+// why the correct class is correct, per attack per lens
+const RAT={
+ direct:{nist:'It is misuse of a working system through its own input, not training tampering or a perturbed classifier.',owasp:'It is the textbook prompt-injection case: instructions arriving in the user input.',atlas:'It maps directly to the prompt-injection technique.'},
+ indirect:{nist:'Still misuse through input; the instruction just arrives via retrieved content instead of the user.',owasp:'Same prompt-injection entry, with the payload riding in on retrieved data.',atlas:'The same technique, delivered indirectly.'},
+ backdoor:{nist:'The fault is planted at training time and fires on a trigger, before deployment.',owasp:'It is training-time poisoning of the model.',atlas:'It maps directly to poisoning the training data.'},
+ clean:{nist:'Still training-time corruption; only the inputs are nudged, the labels stay correct, but the goal is unchanged.',owasp:'Still the poisoning entry; correct labels do not change the class.',atlas:'Still poisoning the training data, just harder to detect.'},
+ serial:{nist:'It is a delivery vector, code running when a model file loads, not an attack goal the taxonomy names.',owasp:'It lands cleanly as a supply-chain risk: a tampered artifact entering your pipeline.',atlas:'It maps to ingesting a compromised model.'},
+ evasion:{nist:'It is inference-time input perturbation to slip past a classifier.',owasp:'The LLM-application list targets LLM apps, so classifier evasion has no clean home there.',atlas:'It maps directly to evading an ML model.'}
+};
+const mbody=document.getElementById('mbody'), panel=document.getElementById('panel'),
+      tcount=document.getElementById('tcount'), tbar=document.getElementById('tbar'), final=document.getElementById('final');
+const done={}; let active=null;
+
+function cellId(aid,lk){return 'cell-'+aid+'-'+lk;}
+ATTACKS.forEach(a=>{
+  const tr=document.createElement('tr'); tr.className='arow'; tr.dataset.id=a.id;
+  tr.innerHTML='<td>'+a.name+'</td>'+LENSES.map(L=>'<td><div class="cell" id="'+cellId(a.id,L.key)+'">, </div></td>').join('');
+  tr.querySelector('td').addEventListener('click',()=>openA(a.id));
+  mbody.appendChild(tr);
+});
+
+function fillCell(aid,lk,val){
+  const c=document.getElementById(cellId(aid,lk)); const isNone=val.indexOf('No clean')===0;
+  c.className='cell '+(isNone?'none':'filled'); c.innerHTML=isNone?'<b>no clean fit</b>':SHORT[val];
+}
+function openA(id){
+  active=id; [...mbody.querySelectorAll('.arow')].forEach(r=>r.classList.toggle('sel', r.dataset.id===id));
+  const a=ATTACKS.find(x=>x.id===id), state=done[id]||{};
+  panel.innerHTML='<div class="ph">'+a.name+'</div><div class="psub">Classify this attack in each framework. If a framework has no category that fits, then there may be “no clean fit”.</div>'+
+    LENSES.map(L=>'<div class="lens"><div class="ln"><span class="lname">'+L.name+'</span><span class="lmeta">'+L.meta+'</span></div><div class="chips" id="chips-'+L.key+'"></div><div class="lexpl" id="expl-'+L.key+'"></div></div>').join('');
+  LENSES.forEach(L=>{
+    const wrap=panel.querySelector('#chips-'+L.key), solved=state[L.key];
+    L.opts.forEach(opt=>{
+      const c=document.createElement('button'); c.className='chip'; c.textContent=opt;
+      if(solved){ c.classList.add('lock'); if(opt===a[L.key]){ c.classList.add('correct'); if(opt.indexOf('No clean')===0)c.classList.add('none'); } }
+      else c.addEventListener('click',()=>pick(a,L,opt,c,wrap));
+      wrap.appendChild(c);
+    });
+    if(solved){ const ex=panel.querySelector('#expl-'+L.key); ex.className='lexpl show'+(a[L.key].indexOf('No clean')===0?' none':''); ex.textContent=explFor(a,L); }
+  });
+  sh();
+}
+function explFor(a,L){ const none=a[L.key].indexOf('No clean')===0;
+  return 'Correct. '+(none?'This lens has no clean home for this attack, and naming that is the right move. ':'')+RAT[a.id][L.key]; }
+function pick(a,L,opt,chip,wrap){
+  if(opt===a[L.key]){
+    chip.classList.add('correct'); if(opt.indexOf('No clean')===0)chip.classList.add('none');
+    [...wrap.children].forEach(c=>c.classList.add('lock'));
+    const ex=panel.querySelector('#expl-'+L.key); ex.className='lexpl show'+(opt.indexOf('No clean')===0?' none':''); ex.textContent=explFor(a,L);
+    done[a.id]=done[a.id]||{}; done[a.id][L.key]=true;
+    fillCell(a.id,L.key,opt);
+    if(LENSES.every(x=>done[a.id][x.key])) completeA(a);
+  } else { chip.classList.add('wrong'); setTimeout(()=>chip.classList.remove('wrong'),650);
+    const ex=panel.querySelector('#expl-'+L.key); ex.className='lexpl bad show'; ex.textContent=DEFS[L.key][opt]+' But '+WHAT[a.id]+', so that is not the class here.'; }
+  sh();
+}
+function completeA(a){
+  mbody.querySelector('.arow[data-id="'+a.id+'"]').classList.add('done');
+  const ph=panel.querySelector('.psub'); if(ph) ph.textContent=a.note;
+  const c=ATTACKS.filter(x=>done[x.id]&&LENSES.every(l=>done[x.id][l.key])).length;
+  tcount.textContent=c+' of 6 classified'; tbar.style.width=(c/6*100)+'%';
+  if(c===6){ final.className='final show';
+    final.innerHTML='<div class="vk">What the divergences teach</div><div class="vt">Backdoor poisoning is the clean overlap: all three lenses name it, each at its own altitude. The serialization attack and detector evasion diverge, and that is the lesson, not a failure. No single framework covers everything, so the professional move is to map what fits and name, out loud, where a lens has <b>no clean entry</b>.</div>'; }
+  sh();
+}
+/* Reset. Rebuilds the matrix cells and clears the per-attack answers, the
+   progress tracker, the open panel and the final verdict. */
+document.getElementById('resetBtn').addEventListener('click',function(){
+  Object.keys(done).forEach(function(k){ delete done[k]; });
+  active=null;
+  ATTACKS.forEach(function(a){
+    LENSES.forEach(function(L){
+      var c=document.getElementById(cellId(a.id,L.key));
+      if(c){ c.className='cell'; c.innerHTML='&mdash;'; }
+    });
+    var row=mbody.querySelector('.arow[data-id="'+a.id+'"]');
+    if(row) row.classList.remove('done','sel');
+  });
+  tcount.textContent='0 of 6 classified';
+  tbar.style.width='0%';
+  panel.innerHTML='<div class="placeholder">Select an attack in the matrix above to classify it in each lens.</div>';
+  final.className='final'; final.innerHTML='';
+  sh();
+});
+function sh(){const el=document.querySelector('.wrap');if(!el)return;const pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+2),src:location.href},'*');}
+if(window.ResizeObserver){ new ResizeObserver(sh).observe(document.querySelector('.wrap')); } else { setInterval(sh,600); }
+window.addEventListener('load',()=>setTimeout(sh,150));
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

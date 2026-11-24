@@ -1,0 +1,497 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 6 · Section 4 · Supply Chain Attacks and Defenses · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 6 · Section 4 of 6</div>
+      <h1 class="nyu-hero__title">Software Supply Chain Attacks and Defenses</h1>
+      <p class="nyu-hero__subtitle">How attackers exploit the trust relationships in software supply chains, and how AI both helps defend against and inadvertently contributes to these attacks.</p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~20 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 5 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Software Supply Chain and Trust Boundaries</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Attack Vectors in Detail</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Defensive Frameworks</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Case Study Mapping and Analysis</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Test Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Identify</strong> the four major software supply chain attack vectors (dependency confusion, typosquatting, maintainer compromise, build system compromise) and map each to its corresponding trust boundary.</span></li>
+          <li><span><strong>Explain</strong> how slopsquatting transforms LLM hallucination from a reliability problem into a supply chain attack vector.</span></li>
+          <li><span><strong>Evaluate</strong> defensive frameworks (SBOM, SLSA, Sigstore, OpenSSF Scorecard) by mapping each to the specific trust boundary it protects.</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>How do attackers exploit the trust relationships in software supply chains, and how can AI both help defend against and inadvertently contribute to these attacks?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The Software Supply Chain and Trust Boundaries</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+
+        <h3 class="nyu-subsection-title">What the Software Supply Chain Is</h3>
+
+        <p>Modern software relies extensively on third-party components: open-source libraries, frameworks, build tools, CI/CD services, and package registries. The software supply chain encompasses every component, tool, process, and human action involved in developing, building, and distributing software, and each is a potential point of attack. When you declare a dependency on a package, you are not just importing code; you are extending trust to every person and system involved in producing, publishing, and distributing that package.</p>
+
+        <p>A critical concept is the <button type="button" class="nyu-define" data-term="transitive-dependency">transitive dependency</button>. Your project might directly declare 10 dependencies, but those 10 packages each have their own dependencies, which have their own dependencies, and so on. The total dependency tree can easily reach hundreds of packages, each representing a trust relationship you may not even be aware of. A vulnerability or compromise in any transitive dependency affects your application, even though you never explicitly chose to depend on it.</p>
+
+        <h3 class="nyu-subsection-title">Trust Boundaries</h3>
+
+        <p>To understand supply chain attacks systematically, think in terms of trust boundaries: points where trust is extended from one entity or system to another with specific assumptions about the other party's behavior. When any of these assumptions is violated, the security impact propagates through all downstream trust relationships.</p>
+
+        <div class="nyu-table-wrap">
+          <table class="nyu-table">
+            <thead>
+              <tr>
+                <th>Trust Boundary</th>
+                <th>Trust Extended</th>
+                <th>Assumption</th>
+                <th>What Happens When Violated</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Developer &rarr; Registry</td>
+                <td>"The package named X is what it claims to be"</td>
+                <td>Registry enforces identity; packages are what they say</td>
+                <td>Typosquatting, namespace confusion</td>
+              </tr>
+              <tr>
+                <td>Developer &rarr; Maintainer</td>
+                <td>"The maintainer of package X acts in good faith"</td>
+                <td>Maintainer is who they claim to be, has not been compromised</td>
+                <td>Maintainer takeover, social engineering</td>
+              </tr>
+              <tr>
+                <td>Build System &rarr; Source</td>
+                <td>"The source code has not been tampered with"</td>
+                <td>Source repository is not compromised</td>
+                <td>CI/CD script modification, source tampering</td>
+              </tr>
+              <tr>
+                <td>Consumer &rarr; Vendor</td>
+                <td>"The vendor's software is safe to install"</td>
+                <td>Vendor's own supply chain is secure</td>
+                <td>Cascading supply chain compromise</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Attackers target whichever boundary is weakest. The most comprehensive study of supply chain attacks to date catalogued 107 attack vectors from 94 real-world incidents with 33 corresponding safeguards. The full taxonomy is in the references, but the four attack vectors below cover the patterns you are most likely to encounter.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/04_trust_boundary_xray/trust_boundary_xray.html" title="Interactive demo: Trust Boundary X-Ray" loading="lazy" style="height:200px;"></iframe>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Attack Vectors in Detail</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-tabs">
+          <div class="nyu-tabs__tablist" role="tablist">
+            <button class="nyu-tabs__tab" role="tab" id="tab-atk-1" aria-controls="panel-atk-1" aria-selected="true">Dependency Confusion</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-atk-2" aria-controls="panel-atk-2">Typosquatting</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-atk-3" aria-controls="panel-atk-3">Maintainer Compromise</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-atk-4" aria-controls="panel-atk-4">Build System Compromise</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-atk-5" aria-controls="panel-atk-5">Slopsquatting</button>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-atk-1" aria-labelledby="tab-atk-1">
+            <p>Package managers resolve dependencies by looking up package names in registries. Organizations that use both internal (private) registries and public registries face a design-level vulnerability: if an attacker publishes a package on the public registry with the same name as an internal package but at a higher version number, the package manager may resolve to the public (malicious) version.</p>
+            <p>In February 2021, Alex Birsan demonstrated this against Microsoft, Apple, and over 30 other companies: <a href="https://medium.com/@alex.birsan/dependency-confusion-4a5d60fec610" target="_blank" rel="noopener">"Dependency Confusion: How I Hacked Into Apple, Microsoft and Dozens of Other Companies"</a>. He identified internal package names from publicly available configuration files, then published packages under those names on <button type="button" class="nyu-define" data-term="npm">npm</button>, <button type="button" class="nyu-define" data-term="pypi">PyPI</button>, and <button type="button" class="nyu-define" data-term="rubygems">RubyGems</button> at artificially high version numbers (e.g., 9.9.9). Build systems automatically pulled his public packages instead of the internal ones, achieving code execution inside corporate environments.</p>
+            <p>This is not a code vulnerability; it is a design-level vulnerability in how namespace resolution works. The fix requires architectural changes: namespace scoping, registry priority configuration, and dependency pinning.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-atk-2" aria-labelledby="tab-atk-2">
+            <p>Attackers register packages with names that are common misspellings of popular packages. A developer who types <code>reqeusts</code> instead of <code>requests</code>, or <code>python-nmap</code> when the legitimate package is <code>python3-nmap</code>, installs a malicious package that may include the legitimate functionality (to avoid detection) plus malicious code running at install time.</p>
+            <p>The attack surface is vast: dozens of plausible typos exist for every popular package, and automated detection is imperfect since new packages legitimately have similar names.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-atk-3" aria-labelledby="tab-atk-3">
+            <p>An attacker gains control of a legitimate, widely used package through social engineering. In the <strong>event-stream</strong> npm compromise (2018), the original maintainer (~2 million weekly downloads) transferred ownership to "<button type="button" class="nyu-define" data-term="right9ctrl">Right9ctrl</button>," a contributor who had spent weeks making small, legitimate contributions to build trust. After gaining publish access, Right9ctrl added a dependency (<code>flatmap-stream</code>) containing obfuscated malicious code targeting the <button type="button" class="nyu-define" data-term="copay">Copay</button> cryptocurrency wallet.</p>
+            <p>The attack exploited a structural problem: open-source maintainers often hand off ownership to whoever offers help, without identity verification or access controls. The malicious dependency went unnoticed for about two and a half months (September to late November 2018), and it was found largely by chance: a developer investigating an unrelated deprecation warning traced it to flatmap-stream.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-atk-4" aria-labelledby="tab-atk-4">
+            <p>Rather than compromising source code directly, attackers target the build infrastructure (CI/CD pipelines, build servers, or helper tools) to inject malicious code into artifacts during the build process.</p>
+            <p><strong>The Codecov breach (2021):</strong> Attackers modified Codecov's CI helper script (via leaked Docker credentials) to exfiltrate CI environment variables (AWS keys, deployment tokens, API secrets) from any organization running the compromised script. The modification ran undetected for approximately two months, exposing any of Codecov's customers (the company reported more than 29,000) whose pipelines ran the script, until a customer compared the script's hash with the one Codecov published and found a mismatch.</p>
+            <p><strong>The 3CX compromise (2023):</strong> 3CX, a business communication platform with over 600,000 enterprise customers, distributed trojanized versions of its desktop client through its official update mechanism. Investigation by Mandiant and CrowdStrike revealed a cascading supply chain attack: a 3CX employee had installed a compromised version of Trading Technologies' X_TRADER software, which gave attackers (attributed to the North Korean Lazarus Group) access to 3CX's build environment. This is the first publicly documented case of one supply chain attack being used as the vector for a second supply chain attack.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-atk-5" aria-labelledby="tab-atk-5">
+            <p>You explored <button type="button" class="nyu-define" data-term="slopsquatting">slopsquatting</button> as a hallucination risk back in Module 3. Here, the focus shifts to why it belongs alongside the other attack vectors in this section.</p>
+            <p>What makes slopsquatting dangerous from a supply-chain perspective is the predictability of hallucinated package names. When the same prompt is re-run ten times, 43% of fabricated names appear in every single run, and 58% appear more than once. That consistency gives attackers a reliable playbook. Harvest the most commonly hallucinated names, register them on public registries with malicious payloads, and let AI coding assistants do the distribution for free.</p>
+            <p>Compare this to the other vectors in these tabs. Typosquatting relies on a developer making a typo. Dependency confusion requires knowledge of internal package names. Slopsquatting requires neither. The LLM itself generates the exact package name the attacker has weaponized, and the developer has no obvious reason to question a recommendation from their coding tool. The trust boundary violated is <em>Developer &rarr; AI assistant &rarr; Registry</em>, a relationship that did not exist before AI-assisted development became widespread.</p>
+          </div>
+        </div>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/04_slopsquatting_harvest/slopsquatting_harvest.html" title="Interactive demo: Slopsquatting Hallucination Harvest" loading="lazy" style="height:200px;"></iframe>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Defensive Frameworks</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="scope-title">
+          <h3 class="nyu-callout__title" id="scope-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </span>
+            How much of supply chain security this section covers
+          </h3>
+          <p>Software supply chain security is a field, not a section. What follows is the working vocabulary we need to reason about dependency risk: the trust boundaries, the main attack vectors, and the frameworks that exist to address them. It is deliberately a survey.</p>
+          <p>What it leaves out is most of the practice: provenance and attestation in depth, reproducible builds, artifact signing and key management, SBOM generation and consumption at scale, vendor risk assessment, and the operational work of keeping any of it current. Each of those is a subject in its own right. NYU offers a dedicated software supply chain security course, and it is the natural next stop for anyone this section leaves curious. What we want from these pages is the vocabulary, so that when we meet that material it reads as familiar ground rather than a new field.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">How the Defensive Frameworks Fit Together</h3>
+
+        <p>The defensive frameworks are complementary; each addresses a different trust boundary. Here is how they map to attack vectors and what each does operationally.</p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3 class="nyu-card__title">OpenSSF Scorecard</h3>
+            <p>Automated health check for open-source projects from the <button type="button" class="nyu-define" data-term="openssf">Open Source Security Foundation</button>. Scores 18+ supply chain practices on a 0-10 scale.</p>
+            <ul>
+              <li><strong>Checks:</strong> branch protection, CI tests, code review, signed releases, dependency update behavior</li>
+              <li><strong>Use:</strong> <code>scorecard --repo=github.com/owner/project</code> before adopting a dependency</li>
+              <li><strong>Boundary:</strong> Developer &rarr; Registry</li>
+            </ul>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--cyan" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            </div>
+            <h3 class="nyu-card__title"><button type="button" class="nyu-define" data-term="sigstore">Sigstore</button></h3>
+            <p>Keyless artifact signing that makes publisher identity verifiable without managing long-lived keys.</p>
+            <ul>
+              <li><strong>How:</strong> developer authenticates via GitHub/Google, receives a short-lived certificate from <button type="button" class="nyu-define" data-term="fulcio">Fulcio</button>, signs the artifact, and the event is logged in <button type="button" class="nyu-define" data-term="rekor">Rekor</button></li>
+              <li><strong>Detects:</strong> unknown identities publishing releases (as Right9ctrl did with event-stream)</li>
+              <li><strong>Boundary:</strong> Developer &rarr; Maintainer</li>
+            </ul>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3 class="nyu-card__title">SLSA</h3>
+            <p><button type="button" class="nyu-define" data-term="slsa">Supply-chain Levels for Software Artifacts</button>: four levels (L0-L3) of build integrity assurance.</p>
+            <ul>
+              <li><strong>How:</strong> at L2+, the build service generates authenticated provenance recording source commit, build system, and inputs</li>
+              <li><strong>Detects:</strong> build tampering (the Codecov script modification would have failed provenance or shown an unexpected input)</li>
+              <li><strong>Boundary:</strong> Build System &rarr; Source</li>
+            </ul>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <h3 class="nyu-card__title">SBOM</h3>
+            <p>A machine-readable inventory of every component in your software, in <button type="button" class="nyu-define" data-term="sbom">SPDX or CycloneDX format</button>. Does not prevent attacks. Enables the response question: "Are we affected?"</p>
+            <ul>
+              <li><strong>Use:</strong> when a compromised package is identified, query "Do any of our products include component X at version Y?" instantly instead of investigating for days</li>
+              <li><strong>Boundary:</strong> cross-cuts all trust boundaries</li>
+            </ul>
+          </div>
+        </div>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            How They Combine
+          </h3>
+          <p>Scorecard informs adoption decisions (which dependencies to take). Sigstore verifies publisher identity (who released this artifact). SLSA verifies build integrity (how the artifact was produced). SBOM enables incident response (what is affected when something goes wrong). No single framework covers all four trust boundaries.</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/04_defense_control_room/defense_control_room.html" title="Interactive demo: Defense Coverage Control Room" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Common Misconceptions
+          </h3>
+          <ol>
+            <li><strong>"Supply chain attacks only affect open-source software."</strong> The 3CX compromise involved two proprietary software vendors. The Codecov breach affected both open-source and proprietary CI/CD pipelines.</li>
+            <li><strong>"SBOMs solve supply chain security."</strong> SBOMs provide inventory, not integrity guarantees, vulnerability remediation, or completeness assurance. An SBOM is an input to a vulnerability management process, not a substitute for one.</li>
+            <li><strong>"If a package is on the official registry, it must be safe."</strong> Most registries do not perform security review of published packages. Malicious packages regularly appear on npm, PyPI, and other registries. Industry reports have documented hundreds of thousands of new malicious packages published per year, and the trend is accelerating.</li>
+          </ol>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Attack Vector &harr; Defense Matching</h3>
+        <p>Connect each attack vector to the defensive framework best suited to counter it.</p>
+
+        <div class="nyu-match" aria-label="Match attack vectors to defenses">
+          <div class="nyu-match__grid">
+            <div class="nyu-match__col">
+              <h4>Attack Vector</h4>
+              <div class="nyu-match__term" data-match="a" role="button" tabindex="0">Dependency Confusion</div>
+              <div class="nyu-match__term" data-match="b" role="button" tabindex="0">Typosquatting</div>
+              <div class="nyu-match__term" data-match="c" role="button" tabindex="0">Build Pipeline Compromise</div>
+              <div class="nyu-match__term" data-match="d" role="button" tabindex="0">Malicious Maintainer</div>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap">
+              <svg class="nyu-match__svg" aria-hidden="true"></svg>
+            </div>
+            <div class="nyu-match__col">
+              <h4>Primary Defense</h4>
+              <div class="nyu-match__def" data-match="c" role="button" tabindex="0">SLSA provenance &amp; reproducible builds</div>
+              <div class="nyu-match__def" data-match="a" role="button" tabindex="0">Scoped registries &amp; namespace policies</div>
+              <div class="nyu-match__def" data-match="d" role="button" tabindex="0">OpenSSF Scorecard &amp; maintainer verification</div>
+              <div class="nyu-match__def" data-match="b" role="button" tabindex="0">Lockfiles &amp; hash-pinned dependencies</div>
+            </div>
+          </div>
+          <div class="nyu-match__actions">
+            <button class="nyu-btn" data-action="check">Check</button>
+            <button class="nyu-btn nyu-btn--outline" data-action="reveal">Reveal</button>
+            <button class="nyu-btn nyu-btn--outline" data-action="reset">Reset</button>
+          </div>
+          <p class="nyu-match__hint" data-default="Click a term on the left, then click its match on the right. Or drag and drop.">Click a term on the left, then click its match on the right. Or drag and drop.</p>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Case Study Mapping and Analysis</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">Trust Boundary Mapping</h3>
+
+        <div class="nyu-table-wrap">
+          <table class="nyu-table">
+            <thead>
+              <tr>
+                <th style="white-space:normal">Case</th>
+                <th>Year</th>
+                <th>Trust Boundary Violated</th>
+                <th style="white-space:normal">Attack Vector</th>
+                <th style="white-space:normal">How Detection Occurred</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="white-space:normal">event-stream</td>
+                <td>2018</td>
+                <td style="white-space:nowrap">Developer &rarr; Maintainer</td>
+                <td>Maintainer compromise via social engineering</td>
+                <td>Developer chasing an unrelated warning traced it to flatmap-stream (about 2.5&nbsp;months)</td>
+              </tr>
+              <tr>
+                <td style="white-space:normal">Dependency confusion (Birsan)</td>
+                <td>2021</td>
+                <td style="white-space:nowrap">Developer &rarr; Registry</td>
+                <td>Namespace resolution exploitation</td>
+                <td>Researcher's responsible disclosure</td>
+              </tr>
+              <tr>
+                <td style="white-space:normal">Codecov</td>
+                <td>2021</td>
+                <td style="white-space:nowrap">Build&nbsp;System &rarr; Source</td>
+                <td>CI helper script modification</td>
+                <td>Customer verified SHA-256 hash mismatch (2&nbsp;months)</td>
+              </tr>
+              <tr>
+                <td style="white-space:normal">3CX</td>
+                <td>2023</td>
+                <td style="white-space:nowrap">Consumer &rarr; Vendor (cascading)</td>
+                <td>Build system compromise &times;&nbsp;2</td>
+                <td>CrowdStrike threat hunting detected trojanized client</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Detection Timelines
+          </h3>
+          <p>Notice the detection timelines: about two and a half months (event-stream), about two months (Codecov). Supply chain compromises often persist for extended periods because the malicious code arrives through trusted channels. The 3CX case was caught within weeks because endpoint security vendors, CrowdStrike among them, flagged malicious behavior from the signed 3CX desktop app. Detection required active monitoring, not passive trust.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Detection Timeline and Key Lessons</h3>
+        <p>These attacks illustrate an escalating pattern. Click each to trace the detection timeline and key lesson.</p>
+
+        <ol class="nyu-timeline">
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">1</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">event-stream (2018)</h3>
+              <div class="nyu-timeline__detail">Social engineering granted a malicious actor commit access. Targeted cryptocurrency wallet (copay-dash). The malicious dependency persisted for about two and a half months before a developer, investigating an unrelated deprecation warning, traced it to flatmap-stream. <strong>Lesson:</strong> maintainer burnout creates exploitable trust gaps.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">2</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Codecov (2021)</h3>
+              <div class="nyu-timeline__detail">Attackers modified the Bash Uploader script in CI. Ran for about two months against a customer base Codecov put at more than 29,000. Detected after a customer noticed the script's hash did not match the published one. <strong>Lesson:</strong> build pipeline integrity requires cryptographic verification.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">3</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Dependency Confusion (2021)</h3>
+              <div class="nyu-timeline__detail">Birsan demonstrated that registering public packages with names matching internal packages could trick build systems into pulling the malicious public version. Affected major tech companies. <strong>Lesson:</strong> namespace isolation and scoped registries are essential.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">4</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">3CX Supply Chain (2023)</h3>
+              <div class="nyu-timeline__detail">A cascading supply chain attack where one compromised vendor (Trading Technologies) led to compromise of another (3CX). Attributed to a nation-state actor. <strong>Lesson:</strong> supply chain attacks can chain through multiple vendors.</div>
+            </div>
+          </li>
+        </ol>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Trust Boundary Analysis
+          </h3>
+          <p class="nyu-scenario__prompt">You are reviewing the supply chain security posture of a web application with: 5 direct dependencies in <code>requirements.txt</code> pulling approximately 40 transitive dependencies; built using a GitHub Actions CI pipeline; a third-party monitoring service that injects a JavaScript snippet into production pages; no SBOM generated; no dependency signing verified.</p>
+          <p class="nyu-scenario__prompt">Identify three distinct trust boundaries in this setup. For each:
+		<br>
+		(1) Name the trust boundary
+		<br>
+		(2) Name one specific attack vector from this section that could exploit it
+		<br>
+		(3) Name one defensive mechanism (SBOM, SLSA, Sigstore, Scorecard, or a process control) that would reduce the risk.</p>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>Example answer for one boundary:</strong> Trust boundary = "Developer &rarr; Registry" (for the 40 transitive dependencies). Attack vector = dependency confusion or typosquatting. Defensive mechanism = dependency pinning with hash verification, or OpenSSF Scorecard evaluation of direct dependencies before adoption.</p>
+            <p><strong>Other boundaries include:</strong> "Build System &rarr; Source" (GitHub Actions CI pipeline; attack vector: CI/CD script modification as in Codecov; defensive: SLSA provenance generation at L2+); "Consumer &rarr; Vendor" (third-party monitoring service injecting JavaScript; attack vector: vendor compromise as in 3CX; defensive: Subresource Integrity (SRI) hashes on the script tag, vendor security assessment, or SBOM inventory of third-party scripts).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Test Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="quiz-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 1</span></div>
+          <p class="nyu-quiz__prompt" id="quiz-1">Slopsquatting is a supply chain attack that works because:</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Slopsquatting exploits the model's existing hallucination behavior; it does not require access to the model or its training data.">Attackers hack into LLM training servers to modify package recommendations.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Registries do not know which names are hallucinated. Anyone can register packages with these names.">Package registries automatically block hallucinated package names.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">LLMs hallucinate package names predictably (43% repeat every run; 58% repeat at least once), and attackers register malicious packages under those predictable names.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Developers can verify packages, but the attack works because the hallucinated name appears plausible and verification is not always performed.">Developers cannot tell the difference between real and fake packages.</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct. The predictability of LLM hallucinations is what makes this a systematic attack vector rather than random noise." data-incorrect-msg="Slopsquatting exploits the fact that LLMs consistently hallucinate the same package names, allowing attackers to register those names in advance."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="quiz-2">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 2</span></div>
+          <p class="nyu-quiz__prompt" id="quiz-2">The Codecov breach (2021) primarily exploited which trust boundary?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-2">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Codecov's attack targeted the build infrastructure, not the package registry.">Developer &rarr; Registry</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The attack did not involve maintainer compromise. It targeted the CI/CD helper script.">Developer &rarr; Maintainer</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Build System &rarr; Source</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="While Codecov's customers were affected, the primary trust boundary violated was between the build system and the source code of the CI helper script.">Consumer &rarr; Vendor</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct. Codecov's CI helper script was modified, breaking the assumption that the build system's source had not been tampered with." data-incorrect-msg="The Codecov attack targeted the build infrastructure, specifically a CI helper script, not the package registry or maintainer identity."></div>
+        </div>
+      </section>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 5: Synthesis: Judgment, Limitations, and Fine-Tuning Data.</strong> It synthesizes the entire module: what is the right level of trust to place in AI as a security tool, and how does the domain knowledge from this module feed into fine-tuning data for Module 7?</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script>
+  /* Auto-resize iframes to match their content height */
+  window.addEventListener('message', function(e){
+    if(!e.data || e.data.type !== 'iframeHeight') return;
+    var iframes = document.querySelectorAll('.nyu-embed-frame iframe');
+    for(var i = 0; i < iframes.length; i++){
+      try {
+        if(iframes[i].contentWindow === e.source){
+          iframes[i].style.height = (e.data.height + 4) + 'px';
+          break;
+        }
+      } catch(ex){}
+    }
+  });
+  </script>
+</body>
+</html>

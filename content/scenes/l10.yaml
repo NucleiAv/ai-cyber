@@ -1,0 +1,37 @@
+- title: Policy as code between an agent and an API
+  stats: [Request, Rule that decides, Decision]
+  nodes:
+    agent: {label: AI agent, x: 0, y: 1, kind: def}
+    app: {label: App, x: 2, y: 1, kind: box, tag: builds JSON input}
+    opa: {label: OPA, x: 4, y: 1, kind: raised, tag: Rego policy}
+    api: {label: Shop API, x: 6, y: 1, kind: box}
+    log: {label: Decision log, x: 4, y: 3, kind: box}
+  links: [[agent, app], [app, opa], [opa, api], [opa, log]]
+  steps:
+    - title: A guest reads products
+      text: "The input is method GET, path products, role guest. Rule 1 allows it."
+      on: [agent, opa, api]
+      flow: [[agent, app, ink], [app, opa, ink], [opa, api, def]]
+      mark: {api: ok}
+      stats: [GET /products, Rule 1, Allow]
+    - title: An admin places an order
+      text: "Method POST, path orders, role admin. Rule 3 allows it only for admins."
+      on: [opa, api]
+      flow: [[app, opa, ink], [opa, api, def]]
+      mark: {api: ok}
+      stats: [POST /orders, Rule 3, Allow]
+    - title: A fooled agent tries to delete
+      text: "An injection makes the agent send DELETE. Rule 2 denies DELETE on any path, even for an admin."
+      on: [agent, opa]
+      flow: [[agent, app, atk], [app, opa, atk]]
+      mark: {opa: ok, api: ok}
+      stats: [DELETE /products, Rule 2, Deny]
+    - title: Every decision is logged
+      text: OPA records what it decided and why. The model never sees the policy and cannot argue with it.
+      on: [log]
+      flow: [[opa, log, ink]]
+      stats: [DELETE /products, Rule 2, Deny]
+    - title: The limit of exact rules
+      text: Rego checks facts such as methods, roles and amounts. It cannot judge "is this answer biased". For that, add a classifier or a judge that writes a score into the input, and log it.
+      on: [opa]
+      stats: ["-", Needs a judge, "-"]

@@ -1,0 +1,338 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 10 · Section 2 · Evasion Attacks · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+  <style>
+    /* ── Attacker's objective explainer (section 1 accordion) ── */
+    /* Reliable sub/superscripts that don't depend on the UA <sub>/<sup> metrics */
+    .advobj-trigger-title{margin-right:auto;}
+    .advobj-sub{font-size:.62em;line-height:0;vertical-align:-0.35em;font-weight:inherit;}
+    .advobj-sup{font-size:.62em;line-height:0;vertical-align:0.55em;font-weight:inherit;}
+    .advobj-banner{padding:16px 18px;background:#FBFAFD;border:1px solid var(--rule,#E2E2E2);border-radius:10px;margin:0 0 4px;}
+    .advobj-banner__obj{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;}
+    .advobj-banner__label{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--nyu-violet,#57068C);}
+    .advobj-banner__min{font-family:"JetBrains Mono",monospace;font-size:17px;font-weight:600;color:#17181C;}
+    .advobj-banner__st{font-size:12px;color:#5c6270;font-style:italic;}
+    .advobj-banner__chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:14px;}
+    .advobj-chip{display:flex;align-items:center;gap:9px;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.35;color:#17181C;padding:9px 13px;border:1px solid #D9DCE3;border-radius:10px;background:#fff;}
+    .advobj-chip .advobj-dot{flex:none;}
+    .advobj-dot{display:inline-block;width:9px;height:9px;border-radius:50%;}
+    .advobj-dot--evade{background:#1D6FB8;}
+    .advobj-dot--behave{background:#1F8A6D;}
+    .advobj-dot--struct{background:var(--nyu-violet,#57068C);}
+    .advobj-h{font-family:"JetBrains Mono",monospace;font-size:0.75rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5c6270;margin:22px 0 10px;}
+    .advobj-terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:0 0 4px;}
+    .advobj-term{border:1px solid var(--rule,#E2E2E2);border-radius:10px;padding:12px 14px;background:#fff;}
+    .advobj-term__sym{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:700;color:var(--nyu-violet,#57068C);}
+    .advobj-term p{margin:6px 0 0;font-size:.88rem;line-height:1.5;color:#4A4E57;}
+    .advobj-cards{display:grid;gap:12px;margin:0 0 4px;}
+    .advobj-card{border:1px solid var(--rule,#E2E2E2);border-left:4px solid #999;border-radius:10px;padding:12px 16px;background:#fff;}
+    .advobj-card--evade{border-left-color:#1D6FB8;}
+    .advobj-card--behave{border-left-color:#1F8A6D;}
+    .advobj-card--struct{border-left-color:var(--nyu-violet,#57068C);}
+    .advobj-card__head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-bottom:6px;}
+    .advobj-card__code{font-family:"JetBrains Mono",monospace;font-size:12.5px;font-weight:600;color:#17181C;background:#F5F6F8;border:1px solid #E4E7EC;border-radius:6px;padding:2px 8px;}
+    .advobj-card__name{font-size:.82rem;font-weight:700;letter-spacing:.02em;color:#4A4E57;}
+    .advobj-card p{margin:0;font-size:.92rem;line-height:1.55;color:#33363D;}
+    .advobj-summary{background:var(--nyu-violet-50,#F4EEFA);border-left:4px solid var(--nyu-violet,#57068C);border-radius:8px;padding:14px 18px;margin:22px 0 4px;}
+    .advobj-summary p{margin:0;font-size:.95rem;line-height:1.6;}
+    /* L2-norm deep dive */
+    .advobj-norm{border:1px solid var(--rule,#E2E2E2);border-radius:12px;background:#fff;padding:4px 18px 16px;margin:22px 0 4px;}
+    .advobj-formula{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;font-family:"JetBrains Mono",monospace;font-size:20px;color:#17181C;background:#F5F6F8;border:1px solid #E4E7EC;border-radius:10px;padding:18px 14px;margin:6px 0 12px;line-height:1.1;}
+    .advobj-sqrt{display:inline-flex;align-items:flex-start;}
+    .advobj-sqrt__rad{font-size:22px;line-height:1;transform:translateY(-1px);}
+    .advobj-sqrt__body{border-top:2px solid #17181C;padding:3px 7px 0;margin-left:-2px;}
+    .advobj-formula .advobj-eq{color:#5c6270;margin:0 6px;}
+    .advobj-note{font-size:.86rem;color:#5c6270;text-align:center;margin:0 0 4px;}
+    .advobj-why{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:10px;}
+    .advobj-why li{position:relative;padding:12px 16px 12px 16px;border:1px solid var(--rule,#E2E2E2);border-left:4px solid var(--nyu-violet,#57068C);border-radius:10px;background:#fff;font-size:.92rem;line-height:1.55;color:#33363D;}
+    .advobj-why b{color:#17181C;}
+  </style>
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 10 · Section 2 of 5</div>
+      <h1 class="nyu-hero__title">Evasion Attacks: Fooling the Model at Inference Time</h1>
+      <p class="nyu-hero__subtitle">How an attacker crafts an input a correctly trained model misclassifies, often without ever seeing inside the model.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~22 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 1 knowledge check</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Optimization Behind an Adversarial Example</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Why Model Access Is Often Unnecessary</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Evading a Malware Classifier</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Reason It Through</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Analyze</strong> an evasion attack against an AI-based detector, stating the attacker's optimization goal and the functionality-preserving constraint.</span></li>
+          <li><span><strong>Explain</strong> how black-box evasion works through transferability, and what evasion does to a detector's error rates.</span></li>
+        </ul>
+      </section>
+
+      <!-- ============ SECTION 1 ============ -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The Optimization Behind an Adversarial Example</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>In the previous section, the attack targeted the training data before the model was ever trained. Evasion works differently: it takes the trained model as a given and instead looks for an input the model will misclassify. Say a malware classifier correctly flags a file. An <button type="button" class="nyu-define" data-term="evasion-attack">evasion attack</button> asks: what is the smallest change to this file that makes the classifier call it benign, while the file stays fully functional as malware? The model never changes. Only the input does.</p>
+
+        <p>The result of that search is called an <button type="button" class="nyu-define" data-term="adversarial-example">adversarial example</button>. To build one, the attacker looks for the smallest <button type="button" class="nyu-define" data-term="perturbation">perturbation</button> that pushes an input across the model's decision boundary, while the input still works the way it originally worked. In plain terms: change the input as little as possible, in the direction that most reduces the model's confidence in the correct label, without breaking whatever the input needs to keep doing.</p>
+
+        <p>When the attacker can see the model's internals, they can compute exactly which direction reduces the correct-label confidence fastest and adjust the input accordingly. This is the white-box case. The perturbation is often imperceptible to a human, maybe a few pixel changes too small to notice, or a handful of altered bytes in a file. To us the input looks the same. To the model it belongs to a different class.</p>
+
+        <p>This is where cybersecurity examples are different from image examples. Perturbing a photo only has to keep the photo recognizable. Perturbing malware has to keep the malware functional, a much tighter constraint. An attacker cannot scramble arbitrary bytes in an executable, because most changes would corrupt the program. Instead, the perturbation has to stay in regions that do not affect execution, such as padding or unused code caves, where bytes can be changed freely. After the perturbation, the file still runs, still does its malicious work, but now a byte-based classifier calls it benign.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/2_evasion_3d/evasion_3d.html" title="Animated visualization: a file's byte segments are scanned and flagged malicious, perturbation bytes land in the non-executing padding region only, and the classifier verdict flips to benign while the malware remains functional" loading="lazy" style="height:840px;"></iframe>
+        </div>
+
+        <p>The animation makes the search look like one smooth slide across the boundary, but do not let that fool you. Working out which features to modify, in which direction, and by how much is a serious optimization problem in its own right, and much of the craft of evasion lives inside it. The entire task can be written as a single compact objective with three constraints. Expand the panel below to unpack that objective piece by piece.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+            <span class="advobj-trigger-title">Unpack the attacker&rsquo;s objective: minimize &Vert;&delta;&Vert;<span class="advobj-sub">2</span></span>
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>What follows is a recipe an attacker may work from when they tweak a malicious file so a detector waves it through while the file keeps doing everything it did before. Written as one line of math, the whole attack looks like this:</p>
+
+            <div class="advobj-banner" role="img" aria-label="Attacker's objective: minimize the L2 norm of delta, subject to classifier of x plus delta equals benign, behavior of x plus delta equals behavior of x, and delta touches editable regions only">
+              <div class="advobj-banner__obj">
+                <span class="advobj-banner__label">Attacker&rsquo;s objective</span>
+                <span class="advobj-banner__min">minimize &Vert;&delta;&Vert;<span class="advobj-sub">2</span></span>
+                <span class="advobj-banner__st">subject to</span>
+              </div>
+              <div class="advobj-banner__chips">
+                <span class="advobj-chip"><span class="advobj-dot advobj-dot--evade"></span>classifier(x + &delta;) = benign</span>
+                <span class="advobj-chip"><span class="advobj-dot advobj-dot--behave"></span>behavior(x + &delta;) = behavior(x)</span>
+                <span class="advobj-chip"><span class="advobj-dot advobj-dot--struct"></span>&delta; touches editable regions only</span>
+              </div>
+            </div>
+
+            <p class="advobj-h">The setup</p>
+            <div class="advobj-terms">
+              <div class="advobj-term">
+                <span class="advobj-term__sym">x</span>
+                <p>The original, malicious file or data, exactly as the attacker starts with it.</p>
+              </div>
+              <div class="advobj-term">
+                <span class="advobj-term__sym">&delta;&nbsp;(delta)</span>
+                <p>The modification, the &ldquo;noise&rdquo; the attacker adds to the file.</p>
+              </div>
+              <div class="advobj-term">
+                <span class="advobj-term__sym">x + &delta;</span>
+                <p>The newly modified, adversarial file the detector will actually see.</p>
+              </div>
+            </div>
+
+            <p class="advobj-h">The core optimization goal</p>
+            <p><span class="advobj-card__code">minimize &Vert;&delta;&Vert;<span class="advobj-sub">2</span></span>&ensp;The attacker wants to minimize the L<span class="advobj-sub">2</span> norm (the <button type="button" class="nyu-define" data-term="euclidean-distance">Euclidean distance</button>) of the modification. In plain terms: keep the change as small, subtle, and efficient as possible. Massive, messy changes are more likely to break the file or trip other security alarms along the way.</p>
+
+            <p class="advobj-h">A closer look: what &Vert;&delta;&Vert;<span class="advobj-sub">2</span> actually means</p>
+            <p>That one symbol carries the whole idea of &ldquo;how big is the change,&rdquo; so it is worth unpacking. The notation &Vert;&delta;&Vert;<span class="advobj-sub">2</span> is the <strong>L<span class="advobj-sub">2</span> norm</strong>, also called the <strong>Euclidean norm</strong> or Euclidean length. It measures the total magnitude, the straight-line length, of a vector.</p>
+
+            <div class="advobj-norm">
+              <p class="advobj-h">The mathematical formula</p>
+              <p>If &delta; is a vector of individual changes, &delta; = [&delta;<span class="advobj-sub">1</span>, &delta;<span class="advobj-sub">2</span>, &hellip;, &delta;<span class="advobj-sub">n</span>], the L<span class="advobj-sub">2</span> norm squares each component, adds them up, and takes the square root:</p>
+              <div class="advobj-formula" role="img" aria-label="The L2 norm of delta equals the square root of delta-1 squared plus delta-2 squared plus dot dot dot plus delta-n squared">
+                <span>&Vert;&delta;&Vert;<span class="advobj-sub">2</span></span>
+                <span class="advobj-eq">=</span>
+                <span class="advobj-sqrt"><span class="advobj-sqrt__rad">&radic;</span><span class="advobj-sqrt__body">&delta;<span class="advobj-sub">1</span><span class="advobj-sup">2</span> + &delta;<span class="advobj-sub">2</span><span class="advobj-sup">2</span> + &hellip; + &delta;<span class="advobj-sub">n</span><span class="advobj-sup">2</span></span></span>
+              </div>
+              <p class="advobj-note">This is the Pythagorean theorem (a<span class="advobj-sup">2</span> + b<span class="advobj-sup">2</span> = c<span class="advobj-sup">2</span>), scaled up to work in any number of dimensions.</p>
+
+              <p class="advobj-h">Geometric interpretation</p>
+              <p>Picture &delta; as an arrow pointing from the original file <em>x</em> to the modified file <em>x</em>&nbsp;+&nbsp;&delta;. The L<span class="advobj-sub">2</span> norm is the exact straight-line distance between those two points. A small &Vert;&delta;&Vert;<span class="advobj-sub">2</span> means the modified file sits very close to where the original file lived.</p>
+
+              <p class="advobj-h">Why attackers choose the L<span class="advobj-sub">2</span> norm</p>
+              <ul class="advobj-why">
+                <li><b>Spreading out the changes.</b> Because it squares each component before summing, the L<span class="advobj-sub">2</span> norm heavily penalizes any single large change. Minimizing it pushes the algorithm toward many tiny, near-imperceptible tweaks spread across the file rather than one or two obvious edits.</li>
+                <li><b>Blending into the crowd.</b> Keeping the Euclidean distance minimal leaves the altered file statistically almost identical to the original, which makes the modification very hard for standard anomaly-detection systems to spot.</li>
+              </ul>
+            </div>
+
+            <p class="advobj-h">The constraints: the rules of the attack</p>
+            <div class="advobj-cards">
+              <div class="advobj-card advobj-card--evade">
+                <div class="advobj-card__head"><span class="advobj-dot advobj-dot--evade"></span><span class="advobj-card__code">classifier(x + &delta;) = benign</span><span class="advobj-card__name">The evasion goal</span></div>
+                <p>The primary objective. When the security model scans the modified file, it must call it safe, &ldquo;benign,&rdquo; instead of malicious. Everything else in the recipe exists in service of this line.</p>
+              </div>
+              <div class="advobj-card advobj-card--behave">
+                <div class="advobj-card__head"><span class="advobj-dot advobj-dot--behave"></span><span class="advobj-card__code">behavior(x + &delta;) = behavior(x)</span><span class="advobj-card__name">Functionality preservation</span></div>
+                <p>The modified file must behave exactly like the original. If the malware encrypted files or stole passwords before, it must still do exactly that afterward. A modification that breaks the payload makes the attack a failure, no matter what the classifier says.</p>
+              </div>
+              <div class="advobj-card advobj-card--struct">
+                <div class="advobj-card__head"><span class="advobj-dot advobj-dot--struct"></span><span class="advobj-card__code">&delta; touches editable regions only</span><span class="advobj-card__name">Structural constraints</span></div>
+                <p>In real file formats, such as Windows executables or Linux binaries, you cannot inject random bytes anywhere without crashing the program. The attacker confines &delta; to editable regions, unused header space, padding, or slack space, so the file stays structurally valid and runnable.</p>
+              </div>
+            </div>
+
+            <div class="advobj-summary">
+              <p><strong>Putting it together:</strong> find the smallest, most precise modification &delta; that flips the security model&rsquo;s verdict from malicious to benign, without altering what the malware actually does and without breaking its file structure. Every evasion technique in this section, from padding edits to surrogate-model transfer, is a different way of solving this one optimization problem.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 2 ============ -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Why Model Access Is Often Unnecessary</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>A fair question at this point: how useful is any of this if the attacker cannot see inside the target model? In practice, attackers rarely have the target's weights. But they often do not need them, because of a property called <button type="button" class="nyu-define" data-term="transferability">transferability</button>. An adversarial example crafted against one model frequently fools another model trained for the same task, even when the two models use different architectures and different training data.</p>
+
+        <p>That said, if black-box attacks work well enough, why do security researchers (and nation-state attackers) treat obtaining the model's weights as a priority target? Because having the weights changes the problem from trial and error to exact math. A black-box attacker is guessing which changes might shift the classifier's output, submitting inputs and watching what comes back. A white-box attacker can compute the gradient directly: they know precisely which bytes to change, in which direction, and by how much, to cross the decision boundary with the smallest possible perturbation. The result is more reliable evasion, achieved faster, with fewer modifications to the file. That is why model theft and weight exfiltration are treated as serious security events, and why the distinction between white-box and black-box access shapes how much damage an attacker can do.</p>
+
+        <div class="nyu-tabs">
+          <ul class="nyu-tabs__tablist">
+            <li><button class="nyu-tabs__tab">White-box</button></li>
+            <li><button class="nyu-tabs__tab">Black-box</button></li>
+          </ul>
+          <div class="nyu-tabs__panel">
+            <p>The attacker has the target model's internals. They compute the direction that most reduces the model's confidence in the correct label and adjust the input accordingly, arriving at a minimal, precise perturbation. Most published evasion results are white-box because full access makes the math exact.</p>
+          </div>
+          <div class="nyu-tabs__panel">
+            <p>The attacker has no access to the target's weights or architecture. Instead, they train or obtain a <button type="button" class="nyu-define" data-term="surrogate-model">stand-in model</button>, craft the perturbation against that surrogate, and submit the result to the real target. Because adversarial examples transfer between models often enough to be useful, black-box evasion is practical. This is what makes evasion an operational concern rather than just a lab demonstration.</p>
+          </div>
+        </div>
+
+        <p>Below, we run a real language model as a phishing detector. Start from a message it flags, then reword it while keeping the same intent. See if you can get the detector to let the message through. Notice that none of them are perfect!</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/2_live_evasion/live_evasion.html" title="Interactive: a real in-browser language model classifies messages as phishing or benign; reword a flagged message until the detector is evaded" loading="lazy" style="height:640px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">Why this matters for a security team</h3>
+        <p>Every detector has an <button type="button" class="nyu-define" data-term="operating-point">operating point</button>, a threshold chosen to balance false positives (<button type="button" class="nyu-define" data-term="precision">precision</button>) against false negatives (<button type="button" class="nyu-define" data-term="recall">recall</button>). Evasion gives an attacker the ability to produce <button type="button" class="nyu-define" data-term="false-negative">false negatives</button> on demand. The detector is not broken and its threshold is not wrong. The attacker is just producing inputs that are specifically designed to fall on the safe side of the line. This is why a team that trusts a detector's benchmark score without testing how it behaves under adversarial inputs is measuring the wrong thing: the benchmark reports accuracy on ordinary inputs, but evasion uses inputs the benchmark never contained.</p>
+      </section>
+
+      <!-- ============ SECTION 3 ============ -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Evading a Malware Classifier</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Consider a classifier that reads a file as a sequence of raw bytes and predicts malicious or benign. It performs well on a standard test set. Now suppose an attacker has a file the classifier correctly flags as malicious, and the attacker wants to deliver that file without tripping the detector. Think about what the attacker can and cannot do.</p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>They cannot retrain or alter the classifier.</strong> It is deployed and out of reach. That rules out poisoning and forces an inference-time approach.</li>
+          <li><strong>They cannot rewrite the malicious logic.</strong> The file has to keep working. That is the functionality-preserving constraint, tighter than the constraint on an image attack.</li>
+          <li><strong>They confine the perturbation to regions that do not affect execution.</strong> Bytes are appended or edited in areas the program never runs, chosen to push the classifier's score below its malicious threshold. Because the attacker lacks the model's internals, they craft the perturbation against a surrogate and rely on transferability to get it to work on the real target.</li>
+        </ul>
+
+        <p>The result, in detector terms: a file that is genuinely malicious and genuinely functional now gets classified as benign, a false negative. <button type="button" class="nyu-define" data-term="precision">Precision</button> on the ordinary test set is unchanged, which is exactly why the benchmark gave no warning.</p>
+
+        <p>In the interactive below, we look at this constraint one more time. Pick a region of the file, inject bytes, and try to push the classifier's score under its threshold without breaking the file. You will find that only certain regions let you do both.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/2_byte_map/byte_map.html" title="Interactive: inject bytes into different regions of an executable to drop a malware classifier's score while keeping the file functional" loading="lazy" style="height:660px;"></iframe>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="limit-title">
+          <h3 class="nyu-callout__title" id="limit-title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+            Lab results and production are different claims
+          </h3>
+          <p>Most published evasion results are white-box attacks on benchmark datasets under controlled conditions. Evading a production detector in a black-box setting, while keeping a real payload functional, is harder and less certain than a benchmark demonstration suggests. The ongoing back and forth between attackers and defenders is real, and so is the gap between laboratory results and production outcomes.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Why evasion is hard to shut down</h3>
+        <p>One defense is to train a model on adversarial examples so it learns to resist them, a technique called <button type="button" class="nyu-define" data-term="adversarial-training">adversarial training</button>. It helps, but the gains tend to be narrow: a model hardened against one kind of perturbation often remains vulnerable to a different kind, and robustness measured in a lab does not always hold up against an attacker who can adapt. Whether adversarial-robustness research has meaningfully improved real-world model security is still an open question. For a security team, the safer assumption is that a determined attacker will eventually find an evasive input, which means evasion resistance is one layer of defense, not a guarantee by itself. That reasoning leads to the same conclusion as the operating-point discussion above: measure a detector against adversarial inputs, not just clean ones, and do not treat a benchmark score as the final word on how it will perform.</p>
+
+        <h3 class="nyu-subsection-title">Two things folks often trip up on</h3>
+        <p>The first is assuming that an attacker needs the model's weights to build an adversarial example. However, transferability removes that requirement in many cases! The second is confusing evasion with <button type="button" class="nyu-define" data-term="jailbreaking">jailbreaking</button>. Jailbreaking bypasses a model's safety alignment to make it produce prohibited content. Evasion makes a classifier assign the wrong label to an input. They target different things and use different mechanisms.</p>
+      </section>
+
+      <!-- ============ SECTION 4 ============ -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Reason It Through</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            Reasoning task
+          </h3>
+          <p class="nyu-scenario__prompt">Given a description of an AI-based malware detector, answer four questions in your own words. What is the attacker's optimization goal, stated plainly? What constraint makes evading a malware detector harder than evading an image classifier? The attacker has no access to the model's internals, so how could they still craft an evasive input, and what property makes that possible? Using precision and recall language, describe what a successful evasion does to the detector at its chosen operating point.</p>
+          <button class="nyu-scenario__btn">Show reasoning approach</button>
+          <div class="nyu-scenario__answer">
+            <ul>
+              <li><strong>Goal:</strong> the smallest change to the input that flips the model's verdict.</li>
+              <li><strong>Constraint:</strong> the file must stay functional, so the perturbation is limited to non-executing regions. An image only has to stay recognizable.</li>
+              <li><strong>No internals:</strong> craft against a surrogate model and rely on transferability to carry the perturbation to the target.</li>
+              <li><strong>Effect:</strong> a malicious file becomes a false negative at the deployed threshold; precision on ordinary inputs is unchanged, so the benchmark shows nothing.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="quiz-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-1-prompt">An attacker wants to slip a file past a deployed malware classifier but has no access to its weights or architecture. Which property best explains how they can still build an input that evades it?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Transferability</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Hallucination describes a generative model producing false content. It is not the mechanism behind evading a classifier.">Hallucination</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Context-window overflow is a limit on how much text a language model can process at once, unrelated to crafting an evasive input for a classifier.">Context-window overflow</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Label flipping is a training-time poisoning technique. Evasion happens at inference time against a finished model.">Label flipping</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Adversarial examples crafted against a surrogate model frequently transfer to a different target, so the attacker can evade a black-box detector without seeing inside it."
+               data-incorrect-msg="The attacker has no model access, so the answer must explain how an example built elsewhere still works on the target. That is transferability."></div>
+        </div>
+      </section>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 3: The ML Supply Chain: Models, Weights, and Plugins as Attack Surface.</strong> Poisoning and evasion both assume the model itself is genuine and only the data or the input is hostile. This section questions that assumption: what if the model itself, or the file its weights arrived in, was hostile from the start?</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

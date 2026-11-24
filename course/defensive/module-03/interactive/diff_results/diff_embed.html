@@ -1,0 +1,431 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Same Meaning, Different Result</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f6f6f8;
+      --card: #ffffff;
+      --text: #15161a;
+      --muted: #6A6D77;
+      --line: #e7e8ee;
+      --soft: #f2f3f7;
+      --accent: #57068c;
+      --shadow: 0 10px 30px rgba(18, 22, 33, 0.06);
+      --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background: var(--bg);
+      padding: 14px 18px;
+    }
+
+    main {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+    }
+
+    .input {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+
+    .logline {
+      font-family: var(--mono);
+      font-size: clamp(0.82rem, 1.6vw, 0.92rem);
+      line-height: 1.45;
+      padding: 10px 13px;
+      border-radius: 10px;
+      background: #111216;
+      color: #f7f7fa;
+      overflow-wrap: anywhere;
+    }
+
+    .lanes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .lane {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lane::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      opacity: 0;
+    }
+
+    .lane.running::before {
+      animation: scan 1s ease-in-out infinite;
+    }
+
+    @keyframes scan {
+      0% { transform: scaleX(0); opacity: 0; }
+      25% { opacity: 1; }
+      100% { transform: scaleX(1); opacity: 1; }
+    }
+
+    .lane-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .variant {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+
+    .change {
+      font-size: 0.9rem;
+      color: var(--muted);
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+
+    .prompt {
+      display: grid;
+      gap: 5px;
+    }
+
+    .row {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.35;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+    }
+
+    .result {
+      margin-top: auto;
+      padding-top: 10px;
+    }
+
+    .score {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.09em;
+      line-height: 0.9;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .score span {
+      color: var(--muted);
+      font-size: 0.36em;
+      margin-left: 4px;
+      letter-spacing: -0.03em;
+    }
+
+    .bar {
+      margin-top: 8px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+
+    .fill {
+      width: 0;
+      height: 100%;
+      background: var(--accent);
+      border-radius: inherit;
+      transition: width 800ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    .mini-note {
+      margin-top: 6px;
+      min-height: 16px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 140ms ease, transform 140ms ease, border-color 140ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #d9dbe5;
+      background: #fcfcfe;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    .run {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .run:hover {
+      background: #4d067d;
+      border-color: #4d067d;
+    }
+
+    .takeaway {
+      margin-top: 8px;
+      text-align: center;
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 300ms ease;
+    }
+
+    .takeaway.show {
+      opacity: 1;
+    }
+
+    .takeaway strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 10px; }
+      .lanes { grid-template-columns: 1fr; }
+      .lane { min-height: auto; }
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 8px; }
+      .input, .lane { padding: 10px; border-radius: 12px; }
+      .lane-top { margin-bottom: 8px; }
+      .change { font-size: 0.84rem; }
+    }
+  
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body>
+  <main>
+    <section class="input" aria-label="Shared input">
+      <div class="logline">Failed password for invalid user admin from 203.0.113.42 port 55122 ssh2</div>
+    </section>
+
+    <section class="lanes" aria-label="Prompt variants">
+      <article class="lane" id="v1">
+        <div class="lane-top">
+          <div class="variant">V1</div>
+          <div class="change">order A</div>
+        </div>
+        <div class="prompt" aria-label="Variant one prompt shape">
+          <div class="row">benign → suspicious → malicious</div>
+          <div class="row">Line → Label</div>
+          <div class="row">classify input</div>
+        </div>
+        <div class="result">
+          <div class="score"><output id="score-v1">—</output><span>/10</span></div>
+          <div class="bar"><div class="fill" id="fill-v1"></div></div>
+          <div class="mini-note" id="note-v1"></div>
+        </div>
+      </article>
+
+      <article class="lane" id="v2">
+        <div class="lane-top">
+          <div class="variant">V2</div>
+          <div class="change">order B</div>
+        </div>
+        <div class="prompt" aria-label="Variant two prompt shape">
+          <div class="row">malicious → suspicious → benign</div>
+          <div class="row">Line → Label</div>
+          <div class="row">classify input</div>
+        </div>
+        <div class="result">
+          <div class="score"><output id="score-v2">—</output><span>/10</span></div>
+          <div class="bar"><div class="fill" id="fill-v2"></div></div>
+          <div class="mini-note" id="note-v2"></div>
+        </div>
+      </article>
+
+      <article class="lane" id="v3">
+        <div class="lane-top">
+          <div class="variant">V3</div>
+          <div class="change">format only</div>
+        </div>
+        <div class="prompt" aria-label="Variant three prompt shape">
+          <div class="row">benign / suspicious / malicious</div>
+          <div class="row">Line↵ Label:</div>
+          <div class="row">classify input</div>
+        </div>
+        <div class="result">
+          <div class="score"><output id="score-v3">—</output><span>/10</span></div>
+          <div class="bar"><div class="fill" id="fill-v3"></div></div>
+          <div class="mini-note" id="note-v3"></div>
+        </div>
+      </article>
+    </section>
+
+    <div class="actions">
+      <button class="run" id="runBtn">Run</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+
+    <div class="takeaway" id="takeaway"><strong>Same meaning.</strong> Different result.</div>
+  </main>
+
+  <script>
+    const results = [
+      { id: 'v1', score: 7, note: 'order A' },
+      { id: 'v2', score: 5, note: 'order B' },
+      { id: 'v3', score: 8, note: 'format change' }
+    ];
+
+    const runBtn = document.getElementById('runBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const takeaway = document.getElementById('takeaway');
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function reset() {
+      results.forEach(({ id }) => {
+        document.getElementById(id).classList.remove('running');
+        document.getElementById(`score-${id}`).textContent = '—';
+        document.getElementById(`fill-${id}`).style.width = '0%';
+        document.getElementById(`note-${id}`).textContent = '';
+      });
+      takeaway.classList.remove('show');
+    }
+
+    async function run() {
+      runBtn.disabled = true;
+      reset();
+
+      for (const { id, score, note } of results) {
+        const lane = document.getElementById(id);
+        lane.classList.add('running');
+        await sleep(550);
+        document.getElementById(`score-${id}`).textContent = score;
+        document.getElementById(`fill-${id}`).style.width = `${score * 10}%`;
+        document.getElementById(`note-${id}`).textContent = note;
+        lane.classList.remove('running');
+        await sleep(180);
+      }
+
+      takeaway.classList.add('show');
+      runBtn.disabled = false;
+    }
+
+    runBtn.addEventListener('click', run);
+    resetBtn.addEventListener('click', reset);
+
+    /* Report actual height to parent so the iframe can resize without a scrollbar. */
+    function reportHeight() {
+      var h = document.documentElement.scrollHeight;
+      window.parent.postMessage({ kind: 'nyu-embed-height', height: h }, '*');
+    }
+    window.addEventListener('load', reportHeight);
+    new ResizeObserver(reportHeight).observe(document.body);
+  </script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

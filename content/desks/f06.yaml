@@ -1,0 +1,27 @@
+title: Configure an autonomous tester safely
+lede: Decide which ARTEX brakes stop each risk, and read its findings like an analyst.
+blurb: Match agent risks to ARTEX's brakes and judge a finding by its evidence.
+situation: |
+  A red team plans to run ARTEX against a staging web app it owns, with written approval. The production app shares a domain name with staging.
+rounds:
+  - title: Round 1. Match risk to brake
+    items:
+      - type: sort
+        q: Which brake addresses each risk?
+        rows:
+          - ["The agent drifts from staging to the production host", "Scope and deny gates"]
+          - ["The agent runs a destructive shell command", "Command prefix rules and approval gates"]
+          - ["The agent loops and burns the model budget", "Token and turn budgets"]
+          - ["The app replies with text that tries to steer the agent", "Framing tool output as data"]
+          - ["The agent floods staging with requests", "Noise governor"]
+        opts: ["Scope and deny gates", "Command prefix rules and approval gates", "Token and turn budgets", "Framing tool output as data", "Noise governor"]
+        why: "Each brake enforces one limit in code, whatever the model decides. Together they are a working answer to OWASP LLM06."
+  - title: Round 2. Judge a finding
+    items:
+      - q: ARTEX reports an SQL injection finding. What do you check first?
+        opts: ["The model's confidence", "The recorded request and response linked to the finding", "The length of the report"]
+        a: 1
+        why: "Agents can overstate or invent findings. The captured traffic is the evidence a person can verify."
+      - type: open
+        q: Why must the scope list name hosts, not just the shared domain?
+        a: "Production and staging share the domain, so a domain-wide scope lets the agent test production without permission. List the exact staging hosts and deny the rest."

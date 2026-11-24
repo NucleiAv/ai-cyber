@@ -1,0 +1,1668 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 5 · Section 6 · The Hallucination Audit Lab · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+
+  <!-- ============================================================
+       PAGE-SCOPED LAB STYLES
+       Custom interactive components for the Hallucination Audit Lab.
+       Built entirely on the module's design tokens (NYU violet,
+       gold accents, shared radii / shadows / fonts) so the lab is
+       visually continuous with Sections 1 to 5.
+       ============================================================ -->
+  <style>
+    /* ---- Page accent tokens (scoped extensions) ---- */
+    .nyu-course {
+      --lab-gold: #FFB81C;
+      --lab-gold-deep: #B8860B;
+      --lab-stamp-shadow: 0 2px 0 rgba(0,0,0,0.04);
+    }
+
+    /* ---- Interactive Lab hero badge ---- */
+    .lab-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-2);
+      background: var(--lab-gold);
+      color: #2A1A00;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: var(--fs-xs);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: var(--r-pill);
+      margin-bottom: var(--sp-3);
+    }
+    .lab-badge svg { width: 15px; height: 15px; }
+
+    /* ---- Lab stepper (sticky progress rail) ---- */
+    .lab-stepper {
+      position: sticky;
+      top: 8px;
+      z-index: 30;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--sp-2);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: saturate(1.4) blur(6px);
+      border: 1px solid var(--rule);
+      border-radius: var(--r-lg);
+      padding: var(--sp-3);
+      margin: 0 0 var(--sp-6);
+      box-shadow: var(--shadow-md);
+    }
+    .lab-stepper__item {
+      appearance: none;
+      background: var(--surface-sunken);
+      border: 1.5px solid var(--rule);
+      border-radius: var(--r-md);
+      padding: var(--sp-3);
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      color: var(--ink-soft);
+      display: flex;
+      gap: var(--sp-3);
+      align-items: center;
+      transition: border-color .18s ease, background .18s ease, transform .12s ease, box-shadow .18s ease;
+      min-height: 44px;
+    }
+    .lab-stepper__item:hover { border-color: var(--nyu-violet-200); transform: translateY(-1px); }
+    .lab-stepper__item[aria-current="true"] {
+      border-color: var(--nyu-violet);
+      background: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+    .lab-stepper__num {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: #4C1D95;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background .2s ease, color .2s ease;
+    }
+    .lab-stepper__item[aria-current="true"] .lab-stepper__num { background: var(--nyu-violet); color: #fff; }
+    .lab-stepper__item[data-done="true"] .lab-stepper__num { background: var(--accent-success); color: #fff; }
+    .lab-stepper__label { line-height: 1.2; }
+    .lab-stepper__kicker {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+      margin-bottom: 1px;
+    }
+    .lab-stepper__title { font-weight: 700; font-size: var(--fs-sm); color: var(--ink); }
+    @media (max-width: 720px) {
+      .lab-stepper { grid-template-columns: 1fr 1fr; position: static; }
+      .lab-stepper__kicker { display: none; }
+    }
+
+    /* ---- Stage shell ---- */
+    .lab-stage { scroll-margin-top: 84px; }
+    .lab-stage__tag {
+      display: inline-flex; align-items: center; gap: var(--sp-2);
+      font-family: var(--font-mono);
+      font-size: var(--fs-xs);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #fff;
+      background: #4C1D95;
+      border: 1px solid var(--nyu-violet-100);
+      border-radius: var(--r-pill);
+      padding: 4px 12px;
+      margin-bottom: var(--sp-3);
+    }
+
+    /* ---- Generic elevated panel ---- */
+    .lab-panel {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-md);
+      padding: var(--sp-5);
+      margin: var(--sp-5) 0;
+    }
+
+    /* ---- Playbook quick-reference grid (field manual) ---- */
+    .lab-playbook {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--sp-2);
+      margin: var(--sp-4) 0;
+      counter-reset: pb;
+    }
+    .lab-playbook__step {
+      background: var(--surface-sunken);
+      border: 1px solid var(--rule);
+      border-top: 3px solid var(--nyu-violet);
+      border-radius: var(--r-md);
+      padding: var(--sp-3);
+    }
+    .lab-playbook__step h4 {
+      margin: 0 0 4px;
+      font-size: var(--fs-sm);
+      color: var(--nyu-violet);
+      display: flex; align-items: baseline; gap: 6px;
+    }
+    .lab-playbook__step h4::before {
+      counter-increment: pb;
+      content: counter(pb);
+      font-family: var(--font-mono);
+      font-size: var(--fs-xs);
+      background: var(--nyu-violet);
+      color: #fff;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .lab-playbook__step p { margin: 0; font-size: var(--fs-xs); color: var(--ink-soft); line-height: 1.45; }
+    @media (max-width: 720px) { .lab-playbook { grid-template-columns: 1fr 1fr; } }
+
+    /* ---- Failure-mode chips ---- */
+    .lab-failtags { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-4) 0 0; }
+    .lab-failtag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: var(--fs-xs); font-weight: 600;
+      border-radius: var(--r-pill);
+      padding: 5px 12px;
+      border: 1px solid;
+    }
+    .lab-failtag svg { width: 13px; height: 13px; }
+    .lab-failtag--fab { color: #fff; background: #991B1B; border-color: #991B1B; }
+    .lab-failtag--detail { color: #fff; background: #854D0E; border-color: #854D0E; }
+    .lab-failtag--stale { color: #fff; background: #155E63; border-color: #155E63; }
+    .lab-failtag--fluency { color: #fff; background: #1E40AF; border-color: #1E40AF; }
+
+    /* ---- Terminal / model-output console ---- */
+    .lab-terminal {
+      background: var(--code-bg);
+      border-radius: var(--r-md);
+      margin: var(--sp-4) 0;
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+      border: 1px solid #2c2f37;
+    }
+    .lab-terminal__bar {
+      display: flex; align-items: center; gap: var(--sp-3);
+      background: #15171c;
+      padding: 9px var(--sp-4);
+      border-bottom: 1px solid #2c2f37;
+    }
+    .lab-terminal__dots { display: inline-flex; gap: 6px; }
+    .lab-terminal__dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+    .lab-terminal__dots i:nth-child(1) { background: #ff5f57; }
+    .lab-terminal__dots i:nth-child(2) { background: #febc2e; }
+    .lab-terminal__dots i:nth-child(3) { background: #28c840; }
+    .lab-terminal__title {
+      font-family: var(--font-mono); font-size: var(--fs-xs); color: #9aa2b1;
+      letter-spacing: 0.04em;
+    }
+    .lab-terminal__title b { color: var(--lab-gold); font-weight: 600; }
+    .lab-terminal__body {
+      padding: var(--sp-4) var(--sp-5);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      line-height: 1.75;
+      color: var(--code-ink);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .lab-terminal__body .c-comment { color: var(--code-comment); font-style: italic; }
+    .lab-terminal__body .tag { color: #6BD3F2; font-weight: 700; }
+
+    /* ============================================================
+       STAGE 1 - HALLUCINATION SPOTTER
+       ============================================================ */
+    .lab-spotter__text {
+      font-family: var(--font-mono);
+      font-size: 0.94rem;
+      line-height: 2.05;
+      color: var(--code-ink);
+    }
+    .lab-tok {
+      appearance: none;
+      font: inherit;
+      background: transparent;
+      color: var(--code-ink);
+      border: 0;
+      border-bottom: 2px dashed transparent;
+      padding: 1px 2px;
+      margin: 0;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background .12s ease, color .12s ease, border-color .12s ease;
+    }
+    .lab-tok:hover { background: rgba(255,255,255,0.10); border-bottom-color: rgba(255,255,255,0.35); }
+    .lab-tok.is-flagged {
+      background: rgba(255, 184, 28, 0.22);
+      border-bottom-color: var(--lab-gold);
+      color: #fff;
+    }
+    .lab-tok.is-flagged::after { content: " ⚑"; color: var(--lab-gold); font-size: 0.8em; }
+    /* Revealed states */
+    .lab-spotter[data-revealed="true"] .lab-tok { cursor: default; }
+    .lab-tok.is-hit { background: rgba(40,200,64,0.28); color: #FFFFFF; border-bottom-color: #28c840; }  /* the tint composites over a dark panel, so near-black read at 1.57:1 */
+    .lab-tok.is-hit::after { content: " ✓"; color: #6CE2A4; }
+    .lab-tok.is-miss { background: rgba(255,95,87,0.30); color: #ffffff; border-bottom-color: #ff5f57; }
+    .lab-tok.is-miss::after { content: " ✗ missed"; color: #ff9c94; font-size: 0.72em; font-family: var(--font-body); }
+    .lab-tok.is-fp { background: transparent; color: var(--code-comment); border-bottom: 2px dotted var(--code-comment); }
+    .lab-tok.is-fp::after { content: " (clean)"; color: var(--code-comment); font-size: 0.72em; font-family: var(--font-body); }
+
+    .lab-scoreboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); margin: var(--sp-4) 0; }
+    .lab-stat {
+      background: #fff; border: 1px solid var(--rule); border-radius: var(--r-md);
+      padding: var(--sp-3) var(--sp-4); text-align: center;
+    }
+    .lab-stat__num { font-family: var(--font-mono); font-size: var(--fs-2xl); font-weight: 700; line-height: 1; }
+    .lab-stat__label { font-size: var(--fs-xs); color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+    .lab-stat--tp .lab-stat__num { color: var(--accent-success); }
+    .lab-stat--fp .lab-stat__num { color: var(--accent-warning); }
+    .lab-stat--fn .lab-stat__num { color: var(--accent-danger); }
+
+    .lab-findings { list-style: none; padding: 0; margin: var(--sp-3) 0 0; display: grid; gap: var(--sp-2); }
+    .lab-findings li {
+      display: grid; grid-template-columns: auto 1fr; gap: var(--sp-3); align-items: start;
+      background: #fff; border: 1px solid var(--rule); border-left: 4px solid var(--accent-danger);
+      border-radius: var(--r-sm); padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm);
+    }
+    .lab-findings li b { color: var(--nyu-violet-dark); }
+    .lab-findings__kind {
+      font-family: var(--font-mono); font-size: 0.66rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 2px 7px; border-radius: var(--r-pill); white-space: nowrap; height: fit-content;
+      background: #991B1B; color: #fff;
+    }
+
+    /* ---- Shared button family ---- */
+    .lab-btn {
+      appearance: none; font: inherit; font-weight: 600; cursor: pointer;
+      border: 0; border-radius: var(--r-sm);
+      padding: var(--sp-3) var(--sp-5); min-height: 44px;
+      background: var(--nyu-violet); color: #fff;
+      transition: background .15s ease, transform .12s ease, box-shadow .15s ease;
+      display: inline-flex; align-items: center; gap: var(--sp-2);
+    }
+    .lab-btn:hover { background: var(--nyu-violet-dark); }
+    .lab-btn:active { transform: translateY(1px); }
+    .lab-btn--ghost { background: transparent; color: var(--nyu-violet); border: 1.5px solid var(--nyu-violet); }
+    .lab-btn--ghost:hover { background: var(--nyu-violet-50); color: var(--nyu-violet-dark); }
+    .lab-btn--gold { background: var(--lab-gold); color: #2A1A00; }
+    .lab-btn--gold:hover { background: #e6a512; }
+    .lab-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .lab-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-4); }
+
+    /* ============================================================
+       STAGE 2 - AUDIT WORKBENCH
+       ============================================================ */
+    /* Accordion, not tabs. The three cases are long enough to scroll, so a
+       tablist forced the reader back to the top to switch. Sequential
+       disclosure keeps each header attached to its own content. */
+    .lab-wb__head {
+      appearance: none; font: inherit; cursor: pointer; width: 100%;
+      background: #fff; border: 1.5px solid var(--rule);
+      border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4);
+      display: flex; align-items: center; gap: var(--sp-3); min-height: 44px;
+      transition: border-color .15s ease, background .15s ease;
+    }
+    .lab-wb__head:hover { border-color: var(--nyu-violet-200); }
+    .lab-wb__head[aria-expanded="true"] { border-color: var(--nyu-violet); background: var(--nyu-violet-50); }
+    .lab-wb__tab-idx {
+      font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-sm);
+      width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;
+      background: var(--nyu-violet-100); color: var(--ink);
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .lab-wb__head[aria-expanded="true"] .lab-wb__tab-idx { background: var(--nyu-violet); color: #fff; }
+    .lab-wb__tab-meta { text-align: left; line-height: 1.2; }
+    .lab-wb__tab-meta b { display: block; font-size: var(--fs-sm); color: var(--ink); }
+    .lab-wb__tab-meta span { font-size: var(--fs-xs); color: var(--ink-mute); }
+    .lab-wb__head[data-complete="true"] .lab-wb__tab-idx::after { content: ""; }
+
+    .lab-wb__case { display: block; margin-bottom: var(--sp-4); }
+    .lab-wb__chev { margin-left: auto; transition: transform .18s ease; color: var(--ink-mute); }
+    .lab-wb__head[aria-expanded="true"] .lab-wb__chev { transform: rotate(180deg); }
+    .lab-wb__body { display: none; padding-top: var(--sp-4); }
+    .lab-wb__case[data-active="true"] .lab-wb__body { display: block; animation: fadeUp .3s ease; }
+
+    /* Source dossier */
+    .lab-dossier {
+      background: linear-gradient(180deg, var(--nyu-violet-50), #fff);
+      border: 1px solid var(--nyu-violet-100);
+      border-radius: var(--r-md);
+      padding: var(--sp-4) var(--sp-5);
+      margin: var(--sp-4) 0;
+    }
+    .lab-dossier__title {
+      display: flex; align-items: center; gap: var(--sp-3);
+      font-weight: 700; color: var(--nyu-violet); font-size: var(--fs-md); margin: 0 0 var(--sp-3);
+    }
+    .lab-dossier__title svg { width: 20px; height: 20px; }
+    .lab-source { margin: 0 0 var(--sp-3); }
+    .lab-source:last-child { margin-bottom: 0; }
+    .lab-source__name {
+      font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700;
+      color: var(--nyu-violet-dark); text-transform: uppercase; letter-spacing: 0.04em;
+      display: inline-flex; align-items: center; gap: 6px; margin-bottom: 3px;
+    }
+    .lab-source__body {
+      font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.6;
+      color: var(--ink-soft); background: #fff; border: 1px dashed var(--nyu-violet-200);
+      border-radius: var(--r-sm); padding: var(--sp-3); white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* Claim cards */
+    .lab-claims { display: grid; gap: var(--sp-4); margin: var(--sp-5) 0; }
+    .lab-claim {
+      background: #fff; border: 1px solid var(--rule);
+      border-radius: var(--r-md); padding: var(--sp-4) var(--sp-5);
+      box-shadow: var(--shadow-sm);
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .lab-claim[data-result="correct"] { border-color: #bfe3cd; box-shadow: 0 0 0 1px #bfe3cd inset; }
+    .lab-claim[data-result="incorrect"] { border-color: #e9c4c4; box-shadow: 0 0 0 1px #e9c4c4 inset; }
+    .lab-claim__head { display: flex; gap: var(--sp-3); align-items: flex-start; margin-bottom: var(--sp-3); }
+    .lab-claim__id {
+      flex-shrink: 0; font-family: var(--font-mono); font-weight: 700;
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--code-bg); color: var(--lab-gold);
+      display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-sm);
+    }
+    .lab-claim__text { font-size: var(--fs-base); line-height: 1.55; margin: 2px 0 0; }
+    .lab-claim__text q { font-style: normal; }
+
+    .lab-cfield { margin-top: var(--sp-3); }
+    .lab-cfield__label {
+      font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--ink-mute); margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .lab-cfield__label .q { color: var(--nyu-violet); font-weight: 700; }
+    .lab-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .lab-chip {
+      appearance: none; font: inherit; font-size: var(--fs-sm); cursor: pointer;
+      background: var(--surface-sunken); border: 1.5px solid var(--rule);
+      color: var(--ink-soft); border-radius: var(--r-pill);
+      padding: 7px 13px; min-height: 36px;
+      transition: all .14s ease;
+    }
+    .lab-chip:hover { border-color: var(--nyu-violet-200); color: var(--nyu-violet-dark); }
+    .lab-chip[aria-pressed="true"] { background: var(--nyu-violet); border-color: var(--nyu-violet); color: #fff; }
+    /* Locked-in grading states */
+    .lab-cfield[data-graded="correct"] .lab-chip[aria-pressed="true"] {
+      background: var(--accent-success); border-color: var(--accent-success); color: #fff;
+    }
+    .lab-cfield[data-graded="incorrect"] .lab-chip[aria-pressed="true"] {
+      background: var(--accent-danger); border-color: var(--accent-danger); color: #fff;
+    }
+    .lab-cfield[data-graded="incorrect"] .lab-chip[data-correct="true"] {
+      border-color: var(--accent-success); color: var(--accent-success);
+      box-shadow: 0 0 0 1.5px var(--accent-success) inset; font-weight: 700;
+    }
+
+    .lab-claim__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; margin-top: var(--sp-4); }
+    .lab-claim__btn {
+      appearance: none; font: inherit; font-weight: 600; cursor: pointer; font-size: var(--fs-sm);
+      border: 1.5px solid var(--nyu-violet); background: var(--nyu-violet); color: #fff;
+      border-radius: var(--r-sm); padding: 8px 16px; min-height: 40px;
+    }
+    .lab-claim__btn:hover { background: var(--nyu-violet-dark); }
+    .lab-claim__btn--reset { background: transparent; color: var(--nyu-violet); }
+    .lab-claim__btn--reset:hover { background: var(--nyu-violet-50); }
+
+    /* Verdict stamp */
+    .lab-stamp {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-xs);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 5px 12px; border-radius: 6px; border: 2px solid currentColor;
+      transform: rotate(-1.5deg); box-shadow: var(--lab-stamp-shadow);
+    }
+    .lab-stamp svg { width: 14px; height: 14px; }
+    .lab-stamp--verified { color: #fff; background: #166534; }
+    .lab-stamp--contradicted { color: #fff; background: #991B1B; }
+    .lab-stamp--stale { color: #fff; background: #155E63; }
+    .lab-stamp--fabricated { color: #fff; background: #991B1B; }
+    .lab-stamp--unverifiable { color: var(--ink-mute); background: var(--surface-sunken); }
+    .lab-stamp--judgment { color: #fff; background: #4C1D95; }
+
+    .lab-claim__feedback {
+      display: none; margin-top: var(--sp-4); padding: var(--sp-4);
+      background: var(--surface-sunken); border-radius: var(--r-md);
+      border-left: 4px solid var(--nyu-violet); font-size: var(--fs-sm); line-height: 1.6;
+    }
+    .lab-claim__feedback[data-show="true"] { display: block; animation: fadeUp .25s ease; }
+    .lab-claim__feedback p { margin: var(--sp-2) 0 0; }
+    .lab-claim__feedback p:first-of-type { margin-top: var(--sp-3); }
+    .lab-claim__verdict-row { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; }
+
+    /* Case progress meter + summary */
+    .lab-meter { display: flex; align-items: center; gap: var(--sp-3); margin: var(--sp-4) 0; }
+    .lab-meter__track { flex: 1; height: 10px; background: var(--nyu-violet-100); border-radius: var(--r-pill); overflow: hidden; }
+    .lab-meter__fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--nyu-violet), var(--nyu-violet-light)); border-radius: var(--r-pill); transition: width .4s cubic-bezier(.2,.8,.2,1); }
+    .lab-meter__count { font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-sm); color: var(--nyu-violet-dark); white-space: nowrap; }
+
+    .lab-case-done {
+      display: none; margin-top: var(--sp-5);
+      background: var(--accent-success-bg); border: 1px solid #c7e6d2;
+      border-left: 5px solid var(--accent-success); border-radius: var(--r-md);
+      padding: var(--sp-4) var(--sp-5);
+    }
+    .lab-case-done[data-show="true"] { display: block; animation: fadeUp .3s ease; }
+    .lab-case-done h4 { margin: 0 0 var(--sp-2); color: var(--accent-success); display: flex; align-items: center; gap: var(--sp-2); }
+    .lab-case-done h4 svg { width: 20px; height: 20px; }
+    .lab-case-done p { margin: 0; }
+
+    /* ============================================================
+       STAGE 3 - VERIFICATION CHECKLIST BUILDER
+       ============================================================ */
+    .lab-builder { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-5); align-items: start; }
+    @media (max-width: 760px) { .lab-builder { grid-template-columns: 1fr; } }
+    .lab-checkgroup { margin-bottom: var(--sp-4); }
+    .lab-checkgroup__title {
+      font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--nyu-violet);
+      margin: 0 0 var(--sp-2); padding-bottom: 4px; border-bottom: 1px solid var(--nyu-violet-100);
+    }
+    .lab-check {
+      display: flex; gap: var(--sp-3); align-items: flex-start;
+      padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); cursor: pointer;
+      transition: background .12s ease;
+    }
+    .lab-check:hover { background: var(--nyu-violet-50); }
+    .lab-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--nyu-violet); flex-shrink: 0; cursor: pointer; }
+    .lab-check span { font-size: var(--fs-sm); line-height: 1.45; }
+    .lab-custom { margin-top: var(--sp-3); }
+    .lab-custom__label { font-size: var(--fs-xs); font-weight: 700; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+    .lab-custom input {
+      width: 100%; font: inherit; font-size: var(--fs-sm);
+      border: 1.5px solid var(--rule); border-radius: var(--r-sm);
+      padding: 9px 12px; margin-top: 5px; background: #fff;
+    }
+    .lab-custom input:focus-visible { outline: var(--focus-ring); outline-offset: 1px; border-color: var(--nyu-violet); }
+
+    .lab-output {
+      position: sticky; top: 96px;
+      background: var(--code-bg); border-radius: var(--r-md); padding: var(--sp-5);
+      box-shadow: var(--shadow-md);
+    }
+    @media (max-width: 760px) { .lab-output { position: static; } }
+    .lab-output__title {
+      color: #fff; font-size: var(--fs-md); font-weight: 700; margin: 0 0 var(--sp-2);
+      display: flex; align-items: center; gap: var(--sp-2);
+    }
+    .lab-output__title svg { width: 18px; height: 18px; color: var(--lab-gold); }
+    .lab-output__sub { color: var(--code-comment); font-size: var(--fs-xs); font-family: var(--font-mono); margin: 0 0 var(--sp-4); }
+    .lab-output__list { list-style: none; padding: 0; margin: 0; counter-reset: ck; display: grid; gap: var(--sp-2); }
+    .lab-output__list li {
+      counter-increment: ck;
+      display: grid; grid-template-columns: auto 1fr; gap: var(--sp-3); align-items: start;
+      color: #e8e8ec; font-size: var(--fs-sm); line-height: 1.5;
+      padding-bottom: var(--sp-2); border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .lab-output__list li::before {
+      content: counter(ck); font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-xs);
+      color: var(--code-bg); background: var(--lab-gold);
+      width: 20px; height: 20px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .lab-output__empty { color: var(--code-comment); font-style: italic; font-size: var(--fs-sm); }
+    .lab-output__foot { margin-top: var(--sp-4); display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+    .lab-copied { color: #6CE2A4; font-size: var(--fs-xs); font-family: var(--font-mono); align-self: center; opacity: 0; transition: opacity .2s ease; }
+    .lab-copied[data-show="true"] { opacity: 1; }
+
+    /* Visually hidden helper */
+    .visually-hidden {
+      position: absolute !important; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+
+    /* ================================================================
+       ANIMATION KEYFRAMES
+       ================================================================ */
+    @keyframes fadeUp {
+      from { transform: translateY(14px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    @keyframes stampPop {
+      0%   { transform: rotate(-1.5deg) scale(0.52); opacity: 0; }
+      60%  { transform: rotate(-2.4deg) scale(1.14); opacity: 1; }
+      100% { transform: rotate(-1.5deg) scale(1);    opacity: 1; }
+    }
+    @keyframes numBounce {
+      0%   { transform: scale(0.5); opacity: 0; }
+      55%  { transform: scale(1.22); opacity: 1; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+    @keyframes stepDonePop {
+      0%   { transform: scale(0.65); }
+      60%  { transform: scale(1.28); }
+      100% { transform: scale(1); }
+    }
+    @keyframes feedbackSlide {
+      from { transform: translateY(-6px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    /* ---- Stage scroll-entrance ---- */
+    .lab-stage {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity .5s ease, transform .5s ease;
+    }
+    .lab-stage.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ---- Stamp reveal pop ---- */
+    .lab-claim__feedback[data-show="true"] .lab-stamp {
+      animation: stampPop .38s cubic-bezier(.22, .68, 0, 1.42) forwards;
+    }
+
+    /* ---- Feedback panel slide-in ---- */
+    .lab-claim__feedback[data-show="true"] {
+      animation: feedbackSlide .28s ease forwards;
+    }
+
+    /* ---- Scoreboard number bounce (class toggled by JS) ---- */
+    .lab-stat__num.is-animating {
+      animation: numBounce .42s cubic-bezier(.22, .68, 0, 1.42) forwards;
+    }
+
+    /* ---- Stepper done number pop ---- */
+    .lab-stepper__item[data-done="true"] .lab-stepper__num {
+      animation: stepDonePop .38s cubic-bezier(.22, .68, 0, 1.42) forwards;
+    }
+
+    /* ---- Claim card hover lift ---- */
+    .lab-claim:not([data-result]) {
+      transition: border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+    }
+    .lab-claim:not([data-result]):hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--nyu-violet-200);
+    }
+
+    /* ---- Chip scale on selection ---- */
+    .lab-chip[aria-pressed="true"] {
+      transform: scale(1.05);
+    }
+
+    /* ---- Case-done banner animation (already declared above; enhance) ---- */
+    .lab-case-done[data-show="true"] {
+      animation: fadeUp .35s ease forwards;
+    }
+
+    /* ---- Spotter results panel ---- */
+    .lab-spotter__results:not([hidden]) {
+      animation: fadeUp .3s ease;
+    }
+
+    /* ---- Reduced motion: disable all animations and transitions ---- */
+    @media (prefers-reduced-motion: reduce) {
+      .lab-stepper__item,
+      .lab-claim,
+      .lab-meter__fill,
+      .lab-stage,
+      .lab-chip {
+        transition: none !important;
+      }
+      .lab-stage { opacity: 1; transform: none; }
+      .lab-claim__feedback[data-show="true"] .lab-stamp,
+      .lab-claim__feedback[data-show="true"],
+      .lab-stat__num.is-animating,
+      .lab-stepper__item[data-done="true"] .lab-stepper__num,
+      .lab-case-done[data-show="true"],
+      .lab-wb__case[data-active="true"] .lab-wb__body,
+      .lab-spotter__results:not([hidden]) {
+        animation: none !important;
+      }
+      .lab-chip[aria-pressed="true"] { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <span class="lab-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 3h6M10 3v5.2a2 2 0 0 1-.4 1.2L5 16a2 2 0 0 0 1.6 3.2h10.8A2 2 0 0 0 19 16l-4.6-6.6a2 2 0 0 1-.4-1.2V3"/></svg>
+        Interactive Lab
+      </span>
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 5 · Section 6 of 7 · Hands-on Lab</div>
+      <h1 class="nyu-hero__title">The Hallucination Audit Lab</h1>
+      <p class="nyu-hero__subtitle">
+        A model will hand you fluent, confident threat intelligence. Some of it
+        is true, some is true but out of date, and some is invented. Your job is
+        not to trust the tone, it is to run the audit. In this lab you will hunt
+        fabrications in raw model output, route every claim to the source that
+        adjudicates it, stamp a verdict, and walk away with a verification
+        checklist that is yours to keep.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Lab overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~30 min lab, self-paced</span>
+        <span aria-label="Number of stages"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 stages</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks</span>
+      </div>
+    </header>
+
+    <!-- ===== LAB STEPPER ===== -->
+    <nav class="lab-stepper" aria-label="Lab stages">
+      <button type="button" class="lab-stepper__item" data-target="stage-1" aria-current="false">
+        <span class="lab-stepper__num">1</span>
+        <span class="lab-stepper__label"><span class="lab-stepper__kicker">Calibrate</span><span class="lab-stepper__title">Spotter</span></span>
+      </button>
+      <button type="button" class="lab-stepper__item" data-target="stage-2" aria-current="false">
+        <span class="lab-stepper__num">2</span>
+        <span class="lab-stepper__label"><span class="lab-stepper__kicker">Investigate</span><span class="lab-stepper__title">Workbench</span></span>
+      </button>
+      <button type="button" class="lab-stepper__item" data-target="stage-3" aria-current="false">
+        <span class="lab-stepper__num">3</span>
+        <span class="lab-stepper__label"><span class="lab-stepper__kicker">Keep</span><span class="lab-stepper__title">Checklist</span></span>
+      </button>
+      <button type="button" class="lab-stepper__item" data-target="stage-4" aria-current="false">
+        <span class="lab-stepper__num">4</span>
+        <span class="lab-stepper__label"><span class="lab-stepper__kicker">Debrief</span><span class="lab-stepper__title">Reflect</span></span>
+      </button>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <!-- ===== MISSION BRIEF / OBJECTIVES ===== -->
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          What this lab builds
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this lab, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Spot</strong> the fabrications that look exactly like the real thing: invented identifiers, wrong version boundaries, dead reference links</span></li>
+          <li><span><strong>Route</strong> every atomic claim to the one source that adjudicates its type, and <strong>stamp</strong> a calibrated verdict</span></li>
+          <li><span><strong>Separate</strong> a hallucination from a stale truth, and an unsupported claim from a contradicted one</span></li>
+          <li><span><strong>Assemble</strong> a personal verification checklist you can carry into any CTI engagement or professional practice</span></li>
+        </ul>
+      </section>
+
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="brief-title">
+        <h3 class="nyu-callout__title" id="brief-title">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+          </span>
+          How this lab works
+        </h3>
+        <p>
+          Everything runs right here, no model setup required. You will work on
+          <strong>illustrative reconstructions</strong> of model output, written to behave
+          exactly like the real failure modes we covered in the summarization material. Every case is a
+          <strong>real, well-documented vulnerability</strong> chosen because its facts are
+          long settled (Log4Shell, Heartbleed, and the Apache Struts flaw behind the
+          Equifax breach), so the practice transfers and nothing here goes stale. Each
+          stage gives you instant, explained feedback. There is nothing to submit: the
+          point is the reasoning and the checklist you leave with.
+        </p>
+      </aside>
+
+      <!-- ===== FIELD MANUAL (QUICK REFERENCE) ===== -->
+      <div class="lab-panel" aria-labelledby="fm-title">
+        <h3 id="fm-title" style="margin-top:0;display:flex;align-items:center;gap:.6rem;color:var(--nyu-violet);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Field manual: the five step audit, on one card
+        </h3>
+        <p style="margin-top:0;color:var(--ink-soft);">
+          This is the verification methodology in its working form. Keep it in view; every stage below is an application of it.
+        </p>
+        <div class="lab-playbook">
+          <div class="lab-playbook__step">
+            <h4>Decompose</h4>
+            <p>Break the output into <button type="button" class="nyu-define" data-term="atomic-claim">atomic claims</button>, one verifiable assertion each.</p>
+          </div>
+          <div class="lab-playbook__step">
+            <h4>Type</h4>
+            <p>Name the kind: existence, technical detail, exploitation, mitigation, attribution, reference, action.</p>
+          </div>
+          <div class="lab-playbook__step">
+            <h4>Route</h4>
+            <p>Send each claim to the one source that owns it: NVD, vendor advisory, KEV, primary reporting.</p>
+          </div>
+          <div class="lab-playbook__step">
+            <h4>Check currency</h4>
+            <p>Not just "was it ever true" but "is it still true today." The <button type="button" class="nyu-define" data-term="currency-check">currency check</button>.</p>
+          </div>
+          <div class="lab-playbook__step">
+            <h4>Stamp confidence</h4>
+            <p>Grade what you verified, mark the residue unverified. Sign only your own work.</p>
+          </div>
+        </div>
+        <p style="margin-bottom:.4rem;color:var(--ink-soft);font-size:var(--fs-sm);"><strong>The four failure modes you are hunting:</strong></p>
+        <div class="lab-failtags">
+          <span class="lab-failtag lab-failtag--fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>Fabricated identifiers &amp; references</span>
+          <span class="lab-failtag lab-failtag--detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg>Wrong technical details</span>
+          <span class="lab-failtag lab-failtag--stale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>Stale truth</span>
+          <span class="lab-failtag lab-failtag--fluency"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>False fluency</span>
+        </div>
+      </div>
+
+      <!-- ====================== STAGE 1: SPOTTER ====================== -->
+      <section class="nyu-section lab-stage" id="stage-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Calibrate: The Hallucination Spotter</h2>
+        </div>
+        <span class="lab-stage__tag">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          Warm-up · ~5 min
+        </span>
+
+        <p>
+          A model produced the SOC briefing below from memory, <strong>without grounding</strong>. Most of it is
+          correct, which is exactly the problem. Click every phrase you suspect is fabricated, factually
+          wrong, or unsafe to ship. Flag as many or as few as you like, then reveal the audit. There is no
+          penalty for over-flagging here, but pay attention to what you miss: in threat intelligence, the
+          dangerous error is the one that reads like correct intelligence.
+		  <br><br>
+		  <strong>Make your selections below!</strong> Just click the text...
+        </p>
+
+        <div class="lab-spotter" data-revealed="false">
+          <div class="lab-terminal" style="margin-bottom: var(--sp-3);">
+            <div class="lab-terminal__bar">
+              <span class="lab-terminal__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="lab-terminal__title">model: <b>local · ungrounded</b> &nbsp;·&nbsp; prompt: &ldquo;write a SOC briefing on CVE-2023-4863&rdquo;</span>
+            </div>
+            <div class="lab-terminal__body lab-spotter__text" style="white-space:normal;" aria-label="Reconstructed model briefing. Click phrases you suspect are wrong.">CVE-2023-4863 is a <button type="button" class="lab-tok" data-suspect="false">critical heap buffer overflow</button> in <button type="button" class="lab-tok" data-suspect="false">the libwebp image library</button>, exploitable through <button type="button" class="lab-tok" data-suspect="false">a maliciously crafted WebP image</button>, and it <button type="button" class="lab-tok" data-suspect="false">affects Google Chrome and other software that embeds libwebp</button>. Chrome versions prior to <button type="button" class="lab-tok" data-suspect="true" data-kind="Wrong detail" data-label="Chrome versions prior to 116.0.5845.187" data-note="A version boundary looks identical whether it is right or wrong, so it must be checked against the vendor's own fixed-version line and never trusted from memory. Off-by-one boundaries are the failure mode with the worst cost-to-detection ratio: cheap to make, expensive to miss.">116.0.5845.187</button> are affected. The team should also track <button type="button" class="lab-tok" data-suspect="true" data-kind="Fabricated identifier" data-label="a companion vulnerability tracked as CVE-2023-90000" data-note="A CVE ID is a high-entropy string the model produces by pattern completion, with nothing forcing it to resolve to a real record. Confirm any identifier exists in the CVE record / NVD before it travels.">a companion vulnerability tracked as CVE-2023-90000</button> in the same component. For full details, see Google&rsquo;s advisory at <button type="button" class="lab-tok" data-suspect="true" data-kind="Fabricated reference" data-label="chromereleases.googleblog.com/2023/09/cve-2023-4863-analysis.html" data-note="The domain is real; this exact URL is not, and it resolves to nothing. Clicking is the cheapest verification in the entire module, and a reference no one clicked is a reference no one verified.">chromereleases.googleblog.com/2023/09/cve-2023-4863-analysis.html</button>. As an interim measure, <button type="button" class="lab-tok" data-suspect="true" data-kind="False fluency" data-label="disabling WebP rendering in browser flags fully mitigates the issue" data-note="libwebp is embedded far beyond the browser, so a browser flag cannot be a full mitigation. The confident phrase &lsquo;fully mitigates&rsquo; hands a consumer a reason not to patch. Mitigation claims route to the vendor advisory, never to the model's memory.">disabling WebP rendering in browser flags fully mitigates the issue</button> until patches are deployed.</div>
+          </div>
+          <p style="font-size:var(--fs-sm);color:var(--ink-mute);margin-top:0;">
+            <em>Illustrative reconstruction of characteristic failure patterns. The vulnerability (a 2023 heap buffer overflow in libwebp) is real; the planted errors are written to behave like genuine model failures. Verify specifics against the NVD entry and vendor advisories.</em>
+          </p>
+
+          <div class="lab-actions">
+            <button type="button" class="lab-btn lab-btn--gold" data-action="reveal-spotter">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              Reveal the audit
+            </button>
+            <button type="button" class="lab-btn lab-btn--ghost" data-action="reset-spotter">Reset</button>
+          </div>
+
+          <div class="lab-spotter__results" hidden>
+            <div class="lab-scoreboard">
+              <div class="lab-stat lab-stat--tp"><div class="lab-stat__num" data-stat="tp">0</div><div class="lab-stat__label">Caught</div></div>
+              <div class="lab-stat lab-stat--fp"><div class="lab-stat__num" data-stat="fp">0</div><div class="lab-stat__label">Over-flagged</div></div>
+              <div class="lab-stat lab-stat--fn"><div class="lab-stat__num" data-stat="fn">0</div><div class="lab-stat__label">Missed</div></div>
+            </div>
+            <p class="lab-spotter__verdict" style="font-weight:600;color:var(--ink);" role="status"></p>
+            <p style="font-size:var(--fs-sm);color:var(--ink-mute);margin:0 0 .3rem;"><strong>The planted fabrications, and why each one matters:</strong></p>
+            <ul class="lab-findings"></ul>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" style="margin-top:var(--sp-5);">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/><path d="M9 18h6M10 22h4"/></svg></span>
+            What you just practiced
+          </h3>
+          <p>
+            You ran a <button type="button" class="nyu-define" data-term="false-fluency">fluency</button>-resistant read: judging claims on what they assert, not on how smoothly they are delivered. Notice the shape of the planted errors. None were gibberish. The wrong version string, the fake URL, and the invented CVE ID all wore the exact costume of their genuine counterparts. That is why the next stage replaces gut-flagging with a routing discipline: send every claim to the one source that can actually settle it.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== STAGE 2: AUDIT WORKBENCH ====================== -->
+      <section class="nyu-section lab-stage" id="stage-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Investigate: The Audit Workbench</h2>
+        </div>
+        <span class="lab-stage__tag">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h10"/></svg>
+          Core exercise · ~18 min
+        </span>
+
+        <p>
+          Now the full methodology. Three briefings, on three real and well-documented vulnerabilities, are waiting in
+          the workbench. Each has been decomposed into <button type="button" class="nyu-define" data-term="atomic-claim">atomic claims</button> for you.
+          For every claim, do two things: <strong>route</strong> it to the source that adjudicates its type, and
+          <strong>stamp a verdict</strong>. A source dossier is provided for each case below, so most verdicts are checkable right here, though a few reward an external lookup as well.
+        </p>
+
+        <div class="lab-wb">
+
+          <!-- ============ CASE 1: LOG4SHELL ============ -->
+          <div class="lab-wb__case" data-case="c1" data-active="true">
+            <button type="button" class="lab-wb__head" id="c1-head" aria-expanded="true" aria-controls="c1-body">
+              <span class="lab-wb__tab-idx">A</span>
+              <span class="lab-wb__tab-meta"><b>Log4Shell</b><span>CVE-2021-44228 · the stale fix</span></span>
+              <span class="lab-wb__chev" aria-hidden="true">&#9662;</span>
+            </button>
+            <div class="lab-wb__body" id="c1-body" role="region" aria-labelledby="c1-head">
+            <p style="color:var(--ink-soft);">
+              Asked without grounding for a remediation briefing on Log4Shell, the model produced the paragraph below.
+              The headline is famous and well-represented in training data; the trouble is downstream.
+            </p>
+
+            <div class="lab-terminal">
+              <div class="lab-terminal__bar">
+                <span class="lab-terminal__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="lab-terminal__title">model: <b>local · ungrounded</b> &nbsp;·&nbsp; claims tagged (1)&ndash;(6) for the walkthrough</span>
+              </div>
+              <div class="lab-terminal__body"><span class="c-comment">// reconstructed model output</span>
+"CVE-2021-44228 (Log4Shell) is a critical RCE in Apache Log4j 2 <span class="tag">(1)</span>
+with a CVSS base score of 10.0. <span class="tag">(2)</span> It appears in CISA's KEV
+catalog. <span class="tag">(3)</span> Upgrading to Log4j 2.15.0 fully remediates the
+vulnerability. <span class="tag">(4)</span> The exploitation campaign was the work of a
+single threat actor. <span class="tag">(5)</span> Organizations must patch within 24 hours. <span class="tag">(6)</span>"</div>
+            </div>
+
+            <div class="lab-dossier">
+              <div class="lab-dossier__title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h10l6 6v10a0 0 0 0 1 0 0H4z"/><path d="M14 4v6h6"/></svg>
+                Source dossier · the ground truth you route to
+              </div>
+              <div class="lab-source"><span class="lab-source__name">CVE record / NVD</span><div class="lab-source__body">CVE-2021-44228: JNDI remote code execution in Apache Log4j 2. CVSS 3.1 base score 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H).</div></div>
+              <div class="lab-source"><span class="lab-source__name">CISA KEV</span><div class="lab-source__body">CVE-2021-44228 is listed in the Known Exploited Vulnerabilities catalog (confirmed in-the-wild exploitation).</div></div>
+              <div class="lab-source"><span class="lab-source__name">Apache Log4j security advisory</span><div class="lab-source__body">2.15.0 contained an incomplete fix and was superseded by 2.16.0 and later releases. Upgrade to the current fixed release.</div></div>
+              <div class="lab-source"><span class="lab-source__name">Primary reporting</span><div class="lab-source__body">Exploitation was widespread across many actors, both criminal and state-linked, beginning December 2021.</div></div>
+            </div>
+
+            <div class="lab-claims">
+
+              <!-- C1.1 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">1</span><p class="lab-claim__text">&ldquo;CVE-2021-44228 (Log4Shell) is a critical remote code execution vulnerability in Apache Log4j 2.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="nvd"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="verified"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Verified</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; CVE record / NVD</span></div><p>Existence and identity. The CVE record and NVD confirm the RCE in Log4j 2. Headline facts of famous CVEs verify cleanly, which is exactly why claim 1 must not be allowed to buy trust for claims 4 through 6.</p></div>
+              </article>
+
+              <!-- C1.2 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">2</span><p class="lab-claim__text">&ldquo;Its CVSS v3.1 base score is 10.0.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="nvd"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="verified"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Verified</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; NVD enrichment</span></div><p>Technical detail. CVSS scoring is NVD&rsquo;s enrichment job, and both the 10.0 and the vector check out. Keep severity and exploitation on separate axes, though: a 10.0 says what the flaw <em>could</em> do, not whether anyone is doing it.</p></div>
+              </article>
+
+              <!-- C1.3 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">3</span><p class="lab-claim__text">&ldquo;It appears in CISA&rsquo;s Known Exploited Vulnerabilities (KEV) catalog.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="kev"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="verified"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Verified</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; CISA KEV</span></div><p>Exploitation status, and KEV is its dedicated adjudicator. Log4Shell is listed. Carry the standing nuance forward: had it been <em>absent</em> from KEV, that would be absence of confirmation, not evidence of safety.</p></div>
+              </article>
+
+              <!-- C1.4 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">4</span><p class="lab-claim__text">&ldquo;Upgrading to Log4j 2.15.0 fully remediates the vulnerability.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="vendor"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="stale"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--stale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>Stale truth</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; Vendor advisory</span></div><p>The currency casualty. 2.15.0 was the fix for a few days in December 2021, then was superseded (2.16.0 and later) because the first fix was incomplete. Every existence and detail check passes against old sources; only the <button type="button" class="nyu-define" data-term="currency-check">currency check</button> against the vendor advisory catches it. This is <strong>stale truth</strong>, not fabrication: accurate at training time, false now. If you stamped &ldquo;Contradicted,&rdquo; you found the right problem; &ldquo;Stale truth&rdquo; names <em>why</em> it happened, which is what tells you to check currency next time.</p></div>
+              </article>
+
+              <!-- C1.5 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">5</span><p class="lab-claim__text">&ldquo;The exploitation campaign was the work of a single threat actor.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="primary"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="contradicted"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--contradicted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Contradicted</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; Primary reporting</span></div><p>Primary reporting documented exploitation by <em>many</em> actors, criminal and state-linked, which flatly contradicts &ldquo;a single threat actor.&rdquo; <button type="button" class="nyu-define" data-term="attribution">Attribution</button> is the territory where model output deserves the most skepticism: deep uncertainty, active deception, and evidence the model has never seen. If you reached for &ldquo;Unverifiable here&rdquo; that instinct is sound too; the deciding factor is that the dossier&rsquo;s primary reporting actively disputes the &ldquo;single&rdquo; framing.</p></div>
+              </article>
+
+              <!-- C1.6 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">6</span><p class="lab-claim__text">&ldquo;Organizations must patch within 24 hours.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="judgment"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="notclaim"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--judgment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3v18M5 7l7-4 7 4M5 7l-3 6a4 4 0 0 0 6 0zM19 7l-3 6a4 4 0 0 0 6 0z"/></svg>Human judgment</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; Human judgment</span></div><p>This is a risk decision, not a fact to route. The right patch window depends on exposure, change windows, and risk acceptance. The model can <em>propose</em> 24 hours; only the organization can <em>decide</em> it. In the disseminated product it becomes a recommendation addressed to the risk owner, never a verified fact.</p></div>
+              </article>
+
+            </div>
+
+            <div class="lab-meter" aria-hidden="true">
+              <span class="lab-meter__count">0 / 6 audited</span>
+              <div class="lab-meter__track"><div class="lab-meter__fill"></div></div>
+            </div>
+
+            <div class="lab-case-done">
+              <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Case A audited</h4>
+              <p>The artifact you would actually ship keeps claims 1&ndash;3 with their sources and a verification date, replaces claim 4 with the current vendor guidance, strips or explicitly flags claim 5 as unsubstantiated, and converts claim 6 into a recommendation for the risk owner. That marked-up, signed briefing, with a note of what was <em>not</em> verified, is the deliverable. Next: Heartbleed, a bug so famous the model will describe it with total confidence, and watch what that confidence does to the facts.</p>
+            </div>
+          </div>
+          </div>
+
+          <!-- ============ CASE B: HEARTBLEED (CVE-2014-0160) ============ -->
+          <div class="lab-wb__case" data-case="c2" data-active="false">
+            <button type="button" class="lab-wb__head" id="c2-head" aria-expanded="false" aria-controls="c2-body">
+              <span class="lab-wb__tab-idx">B</span>
+              <span class="lab-wb__tab-meta"><b>Heartbleed</b><span>CVE-2014-0160 · overstated</span></span>
+              <span class="lab-wb__chev" aria-hidden="true">&#9662;</span>
+            </button>
+            <div class="lab-wb__body" id="c2-body" role="region" aria-labelledby="c2-head">
+            <p style="color:var(--ink-soft);">
+              Heartbleed is one of the most famous bugs in security history, which is exactly why a model will speak
+              about it with total confidence. Asked without grounding, here is what it produced. Watch what that
+              confidence does to the technical details.
+            </p>
+
+            <div class="lab-terminal">
+              <div class="lab-terminal__bar">
+                <span class="lab-terminal__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="lab-terminal__title">model: <b>local · ungrounded</b> &nbsp;·&nbsp; claims tagged (1)&ndash;(5)</span>
+              </div>
+              <div class="lab-terminal__body"><span class="c-comment">// reconstructed model output (no grounding)</span>
+"CVE-2014-0160, Heartbleed, is a vulnerability in the OpenSSL
+cryptographic library. <span class="tag">(1)</span> It is a critical remote code
+execution flaw that lets an attacker run arbitrary code on the
+server. <span class="tag">(2)</span> Its CVSS v3.1 base score is 10.0 Critical. <span class="tag">(3)</span>
+Every version of OpenSSL is affected, and there is no available
+fix. <span class="tag">(4)</span> It is listed in CISA's Known Exploited
+Vulnerabilities catalog. <span class="tag">(5)</span>"</div>
+            </div>
+
+            <div class="lab-dossier">
+              <div class="lab-dossier__title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h10l6 6v10a0 0 0 0 1 0 0H4z"/><path d="M14 4v6h6"/></svg>
+                Source dossier · the ground truth you route to
+              </div>
+              <div class="lab-source"><span class="lab-source__name">CVE record / NVD</span><div class="lab-source__body">CVE-2014-0160 (Heartbleed): a buffer over-read in OpenSSL's TLS/DTLS heartbeat extension lets a remote attacker read process memory (private keys, credentials, session data). Information disclosure; no code execution. CVSS 3.1 base 7.5 HIGH (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N). CVSS v2 base 5.0.</div></div>
+              <div class="lab-source"><span class="lab-source__name">OpenSSL security advisory</span><div class="lab-source__body">Affected: OpenSSL 1.0.1 through 1.0.1f (and 1.0.2-beta). Fixed in 1.0.1g. 1.0.0 and earlier are not affected. After upgrading, reissue and revoke certificates and reset secrets that may have been exposed.</div></div>
+              <div class="lab-source"><span class="lab-source__name">CISA KEV</span><div class="lab-source__body">CVE-2014-0160 is listed in the Known Exploited Vulnerabilities catalog.</div></div>
+            </div>
+
+            <div class="lab-claims">
+
+              <!-- B1 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">1</span><p class="lab-claim__text">&ldquo;CVE-2014-0160, Heartbleed, is a vulnerability in the OpenSSL cryptographic library.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="nvd"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="verified"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Verified</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; CVE record / NVD</span></div><p>Existence and identity check out against the CVE record. As always, the headline of a famous CVE is the part the model is most likely to get right. Hold your trust there and nowhere else yet.</p></div>
+              </article>
+
+              <!-- B2 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">2</span><p class="lab-claim__text">&ldquo;It is a critical remote code execution flaw that lets an attacker run arbitrary code on the server.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="nvd"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="contradicted"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--contradicted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Contradicted</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; CVE record / NVD</span></div><p>The single most common Heartbleed misconception, and the model repeats it with a straight face. NVD describes an <strong>information-disclosure buffer over-read</strong>: the attacker reads memory, they do not run code. The vector says so plainly (C:H, but I:N and A:N). Mischaracterizing the flaw type changes the whole response, the containment, the urgency, and the story you tell the CISO.</p></div>
+              </article>
+
+              <!-- B3 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">3</span><p class="lab-claim__text">&ldquo;Its CVSS v3.1 base score is 10.0 Critical.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="nvd"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="contradicted"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--contradicted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Contradicted</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; NVD enrichment</span></div><p>NVD scores Heartbleed <strong>7.5 High</strong> on CVSS 3.1 (and 5.0 on the older v2), not 10.0. The inflated score follows naturally from the previous error: once you wrongly believe it runs code, a 10.0 feels right. Routing the score to NVD instead of to the model&rsquo;s sense of drama catches it.</p></div>
+              </article>
+
+              <!-- B4 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">4</span><p class="lab-claim__text">&ldquo;Every version of OpenSSL is affected, and there is no available fix.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="vendor"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="contradicted"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--contradicted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Contradicted</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; Vendor advisory</span></div><p>Both halves are wrong, and the vendor advisory owns both. Only OpenSSL 1.0.1 through 1.0.1f are affected; 1.0.0 and earlier never were, and the fix shipped in 1.0.1g. &ldquo;No fix available&rdquo; is the most dangerous shape of wrong: it tells a defender to despair instead of upgrade.</p></div>
+              </article>
+
+              <!-- B5 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">5</span><p class="lab-claim__text">&ldquo;It is listed in CISA&rsquo;s Known Exploited Vulnerabilities catalog.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="kev"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="verified"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Verified</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; CISA KEV</span></div><p>True, and KEV is the source that confirms it. Notice the pattern across this case: the model was right about what is easy to recall (the name, the existence, the KEV listing) and wrong about the engineering specifics that decide your response. Fame is not accuracy.</p></div>
+              </article>
+
+            </div>
+
+            <div class="lab-meter" aria-hidden="true">
+              <span class="lab-meter__count">0 / 5 audited</span>
+              <div class="lab-meter__track"><div class="lab-meter__fill"></div></div>
+            </div>
+
+            <div class="lab-case-done">
+              <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Case B audited</h4>
+              <p>Three of five claims overstated a real, world-famous bug: Heartbleed is an information-disclosure over-read, not remote code execution; its score is 7.5, not 10.0; and a fix has existed since 1.0.1g. The sharper the model&rsquo;s confidence, the more carefully you route. Next: Apache Struts, where the headline is right and the details quietly drift.</p>
+            </div>
+          </div>
+          </div>
+
+          <!-- ============ CASE C: APACHE STRUTS (CVE-2017-5638) ============ -->
+          <div class="lab-wb__case" data-case="c3" data-active="false">
+            <button type="button" class="lab-wb__head" id="c3-head" aria-expanded="false" aria-controls="c3-body">
+              <span class="lab-wb__tab-idx">C</span>
+              <span class="lab-wb__tab-meta"><b>Apache Struts</b><span>CVE-2017-5638 · drifting details</span></span>
+              <span class="lab-wb__chev" aria-hidden="true">&#9662;</span>
+            </button>
+            <div class="lab-wb__body" id="c3-body" role="region" aria-labelledby="c3-head">
+            <p style="color:var(--ink-soft);">
+              This is the Apache Struts flaw behind the 2017 Equifax breach. Asked without grounding, the model nails
+              the headline, then drifts on exactly the specifics that decide a remediation. This is the realistic
+              profile you will meet most often: right where it is easy, wrong where it matters.
+            </p>
+
+            <div class="lab-terminal">
+              <div class="lab-terminal__bar">
+                <span class="lab-terminal__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="lab-terminal__title">model: <b>local · ungrounded</b> &nbsp;·&nbsp; claims tagged (1)&ndash;(5)</span>
+              </div>
+              <div class="lab-terminal__body"><span class="c-comment">// reconstructed model output (no grounding)</span>
+"CVE-2017-5638 is a remote code execution flaw in Apache Struts 2's
+Jakarta Multipart parser. <span class="tag">(1)</span> It carries a CVSS base score
+of 10.0. <span class="tag">(2)</span> Affected versions are 2.3.5 through 2.5.31;
+upgrade to 2.5.33 to remediate. <span class="tag">(3)</span> A full analysis is
+published at struts.apache.org/announce/2017/cve-2017-5638-analysis.html. <span class="tag">(4)</span>
+Public reporting attributes the exploitation to a single named
+ransomware crew. <span class="tag">(5)</span>"</div>
+            </div>
+
+            <div class="lab-dossier">
+              <div class="lab-dossier__title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h10l6 6v10a0 0 0 0 1 0 0H4z"/><path d="M14 4v6h6"/></svg>
+                Source dossier · the ground truth you route to
+              </div>
+              <div class="lab-source"><span class="lab-source__name">CVE record / NVD</span><div class="lab-source__body">CVE-2017-5638: remote code execution in the Jakarta Multipart parser of Apache Struts 2 (a crafted Content-Type header triggers arbitrary command execution). CVSS 3.0 base 10.0 CRITICAL (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H). Disclosed March 2017.</div></div>
+              <div class="lab-source"><span class="lab-source__name">Apache Struts security bulletin (S2-045 / S2-046)</span><div class="lab-source__body">Affected: Struts 2.3.5 through 2.3.31 and 2.5 through 2.5.10. Fixed in 2.3.32 and 2.5.10.1.</div></div>
+              <div class="lab-source"><span class="lab-source__name">CISA KEV</span><div class="lab-source__body">Listed; widely exploited in the wild (including the 2017 Equifax breach).</div></div>
+              <div class="lab-source"><span class="lab-source__name">Note</span><div class="lab-source__body">This dossier contains no threat-actor attribution.</div></div>
+            </div>
+
+            <div class="lab-claims">
+
+              <!-- C1 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">1</span><p class="lab-claim__text">&ldquo;CVE-2017-5638 is a remote code execution flaw in Apache Struts 2&rsquo;s Jakarta Multipart parser.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="nvd"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="verified"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Verified</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; CVE record / NVD</span></div><p>Correct: RCE in the Jakarta Multipart parser, triggered through a crafted Content-Type header. The nature of the flaw matches NVD. So far the model is reliable, which is precisely the trust the next three claims will try to spend.</p></div>
+              </article>
+
+              <!-- C2 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">2</span><p class="lab-claim__text">&ldquo;It carries a CVSS base score of 10.0.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="nvd"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="verified"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--verified"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Verified</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; NVD enrichment</span></div><p>NVD confirms 10.0 Critical (the scope change to other components pushes it to the maximum). Unlike Heartbleed, here the severity claim is genuinely right. Verifying is still a lookup, not a guess: you confirmed it, you did not assume it.</p></div>
+              </article>
+
+              <!-- C3 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">3</span><p class="lab-claim__text">&ldquo;Affected versions are 2.3.5 through 2.5.31; upgrade to 2.5.33 to remediate.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="vendor"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="contradicted"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--contradicted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Contradicted</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; Vendor advisory</span></div><p>The Apache bulletin owns these numbers: affected ranges are 2.3.5&ndash;2.3.31 and 2.5&ndash;2.5.10, fixed in 2.3.32 and 2.5.10.1. The briefing&rsquo;s &ldquo;2.5.31&rdquo; and &ldquo;2.5.33&rdquo; are confident inventions that read just like real version strings. This is the version-boundary failure that survives every casual reread and only the vendor advisory catches.</p></div>
+              </article>
+
+              <!-- C4 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">4</span><p class="lab-claim__text">&ldquo;A full analysis is published at struts.apache.org/announce/2017/cve-2017-5638-analysis.html.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="reference"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="fabricated"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--fabricated"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>Fabricated</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; Click the reference</span></div><p>The domain is real; this specific path is not, and it resolves to nothing. The model assembled a plausible URL the way it assembles any string, with nothing forcing it to point at a real page. One click settles it. A citation no one clicked is a citation no one verified.</p></div>
+              </article>
+
+              <!-- C5 -->
+              <article class="lab-claim">
+                <div class="lab-claim__head"><span class="lab-claim__id">5</span><p class="lab-claim__text">&ldquo;Public reporting attributes the exploitation to a single named ransomware crew.&rdquo;</p></div>
+                <div class="lab-cfield" data-field="route" data-answer="primary"><div class="lab-cfield__label"><span class="q">Route</span> · which source adjudicates this?</div><div class="lab-chips" data-chips="route"></div></div>
+                <div class="lab-cfield" data-field="verdict" data-answer="unverifiable"><div class="lab-cfield__label"><span class="q">Verdict</span> · stamp it</div><div class="lab-chips" data-chips="verdict"></div></div>
+                <div class="lab-claim__actions"><button type="button" class="lab-claim__btn" data-action="check-claim">Check this claim</button><button type="button" class="lab-claim__btn lab-claim__btn--reset" data-action="reset-claim" style="display:none;">Re-audit</button></div>
+                <div class="lab-claim__feedback"><div class="lab-claim__verdict-row"><span class="lab-stamp lab-stamp--unverifiable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.6 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Unverifiable here</span><span style="font-size:var(--fs-xs);color:var(--ink-mute);font-family:var(--font-mono);">Route &rarr; Primary reporting</span></div><p>Your dossier carries no attribution, so on this evidence the claim cannot be verified, and it routes to primary reporting, where it should be read with the deepest skepticism. The &ldquo;single named crew&rdquo; framing is exactly the over-specific, tidy story <button type="button" class="nyu-define" data-term="attribution">attribution</button> tends to invite, and real exploitation of this flaw was broad. Mark it unverified rather than passing the model&rsquo;s certainty along as your own.</p></div>
+              </article>
+
+            </div>
+
+            <div class="lab-meter" aria-hidden="true">
+              <span class="lab-meter__count">0 / 5 audited</span>
+              <div class="lab-meter__track"><div class="lab-meter__fill"></div></div>
+            </div>
+
+            <div class="lab-case-done">
+              <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Case C audited</h4>
+              <p>Right headline, right severity, then a fabricated version boundary, an invented citation, and over-specified attribution. This is the failure profile you will actually face: not obvious nonsense, but confident drift on the few specifics that decide a remediation. The fix is not a sharper eye, it is the routine you just ran. Build it into a checklist next.</p>
+            </div>
+          </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ====================== STAGE 3: CHECKLIST BUILDER ====================== -->
+      <section class="nyu-section lab-stage" id="stage-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Keep: Build Your Verification Checklist</h2>
+        </div>
+        <span class="lab-stage__tag">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Durable export · ~5 min
+        </span>
+
+        <p>
+          The methodology is only worth anything if it survives the deadline. Turn what you just practiced into a
+          checklist you own. Toggle the checks you commit to, add your own, and the panel compiles a clean,
+          numbered list you can copy anywhere you need it.
+        </p>
+
+        <div class="lab-builder">
+          <div class="lab-builder__pick lab-panel" style="margin:0;">
+            <div class="lab-checkgroup">
+              <p class="lab-checkgroup__title">Decompose &amp; type</p>
+              <label class="lab-check"><input type="checkbox" value="d1" checked><span>Break model output into atomic claims before trusting any of them.</span></label>
+              <label class="lab-check"><input type="checkbox" value="d2" checked><span>Name each claim&rsquo;s type: existence, detail, exploitation, mitigation, attribution, reference, action.</span></label>
+            </div>
+            <div class="lab-checkgroup">
+              <p class="lab-checkgroup__title">Route to ground truth</p>
+              <label class="lab-check"><input type="checkbox" value="r1" checked><span>Send existence and enrichment claims to the CVE record / NVD.</span></label>
+              <label class="lab-check"><input type="checkbox" value="r2" checked><span>Send affected-version and fix claims to the vendor advisory, not the model.</span></label>
+              <label class="lab-check"><input type="checkbox" value="r3" checked><span>Send &ldquo;actively exploited&rdquo; claims to CISA KEV, and remember absence is not safety.</span></label>
+              <label class="lab-check"><input type="checkbox" value="r4" checked><span>Click every reference link before it travels. A dead link is a fabrication.</span></label>
+              <label class="lab-check"><input type="checkbox" value="r5"><span>Treat attribution claims as the most suspect; route to primary reporting with caveats.</span></label>
+            </div>
+            <div class="lab-checkgroup">
+              <p class="lab-checkgroup__title">Check currency</p>
+              <label class="lab-check"><input type="checkbox" value="c1" checked><span>Ask &ldquo;is this still true today,&rdquo; not just &ldquo;was it ever true.&rdquo; Date-stamp what you verify.</span></label>
+              <label class="lab-check"><input type="checkbox" value="c2"><span>Treat any &ldquo;fixed in version X&rdquo; claim as stale until re-confirmed against the current advisory.</span></label>
+            </div>
+            <div class="lab-checkgroup">
+              <p class="lab-checkgroup__title">Stamp &amp; sign</p>
+              <label class="lab-check"><input type="checkbox" value="s1" checked><span>Assign confidence in calibrated language; never inherit it from the model&rsquo;s tone.</span></label>
+              <label class="lab-check"><input type="checkbox" value="s2" checked><span>Mark unverified claims as unverified in the product. Do not silently keep them.</span></label>
+              <label class="lab-check"><input type="checkbox" value="s3"><span>Never paste TLP:AMBER or restricted reporting into an external AI service.</span></label>
+              <label class="lab-check"><input type="checkbox" value="s4"><span>Decide which steps are human-only: accountability, access, irreversibility, attribution.</span></label>
+            </div>
+            <div class="lab-custom">
+              <span class="lab-custom__label">Add your own check</span>
+              <input type="text" maxlength="140" placeholder="e.g. cross-check EPSS before calling something urgent" aria-label="Add your own checklist item">
+            </div>
+            <div class="lab-custom">
+              <span class="lab-custom__label">Add another</span>
+              <input type="text" maxlength="140" placeholder="something you almost missed in this lab&hellip;" aria-label="Add another checklist item">
+            </div>
+          </div>
+
+          <div class="lab-output" aria-live="polite">
+            <h4 class="lab-output__title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              My verification checklist
+            </h4>
+            <p class="lab-output__sub">For AI Assisted Threat Intelligence · Portable Checklist</p>
+            <ul class="lab-output__list"></ul>
+            <p class="lab-output__empty">Select at least one check on the left to start your list.</p>
+            <div class="lab-output__foot">
+              <button type="button" class="lab-btn lab-btn--gold" data-action="copy-checklist">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy checklist
+              </button>
+              <span class="lab-copied" role="status">Copied to clipboard</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== STAGE 4: DEBRIEF ====================== -->
+      <section class="nyu-section lab-stage" id="stage-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Debrief: Lock It In</h2>
+        </div>
+        <span class="lab-stage__tag">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/></svg>
+          Wrap-up · ~3 min
+        </span>
+
+        <p>Two quick checks to confirm the two distinctions this lab lives or dies on.</p>
+
+        <div class="nyu-quiz" aria-labelledby="kc-1-prompt">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 1</span></div>
+          <p class="nyu-quiz__prompt" id="kc-1-prompt">
+            A model briefing says a CVE is &ldquo;being actively exploited by ransomware crews,&rdquo; but neither your NVD excerpt nor the vendor advisory mentions exploitation at all. The disciplined verdict is:
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Contradiction needs a source that says otherwise. Your sources are silent, not opposed. Treating silence as denial is the mirror-image error of treating fluency as proof.">Contradicted, because the sources do not back it up</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The model&rsquo;s certainty is a property of text generation, not evidence. Confidence is assigned by the analyst after verification, never inherited from the model&rsquo;s tone.">Verified, because the model states it confidently</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Unverifiable from these sources; route it to CISA KEV and mark it unverified until checked</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Not-in-these-sources is not the same as invented. The claim may be perfectly true; it simply has a different adjudicator (KEV). Fabrication means the thing does not exist anywhere, like a dead URL or a non-resolving CVE ID.">Fabricated, because it is not in the dossier</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Exploitation claims route to CISA KEV. With no adjudicating source in hand, the honest move is to mark the claim unverified, not to upgrade silence into either confirmation or denial. Absence of evidence routes the claim; it does not settle it."
+               data-incorrect-msg="Re-read the distinction you drilled in the workbench: the sources are silent on exploitation, and silence is neither confirmation nor contradiction nor fabrication. It routes the claim to KEV and ships it marked unverified."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="kc-2-prompt">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 2</span></div>
+          <p class="nyu-quiz__prompt" id="kc-2-prompt">
+            Recall Case A: a model recommends remediating Log4Shell by upgrading to Log4j 2.15.0, but the vendor advisory shows 2.15.0 was an incomplete fix, later superseded by 2.16.0 and beyond. The model&rsquo;s claim is best described as:
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Nothing was invented: 2.15.0 really shipped and really was the recommended fix for a few days in December 2021. The failure axis here is time, not truth at origin.">A hallucination; the model fabricated the version number</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">A stale truth: accurate at training time, false now; caught by the currency check, not by existence or detail checks</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Once recommended is not currently recommended. An analyst acting on this upgrades to a version with a known incomplete fix. In intelligence, correctness means correctness now.">Correct, since 2.15.0 was once the recommended fix</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Prompt injection is an attack on the model through crafted input. Nothing was injected here; the model is faithfully serving outdated training data.">A prompt-injection artifact</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. This is stale truth: accurate when the model was trained, false today. Existence checks pass, detail checks pass against old sources, and only the currency check against the vendor&rsquo;s current advisory catches it. That is why currency is its own step."
+               data-incorrect-msg="Separate the two axes. Fabrication invents what never was. Stale truth accurately reports what is no longer so. The countermeasure for the second is step 4 of the methodology, the currency check."></div>
+        </div>
+
+
+      <!-- ====================== MODULE COMPLETE ====================== -->
+      <aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="module-complete">
+        <h3 class="nyu-callout__title" id="module-complete"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Module 5 Complete</h3>
+        <p>Across six sections this module covered the intelligence cycle and where a language model fits in it, the authoritative vulnerability sources and what each one settles, AI-assisted summarization and its failure modes, IoC extraction and STIX as machine-consumable output, a verification methodology with an explicit analyst boundary, and a lab applying that methodology to fluent but unreliable output. What the module leaves you with is a repeatable routine: decompose machine-generated claims, route each one to the source that settles it, check currency, sign only what you verified, and stay clear about which part of the work is yours.</p>
+      </aside>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 7: References &amp; Readings.</strong> All sources, citations, and recommended readings for this module, organized by category. Beyond that, Module 6 points the same verification methodology at AI code review findings, where the authoritative sources become CWE, vendor documentation, and the code itself.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+
+  <!-- ============================================================
+       PAGE-SCOPED LAB BEHAVIOR
+       Self-contained vanilla JS. Defensive: every initializer
+       no-ops if its markup is absent. Keyboard-native (real
+       button elements). Honors reduced-motion via CSS only.
+       ============================================================ -->
+  <script>
+  (function () {
+    "use strict";
+
+    /* ---------- chip injection (keeps the markup lean) ---------- */
+    var CHIPSETS = {
+      route: [["nvd", "CVE record / NVD"], ["vendor", "Vendor advisory"], ["kev", "CISA KEV"], ["primary", "Primary reporting"], ["reference", "Click the reference"], ["judgment", "Human judgment"]],
+      verdict: [["verified", "Verified"], ["contradicted", "Contradicted"], ["stale", "Stale truth"], ["fabricated", "Fabricated"], ["unverifiable", "Unverifiable here"], ["notclaim", "Not a verifiable claim"]]
+    };
+    function injectChips() {
+      Array.prototype.forEach.call(document.querySelectorAll(".lab-chips[data-chips]"), function (box) {
+        if (box.dataset.filled === "true") return;
+        var set = CHIPSETS[box.dataset.chips];
+        if (!set) return;
+        set.forEach(function (pair) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "lab-chip";
+          b.dataset.value = pair[0];
+          b.textContent = pair[1];
+          box.appendChild(b);
+        });
+        box.dataset.filled = "true";
+      });
+    }
+
+    /* ---------- shared progress signal ---------- */
+    var Lab = {
+      markDone: function (stageId) {
+        var node = document.querySelector('.lab-stepper__item[data-target="' + stageId + '"]');
+        if (node) node.dataset.done = "true";
+      }
+    };
+
+    /* ---------- Stepper: scrollspy + click to scroll ---------- */
+    function initStepper() {
+      var items = Array.prototype.slice.call(document.querySelectorAll(".lab-stepper__item"));
+      if (!items.length) return;
+      var targets = items.map(function (it) { return document.getElementById(it.dataset.target); });
+
+      items.forEach(function (it) {
+        it.addEventListener("click", function () {
+          var t = document.getElementById(it.dataset.target);
+          if (t) { t.style.scrollMarginTop = "84px"; try { t.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }
+        });
+      });
+
+      var onScroll = function () {
+        var pos = window.scrollY + 140;
+        var active = 0;
+        targets.forEach(function (t, i) { if (t && t.offsetTop <= pos) active = i; });
+        items.forEach(function (it, i) { it.setAttribute("aria-current", i === active ? "true" : "false"); });
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    }
+
+    /* ---------- Stage 1: Hallucination Spotter ---------- */
+    function initSpotter() {
+      var wrap = document.querySelector(".lab-spotter");
+      if (!wrap) return;
+      var toks = Array.prototype.slice.call(wrap.querySelectorAll(".lab-tok"));
+      var revealBtn = wrap.querySelector('[data-action="reveal-spotter"]');
+      var resetBtn = wrap.querySelector('[data-action="reset-spotter"]');
+      var results = wrap.querySelector(".lab-spotter__results");
+      var statTP = wrap.querySelector('[data-stat="tp"]');
+      var statFP = wrap.querySelector('[data-stat="fp"]');
+      var statFN = wrap.querySelector('[data-stat="fn"]');
+      var findings = wrap.querySelector(".lab-findings");
+      var verdict = wrap.querySelector(".lab-spotter__verdict");
+
+      toks.forEach(function (t) {
+        t.setAttribute("aria-pressed", "false");
+        t.addEventListener("click", function () {
+          if (wrap.dataset.revealed === "true") return;
+          var on = t.classList.toggle("is-flagged");
+          t.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      });
+
+      if (revealBtn) revealBtn.addEventListener("click", function () {
+        if (wrap.dataset.revealed === "true") return;
+        wrap.dataset.revealed = "true";
+        var tp = 0, fp = 0, fn = 0;
+        if (findings) findings.innerHTML = "";
+        toks.forEach(function (t) {
+          var suspect = t.dataset.suspect === "true";
+          var flagged = t.classList.contains("is-flagged");
+          t.classList.remove("is-flagged");
+          if (suspect && flagged) { t.classList.add("is-hit"); tp++; }
+          else if (suspect && !flagged) { t.classList.add("is-miss"); fn++; }
+          else if (!suspect && flagged) { t.classList.add("is-fp"); fp++; }
+          if (suspect && findings) {
+            var li = document.createElement("li");
+            li.innerHTML = '<span class="lab-findings__kind">' + (t.dataset.kind || "flaw") + '</span><span><b>&ldquo;' + (t.dataset.label || t.textContent.trim()) + '&rdquo;</b>: ' + (t.dataset.note || "") + '</span>';
+            findings.appendChild(li);
+          }
+        });
+        function animateNum(el, val) {
+          if (!el) return;
+          el.textContent = val;
+          el.classList.remove("is-animating");
+          void el.offsetWidth; /* force reflow */
+          el.classList.add("is-animating");
+        }
+        animateNum(statTP, tp);
+        animateNum(statFP, fp);
+        animateNum(statFN, fn);
+        if (verdict) {
+          var planted = tp + fn;
+          var msg;
+          if (fn === 0 && fp === 0) msg = "Flawless audit. You caught every planted fabrication and flagged nothing clean. This is the calibration you want.";
+          else if (fn === 0) msg = "You caught all " + planted + " fabrications. The " + fp + " clean line(s) you also flagged are cheap mistakes; over-flagging costs less than missing, but a sharp auditor learns to tell them apart.";
+          else if (fp === 0) msg = "You caught " + tp + " of " + planted + ". The missed one(s) are the dangerous kind: they read exactly like correct intelligence. That is the whole lesson of this stage.";
+          else msg = "You caught " + tp + " of " + planted + " fabrications, and flagged " + fp + " clean line(s). Review the misses below; in CTI a missed fabrication is the expensive error.";
+          verdict.textContent = msg;
+        }
+        revealBtn.disabled = true;
+        Lab.markDone("stage-1");
+        if (results) { results.hidden = false; try { results.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }
+      });
+
+      if (resetBtn) resetBtn.addEventListener("click", function () {
+        wrap.dataset.revealed = "false";
+        toks.forEach(function (t) {
+          t.classList.remove("is-flagged", "is-hit", "is-miss", "is-fp");
+          t.setAttribute("aria-pressed", "false");
+        });
+        if (results) results.hidden = true;
+        if (revealBtn) revealBtn.disabled = false;
+      });
+    }
+
+    /* ---------- Stage 2: Audit Workbench ---------- */
+    function initWorkbench() {
+      var wb = document.querySelector(".lab-wb");
+      if (!wb) return;
+
+      var tabs = Array.prototype.slice.call(wb.querySelectorAll(".lab-wb__head"));
+      var cases = Array.prototype.slice.call(wb.querySelectorAll(".lab-wb__case"));
+      /* Accordion: each header toggles only its own case, so a reader can keep
+         two open side by side or work straight down the page. */
+      function setOpen(kase, open) {
+        kase.dataset.active = String(open);
+        var head = kase.querySelector(".lab-wb__head");
+        if (head) head.setAttribute("aria-expanded", String(open));
+      }
+      cases.forEach(function (kase) {
+        var head = kase.querySelector(".lab-wb__head");
+        if (!head) return;
+        head.addEventListener("click", function () {
+          setOpen(kase, kase.dataset.active !== "true");
+        });
+      });
+      cases.forEach(function (kase, i) { setOpen(kase, i === 0); });
+
+      cases.forEach(function (kase) {
+        var claims = Array.prototype.slice.call(kase.querySelectorAll(".lab-claim"));
+        var fill = kase.querySelector(".lab-meter__fill");
+        var count = kase.querySelector(".lab-meter__count");
+        var doneBox = kase.querySelector(".lab-case-done");
+        var total = claims.length;
+
+        function refreshMeter() {
+          var graded = claims.filter(function (c) { return c.dataset.result; }).length;
+          if (fill) fill.style.width = (total ? (graded / total) * 100 : 0) + "%";
+          if (count) count.textContent = graded + " / " + total + " audited";
+          if (graded === total && total > 0) {
+            if (doneBox) doneBox.dataset.show = "true";
+            var h = kase.querySelector(".lab-wb__head"); if (h) h.dataset.complete = "true";
+            Lab.markDone("stage-2");
+          }
+        }
+
+        claims.forEach(function (claim) {
+          var fields = Array.prototype.slice.call(claim.querySelectorAll(".lab-cfield"));
+          var checkBtn = claim.querySelector('[data-action="check-claim"]');
+          var resetBtn = claim.querySelector('[data-action="reset-claim"]');
+          var feedback = claim.querySelector(".lab-claim__feedback");
+
+          fields.forEach(function (field) {
+            var chips = Array.prototype.slice.call(field.querySelectorAll(".lab-chip"));
+            chips.forEach(function (chip) {
+              chip.setAttribute("aria-pressed", "false");
+              chip.addEventListener("click", function () {
+                if (claim.dataset.result) return;
+                chips.forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
+                chip.setAttribute("aria-pressed", "true");
+                field.dataset.value = chip.dataset.value;
+              });
+            });
+          });
+
+          if (checkBtn) checkBtn.addEventListener("click", function () {
+            var unanswered = fields.filter(function (f) { return !f.dataset.value; });
+            if (unanswered.length) {
+              unanswered.forEach(function (f) {
+                f.animate(
+                  [{ transform: "translateX(0)" }, { transform: "translateX(-5px)" }, { transform: "translateX(5px)" }, { transform: "translateX(0)" }],
+                  { duration: 240 }
+                );
+              });
+              return;
+            }
+            var allCorrect = true;
+            fields.forEach(function (field) {
+              var correct = field.dataset.value === field.dataset.answer;
+              field.dataset.graded = correct ? "correct" : "incorrect";
+              if (!correct) allCorrect = false;
+              var chips = Array.prototype.slice.call(field.querySelectorAll(".lab-chip"));
+              chips.forEach(function (c) { if (c.dataset.value === field.dataset.answer) c.dataset.correct = "true"; });
+            });
+            claim.dataset.result = allCorrect ? "correct" : "incorrect";
+            if (feedback) feedback.dataset.show = "true";
+            if (checkBtn) checkBtn.style.display = "none";
+            if (resetBtn) resetBtn.style.display = "inline-flex";
+            refreshMeter();
+          });
+
+          if (resetBtn) resetBtn.addEventListener("click", function () {
+            delete claim.dataset.result;
+            if (feedback) feedback.dataset.show = "false";
+            fields.forEach(function (field) {
+              delete field.dataset.graded;
+              delete field.dataset.value;
+              var chips = Array.prototype.slice.call(field.querySelectorAll(".lab-chip"));
+              chips.forEach(function (c) { c.setAttribute("aria-pressed", "false"); delete c.dataset.correct; });
+            });
+            if (checkBtn) checkBtn.style.display = "inline-flex";
+            resetBtn.style.display = "none";
+            refreshMeter();
+          });
+        });
+
+        refreshMeter();
+      });
+    }
+
+    /* ---------- Stage 3: Verification Checklist Builder ---------- */
+    function initBuilder() {
+      var builder = document.querySelector(".lab-builder");
+      if (!builder) return;
+      var KEY = "nyu-lab-m05-hallucination-checklist";
+      var boxes = Array.prototype.slice.call(builder.querySelectorAll(".lab-check input[type=checkbox]"));
+      var customs = Array.prototype.slice.call(builder.querySelectorAll(".lab-custom input"));
+      var list = builder.querySelector(".lab-output__list");
+      var empty = builder.querySelector(".lab-output__empty");
+      var copyBtn = builder.querySelector('[data-action="copy-checklist"]');
+      var copied = builder.querySelector(".lab-copied");
+
+      function persist() {
+        try {
+          var state = {
+            checked: boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; }),
+            custom: customs.map(function (c) { return c.value; })
+          };
+          localStorage.setItem(KEY, JSON.stringify(state));
+        } catch (e) {}
+      }
+      function restore() {
+        try {
+          var raw = localStorage.getItem(KEY);
+          if (!raw) return;
+          var state = JSON.parse(raw);
+          if (state.checked) boxes.forEach(function (b) { b.checked = state.checked.indexOf(b.value) !== -1; });
+          if (state.custom) customs.forEach(function (c, i) { if (state.custom[i] != null) c.value = state.custom[i]; });
+        } catch (e) {}
+      }
+      function items() {
+        var out = boxes.filter(function (b) { return b.checked; }).map(function (b) {
+          var span = b.parentElement.querySelector("span");
+          return span ? span.textContent.trim() : b.value;
+        });
+        customs.forEach(function (c) { if (c.value.trim()) out.push(c.value.trim()); });
+        return out;
+      }
+      function render() {
+        var data = items();
+        if (list) list.innerHTML = "";
+        if (!data.length) {
+          if (empty) empty.style.display = "block";
+        } else {
+          if (empty) empty.style.display = "none";
+          data.forEach(function (txt) {
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode(txt));
+            if (list) list.appendChild(li);
+          });
+        }
+        if (data.length) Lab.markDone("stage-3");
+        persist();
+      }
+
+      boxes.forEach(function (b) { b.addEventListener("change", render); });
+      customs.forEach(function (c) { c.addEventListener("input", render); });
+
+      if (copyBtn) copyBtn.addEventListener("click", function () {
+        var data = items();
+        if (!data.length) return;
+        var text = "MY VERIFICATION CHECKLIST - AI-generated threat intelligence\n" +
+          data.map(function (t, i) { return (i + 1) + ". [ ] " + t; }).join("\n");
+        var done = function () { if (copied) { copied.dataset.show = "true"; setTimeout(function () { copied.dataset.show = "false"; }, 2000); } };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text); done(); });
+        } else { fallbackCopy(text); done(); }
+      });
+      function fallbackCopy(text) {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+
+      restore();
+      render();
+    }
+
+    /* ---------- Stage scroll-entrance (IntersectionObserver) ---------- */
+    function initStageEntrance() {
+      var stages = Array.prototype.slice.call(document.querySelectorAll(".lab-stage"));
+      if (!stages.length) return;
+      /* Fallback: no IntersectionObserver support → show immediately */
+      if (!("IntersectionObserver" in window)) {
+        stages.forEach(function (s) { s.classList.add("is-visible"); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.06 });
+      stages.forEach(function (s) { io.observe(s); });
+    }
+
+    function boot() {
+      injectChips();
+      initStepper();
+      initSpotter();
+      initWorkbench();
+      initBuilder();
+      initStageEntrance();
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", boot);
+    } else {
+      boot();
+    }
+  })();
+  </script>
+</body>
+</html>

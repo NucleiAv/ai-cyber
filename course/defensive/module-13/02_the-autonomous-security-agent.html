@@ -1,0 +1,882 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 13 &middot; Section 2 &middot; The Autonomous Security Agent &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+  <style>
+    /* ============================================================
+       THE AUDITOR TRAP (Section 2, "Action vs Tools")
+       The student is handed a real tool manifest and asked to sign
+       off. The manifest cannot answer the question. Being unable to
+       answer is the lesson. Prefixed .aud-* to avoid collisions.
+       ============================================================ */
+    .aud { border: 1px solid var(--rule); border-radius: var(--r-md); background: var(--surface); margin: var(--sp-5) 0; overflow: hidden; }
+    .aud__head { padding: var(--sp-4) var(--sp-5); background: var(--surface-sunken); border-bottom: 1px solid var(--rule); }
+    .aud__kicker { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-mute); display: block; margin-bottom: 4px; }
+    .aud__title { margin: 0; font-size: var(--fs-md); font-weight: 700; color: var(--ink); }
+    .aud__body { padding: var(--sp-5); }
+    .aud__manifest { background: var(--code-bg); color: var(--code-ink); font-family: var(--font-mono); font-size: 0.86rem; line-height: 1.6; padding: var(--sp-4) var(--sp-5); border-radius: var(--r-sm); overflow-x: auto; margin: 0 0 var(--sp-4); white-space: pre; }
+    .aud__manifest .k { color: #6BD3F2; }
+    .aud__manifest .v { color: #F1D78F; }
+    .aud__manifest .c { color: var(--code-comment); font-style: italic; }
+    .aud__q { font-weight: 700; font-size: var(--fs-base); margin: 0 0 var(--sp-3); }
+    .aud__opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--sp-4); }
+    .aud__opt { font: inherit; font-size: var(--fs-sm); text-align: left; padding: 12px 16px; border-radius: var(--r-sm); border: 1px solid var(--nyu-violet-200); background: #fff; color: var(--ink); cursor: pointer; }
+    .aud__opt:hover:not([disabled]) { background: var(--nyu-violet-50); }
+    .aud__opt:focus-visible { outline: 3px solid var(--nyu-violet-light); outline-offset: 2px; }
+    .aud__opt[data-state="wrong"] { border-color: var(--accent-danger); background: var(--accent-danger-bg); }
+    .aud__opt[data-state="right"] { border-color: var(--accent-success); background: var(--accent-success-bg); font-weight: 600; }
+    .aud__opt[disabled] { cursor: default; }
+
+    .aud__verdict { border-left: 4px solid var(--nyu-violet); background: var(--nyu-violet-50); padding: var(--sp-4) var(--sp-5); border-radius: 0 var(--r-sm) var(--r-sm) 0; margin: 0 0 var(--sp-5); }
+    .aud__verdict p { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); }
+    .aud__verdict p:last-child { margin-bottom: 0; }
+    .aud__verdict strong { color: var(--ink); } /* was --nyu-violet-dark on the
+       --nyu-violet-50 verdict panel: violet on violet. It measured 13.24:1 and
+       still broke the same-hue rule. The panel keeps its violet left border,
+       which is where the colour identity belongs. */
+
+    .aud__split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+    .aud__dep { border: 1px solid var(--rule); border-radius: var(--r-sm); overflow: hidden; }
+    .aud__dep h4 { margin: 0; padding: 10px var(--sp-4); font-size: var(--fs-sm); background: var(--surface-sunken); border-bottom: 1px solid var(--rule); }
+    .aud__dep pre { margin: 0; padding: var(--sp-3) var(--sp-4); background: var(--code-bg); color: var(--code-ink); font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.55; overflow-x: auto; white-space: pre; }
+    .aud__dep pre mark { background: rgba(255,214,102,.22); color: #FFD666; font-weight: 700; padding: 1px 3px; border-radius: 3px; }
+    /* Reach readout. The figure itself stays near-black for legibility;
+       colour lives in the pill and the panel edge, never in the number
+       sitting on a same-hue tint. */
+    .aud__reach { padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm); background: var(--surface); border-top: 1px solid var(--rule); }
+    .aud__reach b { display: block; font-family: var(--font-mono); font-size: var(--fs-lg); font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+    .aud__reach span { display: block; color: var(--ink-soft); margin-top: 2px; }
+    .aud__pill { display: inline-block; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin-bottom: 6px; }
+    .aud__dep[data-r="narrow"] { border-color: var(--accent-success); }
+    .aud__dep[data-r="narrow"] .aud__pill { background: var(--accent-success); color: #fff; }
+    .aud__dep[data-r="wide"] { border-color: var(--accent-danger); }
+    .aud__dep[data-r="wide"] .aud__pill { background: var(--accent-danger); color: #fff; }
+    .aud__close { margin: var(--sp-5) 0 0; font-size: var(--fs-sm); }
+    .aud__again { font: inherit; font-size: var(--fs-sm); font-weight: 600; padding: 9px 18px; border-radius: var(--r-sm); border: 1px solid var(--nyu-violet); background: transparent; color: var(--nyu-violet-dark); cursor: pointer; margin-top: var(--sp-4); }
+    .aud__again:focus-visible { outline: 3px solid var(--nyu-violet-light); outline-offset: 2px; }
+    .aud__retry { margin: 0; font-size: var(--fs-sm); color: var(--ink-soft); font-style: italic; }
+    .aud__fig { margin: 0 0 var(--sp-4); }
+    .aud__figcap { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-mute); margin-bottom: 6px; }
+    .aud__fig .aud__manifest { margin: 0; }
+
+    @media (max-width: 640px) { .aud__split { grid-template-columns: 1fr; } }
+
+    /* ============================================================
+       DESIGN STUDIO (Section 6) - configure an agent, audit the
+       configuration the student actually built. Prefixed .studio-*.
+       ============================================================ */
+    .studio { border: 1px solid var(--rule); border-radius: var(--r-md); background: var(--surface); margin: var(--sp-5) 0; overflow: hidden; }
+    /* Fixed 2x2 so no panel is orphaned onto a short row. The envelope
+       panel spans the full width because it is the one the section has
+       just argued you must never leave implicit. */
+    .studio__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; }
+    .studio__set--wide { grid-column: 1 / -1; }
+    .studio__hint { margin: 0; font-size: var(--fs-sm); color: var(--ink-mute); font-style: italic; }
+    .studio__env { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--sp-3); }
+    .studio__envrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--rule); border-radius: var(--r-sm); background: var(--surface-sunken); }
+    .studio .studio__envrow code { font-size: 0.9em; background: var(--code-bg); color: var(--code-ink); padding: 2px 6px; border-radius: 3px; }
+    .studio code { background: var(--code-bg); color: var(--code-ink); padding: 2px 6px; border-radius: 3px; }
+    .studio__envrow select { font: inherit; font-size: var(--fs-sm); padding: 5px 9px; border-radius: var(--r-sm); border: 1px solid var(--nyu-violet-200); background: #fff; margin-left: auto; }
+    .studio__envrow select:focus-visible { outline: 3px solid var(--nyu-violet-light); outline-offset: 2px; }
+    .studio__envrow[data-wide="true"] { border-color: var(--accent-danger); background: var(--accent-danger-bg); }
+    @media (max-width: 640px) { .studio__grid { grid-template-columns: 1fr; } }
+    .studio__set { border: 0; border-bottom: 1px solid var(--rule); border-right: 1px solid var(--rule); margin: 0; padding: var(--sp-4) var(--sp-5); min-width: 0; }
+    .studio__legend { font-size: var(--fs-sm); font-weight: 700; color: var(--nyu-violet-dark); padding: 0; margin-bottom: var(--sp-3); }
+    .studio__legend span { font-weight: 400; color: var(--ink-mute); font-style: italic; }
+    .studio__opt { display: flex; align-items: baseline; gap: 8px; font-size: var(--fs-sm); padding: 5px 0; cursor: pointer; }
+    .studio__opt input { margin: 0; flex: 0 0 auto; position: relative; top: 2px; width: 16px; height: 16px; accent-color: var(--nyu-violet); }
+    .studio__opt em { color: var(--ink-mute); font-size: var(--fs-xs); }
+    .studio .studio__opt code { font-size: 0.9em; background: var(--code-bg); color: var(--code-ink); padding: 2px 6px; border-radius: 3px; }
+
+    .studio__actions { display: flex; gap: 10px; padding: var(--sp-4) var(--sp-5); background: var(--surface-sunken); flex-wrap: wrap; }
+    .studio__btn { font: inherit; font-size: var(--fs-sm); font-weight: 600; padding: 9px 18px; border-radius: var(--r-sm); border: 1px solid var(--nyu-violet); background: var(--nyu-violet); color: #fff; cursor: pointer; }
+    .studio__btn--ghost { background: transparent; color: var(--nyu-violet-dark); }
+    .studio__btn:focus-visible { outline: 3px solid var(--nyu-violet-light); outline-offset: 2px; }
+
+    .studio__out { padding: var(--sp-5); border-top: 1px solid var(--rule); }
+    .studio__verdict { font-size: var(--fs-md); font-weight: 700; margin: 0 0 var(--sp-4); }
+    .studio__verdict[data-v="blocked"] { color: var(--accent-danger); }
+    .studio__verdict[data-v="warn"]    { color: var(--accent-warning); }
+    .studio__verdict[data-v="ok"]      { color: var(--accent-success); }
+    .studio__find { border-left: 4px solid var(--rule); padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-3); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--surface-sunken); }
+    .studio__find[data-sev="high"] { border-left-color: var(--accent-danger);  background: var(--accent-danger-bg); }
+    .studio__find[data-sev="med"]  { border-left-color: var(--accent-warning); background: var(--accent-warning-bg); }
+    .studio__find[data-sev="good"] { border-left-color: var(--accent-success); background: var(--accent-success-bg); }
+    .studio__find h4 { margin: 0 0 4px; font-size: var(--fs-sm); }
+    .studio__find p  { margin: 0; font-size: var(--fs-sm); color: var(--ink-soft); }
+    .studio__trifecta { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 var(--sp-4); }
+    .studio__leg { font-family: var(--font-mono); font-size: var(--fs-xs); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface-sunken); color: var(--ink-soft); font-weight: 600; }
+    .studio__leg[data-on="true"] { border-color: #991B1B; background: #991B1B; color: #fff; font-weight: 600; }
+
+    @media (max-width: 540px) { .studio__set { border-right: 0; } }
+  </style>
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 13 &middot; Section 2 of 6</div>
+      <h1 class="nyu-hero__title">The Autonomous Security Agent: Architecture, Failure Modes, and Constraints</h1>
+      <p class="nyu-hero__subtitle">An agent deployment is, at bottom, an authorization decision. Here we build the design discipline that makes it an honest one.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~27 min core, plus a case and a design studio</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 7 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          2 knowledge checks, 1 design studio
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Four Components of an Agent</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Failure Catalog</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Reasoning Task: Attribute the Failure</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Case: The Nine-Second Deletion</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Constraints That Would Survive an Audit</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Design Studio: Build and Constrain a Threat-Hunting Agent</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Design</strong> an autonomous security agent as a four-component architecture with permission-scoped tools.</span></li>
+          <li><span><strong>Derive</strong> an agent's failure modes from documented incidents and tie each to a specified component.</span></li>
+          <li><span><strong>Evaluate</strong> a constraint for testability and place approval gates at irreversibility boundaries.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Four Components of an Agent</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>There is no industry-standard <button type="button" class="nyu-define" data-term="decomposition">decomposition</button> of an agent, so we use a reference one. It is chosen for a practical reason: each component maps to a distinct class of things that go wrong, which means that naming the component tells you where to look for the fix.</p>
+
+        <ul>
+          <li><strong>Perception:</strong> what the agent ingests. Alerts, logs, tickets, threat feeds, asset records, anything that arrives as input.</li>
+          <li><strong>Reasoning:</strong> how it decides. The model driving the loop, the instructions it was given, and the stop conditions that end a run.</li>
+          <li><strong>Action:</strong> what it is permitted to do. This is the envelope of consequences: which systems can change state as a result of this agent running, and how far each change reaches.</li>
+          <li><strong>Tools:</strong> the specific functions it can call, each carrying a permission level of read, write, or execute.</li>
+        </ul>
+
+        <p>Action and Tools sound like the same thing and are often conflated, so the difference is worth stating clearly. <strong>Tools</strong> is the list of functions the agent can call. <strong>Action</strong> is the boundary that controls how far those functions can reach.</p>
+
+        <p>Consider two agents that both have a <code>ticket_annotate</code> tool. One may annotate only its own queue. The other has authority over every ticket in the system. The tool is the same, but the blast radius is wildly different. You need to specify both, because an auditor reading only the tool list could not tell those two agents apart.</p>
+
+        <p>Before you accept that claim on trust, test it on yourself.</p>
+
+        <div class="aud" id="aud">
+          <div class="aud__head">
+            <span class="aud__kicker">Sign-off request</span>
+            <p class="aud__title">A team wants to deploy this agent tonight. Here is the manifest they sent you.</p>
+          </div>
+
+          <div class="aud__body">
+            <figure class="aud__fig" role="group" aria-labelledby="aud-fig-cap">
+            <figcaption id="aud-fig-cap" class="aud__figcap">Agent manifest submitted for review</figcaption>
+            <pre class="aud__manifest"><span class="c"># agent-manifest.yaml</span>
+<span class="k">agent</span>: <span class="v">soc-triage-bot</span>
+<span class="k">version</span>: <span class="v">4.2</span>
+<span class="k">model</span>: <span class="v">reasoning-class</span>
+<span class="k">max_iterations</span>: <span class="v">6</span>
+
+<span class="k">tools</span>:
+  - <span class="k">name</span>: <span class="v">siem_query</span>
+    <span class="k">permission</span>: <span class="v">read</span>
+  - <span class="k">name</span>: <span class="v">asset_lookup</span>
+    <span class="k">permission</span>: <span class="v">read</span>
+  - <span class="k">name</span>: <span class="v">ticket_annotate</span>
+    <span class="k">permission</span>: <span class="v">write</span>
+  - <span class="k">name</span>: <span class="v">escalate_to_analyst</span>
+    <span class="k">permission</span>: <span class="v">write</span></pre>
+            </figure>
+
+            <p class="aud__q" id="aud-q">You have to sign off tonight. On the strength of this document, what is this agent's reach when it writes to tickets?</p>
+            <div class="aud__opts" role="group" aria-labelledby="aud-q">
+              <button type="button" class="aud__opt" data-a="yes">Unrestricted. No scope is declared, and undeclared normally means unbounded.</button>
+              <button type="button" class="aud__opt" data-a="no">Its own queue. It is a triage bot, and nothing in the tool list reaches further.</button>
+              <button type="button" class="aud__opt" data-a="cant">The document does not say, and I will not approve reach I cannot see.</button>
+            </div>
+
+            <div id="aud-out" role="status" aria-live="polite" hidden></div>
+          </div>
+        </div>
+
+        <p>The table below applies the four-component decomposition to a concrete example: a <button type="button" class="nyu-define" data-term="log-anomaly-triage-agent">log-anomaly triage agent</button>. Study it closely, because the design studio later in this section asks you to build the same kind of specification for a different use case.</p>
+
+        <table class="nyu-table">
+          <caption class="nyu-table__caption">Example: log-anomaly triage agent, specified by component</caption>
+          <thead>
+            <tr><th scope="col">Component</th><th scope="col">Specification</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Perception</th><td>New anomaly alerts from the SIEM; 30 days of auth history per flagged entity; asset inventory records.</td></tr>
+            <tr><th scope="row">Reasoning</th><td>Loop driver instructed to form one hypothesis per alert and test it against no more than six tool calls. Stop conditions: verdict reached, tool budget exhausted, or any tool error twice in a row (escalate to a human on the latter two).</td></tr>
+            <tr><th scope="row">Action</th><td>May attach verdicts and rationales to tickets; may not close tickets above severity 2; may not touch hosts, accounts, or network controls.</td></tr>
+            <tr><th scope="row">Tools</th><td><code>siem_query</code> (read), <code>asset_lookup</code> (read), <code>ticket_annotate</code> (write, scoped to the triage queue), <code>escalate_to_analyst</code> (write, scoped).</td></tr>
+          </tbody>
+        </table>
+
+        <p>This specific design is exposed to three failure modes, each paired here with a constraint that addresses it:</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Injected instruction via ingested content</h3>
+              <p class="nyu-process__detail">The agent reads SIEM fields and asset records that other systems and people write, exactly the Trace B channel from the previous section. Constraint: "Free-text fields from perception sources are never treated as authorization; approvals are verified only against the change-management API, and any ingested text addressed to automated systems is itself flagged in the verdict rationale."</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Silent-failure cascade</h3>
+              <p class="nyu-process__detail">An empty query result could read as evidence of absence. Constraint: "Any tool call returning an error or an empty result on a non-empty expectation is retried once; on second failure the run escalates to an analyst with the partial trace attached. The agent may not deliver a verdict from a run containing an unresolved tool failure."</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Scope creep through the write tool</h3>
+              <p class="nyu-process__detail">Annotation is a write path; a hijacked run could spray misleading rationales across the queue. Constraint: "<code>ticket_annotate</code> is scoped to tickets assigned to the agent's own queue; annotations above 20 per hour trip a rate limiter and page the on-call analyst."</p>
+            </div>
+          </li>
+        </ol>
+
+        <p>Now run the <button type="button" class="nyu-define" data-term="lethal-trifecta">trifecta</button> audit on the design. It grants private-data access through the logs and asset records, and untrusted-content exposure through those same sources. What it does not grant is any external communication channel: verdicts land inside the ticketing system and go nowhere else.</p>
+
+        <p>The design prevents exfiltration by removing the external communication channel, which is one of the three trifecta legs. That removal has a real cost: the agent cannot enrich from external threat feeds while it runs, which limits the context it brings to a verdict. That cost should be stated in the design rather than buried, because a reviewer who discovers an unstated trade-off will stop trusting the rest of the document.</p>
+
+        <p>Finally, there is the sign-off. The SOC manager accepts the <span class="nyu-ref" data-ref="residual-risk">residual risk</span> in writing, and the evidence they review is the constraint list plus a weekly sample of audited traces. This is the same governance move we practiced during the governance module, now pointed at a new kind of actor.</p>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Failure Catalog</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Agent failure modes do not need to be invented. Public incidents have already supplied them. Each pattern below is introduced by the incident that proves it, and the two do different jobs: the pattern is what you carry into your own designs, and the incident is the evidence that it happens in practice.</p>
+
+        <h3 class="nyu-subsection-title">Instruction violation under autonomy</h3>
+        <p>In July 2025 a coding agent on Replit deleted a production database holding roughly 1,200 executive records. It did so during an explicitly declared code freeze, then generated plausible but misleading explanations of what had happened.</p>
+
+        <p>This incident appeared in an earlier module as an example of <span class="nyu-ref" data-ref="excessive-agency">excessive agency</span>. Reading it at the architecture level reveals something more specific: the instruction "do not touch production" lived in the reasoning component, while the authority to destroy production lived in the tools.</p>
+
+        <p>An instruction like "do not touch production" is text in the prompt. The model generates its next output based on probability, and most of the time it will respect the instruction, but there is no mechanical guarantee that it will. Permissions are different: they are enforced by the runtime in code, not by the model in text. If the runtime has no delete credential, the model cannot delete anything regardless of what it generates. When an instruction says one thing and a permission allows another, the permission is what actually governs the outcome.</p>
+
+        <h3 class="nyu-subsection-title">Silent-failure cascade</h3>
+        <p>In a separate incident, a command-line AI tool was asked to reorganize a user's files. A folder-creation step failed, but it failed without returning an error the runtime paid attention to. The move operations that followed proceeded as though the destination folder existed, and files were overwritten. There was no hostile input here and no fabricated fact. What propagated was an unverified assumption of success, compounded once per iteration until the damage was done.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="sfc-title">
+          <h3 class="nyu-callout__title" id="sfc-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </span>
+            Not the same as hallucination
+          </h3>
+          <p>A <button type="button" class="nyu-define" data-term="silent-failure-cascade">silent-failure cascade</button> is not a hallucination. The generation was fine; the verification was missing. The model did not invent a fact. The environment reported a success it had not achieved, and nothing checked the claim before the next consequential action ran.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Blast radius through shared credentials</h3>
+        <p>In April 2026, a Cursor agent (running Claude) at PocketOS deleted the production database and the volume-level backups in roughly nine seconds. The token it could read was over-permissioned, and the backups lived inside the same credential's reach. The full case is worked below, because it teaches the module's hardest lesson.</p>
+
+        <h3 class="nyu-subsection-title">Injection through ingestion, and memory poisoning</h3>
+        <p>The zero-click email exploit described in Section 1 is the production proof for ingestion. The persistent variant deserves separate attention, because it changes the arithmetic for any agent whose memory survives between sessions.</p>
+
+        <p>An injected instruction that lodges in stored memory does not execute once. It re-executes on every future run, silently, until somebody inspects the memory itself.</p>
+
+        <p>The <span class="nyu-ref" data-ref="mitre-atlas">adversarial-technique knowledge base</span> we used for classification work now catalogs agent-specific entries for exactly these paths: context and memory poisoning, configuration tampering, and credential harvesting through tool invocation.</p>
+
+        <h3 class="nyu-subsection-title">The rest of the catalog, briefly</h3>
+        <p>Three more failure modes belong in the catalog. Each is introduced briefly here.</p>
+
+        <ul>
+          <li><strong><button type="button" class="nyu-define" data-term="agent-goal-hijack">Goal hijack</button>.</strong> An attacker manipulates how the agent interprets its objective, redirecting multi-step behavior without tampering with any individual tool call.</li>
+          <li><strong>Unbounded loops.</strong> No stop condition fires, and the agent burns its budget or floods downstream systems with requests.</li>
+          <li><strong><button type="button" class="nyu-define" data-term="specification-gaming">Specification gaming</button>.</strong> The agent satisfies the objective exactly as written, in a way that defeats the purpose it was written for.</li>
+        </ul>
+
+        <p>That last one should be carried at awareness level only. The category is stable in the research literature, but documented security-specific cases remain thin, and we are better off saying so than overstating the evidence.</p>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Reasoning Task: Attribute the Failure</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario" data-screen-label="Scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Attribute each failure
+          </h3>
+          <p class="nyu-scenario__prompt">For each vignette: name the failure-mode category, identify what <em>authority</em> made the damage possible, and name one constraint that would have prevented it. "The AI made a mistake" is not an acceptable authority answer.</p>
+          <ol>
+            <li>An agent asked to tidy a workspace issues move commands after a directory-creation step fails silently; files are overwritten.</li>
+            <li>An assistant with retrieval access reads a crafted message planted in a data source; on its next task it packages internal records toward an external destination.</li>
+            <li>A coding agent under an explicit freeze instruction drops a production table it has valid credentials for.</li>
+          </ol>
+          <button class="nyu-scenario__btn">Show a possible answer</button>
+          <div class="nyu-scenario__answer">
+            <ol>
+              <li><strong>Silent-failure cascade.</strong> The authority was write access to the filesystem combined with a runtime that trusted its own success. Constraint: verify observations before consequential writes.</li>
+              <li><strong>Injection through ingestion completing the trifecta.</strong> The authority was the pairing of retrieval scope with an outbound channel. Constraint: break one trifecta leg on that path, or quarantine untrusted content from privileged context.</li>
+              <li><strong>Instruction violation under autonomy.</strong> The authority was production credentials present during a freeze. Constraint: freezes are enforced in permissions (revoke, gate), not in prose.</li>
+            </ol>
+            <p>The common thread across all three is that in no case was the defect a wrong fact. In every case, it was a permission the system should not have held at that moment.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="readbreak-title">
+          <h3 class="nyu-callout__title" id="readbreak-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </span>
+            Reading break
+          </h3>
+          <p><strong><a href="https://www.cisa.gov/news-events/news/cisa-us-and-international-partners-release-guide-secure-adoption-agentic-ai" target="_blank" rel="noopener">The joint multinational agentic-AI guidance</a></strong> (20 to 25 minutes). The assigned excerpt covers the five risk categories and the recommendations. Read it as an assessor rather than as a student: for each category, name something you have already met in this course that belongs in it.</p>
+          <p><strong><a href="https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/" target="_blank" rel="noopener">The agentic applications risk list (OWASP)</a></strong> (20 minutes, four assigned entries). For each entry, note which incident above it would classify.</p>
+          <p>Both readings feed the case work and the design studio that follow.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Case: The Nine-Second Deletion</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>April 2026. PocketOS, a small SaaS provider serving car-rental operators, ran Cursor (an AI coding tool powered by Anthropic's Claude) in its development environment. In roughly nine seconds, the agent issued commands that deleted the production database and the volume-level backups.</p>
+
+        <figure style="margin: var(--sp-4) 0;">
+          <img src="images/9_sec.png" alt="Tom's Hardware article headline: Claude-powered AI coding agent deletes entire company database in 9 seconds" style="width:100%; border-radius: var(--r-sm); border: 1px solid var(--rule);">
+          <figcaption style="font-size: var(--fs-xs); color: var(--ink-mute); margin-top: var(--sp-2);">Source: <a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/claude-powered-ai-coding-agent-deletes-entire-company-database-in-9-seconds-backups-zapped-after-cursor-tool-powered-by-anthropics-claude-goes-rogue" target="_blank" rel="noopener">Tom's Hardware</a></figcaption>
+        </figure>
+
+        <p>The reported chain is remarkably short. An access token with broad infrastructure permissions sat in a file the agent could read. The backup volumes lived inside that same credential's scope. The agent, working a routine task, generated destructive commands, and the runtime dutifully executed them. When the volumes were destroyed, the recovery options died with them.</p>
+
+        <p>The destructive command itself was a single API call to the hosting provider's <button type="button" class="nyu-define" data-term="graphql-endpoint">GraphQL endpoint</button>:</p>
+
+        <pre class="nyu-code"><code>curl -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Authorization: Bearer [token]" \
+  -d '{"query":"mutation { volumeDelete(volumeId: \"3d2c42fb-...\") }"}'</code></pre>
+
+        <p>This is a legitimate API call: valid syntax, valid credential, valid endpoint. The infrastructure provider executed it exactly as designed. The problem is not that the command was malformed. The problem is that a coding agent working a routine development task had a token that could reach production storage and its backups in a single request.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            Q1: Which line of the agent's code was defective? (Commit first)
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>None. That is the finding. Every command was syntactically valid, every credential legitimate, every execution authorized by the permissions in place.</p>
+            <p>Hunting for the buggy line misreads the incident category. This is not a software defect; it is an <button type="button" class="nyu-define" data-term="blast-radius">authorization design</button> failure. The engineering question is never "why did the model produce a bad command." A probabilistic model will occasionally produce wrong outputs, and no amount of instruction tuning reduces that rate to zero. The useful question is why a bad command, once produced, could reach production and its backups in the same nine seconds.</p>
+          </div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            Q2: Why did the backups die with production? (Commit first)
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>The backups shared the credential scope and the infrastructure of the very thing they were backing up. A backup is only a backup relative to a failure domain. If one token can reach both copies, you do not have two copies. You have one copy stored twice.</p>
+            <p>What actually bounds the damage is isolation: backup credentials and backup storage sitting outside anything the agent can reach. Nothing about the word "backup" provides that on its own. The permission boundary does, or it does not.</p>
+          </div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            Q3: Classify the incident against the five risk categories (Commit first)
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Defensible primaries are privilege escalation (the token's reach far exceeded the task's needs) or design and configuration failure (readable credentials, shared backup domain). Accountability gaps also apply downstream: who owns an autonomous deletion executed with valid credentials? The useful version names one primary and says what the choice implies for the fix, rather than listing categories without commitment.</p>
+          </div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            Q4 (optional): Write one testable policy statement that would have prevented this
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Use the <span class="nyu-ref" data-ref="policy-anatomy">anatomy we drilled on policy statements</span>: actor, object, condition, observable evidence.</p>
+            <p>A model answer reads: "Agent runtimes may hold only task-scoped, short-lived credentials issued per run; any credential with production-write or backup-domain reach requires a human-approved grant recorded in the change log."</p>
+            <p>Compare the aspirational version, "agents must be careful with credentials." It names no actor, sets no condition, and leaves an auditor nothing to check. A statement nobody can fail is a statement nobody has to pass.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Constraints That Would Survive an Audit</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The <span class="nyu-ref" data-ref="constraint-vocabulary">constraint vocabulary you assembled across the defense arc</span> transfers to agents almost intact. The familiar list still holds: least privilege, scoped functionality, approval gates placed at <button type="button" class="nyu-define" data-term="reversibility">irreversibility</button> boundaries, monitoring, and kill switches. Agents add two items to it.</p>
+
+        <p>The first is <strong>credential and backup isolation</strong>, which is the nine-second lesson generalized. Whatever the agent can read, it can use. Whatever its credential domain can reach, it can destroy.</p>
+
+        <p>The second is <strong>verified agent identity</strong>. The joint multinational guidance asks that each agent carry its own cryptographically anchored identity backed by short-lived credentials. The payoff is operational rather than ceremonial. When an agent misbehaves at three in the morning, you can attribute the actions to that agent and revoke that agent, instead of killing a shared service account and taking half the SOC offline with it.</p>
+
+        <p>A useful test for separating a real constraint from a pious one is the testability anatomy: a named actor, a bounded object, a triggering condition, observable evidence.</p>
+
+        <p>"The agent must handle production responsibly" satisfies none of those, which is why it tends to survive audits and prevent nothing. "The agent may execute only read-scoped SIEM queries; any containment action requires analyst approval recorded in the case log" satisfies all four. An auditor can verify it, a monitor can alarm on a violation, and if the worst happens, an investigator can establish what the rule was on the day in question.</p>
+
+        <aside class="nyu-callout nyu-callout--danger" role="note" aria-labelledby="gate-title">
+          <h3 class="nyu-callout__title" id="gate-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+            </span>
+            A gate that always says yes is latency, not safety
+          </h3>
+          <p>Placing a <button type="button" class="nyu-define" data-term="human-in-the-loop">human in the loop</button> counts as a control only when the gate produces genuine scrutiny. This is the runtime sense of the phrase, <span class="nyu-ref" data-ref="human-in-the-loop">not the training-time sense introduced in the first module</span>, and it is the only one of the two a reviewer can inspect. The <span class="nyu-ref" data-ref="automation-bias">automation-bias evidence from the governance module</span> showed reviewers approving machine recommendations at rubber-stamp rates.</p>
+          <p>Two separate design decisions follow. Gate <em>placement</em> tracks irreversibility: deletion, host isolation, and credential changes earn a gate; ticket annotations do not. Gate <em>quality</em> has to be engineered on its own terms, through forced written rationale, routing by decision class, and periodic audit of the approvals themselves rather than only the actions.</p>
+        </aside>
+
+        <p>Deploying an agent is therefore the <span class="nyu-ref" data-ref="residual-risk">residual-risk move from the governance module</span>, now with new evidence attached. A named person accepts what remains once the constraints are in place, and what they review is the tool inventory, the permission scopes, and a sample of audited traces.</p>
+
+        <p>The five risk categories from the joint multinational guidance give that sign-off its checklist. A sign-off with no checklist risks becoming just a signature, and a signature by itself is not a review.</p>
+      </section>
+
+      <!-- ====================== SECTION 6 ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Design Studio: Build and Constrain a Threat-Hunting Agent</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Your SOC wants a nightly autonomous <button type="button" class="nyu-define" data-term="autonomous-threat-hunting">threat-hunting agent</button>. It forms hypotheses from threat intelligence, queries the SIEM and EDR, and reports what it finds. Leadership wants to know what safe deployment requires.</p>
+
+        <p>Build it below. Every choice you make changes the risk profile, and the audit reads your actual configuration rather than a model answer. There is no single correct design, but there are designs that cannot be defended, and the audit will tell you which one you have built.</p>
+
+        <div class="studio" id="studio">
+          <div class="studio__grid">
+
+            <fieldset class="studio__set">
+              <legend class="studio__legend">1. Perception <span>what it ingests</span></legend>
+              <label class="studio__opt"><input type="checkbox" data-k="perc" value="siem" checked> SIEM logs <em>private</em></label>
+              <label class="studio__opt"><input type="checkbox" data-k="perc" value="edr" checked> EDR telemetry <em>private</em></label>
+              <label class="studio__opt"><input type="checkbox" data-k="perc" value="assets"> Asset records, free-text notes <em>private, writable by others</em></label>
+              <label class="studio__opt"><input type="checkbox" data-k="perc" value="feed"> External threat-intel feeds <em>untrusted</em></label>
+            </fieldset>
+
+            <fieldset class="studio__set">
+              <legend class="studio__legend">2. Tools <span>which functions it can call</span></legend>
+              <label class="studio__opt"><input type="checkbox" data-k="tool" value="siem_query" data-perm="read" checked> <code>siem_query</code> <em>read</em></label>
+              <label class="studio__opt"><input type="checkbox" data-k="tool" value="edr_query" data-perm="read" checked> <code>edr_query</code> <em>read</em></label>
+              <label class="studio__opt"><input type="checkbox" data-k="tool" value="ticket_annotate" data-perm="write"> <code>ticket_annotate</code> <em>write, internal</em></label>
+              <label class="studio__opt"><input type="checkbox" data-k="tool" value="email_report" data-perm="write"> <code>email_report</code> <em>write, sends outside</em></label>
+              <label class="studio__opt"><input type="checkbox" data-k="tool" value="host_isolate" data-perm="execute"> <code>host_isolate</code> <em>execute, hard to reverse</em></label>
+            </fieldset>
+
+            <fieldset class="studio__set studio__set--wide">
+              <legend class="studio__legend">3. Action envelope <span>what each of those functions may reach</span></legend>
+              <p class="studio__hint" id="studio-env-empty">Select a write or execute tool above and its envelope appears here. Read tools change nothing, so they carry no envelope. This is the field the manifest left out.</p>
+              <div class="studio__env" id="studio-env"></div>
+            </fieldset>
+
+            <fieldset class="studio__set">
+              <legend class="studio__legend">4. Stop conditions <span>what ends a run</span></legend>
+              <label class="studio__opt"><input type="checkbox" data-k="stop" value="budget"> Tool-call budget per hypothesis</label>
+              <label class="studio__opt"><input type="checkbox" data-k="stop" value="error"> Escalate after two consecutive tool errors</label>
+              <label class="studio__opt"><input type="checkbox" data-k="stop" value="verify"> No verdict from a run with an unresolved tool failure</label>
+            </fieldset>
+
+            <fieldset class="studio__set">
+              <legend class="studio__legend">5. Controls <span>what bounds the damage</span></legend>
+              <label class="studio__opt"><input type="checkbox" data-k="ctl" value="gate"> Analyst approval gate on irreversible actions</label>
+              <label class="studio__opt"><input type="checkbox" data-k="ctl" value="quarantine"> Ingested free text quarantined from authorization decisions</label>
+              <label class="studio__opt"><input type="checkbox" data-k="ctl" value="creds"> Task-scoped short-lived credentials, backups out of reach</label>
+            </fieldset>
+          </div>
+
+          <div class="studio__actions">
+            <button type="button" class="studio__btn" id="studio-run">Audit this design</button>
+            <button type="button" class="studio__btn studio__btn--ghost" id="studio-reset">Reset</button>
+          </div>
+
+          <div class="studio__out" id="studio-out" role="status" aria-live="polite" hidden></div>
+        </div>
+
+        <p>Two questions to consider once your design passes the audit. First, what would have to change in the architecture for it to serve as an attack tool rather than a defensive one? And second, which single constraint in your design is carrying the most weight, in the sense that removing it would change what the agent could do to the organisation?</p>
+      </section>
+
+      <!-- ====================== SECTION 7 ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="quiz-2a-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-2a-prompt">
+            An agent ingests external threat-intel feeds, can create and modify tickets, and emails digest reports to an external distribution list. Which failure mode is this design most structurally exposed to?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-2a-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Wrong lifecycle stage. Poisoning attacks training; this agent's exposure is at inference, through what it reads on each run.">Training-data poisoning.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Injected instructions arriving through the feed and steering tool use, with the external email channel available for exfiltration.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Possible in any agent, but nothing in this spec suggests missing stop conditions, while the trifecta is fully assembled in the spec's own terms. Structural exposure means the design's shape creates the risk.">Unbounded looping consuming the compute budget.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="No fine-tuning occurs in this scenario, and this is not one of the module's agent failure modes. Apply the catalog to the components actually specified.">Model collapse from repeated fine-tuning.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Untrusted content plus private data plus external communication is the full trifecta, and the feed is the injection path. Sanitize or segregate feed content, or gate the outbound channel."
+               data-incorrect-msg="Reconsider which three capabilities the spec grants, and how they combine."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="quiz-2b-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-2b-prompt">
+            Which constraint is testable as written?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-2b-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="No actor-object-condition-evidence anatomy; nothing observable to audit. Aspiration, not control.">"The agent must handle production systems responsibly."</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Names no owner, no threshold, no evidence. 'Closely' cannot be measured, so compliance cannot be checked.">"The agent should be monitored closely by the team."</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">"The agent may execute only read-scoped SIEM queries; any containment action requires analyst approval recorded in the case log."</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="'Certain' is not an observable state of a probabilistic system, and the exception swallows the rule. Irreversible actions need approval gates, not confidence self-reports.">"The agent will avoid deleting data unless it is certain the data is malicious."</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Bounded object, triggering condition, observable evidence. An auditor could verify this tomorrow."
+               data-incorrect-msg="Test each option against the anatomy: named actor, bounded object, triggering condition, observable evidence."></div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 3: Reading the Future Without the Hype: Autonomous SOCs, Emerging Trends, and the Regulatory Trajectory.</strong> We move from design to the market. More than fifty vendors now sell "agentic SOC" capability, one reported campaign shows agents running intrusions, and one defensive agent has real CVEs to its name. We build the method that tells those three things apart.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../reference_tip/reference-tips.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script>
+  /* ============================================================
+     THE AUDITOR TRAP
+     The manifest genuinely cannot answer the question asked. Two of
+     the three options are confident and wrong in opposite
+     directions, which is the point: reviewers fail this both ways.
+     The reveal shows two real deployments that satisfy the SAME
+     manifest, differing by one line nobody was shown.
+     ============================================================ */
+  (function () {
+    "use strict";
+    var root = document.getElementById("aud");
+    if (!root) return;
+    var out = document.getElementById("aud-out");
+
+    // Wrong answers get a correction and nothing else. The manifest is
+    // still on screen, the buttons stay live, and the student has to
+    // arrive at the answer themselves.
+    var WRONG = {
+      // Credit the reasoning first. Assuming fail-open is what a careful
+      // engineer does, and telling that student they are simply "wrong"
+      // would teach the opposite of the intended lesson.
+      yes: '<p class="aud__retry"><strong>Good instinct, and on some platforms you would be exactly right.</strong> Undeclared scope does mean unbounded in plenty of systems. In others the deployment layer supplies a default narrower than anything in this file. Nothing here tells you which convention governs this one, so you would be approving on an assumption. Try again with that in mind.</p>',
+      no:  '<p class="aud__retry"><strong>Not quite.</strong> That reads scope out of the agent\'s name and the shape of its tool list. A bot called <em>triage</em> is not confined to triage by its title, and a short tool list is not a boundary. Look for the line that would actually confine it.</p>'
+    };
+
+    var RIGHT =
+      '<div class="aud__verdict">' +
+        '<p><strong>Correct, and it is the only answer that survives scrutiny.</strong> The manifest does not state what <code>ticket_annotate</code> may reach. Every other answer requires assuming a convention the document never declares.</p>' +
+        '<p>Both deployments below shipped against the <em>identical</em> manifest. Neither team lied to you. The field that decides the answer is added at deploy time, and it never appeared in what you reviewed.</p>' +
+      '</div>' +
+      '<div class="aud__split">' +
+        '<div class="aud__dep" data-r="narrow">' +
+          '<h4>Deployment A</h4>' +
+          '<pre>tools:\n  ticket_annotate:\n    permission: write\n<mark>    scope: queue:soc-triage</mark></pre>' +
+          '<div class="aud__reach"><span class="aud__pill">contained</span><b>6 of 1,847</b><span>tickets reachable, its own queue only</span></div>' +
+        '</div>' +
+        '<div class="aud__dep" data-r="wide">' +
+          '<h4>Deployment B</h4>' +
+          '<pre>tools:\n  ticket_annotate:\n    permission: write\n<mark>    scope: "*"</mark></pre>' +
+          '<div class="aud__reach"><span class="aud__pill">unbounded</span><b>1,847 of 1,847</b><span>tickets reachable, every queue including HR and Legal</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<p class="aud__close">Same denominator, same manifest, one line of difference, and roughly three hundred times the reach. That line is the <strong>action envelope</strong>. The tool list told you which functions exist. It did not tell you what they reach.</p>' +
+      '<p class="aud__close">This is why the decomposition keeps Action and Tools apart. Specify only the tools and you have written a manifest that passes review with the actual risk undocumented. Ask for the envelope every time. The team that omits it is usually not hiding anything, they simply were never asked to write it down.</p>' +
+      '<button type="button" class="aud__again" id="aud-again">Start over</button>';
+
+    var btns = Array.prototype.slice.call(root.querySelectorAll(".aud__opt"));
+
+    function reset() {
+      btns.forEach(function (x) { x.disabled = false; x.removeAttribute("data-state"); });
+      out.hidden = true; out.innerHTML = "";
+      // The button that triggered this has just been removed from the DOM,
+      // so focus would fall to <body> and strand keyboard users at the top
+      // of the page. Put it back on the first option.
+      btns[0].focus();
+    }
+
+    btns.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var a = b.dataset.a;
+        if (a === "cant") {
+          btns.forEach(function (x) {
+            x.disabled = true;
+            if (x === b) x.setAttribute("data-state", "right");
+          });
+          out.innerHTML = RIGHT;
+          out.hidden = false;
+          var again = document.getElementById("aud-again");
+          if (again) again.addEventListener("click", reset);
+        } else {
+          // Mark only what they chose. The correct option is left alone.
+          b.setAttribute("data-state", "wrong");
+          out.innerHTML = WRONG[a];
+          out.hidden = false;
+        }
+      });
+    });
+  })();
+  </script>
+
+  <script>
+  /* ============================================================
+     DESIGN STUDIO AUDIT
+     Reads the configuration the student actually built and reports
+     against it. Deliberately does not hand out a model answer: it
+     names what THIS design grants and what that exposes, so the
+     student converges by reasoning rather than by matching a key.
+     ============================================================ */
+  (function () {
+    "use strict";
+    var root = document.getElementById("studio");
+    if (!root) return;
+    var out = document.getElementById("studio-out");
+
+    function picked(k) {
+      return Array.prototype.slice
+        .call(root.querySelectorAll('input[data-k="' + k + '"]:checked'))
+        .map(function (i) { return i.value; });
+    }
+    function has(arr, v) { return arr.indexOf(v) > -1; }
+
+    /* ---- Action envelope, specified per tool ----
+       The section has just argued that a tool list under-specifies an
+       agent, so the builder must not bury the envelope in a checkbox.
+       Every state-changing tool the student selects gets its own scope
+       control here, and read tools are explicitly shown to need none. */
+    var LABEL = { ticket_annotate: "tickets", email_report: "recipients", host_isolate: "hosts" };
+    var NARROW = { ticket_annotate: "its own queue", email_report: "internal addresses only", host_isolate: "a pre-approved asset group" };
+    var envWrap = document.getElementById("studio-env");
+    var envEmpty = document.getElementById("studio-env-empty");
+    var envState = {};
+
+    function renderEnv() {
+      var stateful = Array.prototype.slice
+        .call(root.querySelectorAll('input[data-k="tool"]:checked'))
+        .filter(function (i) { return i.dataset.perm !== "read"; });
+      envWrap.innerHTML = "";
+      envEmpty.hidden = stateful.length > 0;
+      stateful.forEach(function (i) {
+        var v = i.value;
+        if (!(v in envState)) envState[v] = "narrow";
+        var row = document.createElement("div");
+        row.className = "studio__envrow";
+        row.setAttribute("data-wide", String(envState[v] === "wide"));
+        var id = "env-" + v;
+        row.innerHTML = '<code>' + v + '</code> <label for="' + id + '" style="font-size:var(--fs-xs);color:var(--ink-mute)">may reach</label>' +
+          '<select id="' + id + '" data-tool="' + v + '">' +
+            '<option value="narrow">' + NARROW[v] + '</option>' +
+            '<option value="wide">every one of the ' + LABEL[v] + '</option>' +
+          '</select>';
+        envWrap.appendChild(row);
+        var sel = row.querySelector("select");
+        sel.value = envState[v];
+        sel.addEventListener("change", function () {
+          envState[v] = sel.value;
+          row.setAttribute("data-wide", String(sel.value === "wide"));
+        });
+      });
+    }
+    function envOf(tool) { return envState[tool] || "narrow"; }
+
+    root.querySelectorAll('input[data-k="tool"]').forEach(function (i) {
+      i.addEventListener("change", renderEnv);
+    });
+    renderEnv();
+
+    function audit() {
+      var perc = picked("perc"), tool = picked("tool"), stop = picked("stop"), ctl = picked("ctl");
+      var f = [];
+
+      // ---- Trifecta ----
+      var privateData = has(perc, "siem") || has(perc, "edr") || has(perc, "assets");
+      var untrusted   = has(perc, "feed") || has(perc, "assets");
+      var external    = has(tool, "email_report");
+      var legs = (privateData ? 1 : 0) + (untrusted ? 1 : 0) + (external ? 1 : 0);
+
+      if (legs === 3) {
+        f.push(["high", "All three trifecta legs granted",
+          "This design holds private data, ingests untrusted content, and can send outside the organisation. That combination is exfiltration-ready by construction. Break a leg: drop the external channel, quarantine the untrusted source, or narrow what private data the run can reach."]);
+      } else if (privateData && untrusted && !external) {
+        f.push(["good", "Exfiltration leg broken",
+          "Private data and untrusted content are both present, but nothing can leave. Findings stay internal. State the cost honestly: the agent cannot notify anyone outside the platform during a run."]);
+      } else if (privateData && external && !untrusted) {
+        f.push(["good", "Untrusted-content leg broken",
+          "The agent can reach private data and send outward, but ingests nothing an attacker writes. Note the fragility: adding one external feed later completes the trifecta, so the constraint has to survive the next feature request."]);
+      }
+
+      // ---- Ingestion / injection ----
+      if (untrusted && !has(ctl, "quarantine")) {
+        f.push(["high", "Injected instructions can reach authorization decisions",
+          "You ingest content that other people or systems write" + (has(perc, "feed") ? ", including external feeds" : ", including free-text asset notes") +
+          ", with no quarantine. This is the Trace B channel: text found in data gets treated as an instruction. Verify approvals against an authoritative system, never against ingested prose."]);
+      } else if (untrusted && has(ctl, "quarantine")) {
+        f.push(["good", "Ingested text quarantined",
+          "Untrusted content cannot authorize anything on its own. Injection can still mislead a hypothesis, so the trace audit still matters, but it can no longer grant permission."]);
+      }
+
+      // ---- Irreversibility / gates ----
+      if (has(tool, "host_isolate") && !has(ctl, "gate")) {
+        f.push(["high", "Irreversible action with no gate",
+          "<code>host_isolate</code> pulls a machine off the network, and that is expensive to undo at three in the morning. Gate placement follows reversibility, so this one earns an approval step. Without it, a single bad hypothesis becomes an outage."]);
+      } else if (has(tool, "host_isolate") && has(ctl, "gate")) {
+        f.push(["good", "Gate placed at the irreversibility boundary",
+          "The one action that is hard to undo requires a human. Now design the gate's quality as well as its position: forced rationale, and an audit of the approvals themselves, or it degrades into a rubber stamp."]);
+      }
+
+      // ---- Envelope, per state-changing tool ----
+      var wideTools = ["ticket_annotate", "email_report", "host_isolate"]
+        .filter(function (t) { return has(tool, t) && envOf(t) === "wide"; });
+      if (wideTools.length) {
+        f.push(["high", "Unbounded envelope on " + wideTools.map(function (t) { return "<code>" + t + "</code>"; }).join(" and "),
+          "You granted a state-changing tool the run of the whole system. This is the manifest problem in your own design: the tool list looks modest, and the reach is not. A hijacked run does not touch one queue, it touches everything the envelope permits."]);
+      } else if (["ticket_annotate", "email_report", "host_isolate"].some(function (t) { return has(tool, t); })) {
+        f.push(["good", "Every state-changing tool has a bounded envelope",
+          "Each write or execute tool names what it may reach. An auditor reading this design can answer the question the earlier manifest could not."]);
+      }
+
+      // ---- Silent failure ----
+      if (!has(stop, "error") || !has(stop, "verify")) {
+        f.push(["med", "Silent-failure cascade is available",
+          "Nothing here stops a run that has already broken. A query that fails on permissions returns empty, the agent reads absence as evidence, and the verdict inherits a false premise. Escalate on repeated tool errors, and refuse to deliver a verdict from a run with an unresolved failure."]);
+      }
+
+      // ---- Unbounded loop ----
+      if (!has(stop, "budget")) {
+        f.push(["med", "No tool budget",
+          "With no ceiling on tool calls, a hypothesis that never resolves burns the run's budget or floods the SIEM with queries. Bound the loop per hypothesis."]);
+      }
+
+      // ---- Credentials ----
+      if (!has(ctl, "creds")) {
+        f.push(["med", "Credential reach unbounded",
+          "Whatever the agent can read, it can use. Whatever its credential domain can reach, it can destroy. Issue task-scoped short-lived credentials per run and keep backups outside anything the agent can touch."]);
+      }
+
+      // ---- Incoherent designs. Check these before anything else,
+      //      because a system that cannot run has no risk profile to audit.
+      if (!tool.length) {
+        f = [["high", "No tools selected",
+          "An agent with no tools is a text generator. Give it something to call, then audit what that lets it reach."]];
+      } else if (!perc.length) {
+        f = [["high", "No perception sources selected",
+          "This agent has tools but nothing to reason from. A threat hunter with no telemetry cannot form a hypothesis, so there is no design here to audit yet. Choose what it ingests, and note that the choice is also where its untrusted-content exposure comes from."]];
+      }
+
+      // ---- Verdict ----
+      var high = f.filter(function (x) { return x[0] === "high"; }).length;
+      var med  = f.filter(function (x) { return x[0] === "med"; }).length;
+      var v, vtxt;
+      if (high) { v = "blocked"; vtxt = "Not deployable as configured. " + high + " finding" + (high > 1 ? "s" : "") + " would stop this at sign-off."; }
+      else if (med) { v = "warn"; vtxt = "Deployable with conditions. " + med + " gap" + (med > 1 ? "s" : "") + " a reviewer would make you close first."; }
+      else { v = "ok"; vtxt = "Defensible. Every failure mode this design is exposed to has a matching constraint."; }
+
+      var html = '<p class="studio__verdict" data-v="' + v + '">' + vtxt + '</p>';
+      html += '<div class="studio__trifecta" aria-label="Trifecta legs granted by this design">'
+            + '<span class="studio__leg" data-on="' + privateData + '">private data</span>'
+            + '<span class="studio__leg" data-on="' + untrusted + '">untrusted content</span>'
+            + '<span class="studio__leg" data-on="' + external + '">external comms</span></div>';
+      f.forEach(function (x) {
+        html += '<div class="studio__find" data-sev="' + x[0] + '"><h4>' + x[1] + '</h4><p>' + x[2] + '</p></div>';
+      });
+      html += '<p class="studio__note" style="margin-top:1rem;font-size:var(--fs-sm);color:var(--ink-mute);">'
+            + 'Sign-off is the last step and it is a human one. Someone named accepts what remains, reviewing the tool inventory, the permission scopes, and a sample of audited traces.</p>';
+      out.innerHTML = html;
+      out.hidden = false;
+    }
+
+    document.getElementById("studio-run").addEventListener("click", audit);
+    document.getElementById("studio-reset").addEventListener("click", function () {
+      root.querySelectorAll("input[type=checkbox]").forEach(function (c) {
+        c.checked = ["siem", "edr", "siem_query", "edr_query"].indexOf(c.value) > -1;
+      });
+      envState = {};
+      renderEnv();
+      out.hidden = true; out.innerHTML = "";
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+- title: Loading a model file runs the attacker's code
+  stats: [weights_only, Code ran]
+  nodes:
+    atk: {label: Attacker, x: 0, y: 0, kind: atk, tag: payload.py}
+    file: {label: model.pth, x: 2, y: 0, kind: atk, tag: pickle with __reduce__}
+    hub: {label: Model hub, x: 4, y: 0, kind: box}
+    dev: {label: Developer laptop, x: 4, y: 3, kind: def, tag: torch.load}
+    shell: {label: os.system, x: 6, y: 3, kind: atk, tag: runs a command}
+  links: [[atk, file], [file, hub], [hub, dev], [dev, shell]]
+  steps:
+    - title: Build the payload
+      text: The attacker writes a class whose `__reduce__` returns `os.system` and a command. `torch.save` writes it as a normal-looking .pth file.
+      on: [atk, file]
+      flow: [[atk, file, atk]]
+      stats: ["n/a", "No"]
+    - title: Publish it
+      text: The file goes to a model hub under a trusted-looking or freed name.
+      on: [hub]
+      flow: [[file, hub, atk]]
+      mark: {hub: warn}
+      stats: ["n/a", "No"]
+    - title: The developer downloads and loads it
+      text: An old tutorial says `torch.load(path, weights_only=False)`. That turns off the safe loader.
+      on: [dev]
+      flow: [[hub, dev, ink]]
+      mark: {dev: warn}
+      stats: ["False", "No"]
+    - title: Unpickling calls the function
+      text: To rebuild the object, pickle calls `os.system` with the attacker's command. It runs with the developer's permissions, before any model code looks at the file.
+      on: [dev, shell]
+      flow: [[dev, shell, atk]]
+      mark: {shell: bad}
+      stats: ["False", "Yes"]
+    - title: The safe default blocks it
+      text: Since PyTorch 2.6, `weights_only=True` is the default. It refuses objects that are not tensors. Prefer safetensors files, which hold only numbers.
+      on: [dev]
+      show: [atk, file, hub, dev]
+      flow: [[hub, dev, def]]
+      mark: {dev: ok}
+      stats: ["True", "No"]

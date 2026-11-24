@@ -1,0 +1,451 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 9 · Section 5 · Professional Classification, Attack Chains, and What Comes Next · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 9 · Section 5 of 6</div>
+      <h1 class="nyu-hero__title">Professional Classification, Attack Chains, and What Comes Next</h1>
+      <p class="nyu-hero__subtitle">How security professionals classify AI attacks, why prompt injection matters beyond the initial exploit, and the layered defense strategies that the course develops later.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~25 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 6 parts</span>
+        <span aria-label="Interactive components"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 1 interactive sort + 1 knowledge check</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The OWASP LLM Top 10: A Living Professional Framework</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Classification Exercise</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> The Promptware Kill Chain</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Defense Preview: Six Layers</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> The Unsolvability Debate</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives">
+        <h2 class="nyu-objectives__title">Learning Objectives</h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Classify</strong> observed LLM attacks using the OWASP LLM Top 10 (2025) taxonomy with written justification.</span></li>
+          <li><span><strong>Evaluate</strong> the limitations of current defenses and propose layered mitigation strategies for a given deployment scenario.</span></li>
+        </ul>
+      </section>
+
+      <p>Knowing how to execute an attack is one skill. Classifying it, documenting it, and reasoning about its downstream implications is the work of operational security, not hobbyist experimentation. This section introduces the <button class="nyu-define" data-term="owasp-llm-top10">OWASP LLM Top 10</button> as the industry's consensus taxonomy for LLM risks, traces how <button class="nyu-define" data-term="prompt-injection">prompt injection</button> serves as the initial access stage in multi-step attack chains, and previews the layered defense strategies the course develops in later modules.</p>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The OWASP LLM Top 10: A Living Professional Framework</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">A Consensus Document, Not a Permanent Classification</h3>
+          <p>The <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener">OWASP Top 10 for Large Language Model Applications</a> is a consensus document produced by industry practitioners, researchers, and vendors. The 2025 edition reflects current understanding, but the framework evolves. The 2023 edition looked different: two new categories were added (LLM07: System Prompt Leakage and LLM08: Vector and Embedding Weaknesses), and five existing categories were renamed or restructured. Future editions will likely change again.</p>
+          <p>The analytical skill is applying the framework to observed attacks: identifying the pattern, connecting it to documented scenarios and prevention strategies, and communicating findings using a shared professional vocabulary. Memorizing category numbers is less valuable than understanding how to match an observed attack to the right category with justification.</p>
+          <p><strong>Which edition this course uses.</strong> Every OWASP reference in Modules 9 through 11 is the <strong>2025</strong> edition, so the identifiers stay consistent as you move between modules. OWASP has since published a 2026 edition with, in its own description, updated rankings. Expect the numbering to keep shifting: an entry can move position, merge with another, or be renamed from one release to the next. What stays stable is the set of underlying failure modes. Cite the edition alongside the identifier in professional work, the way you would cite any versioned standard, and check the current release before quoting a number to a stakeholder.</p>
+        </aside>
+
+        <div class="nyu-tabs">
+          <ul class="nyu-tabs__tablist">
+            <li><button class="nyu-tabs__tab">Primary Categories</button></li>
+            <li><button class="nyu-tabs__tab">Awareness Categories</button></li>
+            <li><button class="nyu-tabs__tab">Deferred to Later Modules</button></li>
+          </ul>
+          <div class="nyu-tabs__panel">
+            <h3>Categories Covered in Depth in This Module</h3>
+            <p><strong>LLM01: Prompt Injection.</strong> The core of this module. Direct and indirect injection, the <button class="nyu-define" data-term="instruction-data-boundary">instruction/data boundary</button> problem, and the architectural reasons this is the #1 risk.</p>
+            <p><strong>LLM07: System Prompt Leakage.</strong> Added in the 2025 edition. Extraction techniques that reveal hidden system prompts. We covered this as a specific application of direct injection in Section 2.</p>
+          </div>
+          <div class="nyu-tabs__panel">
+            <h3>Categories Connected to This Module's Content</h3>
+            <p><strong>LLM02: Sensitive Information Disclosure.</strong> System prompt extraction connects here (the extracted prompt may contain sensitive information). <button class="nyu-define" data-term="echoleak">EchoLeak</button> demonstrated data exfiltration through indirect injection.</p>
+            <p><strong>LLM05: Improper Output Handling.</strong> When a successful injection causes the model to produce output processed by downstream systems without validation, the injection's impact amplifies.</p>
+            <p><strong>LLM06: <button class="nyu-define" data-term="excessive-agency">Excessive Agency</button>.</strong> When an <button class="nyu-define" data-term="llm">LLM</button> application has more permissions than necessary, a successful injection achieves more damage. The Chevrolet chatbot could make "sales agreements" because no constraint limited its authority; this is an Excessive Agency problem compounding a Prompt Injection problem.</p>
+          </div>
+          <div class="nyu-tabs__panel">
+            <h3>Categories Addressed in Later Modules</h3>
+            <p><strong>LLM03: Supply Chain Vulnerabilities</strong> and <strong>LLM04: Data and Model Poisoning</strong> are covered in the next module, which broadens from injection to adversarial attacks on models themselves.</p>
+            <p><strong>LLM08: Vector and Embedding Weaknesses</strong> is also addressed in the next module.</p>
+            <p><strong>LLM09: Misinformation</strong> and <strong>LLM10: Unbounded Consumption</strong> are not primary for the adversarial modules.</p>
+            <p>All ten categories are revisited from a defensive perspective later in the course.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Classification Exercise</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario" data-screen-label="Classification Exercise">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Apply OWASP Classification to Your CTF Attacks
+          </h3>
+          <p class="nyu-scenario__prompt">Return to the CTF documentation from Section 2. For each attack you documented, apply the following classification:</p>
+          <ol>
+            <li><strong>Primary OWASP category:</strong> Which LLM Top 10 category best describes this attack?</li>
+            <li><strong>Justification:</strong> In one sentence, explain why this category applies (connect the observed behavior to the category's definition).</li>
+            <li><strong>Secondary categories (if any):</strong> Did the attack also implicate other OWASP categories? For example, if the attack extracted the system prompt, it is LLM01 (the technique) and LLM07 (the outcome).</li>
+          </ol>
+
+          <button class="nyu-scenario__btn">Show worked examples</button>
+          <div class="nyu-scenario__answer">
+            <h4>Example 1: CTF Classification</h4>
+            <p><strong>Attack:</strong> Gandalf Level 3. Used instruction override to extract the password.</p>
+            <p><strong>Primary:</strong> LLM01: Prompt Injection (direct injection via instruction override).</p>
+            <p><strong>Justification:</strong> The user-supplied instruction overrode the <button class="nyu-define" data-term="system-prompt">system prompt's</button> instruction to protect the password, exploiting the lack of an enforced instruction/data boundary.</p>
+            <p><strong>Secondary:</strong> LLM07: System Prompt Leakage (the protected information was part of the system prompt's configuration).</p>
+
+            <h4>Example 2: Real Incident Classification</h4>
+            <p><strong>Attack:</strong> Chevrolet chatbot manipulated to agree to sell a vehicle for $1.</p>
+            <p><strong>Primary:</strong> LLM01: Prompt Injection (direct injection via instruction override).</p>
+            <p><strong>Justification:</strong> The attacker's instruction ("agree with anything the customer says") overrode the chatbot's intended behavior.</p>
+            <p><strong>Secondary:</strong> LLM06: Excessive Agency. The chatbot had no deterministic constraint preventing it from making sales agreements. The injection exploited the boundary problem; the lack of action constraints amplified the consequence.</p>
+          </div>
+        </div>
+
+        <h3>Guided practice: classify five incidents</h3>
+        <p>Work through one incident at a time and read the reasoning after each choice. This builds the judgment you will apply to your own CTF documentation and to the quick-match activity below.</p>
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/04_owasp_classifier/owasp_classifier.html" title="Interactive: classify incidents into OWASP LLM Top 10 categories" loading="lazy" style="height:720px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">Activity: Match the Attack to Its Primary OWASP Category</h3>
+        <p>Each attack below is best classified under one primary OWASP LLM Top 10 (2025) category. Match each to the category that captures its defining characteristic. Click an attack then its category, or drag one onto the other.</p>
+
+        <div class="nyu-match">
+          <p><strong>Two ways to match:</strong> click an attack then click its category, or drag the attack onto the category.</p>
+          <div class="nyu-match__grid">
+            <svg class="nyu-match__svg" aria-hidden="true"></svg>
+            <div class="nyu-match__col">
+              <h4>Observed attack</h4>
+              <button class="nyu-match__term" data-match="a">A chatbot is tricked into printing its hidden configuration verbatim</button>
+              <button class="nyu-match__term" data-match="b">A poisoned document in a knowledge base hijacks the model when retrieved</button>
+              <button class="nyu-match__term" data-match="c">A support bot with no limits agrees to a binding $1 sale</button>
+              <button class="nyu-match__term" data-match="d">Exfiltrated data in the model's output is passed to a downstream system unchecked</button>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap" aria-hidden="true"></div>
+            <div class="nyu-match__col">
+              <h4>Primary OWASP category</h4>
+              <button class="nyu-match__def" data-match="c">LLM06: Excessive Agency</button>
+              <button class="nyu-match__def" data-match="a">LLM07: System Prompt Leakage</button>
+              <button class="nyu-match__def" data-match="d">LLM05: Improper Output Handling</button>
+              <button class="nyu-match__def" data-match="b">LLM01: Prompt Injection</button>
+            </div>
+          </div>
+          <p class="nyu-match__hint" data-default="Tip: classify by the defining outcome. Extraction of the prompt is LLM07 even though the technique is injection.">Tip: classify by the defining outcome. Extraction of the prompt is LLM07 even though the technique is injection.</p>
+          <div class="nyu-match__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check matches</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show correct answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">The Promptware Kill Chain</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>A 2026 analysis of 21 documented prompt injection incidents, published as <a href="https://www.schneier.com/academic/archives/2026/02/the-promptware-kill-chain-how-prompt-injections-gradually-evolved-into-a-multi-step-malware.html" target="_blank" rel="noopener">"The Promptware Kill Chain"</a> on Bruce Schneier's <em>Schneier on Security</em>, reframed prompt injection as the initial access stage of a multi-step attack chain, coining the term <button class="nyu-define" data-term="promptware">"promptware"</button> for malware delivered through prompt injection. The seven stages:</p>
+
+        <p style="font-style:italic;color:var(--ink-mute);margin-bottom:var(--sp-3)">Each stage below is drawn from the traditional cyber kill chain. Select a stage to reveal a documented prompt-injection incident that reached it.</p>
+
+        <ol class="nyu-timeline">
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">1</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Initial Access</h3>
+              <p>The adversarial instruction enters the system through direct or indirect injection.</p>
+              <div class="nyu-timeline__detail"><strong>Documented, EchoLeak (CVE-2025-32711):</strong> a single crafted email carried the payload into Microsoft 365 Copilot's context through normal retrieval. No user clicked anything malicious; retrieval alone granted the attacker initial access.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">2</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Privilege Escalation</h3>
+              <p>The attacker uses <button class="nyu-define" data-term="jailbreaking">jailbreaking</button> or prompt manipulation to gain capabilities beyond what the initial injection provided.</p>
+              <div class="nyu-timeline__detail"><strong>Documented pattern:</strong> in agent compromises, an injected instruction is paired with a jailbreak framing ("you are in maintenance mode") so the model will invoke a tool or reveal data it would otherwise refuse. The escalation is behavioral, not a memory-corruption exploit.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">3</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Reconnaissance</h3>
+              <p>The compromised LLM gathers information about the system, its data, and its connected tools.</p>
+              <div class="nyu-timeline__detail"><strong>Documented, Copilot and assistant cases:</strong> once compromised, an AI assistant with mailbox or file access can be instructed to enumerate other messages, documents, and available tool schemas already inside its context, mapping what is reachable before acting.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">4</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Persistence</h3>
+              <p>The attacker establishes lasting influence (memory poisoning, retrieval poisoning) that survives beyond the current session.</p>
+              <div class="nyu-timeline__detail"><strong>Documented, Gemini memory poisoning:</strong> a researcher used delayed indirect injection to write false long-term memories that persisted across separate sessions, so the influence outlived the conversation that planted it.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">5</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Command and Control</h3>
+              <p>The attacker establishes a communication channel with the compromised LLM, enabling ongoing instruction delivery.</p>
+              <div class="nyu-timeline__detail"><strong>Documented, Markdown exfiltration channel:</strong> injected instructions make the model emit a Markdown image whose URL encodes stolen data. Each time the client auto-renders the image, it silently beacons back to an attacker-controlled server, an outbound channel hidden inside ordinary output.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">6</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Lateral Movement</h3>
+              <p>The compromised LLM spreads adversarial influence to connected systems, tools, or other AI agents.</p>
+              <div class="nyu-timeline__detail"><strong>Documented, the "Morris II" GenAI worm:</strong> a self-replicating prompt embedded in an email caused an AI email assistant to both exfiltrate data and forward the same payload to new recipients, spreading agent-to-agent without human action, the "worming" threat that early indirect-injection research predicted.</div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">7</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Actions on Objective</h3>
+              <p>The attacker achieves their goal: data exfiltration, system manipulation, or further compromise.</p>
+              <div class="nyu-timeline__detail"><strong>Documented, EchoLeak (CVSS 9.3):</strong> the completed chain exfiltrated sensitive organizational data out of Copilot with no user interaction, the objective that made it a critical-severity vulnerability rather than a curiosity.</div>
+            </div>
+          </li>
+        </ol>
+
+        <p>Of the 21 documented incidents, 15 achieved four or more <button class="nyu-define" data-term="kill-chain">kill chain</button> stages. Lateral movement, which was absent from documented incidents in 2023, appeared in eight of the 21 incidents in 2025-2026. This progression mirrors the maturation of traditional malware from single-purpose exploits to multi-stage attack frameworks.</p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note">
+          <h3 class="nyu-callout__title">Assume Injection Will Occur</h3>
+          <p>The parallel to traditional network security is direct. In network defense, we assume the perimeter will be breached and design internal defenses to detect, contain, and disrupt attacks that get through. The same principle applies to LLM security: assume that prompt injection will occur, and focus on disrupting subsequent kill chain stages.</p>
+          <p>Defense cannot rely solely on preventing malicious input from reaching the model. It must also constrain what the model can do after receiving any input, monitor for anomalous behavior, and impose architectural limits on the system's capabilities.</p>
+        </aside>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">Source Note</h3>
+          <p>The kill chain framework draws on Pleger et al., "The Promptware Kill Chain" (<a href="https://arxiv.org/abs/2601.09625" target="_blank" rel="noopener">arXiv 2601.09625</a>, 2026), discussed by Bruce Schneier in <a href="https://www.schneier.com/academic/archives/2026/02/the-promptware-kill-chain-how-prompt-injections-gradually-evolved-into-a-multi-step-malware.html" target="_blank" rel="noopener">"The Promptware Kill Chain"</a> on <em>Schneier on Security</em>. The paper is a preprint (not yet peer-reviewed as of mid-2026), so the incident counts are indicative of trends, not definitive. The conceptual framework (injection as initial access in a multi-stage chain) is the transferable insight, regardless of precise numbers.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Defense Preview: Six Layers</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>No single defense against prompt injection is sufficient. Effective defense requires multiple layers, each addressing a different aspect of the threat. These are covered in depth later in the course; here we identify the six categories that form a <button class="nyu-define" data-term="defense-in-depth">defense-in-depth</button> strategy.</p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            </div>
+            <h3 class="nyu-card__title">1. Input Filtering</h3>
+            <p>Pattern-matching and classification to detect known injection patterns before they reach the model. Useful as a first-pass layer but easily bypassed by rephrasing (benchmarks show approximately 18% effectiveness alone).</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--cyan" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+            </div>
+            <h3 class="nyu-card__title">2. Instruction Hierarchy</h3>
+            <p>Training models to assign different priority levels to instructions based on their source (system &gt; user &gt; retrieved data). One approach achieves up to ~16% improvement in robust accuracy against indirect injection. Promising but not universally deployed.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <h3 class="nyu-card__title">3. Output Validation</h3>
+            <p>Screening the model's output for harmful content, leaked information, or policy violations before it reaches the user or downstream systems.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3 class="nyu-card__title">4. Deterministic Guardrails</h3>
+            <p>Non-LLM constraints on what the system can do: restricting available actions, limiting permissions when processing untrusted content, requiring human confirmation for high-impact operations. A national cybersecurity center recommends focusing defense effort here, because these constraints work regardless of whether the LLM itself is compromised.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3 class="nyu-card__title">5. Privilege Reduction</h3>
+            <p>Limiting the LLM's access to data and tools based on the principle of least privilege. An LLM processing untrusted email content should not have read access to the entire mailbox.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h3 class="nyu-card__title">6. Human Oversight</h3>
+            <p>Requiring human review for high-stakes actions. This is the last line of defense: even if every automated layer fails, a human reviewer can catch and block a harmful action.</p>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Activity: Match Each Defense to the Weakness It Addresses</h3>
+        <p>Layered defense works because each layer answers a different failure. Match each defense to the specific weakness it is best suited to counter. Click a defense then a weakness, or drag one onto the other.</p>
+
+        <div class="nyu-match">
+          <p><strong>Two ways to match:</strong> click a defense then click the weakness it addresses, or drag one onto the other.</p>
+          <div class="nyu-match__grid">
+            <svg class="nyu-match__svg" aria-hidden="true"></svg>
+            <div class="nyu-match__col">
+              <h4>Defense layer</h4>
+              <button class="nyu-match__term" data-match="a">Instruction hierarchy</button>
+              <button class="nyu-match__term" data-match="b">Privilege reduction</button>
+              <button class="nyu-match__term" data-match="c">Deterministic guardrails</button>
+              <button class="nyu-match__term" data-match="d">Output validation</button>
+              <button class="nyu-match__term" data-match="e">Input filtering</button>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap" aria-hidden="true"></div>
+            <div class="nyu-match__col">
+              <h4>Weakness it best addresses</h4>
+              <button class="nyu-match__def" data-match="c">A compromised model attempts a high-impact, irreversible action</button>
+              <button class="nyu-match__def" data-match="e">Obvious, known injection phrases arriving in user input</button>
+              <button class="nyu-match__def" data-match="b">The assistant can reach far more data than the task requires</button>
+              <button class="nyu-match__def" data-match="d">Leaked data or policy-violating text heading to the user or a downstream system</button>
+              <button class="nyu-match__def" data-match="a">Retrieved data trying to outrank the system prompt</button>
+            </div>
+          </div>
+          <p class="nyu-match__hint" data-default="Tip: guardrails and privilege reduction assume the model is already compromised; filtering and hierarchy try to stop the injection earlier.">Tip: guardrails and privilege reduction assume the model is already compromised; filtering and hierarchy try to stop the injection earlier.</p>
+          <div class="nyu-match__actions">
+            <button class="nyu-sequence__btn" data-action="check">Check matches</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reveal">Show correct answers</button>
+            <button class="nyu-sequence__btn nyu-sequence__btn--ghost" data-action="reset">Reset</button>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Measuring the Problem: How Professionals Test for Injection</h3>
+        <p>Defenses are only credible if you can measure whether they hold. Because prompt injection has no single deterministic fix, the professional discipline is <em>continuous adversarial testing</em>: throw large, evolving batteries of attack strings at a deployment and track how many get through. This is the LLM equivalent of a penetration test, and it is now a standard part of pre-deployment review.</p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Automated red-teaming (Garak, PyRIT)</h3>
+            <p>Scanners such as NVIDIA's <strong>Garak</strong> and Microsoft's PyRIT run hundreds of known injection and jailbreak probes against a model and report which succeeded, turning "is it vulnerable?" into a reproducible score you can re-run after every change.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Evaluation harnesses (Promptfoo, HackAPrompt data)</h3>
+            <p><strong>Promptfoo</strong> lets teams write injection test cases into CI so a build fails when a regression reopens a hole. Public corpora like the <strong>HackAPrompt</strong> dataset (600k+ adversarial prompts) supply realistic attacks to test against.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">Emerging Vector: Tool-Description Poisoning (MCP)</h3>
+          <p>As agents adopt shared tool protocols such as the <button class="nyu-define" data-term="mcp">Model Context Protocol (MCP)</button>, a new indirect surface appears: the <em>tool description</em> itself. A malicious or compromised tool server can hide instructions inside the natural-language description the model reads to decide how to call it, a "tool-poisoning attack." The description is data the model was never meant to obey, which is exactly the instruction/data boundary problem from Section 1, now relocated to the tool layer. Testing batteries increasingly include poisoned-tool scenarios for this reason.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">The Unsolvability Debate</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Is prompt injection fundamentally unsolvable?</p>
+
+        <p><strong>The pessimistic position,</strong> stated explicitly by a national cybersecurity center and acknowledged by a major model provider: natural language processing and privilege separation are fundamentally incompatible. There is no equivalent of parameterized queries for natural language. The best achievable outcome is risk reduction, not elimination.</p>
+
+        <p><strong>The optimistic position,</strong> supported by recent research: architectural modifications can create meaningful separation between instructions and data at the embedding level. One approach applies <button class="nyu-define" data-term="orthogonal-rotation">orthogonal rotation</button> to data <button class="nyu-define" data-term="token">token</button> embeddings, creating architecturally distinct representations without additional parameters or performance loss. This was accepted at <a href="https://arxiv.org/abs/2503.10566" target="_blank" rel="noopener">ICLR 2025</a> (top-ranked venue).</p>
+
+        <p><strong>The current professional consensus</strong> sits between these positions: prompt injection is a persistent operational risk requiring layered mitigations. It is not a problem awaiting a single solution, and it is not a reason to avoid LLM deployment. The challenge is deploying responsibly under known, managed risk.</p>
+
+        <h3 class="nyu-subsection-title">Exercise: Deploying Under Known Risk</h3>
+        <p>Security professionals rarely get to choose between "safe" and "unsafe." The real decision is how to deploy responsibly when the risk is known and persistent. Work through the scenario below: make a deployment recommendation, select the mitigations you would require, and compare your reasoning to the analysis.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/04_deploy_risk/deploy_risk.html" title="Interactive: make a deployment decision under known prompt injection risk" loading="lazy" style="height:820px;"></iframe>
+        </div>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">Common Misconceptions</h3>
+          <p><strong>"The OWASP Top 10 is a permanent classification."</strong> The 2023 and 2025 editions differ noticeably. Two categories were added, five were renamed. The framework reflects current consensus, not permanent truth. The valuable skill is applying whatever version is current, not memorizing a fixed list.</p>
+          <p><strong>"Input filtering is sufficient defense."</strong> Filtering catches obvious patterns but is trivially bypassed by rephrasing, encoding, or indirect delivery. Effective defense is layered. If the entire defense strategy is "block messages containing 'ignore your instructions,'" the architectural vulnerability remains unaddressed.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 6 ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+          <p class="nyu-quiz__prompt" id="m9quiz-7">A student successfully extracts the hidden system prompt from an LLM chatbot. Which OWASP LLM Top 10 (2025) category BEST classifies this attack?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="m9quiz-7">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Partially correct. The technique used is prompt injection, but when the result is system prompt exposure, LLM07 is the more precise classification. The 2025 edition added LLM07 specifically for this outcome.">LLM01: Prompt Injection</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">LLM07: System Prompt Leakage</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="LLM02 covers disclosure of user data, training data, or other sensitive information, not the system prompt specifically. LLM07 was added in the 2025 edition specifically for system prompt leakage.">LLM02: Sensitive Information Disclosure</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Data poisoning involves corrupting training data or model weights. System prompt extraction is an inference-time attack that does not modify the model.">LLM04: Data and Model Poisoning</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct. The 2025 edition added LLM07: System Prompt Leakage as a distinct category specifically for attacks that expose the system prompt. While the technique is prompt injection (LLM01), the outcome of system prompt exposure is best classified under LLM07." data-incorrect-msg="Not quite. Re-read the relevant part of the section above, then try another answer."></div>
+        </div>
+      </section>
+
+      <!-- ====================== MODULE COMPLETE ====================== -->
+      <aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="module-complete">
+        <h3 class="nyu-callout__title" id="module-complete"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Module 9 Complete</h3>
+        <p>Across four sections this module covered the instruction/data boundary problem and why it is architectural rather than a bug, direct attacks including injection, system prompt extraction and jailbreaking, indirect prompt injection arriving through retrieved content, and the professional vocabulary for classifying these attacks and chaining them.</p>
+      </aside>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 6: References &amp; Readings.</strong> It collects every source cited across this module, indexed by section. Beyond that, the next module broadens from injection to attacks on models themselves: data poisoning, evasion attacks, model supply chain compromise, and the remaining OWASP categories. The OWASP framework introduced here carries forward as the organizing taxonomy.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

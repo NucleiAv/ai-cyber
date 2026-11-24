@@ -1,0 +1,5349 @@
+/* ============================================================
+   NYU TANDON COURSE TEMPLATE
+   Brightspace-compatible course module stylesheet
+   ------------------------------------------------------------
+   Author: NYU Tandon Course Design
+   Brand: NYU Violet (#57068C)
+   Notes: Designed for vertically-scrolled Brightspace pages.
+          All components are keyboard-accessible and screen-
+          reader friendly. Uses CSS custom properties for easy
+          per-course theming.
+   ============================================================ */
+
+/* ---------- 1. Design Tokens ---------- */
+:root {
+  /* NYU Brand */
+  --nyu-violet:        #57068C;
+  --nyu-violet-dark:   #3D0461;
+  --nyu-violet-light:  #8B3FBE;
+  --nyu-violet-50:     #F5EDFA;
+  --nyu-violet-100:    #E8D8F2;
+  --nyu-violet-200:    #D2B3E5;
+
+  /* Semantic accents (used sparingly) */
+  --accent-info:       #1E73BE;   /* tips / documentation links */
+  --accent-info-bg:    #E7F0FA;
+  --accent-success:    #166B3A;   /* darkened from #1F8A4C: 6.6:1 on white, 5.8:1 on success-bg */
+  --accent-success-bg: #E6F4EC;
+  --accent-warning:    #8A5D00;   /* darkened from #C77700: 5.8:1 on white, 5.1:1 on warning-bg */
+  --accent-warning-bg: #FCF1DC;
+  --accent-danger:     #C42A2A;
+  --accent-danger-bg:  #FBE8E8;
+
+  /* Neutrals */
+  --ink:               #1A1A1A;
+  --ink-soft:          #3A3A3A;
+  --ink-mute:          #6B6B6B;
+  --rule:              #E2E2E2;
+  --surface:           #FFFFFF;
+  --surface-sunken:    #F6F4F8;
+  --code-bg:           #1F2229;
+  --code-ink:          #e8e8ec;
+  --code-comment:      #9099A8;
+
+  /* Type */
+  --font-body:  "Open Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-head:  "Open Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:  "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --fs-xs:   0.8125rem;  /* 13 */
+  --fs-sm:   0.9375rem;  /* 15 */
+  --fs-base: 1.0625rem;  /* 17 */
+  --fs-md:   1.1875rem;  /* 19 */
+  --fs-lg:   1.375rem;   /* 22 */
+  --fs-xl:   1.625rem;   /* 26 */
+  --fs-2xl:  2rem;       /* 32 */
+  --fs-3xl:  2.5rem;     /* 40 */
+
+  /* Spacing */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+
+  /* Radius */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(20, 0, 40, 0.06);
+  --shadow-md: 0 4px 14px rgba(20, 0, 40, 0.08);
+  --shadow-lg: 0 8px 30px rgba(20, 0, 40, 0.12);
+
+  /* Focus ring (WCAG 2.4.7 / 2.4.11) */
+  --focus-ring: 3px solid #FFB81C;       /* NYU secondary yellow */
+  --focus-offset: 2px;
+}
+
+/* ---------- 2. Reset / Base ---------- */
+html { scroll-behavior: smooth; }
+.nyu-course * { box-sizing: border-box; }
+.nyu-course {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--surface);
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--sp-5) var(--sp-5) var(--sp-8);
+  text-wrap: pretty;
+  -webkit-text-size-adjust: 100%;
+}
+
+.nyu-course p { margin: 0 0 var(--sp-4); }
+.nyu-course strong { font-weight: 700; color: inherit; }
+.nyu-course em { font-style: italic; }
+.nyu-course ul, .nyu-course ol { margin: 0 0 var(--sp-4); padding-left: 1.5rem; }
+.nyu-course li { margin-bottom: var(--sp-2); }
+.nyu-course li::marker { color: var(--nyu-violet); }
+.nyu-course a {
+  color: var(--accent-info);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.nyu-course a:hover { text-decoration-thickness: 2px; }
+.nyu-course :focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: 4px;
+}
+
+/* Skip link (WCAG 2.4.1) */
+.nyu-course .skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--nyu-violet);
+  color: #fff;
+  padding: var(--sp-3) var(--sp-4);
+  z-index: 999;
+  font-weight: 600;
+}
+.nyu-course .skip-link:focus {
+  left: var(--sp-3);
+  top: var(--sp-3);
+}
+
+/* Visually hidden (screen-reader-only) */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- 3. Module Hero ---------- */
+.nyu-hero {
+  position: relative;
+  padding: var(--sp-6) var(--sp-6);
+  margin-bottom: var(--sp-6);
+  background: var(--nyu-violet);
+  color: #fff;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  isolation: isolate;
+}
+.nyu-hero::before {
+  /* Subtle accent stripe along the left edge (NYU gold) */
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 6px;
+  background: #FFB81C;
+  z-index: 1;
+}
+.nyu-hero::after {
+  content: "";
+  position: absolute;
+  right: -80px; top: -80px;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  z-index: 0;
+}
+.nyu-hero > * { position: relative; z-index: 2; }
+.nyu-hero__eyebrow {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.85;
+  margin-bottom: var(--sp-2);
+}
+.nyu-course .nyu-hero__title {
+  font-size: var(--fs-3xl);
+  line-height: 1.1;
+  font-weight: 700;
+  margin: 0 0 var(--sp-3);
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.nyu-course .nyu-hero__subtitle {
+  font-size: var(--fs-md);
+  opacity: 0.95;
+  margin: 0 0 var(--sp-4);
+  max-width: 62ch;
+  color: #fff;
+  line-height: 1.5;
+}
+.nyu-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  font-size: var(--fs-sm);
+  opacity: 0.92;
+  padding-top: var(--sp-3);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+.nyu-hero__meta span { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.nyu-hero__meta svg { opacity: 0.8; }
+
+/* ---------- 4. Headings ----------
+   :where() keeps specificity = 0, so component-scoped title rules
+   (e.g. .nyu-callout__title) override these without needing
+   matching specificity. Critical for clean vertical rhythm.
+*/
+.nyu-course :where(h1, h2, h3, h4) {
+  font-family: var(--font-head);
+  color: var(--ink);
+  line-height: 1.25;
+  margin: var(--sp-6) 0 var(--sp-3);
+  font-weight: 700;
+  text-wrap: balance;
+}
+.nyu-course :where(h2) { font-size: var(--fs-2xl); color: var(--nyu-violet); }
+.nyu-course :where(h3) { font-size: var(--fs-xl); color: var(--ink); }
+.nyu-course :where(h4) { font-size: var(--fs-md); color: var(--nyu-violet); }
+
+/* Numbered section header */
+.nyu-section {
+  scroll-margin-top: var(--sp-6);
+  margin: var(--sp-7) 0 var(--sp-6);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--rule);
+  position: relative;
+}
+.nyu-section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+.nyu-section__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+.nyu-section__num {
+  flex-shrink: 0;
+  width: 48px; height: 48px;
+  background: var(--nyu-violet);
+  color: #fff;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+.nyu-section__title {
+  font-size: var(--fs-2xl);
+  color: var(--nyu-violet);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.nyu-section__rule {
+  display: none;
+}
+
+/* Subsection heading w/ purple accent bar (cleaner than full underline) */
+.nyu-subsection-title {
+  font-size: var(--fs-lg);
+  color: var(--ink);
+  font-weight: 700;
+  margin: var(--sp-6) 0 var(--sp-4);
+  padding-left: var(--sp-3);
+  border-left: 3px solid var(--nyu-violet);
+  line-height: 1.3;
+}
+
+/* ---------- 5. Learning Objectives ---------- */
+.nyu-objectives {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 5px solid var(--nyu-violet);
+  border-radius: var(--r-md);
+  padding: var(--sp-5) var(--sp-5) var(--sp-4);
+  margin: var(--sp-5) 0 var(--sp-6);
+}
+.nyu-objectives__title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  color: var(--nyu-violet);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  margin: 0 0 var(--sp-3);
+}
+.nyu-objectives__title svg { width: 28px; height: 28px; flex-shrink: 0; }
+.nyu-objectives__lede { font-weight: 700; margin-bottom: var(--sp-3); }
+.nyu-objectives__list { list-style: none; padding: 0; margin: 0; }
+.nyu-objectives__list li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  margin: 0;
+  border-radius: var(--r-sm);
+  transition: background-color 0.15s ease;
+}
+.nyu-objectives__list li:hover { background: var(--nyu-violet-50); }
+.nyu-objectives__list li::before {
+  content: "";
+  display: block;
+  width: 22px; height: 22px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231F8A4C' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-top: 2px;
+}
+.nyu-objectives__list li strong { color: var(--ink); }
+
+/* ---------- 6. Callouts ---------- */
+.nyu-callout {
+  position: relative;
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-left: 5px solid var(--nyu-violet);
+  border-radius: var(--r-md);
+  padding: var(--sp-4) var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+.nyu-callout > *:first-child { margin-top: 0; }
+.nyu-callout > *:last-child  { margin-bottom: 0; }
+.nyu-callout__title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  color: var(--nyu-violet);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  margin: 0 0 var(--sp-3);
+}
+.nyu-callout__title .nyu-icon {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--nyu-violet);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.nyu-callout__title .nyu-icon svg { width: 16px; height: 16px; }
+.nyu-callout p:last-child { margin-bottom: 0; }
+.nyu-callout p {
+  line-height: 1.7;
+}
+
+/* Variants */
+/* ---------- Up Next ----------
+   The end-of-page bridge to the following section. Every content page carries
+   exactly one, it is always the last thing in the last section, and its
+   paragraph always opens by naming the destination in bold:
+
+     <aside class="nyu-callout nyu-callout--next" role="note"
+            aria-labelledby="next-title">
+       <h3 class="nyu-callout__title" id="next-title">…icon… Up Next</h3>
+       <p><strong>Section N: Title.</strong> prose</p>
+     </aside>
+
+   The modifier exists so the pattern is enforceable rather than conventional.
+   Six modules had been using --tip here, which paints the same component blue
+   against the violet the other six used, so one element read as two. --next
+   deliberately keeps the base callout's violet left rule.
+
+   Run course_guidelines/normalize-upnext.py after adding or moving a section:
+   it reads the destination number and title from the next page's own hero, so
+   they cannot drift out of step with the module. */
+.nyu-callout--next {
+  margin-top: var(--sp-6);
+}
+.nyu-callout--next > p:last-child {
+  margin-bottom: 0;
+}
+/* The lead-in is the one piece a learner scans for, so give it room to sit as
+   its own visual unit without recolouring it: violet here would be violet
+   text on the sunken violet-adjacent callout, which the contrast policy bans. */
+.nyu-callout--next > p > strong:first-child {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.nyu-callout--tip {
+  background: #F2F7FC;
+  border-color: #D2E2EF;
+  border-left-color: var(--accent-info);
+}
+.nyu-callout--tip .nyu-callout__title { color: var(--ink); }
+.nyu-callout--tip .nyu-icon { background: var(--accent-info); }
+
+.nyu-callout--success {
+  background: #F4FAF6;
+  border-color: #D8EADD;
+  border-left-color: var(--accent-success);
+}
+.nyu-callout--success .nyu-callout__title { color: var(--ink); }
+.nyu-callout--success .nyu-icon { background: var(--accent-success); }
+
+.nyu-callout--warning {
+  background: #FDF9EF;
+  border-color: #EFE0C0;
+  border-left-color: var(--accent-warning);
+}
+.nyu-callout--warning .nyu-callout__title { color: var(--ink); }
+.nyu-callout--warning .nyu-icon { background: var(--accent-warning); }
+
+.nyu-callout--danger {
+  background: #FDF5F5;
+  border-color: #EDD3D3;
+  border-left-color: var(--accent-danger);
+}
+.nyu-callout--danger .nyu-callout__title { color: var(--ink); }
+.nyu-callout--danger .nyu-icon { background: var(--accent-danger); }
+
+/* Scenario / Knowledge check with reveal */
+.nyu-scenario { /* uses .nyu-callout base */ }
+.nyu-scenario__prompt { font-size: var(--fs-md); font-weight: 600; }
+.nyu-scenario__btn {
+  appearance: none;
+  background: var(--nyu-violet);
+  color: #fff;
+  border: 0;
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: var(--sp-2);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.nyu-scenario__btn:hover { background: var(--nyu-violet-dark); }
+.nyu-scenario__btn:active { transform: translateY(1px); }
+.nyu-scenario__answer {
+  display: none;
+  margin-top: var(--sp-4);
+  padding: var(--sp-4);
+  background: #fff;
+  border-left: 3px solid var(--accent-success);
+  border-radius: var(--r-sm);
+}
+.nyu-scenario__answer[data-open="true"] { display: block; animation: fadeUp 0.3s ease; }
+
+/* Scenario prompt readability enhancements */
+.nyu-scenario__prompt p {
+  margin-bottom: var(--sp-4);
+  line-height: 1.7;
+}
+.nyu-scenario__prompt p:last-child {
+  margin-bottom: var(--sp-3);
+}
+
+/* Emphasize the LLM output quote in scenarios */
+.nyu-scenario__prompt blockquote {
+  background: #fff;
+  border-left: 4px solid var(--accent-danger);
+  padding: var(--sp-3) var(--sp-4);
+  margin: var(--sp-4) 0;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Scenario answer list styling */
+.nyu-scenario__answer ul {
+  padding-left: var(--sp-5);
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+.nyu-scenario__answer li {
+  margin-bottom: var(--sp-3);
+  line-height: 1.65;
+}
+.nyu-scenario__answer li:last-child {
+  margin-bottom: 0;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 7. Accordion (matches screenshot 1, 12) ---------- */
+.nyu-accordion {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  margin: var(--sp-3) 0;
+  overflow: hidden;
+  background: #fff;
+}
+.nyu-accordion__trigger {
+  width: 100%;
+  appearance: none;
+  background: var(--surface-sunken);
+  color: var(--nyu-violet);
+  border: 0;
+  padding: var(--sp-4) var(--sp-5);
+  text-align: left;
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+.nyu-accordion__trigger:hover { background: var(--nyu-violet-50); }
+.nyu-accordion__trigger[aria-expanded="true"] {
+  background: var(--nyu-violet);
+  color: #fff;
+}
+.nyu-accordion__icon {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.nyu-accordion__icon svg { width: 100%; height: 100%; }
+.nyu-accordion__caret {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  transition: transform 0.2s ease;
+}
+.nyu-accordion__trigger[aria-expanded="true"] .nyu-accordion__caret {
+  transform: rotate(90deg);
+}
+.nyu-accordion__panel {
+  padding: 0 var(--sp-5);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+.nyu-accordion__panel[data-open="true"] {
+  padding: var(--sp-5);
+  max-height: 4000px;
+}
+
+/* ---------- 8. Card grids ---------- */
+.nyu-cards {
+  display: grid;
+  gap: var(--sp-4);
+  margin: var(--sp-5) 0;
+}
+.nyu-cards--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nyu-cards--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) {
+  .nyu-cards--2, .nyu-cards--3 { grid-template-columns: 1fr; }
+}
+.nyu-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--nyu-violet);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.nyu-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.nyu-card__icon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: var(--sp-3);
+  background: var(--nyu-violet);
+}
+.nyu-card__icon svg { width: 22px; height: 22px; }
+.nyu-card__icon--green   { background: #1F8A4C; }
+.nyu-card__icon--cyan    { background: #1FB4C2; }
+.nyu-card__icon--red     { background: #C42A2A; }
+.nyu-card__icon--amber   { background: #E0A21F; }
+.nyu-card__icon--blue    { background: var(--accent-info); }
+.nyu-card__title {
+  color: var(--nyu-violet);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin: 0 0 var(--sp-3);
+  text-wrap: balance;
+}
+.nyu-card p:last-child { margin-bottom: 0; }
+
+/* ---------- 9. Hover-reveal tooltip cards (matches docker screenshot) ---------- */
+/* Parent grid must allow overflow so tooltips can escape adjacent rows. */
+.nyu-cards { overflow: visible; }
+.nyu-tooltip-card {
+  position: relative;
+  text-align: center;
+  cursor: help;
+  z-index: 1;
+}
+.nyu-tooltip-card:hover,
+.nyu-tooltip-card:focus-within { z-index: 10; }
+.nyu-tooltip-card__icon {
+  margin: 0 auto var(--sp-3);
+}
+.nyu-tooltip-card__label {
+  font-family: var(--font-mono);
+  color: var(--nyu-violet);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  border-bottom: 2px dotted var(--nyu-violet);
+  padding-bottom: 2px;
+  display: inline-block;
+}
+.nyu-tooltip-card__tip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1A1A1A;
+  color: #fff;
+  font-size: var(--fs-sm);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-sm);
+  width: max-content;
+  max-width: 240px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 20;
+  box-shadow: var(--shadow-md);
+  line-height: 1.4;
+}
+.nyu-tooltip-card__tip::after {
+  content: "";
+  position: absolute;
+  bottom: -6px; left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px; height: 12px;
+  background: #1A1A1A;
+}
+.nyu-tooltip-card:hover .nyu-tooltip-card__tip,
+.nyu-tooltip-card:focus-within .nyu-tooltip-card__tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* (legacy state rule replaced above) */
+
+/* ---------- 10. Code blocks ---------- */
+.nyu-code {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-md);
+  overflow-x: auto;
+  line-height: 1.65;
+  margin: var(--sp-4) 0;
+  white-space: pre;
+  tab-size: 2;
+}
+.nyu-code--wrap { white-space: pre-wrap; word-break: break-word; }
+.nyu-callout .nyu-code,
+.nyu-card .nyu-code {
+  /* When code lives inside a narrow container, wrap rather than scroll. */
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.nyu-code::-webkit-scrollbar { height: 8px; width: 8px; }
+.nyu-code::-webkit-scrollbar-track { background: transparent; }
+.nyu-code::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px;
+}
+.nyu-code::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
+.nyu-code { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
+.nyu-code .c-comment { color: var(--code-comment); font-style: italic; }
+.nyu-code .c-keyword { color: #FF6B8B; }
+.nyu-code .c-string  { color: #F1D78F; }
+.nyu-code .c-meta    { color: #6BD3F2; }
+.nyu-code .c-ok      { color: #6CE2A4; }
+.nyu-code .c-bad     { color: #FF8585; }
+
+code:not(.nyu-code code):not(pre code) {
+  font-family: var(--font-mono);
+  background: var(--nyu-violet-50);
+  color: var(--nyu-violet-dark);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.92em;
+}
+/* A <code> inside a code block is not an inline code span. The rule above
+   excluded only `.nyu-code code`, so every `<pre class="nyu-pre"><code>` in the
+   course got the inline treatment: a lavender chip behind each line, in violet
+   text, painted on top of the dark panel the <pre> had already established.
+   That is violet on lavender sitting on near-black, which is unreadable and
+   also breaks the same-hue rule. Block code inherits the panel's own light-on-
+   dark colours instead. Affects 39 blocks across 15 files. */
+pre code:not(.nyu-code code),
+.nyu-pre code,
+.nyu-code__block code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* ---------- 11. Table of contents / module nav ---------- */
+.nyu-toc {
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  margin: 0 0 var(--sp-6);
+}
+.nyu-toc__title {
+  font-size: var(--fs-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  font-weight: 700;
+  margin: 0 0 var(--sp-3);
+}
+.nyu-toc__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.nyu-toc__list a {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.nyu-toc__list a:hover,
+.nyu-toc__list a:focus-visible {
+  background: var(--nyu-violet-50);
+  color: var(--nyu-violet);
+}
+.nyu-toc__list a[aria-current="true"] {
+  background: var(--nyu-violet);
+  color: #fff;
+  font-weight: 600;
+}
+.nyu-toc__num {
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--nyu-violet);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.nyu-toc__list a[aria-current="true"] .nyu-toc__num {
+  background: #fff;
+  color: var(--nyu-violet);
+}
+
+/* ---------- 12. Progress bar (per-module) ---------- */
+.nyu-progress {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--nyu-violet-100);
+  z-index: 50;
+  margin: calc(var(--sp-5) * -1) calc(var(--sp-5) * -1) var(--sp-5);
+}
+.nyu-progress__bar {
+  height: 100%;
+  background: var(--nyu-violet);
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+/* ---------- 13. Pager (prev / next module nav) ---------- */
+.nyu-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+  margin: var(--sp-8) 0 var(--sp-5);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--rule);
+}
+.nyu-pager a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  text-decoration: none;
+  color: var(--ink);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.nyu-pager a:hover { background: var(--nyu-violet-50); border-color: var(--nyu-violet-200); }
+.nyu-pager__label { font-size: var(--fs-xs); color: var(--ink-mute); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+.nyu-pager__title { color: var(--nyu-violet); font-weight: 700; }
+.nyu-pager__next { text-align: right; }
+
+/* ---------- 14. Back-to-top FAB ---------- */
+.nyu-fab {
+  position: fixed;
+  right: var(--sp-5);
+  bottom: var(--sp-5);
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--nyu-violet);
+  color: #fff;
+  /* White ring + dark drop shadow guarantee visibility on any background */
+  border: 3px solid #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease;
+  z-index: 40;
+}
+.nyu-fab.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.nyu-fab:hover { background: var(--nyu-violet-dark); }
+.nyu-fab:focus-visible {
+  outline: 3px solid #FFB81C;
+  outline-offset: 2px;
+}
+.nyu-fab svg { width: 22px; height: 22px; }
+
+/* ---------- 15. Tabs ---------- */
+.nyu-tabs {
+  margin: var(--sp-5) 0;
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--rule);
+}
+.nyu-tabs:last-child {
+  border-bottom: 0;
+}
+.nyu-tabs__tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 2px solid var(--rule);
+  margin: 0 0 var(--sp-5);
+  padding: 0;
+  list-style: none;
+}
+.nyu-tabs__tab {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink-mute);
+  padding: var(--sp-3) var(--sp-4);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.nyu-tabs__tab:hover { color: var(--nyu-violet); }
+.nyu-tabs__tab[aria-selected="true"] {
+  color: var(--nyu-violet);
+  border-bottom-color: var(--nyu-violet);
+}
+.nyu-tabs__panel { display: none; }
+.nyu-tabs__panel[data-active="true"] { display: block; animation: fadeUp 0.25s ease; }
+
+/* ---------- 16. Knowledge check (multiple choice) ---------- */
+.nyu-quiz {
+  background: var(--nyu-violet-50);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  margin: var(--sp-5) 0;
+  border: 1px solid var(--nyu-violet-100);
+}
+/* When the wrapper is a <fieldset>, reset its inherited styles */
+fieldset.nyu-quiz {
+  border-width: 1px;
+  min-width: 0;
+  padding-top: var(--sp-5);
+}
+/* <legend> support for the radio/label pattern.
+   Floating the legend takes it out of fieldset's special "notched border"
+   flow so the border doesn't cut through the question text. */
+legend.nyu-quiz__prompt {
+  float: left;
+  width: 100%;
+  display: block;
+  padding: 0;
+  margin: 0 0 var(--sp-4);
+}
+fieldset.nyu-quiz::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+/* "Knowledge Check" badge inside a <legend>.
+   A fieldset can't take a sibling header before its legend, so the badge
+   lives in the legend and is promoted to its own line. Keeps the radio/label
+   quiz pattern visually identical to the button/JS pattern. */
+legend.nyu-quiz__prompt .nyu-quiz__badge {
+  display: block;
+  width: fit-content;
+  margin-bottom: var(--sp-3);
+  font-weight: 700;
+}
+.nyu-quiz__header {
+  display: flex; align-items: center; gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.nyu-quiz__badge {
+  background: var(--nyu-violet);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nyu-quiz__prompt { font-weight: 600; font-size: var(--fs-md); margin: 0 0 var(--sp-4); }
+.nyu-quiz__options { display: grid; gap: var(--sp-2); }
+.nyu-quiz__option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: #fff;
+  border: 2px solid var(--rule);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  width: 100%;
+}
+/* Radio/label variant: stack content vertically */
+label.nyu-quiz__option {
+  display: block;
+  position: relative;
+  padding-left: 44px;
+  margin: 0 0 var(--sp-2);
+  clear: both;
+}
+label.nyu-quiz__option input[type="radio"] {
+  position: absolute;
+  left: var(--sp-3);
+  top: calc(var(--sp-3) + 0.25em);
+  width: 18px;
+  height: 18px;
+  accent-color: var(--nyu-violet);
+  cursor: pointer;
+}
+label.nyu-quiz__option:has(input:checked) {
+  border-color: var(--nyu-violet);
+  background: #fff;
+}
+label.nyu-quiz__option:has(input[data-correct]:checked) {
+  border-color: var(--accent-success);
+  background: var(--accent-success-bg);
+}
+label.nyu-quiz__option:has(input:checked:not([data-correct])) {
+  border-color: var(--accent-danger);
+  background: var(--accent-danger-bg);
+}
+/* Inline feedback span: hidden until selected */
+.nyu-quiz__fb {
+  display: none;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--rule);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+label.nyu-quiz__option:has(input:checked) .nyu-quiz__fb { display: block; }
+label.nyu-quiz__option:has(input[data-correct]:checked) .nyu-quiz__fb {
+  color: var(--ink);
+  border-top-color: rgba(31, 138, 76, 0.3);
+}
+label.nyu-quiz__option:has(input:checked:not([data-correct])) .nyu-quiz__fb {
+  color: var(--ink);
+  border-top-color: rgba(196, 42, 42, 0.3);
+}
+.nyu-quiz__option:hover { border-color: var(--nyu-violet-200); }
+.nyu-quiz__option[data-state="correct"] {
+  border-color: var(--accent-success);
+  background: var(--accent-success-bg);
+}
+.nyu-quiz__option[data-state="incorrect"] {
+  border-color: var(--accent-danger);
+  background: var(--accent-danger-bg);
+}
+.nyu-quiz__option[data-state="correct"]::after { content: "✓"; margin-left: auto; color: var(--accent-success); font-weight: 700; }
+.nyu-quiz__option[data-state="incorrect"]::after { content: "✗"; margin-left: auto; color: var(--accent-danger); font-weight: 700; }
+/* Explored wrong answers: students click after getting correct to learn why wrong */
+.nyu-quiz__option[data-state="incorrect"][data-explored="true"] {
+  border-color: var(--accent-warning);
+  background: var(--accent-warning-bg);
+  cursor: pointer;
+}
+.nyu-quiz__option[data-state="incorrect"][data-explored="true"]::after {
+  content: "⬅ Why this is wrong";
+  color: var(--accent-warning);
+  font-size: var(--fs-xs);
+}
+/* Keep wrong answers clickable after correct answer found */
+.nyu-quiz__option[data-state="correct"] { cursor: default; }
+.nyu-quiz__option[data-state="incorrect"] { cursor: pointer; }
+.nyu-quiz__feedback {
+  display: none;
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-sm);
+  background: #fff;
+}
+.nyu-quiz__feedback[data-show="true"] { display: block; }
+.nyu-quiz__feedback[data-show="true"][data-correct="true"] {
+  border-left: 4px solid var(--accent-success);
+}
+.nyu-quiz__feedback[data-show="true"][data-correct="false"] {
+  border-left: 4px solid var(--accent-danger);
+}
+
+/* ---------- 17. Glossary popover (clickable inline term) ---------- */
+.nyu-define {
+  position: relative;
+  display: inline;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--nyu-violet-dark);
+  font: inherit;
+  font-weight: 600;
+  padding: 0 1px;
+  cursor: pointer;
+  border-radius: 3px;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--nyu-violet-light);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+/* Hover and open states set a background but used to leave the text colour
+   alone, which breaks wherever a glossary term sits on a dark surface. In M11
+   Section 1 two terms live inside a #57068C table header and carry an inline
+   color:#fff; activating them painted the light violet highlight underneath
+   that white text, giving 1.14:1. The term went invisible at the exact moment
+   the reader clicked it. Setting the pair together keeps the state valid on
+   any surface: solid brand violet with white text is 11.6:1, and an inline
+   color:#fff on top of it stays white, so both cases land in the same place. */
+.nyu-define:hover,
+.nyu-define[aria-expanded="true"] {
+  background: var(--nyu-violet);
+  color: #fff;
+  text-decoration-color: rgba(255, 255, 255, 0.6);
+  border-radius: 3px;
+}
+.nyu-define__pop {
+  position: absolute;
+  /* Wider than the original 300px: several definitions run to multiple
+     paragraphs and read as a narrow column at that width. The JS measures
+     offsetWidth when positioning, so this needs no change there. */
+  width: 380px;
+  max-width: min(92vw, 440px);
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--sp-4);
+  font-size: var(--fs-base);
+  font-weight: 400;
+  line-height: 1.55;
+  text-align: left;
+  z-index: 9999;
+  display: none;
+  /* No max-height or overflow here. Applying overflow-y:auto unconditionally
+     reserved a scrollbar gutter on every card, including two-line definitions
+     that had nothing to scroll. The JS measures the rendered card and adds
+     .is-scrollable only when it genuinely cannot fit the viewport. */
+  overflow: visible;
+  /* When teleported to body by JS, position is set dynamically */
+}
+/* Only a card too tall for the viewport becomes scrollable. */
+.nyu-define__pop.is-scrollable {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(87, 6, 140, 0.25) transparent;
+}
+/* Themed scrollbar for long definitions, matching the modal/iframe treatment
+   above rather than falling back to the default grey browser chrome. */
+.nyu-define__pop.is-scrollable::-webkit-scrollbar { width: 6px; }
+.nyu-define__pop.is-scrollable::-webkit-scrollbar-track { background: transparent; }
+.nyu-define__pop.is-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(87, 6, 140, 0.25);
+  border-radius: 999px;
+}
+.nyu-define__pop.is-scrollable::-webkit-scrollbar-thumb:hover { background: rgba(87, 6, 140, 0.45); }
+.nyu-define__pop strong { color: var(--nyu-violet); display: block; margin-bottom: 4px; }
+.nyu-define__pop[data-visible="true"] { display: block; animation: fadeUp 0.18s ease; }
+.nyu-define__pop::after {
+  content: "";
+  position: absolute;
+  left: var(--arrow-left, 50%);
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px; height: 12px;
+  background: #fff;
+}
+/* Arrow when pop is ABOVE the term (arrow at bottom pointing down) */
+.nyu-define__pop[data-pos="above"]::after {
+  bottom: -7px; top: auto;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+/* Arrow when pop is BELOW the term (arrow at top pointing up) */
+.nyu-define__pop[data-pos="below"]::after {
+  top: -7px; bottom: auto;
+  border-left: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
+}
+/* Accent border faces the term: top when above, bottom when below */
+.nyu-define__pop[data-pos="below"] {
+  border-top: 4px solid var(--nyu-violet);
+}
+.nyu-define__pop[data-pos="above"] {
+  border-bottom: 4px solid var(--nyu-violet);
+}
+
+/* ---------- 18. Image figure ---------- */
+.nyu-figure { margin: var(--sp-5) 0; }
+.nyu-figure img { max-width: 100%; height: auto; border-radius: var(--r-md); border: 1px solid var(--rule); }
+.nyu-figure figcaption {
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+  margin-top: var(--sp-2);
+  text-align: center;
+  font-style: italic;
+}
+
+/* Placeholder used when image is not provided */
+.nyu-placeholder {
+  background: var(--nyu-violet-50);
+  border: 1px dashed var(--nyu-violet-200);
+  border-radius: var(--r-md);
+  padding: var(--sp-6);
+  text-align: center;
+  color: var(--nyu-violet);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- 19. Two-column layout ---------- */
+.nyu-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+@media (max-width: 640px) {
+  .nyu-split { grid-template-columns: 1fr; }
+}
+
+/* ---------- 20. Print-friendliness ---------- */
+@media print {
+  .nyu-fab, .nyu-progress, .nyu-pager, .nyu-toc { display: none !important; }
+  .nyu-accordion__panel { max-height: none !important; padding: var(--sp-4) var(--sp-5) !important; }
+  .nyu-scenario__answer { display: block !important; }
+  /* Popovers are hover/click affordances; never let one land in a printed page,
+     including a tip left open when the print was triggered. */
+  .nyu-ref__pop, .nyu-define__pop, .nyu-sort__chip-hint { display: none !important; }
+  .nyu-sort__info-btn { display: none !important; }
+  .nyu-ref { background: none; text-decoration: none; color: inherit; font-weight: 600; }
+  body { background: #fff; }
+  .nyu-course { max-width: none; padding: 0; }
+}
+
+/* ---------- 21. Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- 21b. Forced colors / Windows High Contrast (WCAG 1.4.11) ---------- */
+@media (forced-colors: active) {
+  /* Ensure borders and outlines are visible in HC mode */
+  .nyu-card, .nyu-callout, .nyu-accordion, .nyu-quiz,
+  .nyu-sequence__item, .nyu-sort__chip, .nyu-match__term,
+  .nyu-match__def, .nyu-branch__choice, .nyu-compare__col,
+  .nyu-pillar, .nyu-process__body, .nyu-timeline__body,
+  .nyu-reflect, .nyu-hotspots__stage, .nyu-demo,
+  .nyu-scenario__answer {
+    border: 2px solid ButtonText;
+  }
+  /* Table header in HC mode */
+  .nyu-table thead th {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+  /* Focus rings use system highlight */
+  .nyu-course :focus-visible,
+  .nyu-fab:focus-visible,
+  .anim-modal__close:focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+  /* Hero and compare headers use system colors */
+  .nyu-hero, .nyu-compare__head, .nyu-section__num,
+  .nyu-quiz__badge, .nyu-sequence__badge {
+    forced-color-adjust: none;
+  }
+  /* Buttons use system button colors */
+  .nyu-scenario__btn, .nyu-sequence__btn,
+  .nyu-branch__choice, .nyu-branch__restart,
+  .nyu-quiz__option {
+    border: 1px solid ButtonText;
+  }
+  .nyu-quiz__option[data-state="correct"] {
+    border: 3px solid Highlight;
+  }
+  .nyu-quiz__option[data-state="incorrect"] {
+    border: 3px solid LinkText;
+  }
+  /* Progress bar visible */
+  .nyu-progress__bar {
+    background: Highlight;
+  }
+  /* Code blocks */
+  .nyu-code {
+    border: 1px solid ButtonText;
+  }
+}
+
+/* ---------- 22. Touch target size (WCAG 2.5.8) ---------- */
+.nyu-scenario__btn,
+.nyu-quiz__option,
+.nyu-accordion__trigger,
+.nyu-tabs__tab {
+  min-height: 44px;
+}
+
+/* ============================================================
+   NEW INTERACTIVE COMPONENTS
+   ============================================================ */
+
+/* ---------- 23. Annotated code (hover lines for explanation) ---------- */
+.nyu-annot-code {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) 0;
+  margin: var(--sp-4) 0;
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  overflow: hidden;
+  position: relative;
+}
+.nyu-annot-code__line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  padding: 2px var(--sp-5);
+  position: relative;
+  border-left: 3px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  cursor: default;
+}
+.nyu-annot-code__line[data-annotated="true"] { cursor: pointer; }
+.nyu-annot-code__line[data-annotated="true"]:hover,
+.nyu-annot-code__line[data-annotated="true"]:focus-within,
+.nyu-annot-code__line[data-active="true"] {
+  background: rgba(255, 184, 28, 0.12);     /* NYU gold wash */
+  border-left-color: #FFB81C;
+}
+.nyu-annot-code__num {
+  color: #a8b0bd;
+  user-select: none;
+  width: 1.6em;
+  text-align: right;
+  flex-shrink: 0;
+}
+.nyu-annot-code__code { flex: 1; white-space: pre-wrap; word-break: break-word; }
+.nyu-annot-code__marker {
+  display: inline-flex;
+  margin-left: auto;
+  padding-left: var(--sp-3);
+  align-items: center;
+  color: #FFB81C;
+  font-size: var(--fs-sm);
+  opacity: 0.78;  /* raised from 0.6: WCAG 1.4.3 contrast on dark bg */
+  flex-shrink: 0;
+}
+.nyu-annot-code__line[data-active="true"] .nyu-annot-code__marker { opacity: 1; }
+.nyu-annot-code__notes {
+  padding: var(--sp-3) var(--sp-5);
+  margin-top: var(--sp-3);
+  background: rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-body);
+  color: #e8e8ec;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  min-height: 3.4em;
+}
+.nyu-annot-code__notes[data-empty="true"] {
+  color: var(--code-comment);
+  font-style: italic;
+}
+.nyu-annot-code__notes strong { color: #FFB81C; font-weight: 600; }
+
+/* ---------- 24. Drag-to-order sequence exercise ---------- */
+.nyu-sequence {
+  background: var(--nyu-violet-50);
+  border: 1px solid var(--nyu-violet-100);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+.nyu-sequence__header { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.nyu-sequence__badge {
+  background: var(--nyu-violet);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nyu-sequence__prompt { font-weight: 600; font-size: var(--fs-md); margin: 0 0 var(--sp-4); }
+.nyu-sequence__list { list-style: none; padding: 0; margin: 0 0 var(--sp-4); display: grid; gap: var(--sp-2); }
+.nyu-sequence__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: #fff;
+  border: 2px solid var(--rule);
+  border-radius: var(--r-sm);
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.nyu-sequence__item:hover { border-color: var(--nyu-violet-200); }
+.nyu-sequence__item:active { cursor: grabbing; }
+.nyu-sequence__item.is-dragging { opacity: 0.5; }
+.nyu-sequence__item.is-over { border-color: var(--nyu-violet); border-style: dashed; }
+.nyu-sequence__item[data-state="correct"] {
+  border-color: var(--accent-success);
+  background: #F4FAF6;
+}
+.nyu-sequence__item[data-state="incorrect"] {
+  border-color: var(--accent-danger);
+  background: #FDF5F5;
+}
+.nyu-sequence__handle {
+  color: var(--ink-mute);
+  flex-shrink: 0;
+  display: inline-flex;
+}
+.nyu-sequence__pos {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--nyu-violet);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  flex-shrink: 0;
+}
+.nyu-sequence__item[data-state="correct"] .nyu-sequence__pos { background: var(--accent-success); }
+.nyu-sequence__item[data-state="incorrect"] .nyu-sequence__pos { background: var(--accent-danger); }
+.nyu-sequence__label { flex: 1; }
+.nyu-sequence__actions { display: flex; gap: var(--sp-3); }
+.nyu-sequence__btn {
+  appearance: none;
+  background: var(--nyu-violet);
+  color: #fff;
+  border: 0;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+/* A white surface rather than transparent. These sit on the --nyu-violet-50
+   activity panel, so "transparent" meant violet text directly on lavender.
+   Giving the control its own white ground keeps the violet text and border,
+   which is what marks it as the secondary action, and removes the same-hue
+   pairing: violet on white is 11.6:1 with no shared hue. */
+.nyu-sequence__btn--ghost { background: #fff; color: var(--nyu-violet); border: 1px solid var(--nyu-violet); }
+.nyu-sequence__btn:hover { filter: brightness(0.95); }
+
+/* Mobile keyboard alternative: up/down buttons */
+.nyu-sequence__nudge {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nyu-sequence__nudge button {
+  appearance: none;
+  /* white ground, same reason as the ghost button above */
+  background: #fff;
+  color: var(--nyu-violet);
+  border: 1px solid var(--nyu-violet-100);
+  width: 28px; height: 24px;  /* WCAG 2.5.8: minimum 24x24 touch target */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+}
+.nyu-sequence__nudge button:hover { background: var(--nyu-violet-100); }
+
+/* ---------- 25. Flashcards (opacity-based flip; robust across renderers) ---------- */
+.nyu-flashcards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: var(--sp-4);
+  margin: var(--sp-5) 0;
+  align-items: stretch;
+}
+.nyu-flashcard {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  border-radius: var(--r-md);
+}
+/* CSS-grid stacking: both faces share one cell, so the tile grows to
+   fit whichever face is taller (always the definition). No fixed
+   height, no overflow: the text always fits strictly inside. */
+.nyu-flashcard__inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  height: 100%;
+}
+.nyu-flashcard__face {
+  grid-area: 1 / 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  min-height: 168px;
+  overflow: hidden;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+/* FRONT: soft violet-tinted card; term reads in violet, not white-on-purple */
+.nyu-flashcard__face--front {
+  background: #4C1D95;
+  border: 1px solid var(--nyu-violet-100);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--fs-xl);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+  padding-top: calc(var(--sp-5) + 1.1rem);
+  padding-bottom: calc(var(--sp-5) + 1.1rem);
+  box-shadow: var(--shadow-sm);
+  opacity: 1;
+  transform: translateY(0);
+  z-index: 2;
+}
+.nyu-flashcard__face--front::before {
+  content: "Key term";
+  position: absolute;
+  top: var(--sp-4);
+  left: var(--sp-5);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  /* The card front is a DEEP violet (#4C1D95). The label was --nyu-violet at
+     0.7 opacity, i.e. violet on violet at 1.05:1, effectively invisible.
+     Light violet reads clearly against the card without shouting. */
+  color: #D6CBEA;
+}
+.nyu-flashcard__hint {
+  position: absolute;
+  bottom: var(--sp-4);
+  left: var(--sp-5); right: var(--sp-5);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-align: left;
+  /* Was --nyu-violet-dark on the deep violet card: 1.28:1, invisible.
+     No opacity here: the value must stay predictable. */
+  color: #E4DDEF;
+}
+/* BACK: clean white card with the definition, vertically centered */
+.nyu-flashcard__face--back {
+  background: #fff;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--nyu-violet);
+  box-shadow: var(--shadow-md);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  text-align: left;
+  justify-content: center;
+  align-items: stretch;
+  opacity: 0;
+  transform: translateY(8px);
+  z-index: 1;
+}
+.nyu-flashcard__face--back strong { color: var(--nyu-violet); }
+.nyu-flashcard[aria-pressed="true"] .nyu-flashcard__face--front {
+  opacity: 0;
+  transform: translateY(8px);
+  z-index: 1;
+}
+.nyu-flashcard[aria-pressed="true"] .nyu-flashcard__face--back {
+  opacity: 1;
+  transform: translateY(0);
+  z-index: 2;
+}
+.nyu-flashcard:hover .nyu-flashcard__face--front {
+  border-color: var(--nyu-violet-200);
+  box-shadow: var(--shadow-md);
+}
+
+/* ---------- 26. Process timeline (numbered steps, vertical) ---------- */
+.nyu-timeline {
+  position: relative;
+  margin: var(--sp-5) 0;
+  padding-left: 0;
+  list-style: none;
+}
+.nyu-timeline::before {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--nyu-violet-100);
+}
+.nyu-timeline__step {
+  position: relative;
+  padding: 0 0 var(--sp-5) 56px;
+}
+.nyu-timeline__step:last-child { padding-bottom: 0; }
+.nyu-timeline__dot {
+  position: absolute;
+  left: 0; top: 0;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--nyu-violet);
+  color: var(--nyu-violet);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  z-index: 1;
+}
+.nyu-timeline__step[data-active="true"] .nyu-timeline__dot {
+  background: var(--nyu-violet);
+  color: #fff;
+}
+.nyu-timeline__step[data-active="true"] .nyu-timeline__body {
+  background: var(--nyu-violet-50);
+  border-color: var(--nyu-violet-100);
+}
+.nyu-timeline__body {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-4) var(--sp-5);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.nyu-timeline__body:hover { background: var(--nyu-violet-50); }
+/* Was --nyu-violet on the --nyu-violet-50 timeline card: violet on violet at
+   10.15:1. Passes the ratio, breaks the same-hue rule. The card keeps its
+   violet marker and rule; the title reads as text. */
+.nyu-timeline__title { font-weight: 700; color: var(--ink); margin: 0 0 var(--sp-2); }
+.nyu-timeline__detail {
+  display: none;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--rule);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.nyu-timeline__step[data-active="true"] .nyu-timeline__detail { display: block; animation: fadeUp 0.25s ease; }
+
+/* -- 26b. Timeline: static / always-visible variant --
+   Uses __item / __marker / __content instead of __step / __dot / __body.
+   Content is always visible (no click-to-expand).
+   ------------------------------------------------------------- */
+.nyu-timeline__item {
+  position: relative;
+  padding: 0 0 var(--sp-5) 56px;
+}
+.nyu-timeline__item:last-child { padding-bottom: 0; }
+
+.nyu-timeline__marker {
+  position: absolute;
+  left: 0; top: 0;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--nyu-violet);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  z-index: 1;
+}
+
+.nyu-timeline__content {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-4) var(--sp-5);
+}
+.nyu-timeline__content h3 {
+  font-weight: 700;
+  color: var(--nyu-violet);
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-base);
+  line-height: var(--lh-snug);
+}
+.nyu-timeline__content p {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  margin: 0 0 var(--sp-2);
+}
+.nyu-timeline__content p:last-child { margin-bottom: 0; }
+.nyu-timeline__content ul {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  margin: var(--sp-2) 0;
+  padding-left: 1.25em;
+}
+
+/* ---------- 27. Match-the-pair (click OR drag) ---------- */
+.nyu-match {
+  position: relative;
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+.nyu-match__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 80px 1fr;
+  gap: var(--sp-4);
+  margin: var(--sp-4) 0;
+  align-items: start;
+  grid-auto-rows: 1fr;
+}
+.nyu-match__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+.nyu-match__line {
+  fill: none;
+  stroke: var(--nyu-violet);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: nyu-match-draw 0.55s cubic-bezier(.6,.2,.2,1) forwards;
+  opacity: 0.85;
+}
+.nyu-match__line[data-state="correct"]   { stroke: var(--accent-success); }
+/* These two states cancel the draw-on animation, so they must also reset
+   stroke-dashoffset: the base rule parks it at 600 and relies on the
+   keyframe to bring it to 0. Without this the hint lines never appear. */
+.nyu-match__line[data-state="incorrect"] { stroke: var(--accent-danger); stroke-dasharray: 6 4; stroke-dashoffset: 0; animation: none; opacity: 0.9; }
+.nyu-match__line[data-state="hint"]      { stroke: var(--accent-info); stroke-dasharray: 4 6; stroke-dashoffset: 0; animation: none; opacity: 0.85; }
+@keyframes nyu-match-draw {
+  to { stroke-dashoffset: 0; }
+}
+.nyu-match__col {
+  display: grid;
+  gap: var(--sp-2);
+  position: relative;
+  z-index: 2;
+  grid-auto-rows: minmax(68px, auto);
+  align-content: start;
+}
+.nyu-match__col h4 {
+  grid-row: 1 / 2;
+  height: 28px;
+  align-self: end;
+}
+.nyu-match__col--gap { background: transparent; position: static; z-index: auto; }
+.nyu-match__col h4 {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-mute);
+}
+.nyu-match__term, .nyu-match__def {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  background: #fff;
+  border: 2px solid var(--rule);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  user-select: none;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  width: 100%;
+  /* No height:100% here. These are grid items in a minmax(68px, auto) row;
+     a percentage height resolves against a row that is itself sized by
+     content, so long definition text overflowed and overlapped the box
+     below. Grid's default align-self:stretch already equalises heights. */
+  min-height: 68px;
+  line-height: 1.35;
+}
+.nyu-match__term { font-weight: 700; color: var(--nyu-violet); }
+.nyu-match__term:hover, .nyu-match__def:hover { border-color: var(--nyu-violet-200); }
+.nyu-match__term[aria-pressed="true"], .nyu-match__def[aria-pressed="true"] {
+  background: var(--nyu-violet);
+  color: #fff;
+  border-color: var(--nyu-violet);
+}
+.nyu-match__term.is-matched, .nyu-match__def.is-matched {
+  border-color: var(--nyu-violet);
+  background: var(--nyu-violet-50);
+  color: var(--ink);
+}
+.nyu-match__term[data-state="correct"],
+.nyu-match__def[data-state="correct"] {
+  background: #F4FAF6;
+  border-color: var(--accent-success);
+  color: var(--ink);
+}
+.nyu-match__term[data-state="incorrect"],
+.nyu-match__def[data-state="incorrect"] {
+  background: #FDF5F5;
+  border-color: var(--accent-danger);
+  color: var(--ink);
+}
+.nyu-match__term.is-drag-over, .nyu-match__def.is-drag-over {
+  border-style: dashed;
+  border-color: var(--nyu-violet);
+  background: var(--nyu-violet-50);
+}
+.nyu-match__term.is-dragging, .nyu-match__def.is-dragging { opacity: 0.65; }
+.nyu-match__actions {
+  display: flex;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  position: relative;
+  z-index: 2;
+}
+.nyu-match__hint {
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+  margin: var(--sp-3) 0 0;
+  font-style: italic;
+}
+@media (max-width: 640px) {
+  .nyu-match__grid { grid-template-columns: 1fr; }
+  .nyu-match__col--gap { display: none; }
+  .nyu-match__svg { display: none; }
+}
+
+/* ---------- 27b. Utility buttons (used by match, sort, etc.) ---------- */
+.nyu-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-3) var(--sp-5);
+  font: inherit;
+  font-weight: 600;
+  border: 2px solid var(--nyu-violet);
+  border-radius: var(--r-sm);
+  background: var(--nyu-violet);
+  color: #fff;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.nyu-btn:hover { background: var(--nyu-violet-dark); border-color: var(--nyu-violet-dark); }
+.nyu-btn--sm { padding: var(--sp-2) var(--sp-4); font-size: var(--fs-sm); }
+.nyu-btn--outline {
+  background: transparent;
+  color: var(--nyu-violet);
+}
+.nyu-btn--outline:hover {
+  background: var(--nyu-violet-50);
+  color: var(--nyu-violet-dark);
+}
+
+/* ---------- 28. Drag-to-categorize (sort into bins) ---------- */
+.nyu-sort {
+  background: var(--nyu-violet-50);
+  border: 1px solid var(--nyu-violet-100);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+.nyu-sort__pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  background: #fff;
+  border: 2px dashed var(--nyu-violet-200);
+  border-radius: var(--r-sm);
+  margin-bottom: var(--sp-4);
+  min-height: 64px;
+}
+.nyu-sort__chip {
+  display: inline-flex;
+  /* flex-start, not center: once a chip wraps to three or four lines inside a
+     narrow bin, a vertically centred drag handle floats in the middle of the
+     text block and stops reading as a handle. Top-aligned it stays next to the
+     first line, where a handle belongs. */
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: #fff;
+  border: 2px solid var(--nyu-violet);
+  /* A fixed 20px radius rather than --r-pill. A pill radius is half the box
+     height, so on a chip that has wrapped to four lines in a 220px bin the
+     corner curve cuts roughly 35px into a box whose text is inset only 12px:
+     the first and last lines then run visibly across the border, which is the
+     "text leaking out of the figures" reported for M09 Section 2. At 20px a
+     single-line chip is still taller than 40px, so it keeps the pill look it
+     has today, while a wrapped chip becomes a rounded rectangle whose text
+     clears the curve at every line. */
+  border-radius: 20px;
+  color: var(--nyu-violet);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: var(--shadow-sm);
+  /* Chips are laid out full-width in the pool but land in bins as narrow as
+     220px. A flex item defaults to min-width:auto, so it refuses to shrink
+     below its content and a long chip spills out past the bin, which is what
+     the first-round review screenshotted in M09 Section 2.1. Let it shrink,
+     and let the text wrap. overflow-wrap:anywhere rather than break-word
+     because some chips carry unbroken strings, such as the base64 payload
+     SWdub3JlIGFsbCBydWxlcw== , which has no space to break at. */
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+/* The drag handle and the state icon must not be squeezed by the text, and
+   both sit on the first line so they stay legible on a wrapped chip. */
+.nyu-sort__chip::before,
+.nyu-sort__chip::after { flex-shrink: 0; line-height: 1.65; }
+/* The state icons are fixed-size boxes, so nudge them down onto the centre of
+   the first text line instead of the top edge of a multi-line chip. */
+.nyu-sort__chip::after { margin-top: 4px; }
+.nyu-sort__chip:active { cursor: grabbing; }
+.nyu-sort__chip.is-dragging { opacity: 0.65; }
+.nyu-sort__chip[data-state="correct"]   { background: #F4FAF6; border-color: var(--accent-success); color: var(--ink); }
+.nyu-sort__chip[data-state="incorrect"] { background: #FDF5F5; border-color: var(--accent-danger);  color: var(--ink); }
+.nyu-sort__chip::before {
+  content: "⋮⋮";
+  color: var(--ink-mute);
+  font-size: 0.9em;
+}
+
+/* -- sort: chip feedback icons & hint tooltips ---------------- */
+.nyu-sort__chip-hint {
+  display: none;
+}
+.nyu-sort__chip[data-state="incorrect"] {
+  position: relative;
+}
+/* The info button injected by JS next to incorrect chips */
+.nyu-sort__info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: var(--accent-danger);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-style: normal;
+  margin-left: 6px;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.nyu-sort__info-btn:hover {
+  background: #a02020;
+}
+.nyu-sort__info-btn:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+/* The hint tooltip shown when info button is clicked */
+.nyu-sort__chip-hint.is-open {
+  display: block;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  /* Capped against the viewport as well as a fixed size: the tooltip is
+     anchored to a chip that may now sit inside a 220px bin near the right
+     edge, so a hard 260px minimum would push it off screen on narrow displays. */
+  min-width: min(260px, 100%);
+  max-width: min(340px, 78vw);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--ink);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  line-height: 1.5;
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 30;
+  white-space: normal;
+}
+.nyu-sort__chip[data-state="correct"]::after {
+  content: "\2713";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: var(--accent-success);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.nyu-sort__bins {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.nyu-sort__bin {
+  background: #fff;
+  border: 2px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  min-height: 140px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  min-width: 0;
+}
+.nyu-sort__bin.is-over {
+  border-style: dashed;
+  border-color: var(--nyu-violet);
+  background: var(--nyu-violet-50);
+}
+.nyu-sort__bin h4 {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nyu-violet);
+}
+.nyu-sort__bin-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-height: 60px;
+  /* Without this the list itself refuses to shrink and passes the overflow
+     up to the bin, defeating the max-width on the chip. */
+  min-width: 0;
+}
+.nyu-sort__actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-4); }
+.nyu-sort__score {
+  margin-top: var(--sp-3);
+  font-weight: 600;
+  /* Status text sits on the activity panel, which is --nyu-violet-50. Violet on
+     that tint is violet on violet: it passes at 10.15:1 and still breaks the
+     same-hue rule. Near-black reads at 16:1 with no competing hue. */
+  color: var(--ink);
+}
+
+/* ---------- 29. Branching scenario / decision tree ----------
+   Light, card-based treatment. Avoids the heavy solid-violet
+   block; each choice reads as a tappable card with a violet
+   accent and a circular arrow affordance.
+*/
+.nyu-branch {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5) var(--sp-6) var(--sp-6);
+  margin: var(--sp-5) 0;
+  box-shadow: var(--shadow-sm);
+}
+.nyu-branch__header { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.nyu-branch__badge {
+  display: inline-flex;
+  align-items: center;
+  background: #4C1D95;
+  color: #fff;
+  border: 1px solid var(--nyu-violet-100);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nyu-branch__step { display: none; }
+.nyu-branch__step[data-active="true"] { display: block; }
+.nyu-branch__prompt {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0 0 var(--sp-5);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+.nyu-branch__choices { display: grid; gap: var(--sp-3); }
+.nyu-branch__choice {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--nyu-violet);
+  border-radius: var(--r-md);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.nyu-branch__choice:hover {
+  background: var(--nyu-violet-50);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-md);
+}
+.nyu-branch__choice:focus-visible {
+  outline: 3px solid #FFB81C;
+  outline-offset: 2px;
+}
+.nyu-branch__choice::before {
+  content: "→";
+  width: 28px; height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--nyu-violet-50);
+  color: var(--nyu-violet);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1em;
+  font-weight: 700;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.nyu-branch__choice:hover::before {
+  background: var(--nyu-violet);
+  color: #fff;
+}
+.nyu-branch__outcome {
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--nyu-violet);
+  border-radius: var(--r-md);
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: var(--sp-4);
+  color: var(--ink-soft);
+}
+.nyu-branch__outcome[data-tone="good"] {
+  background: var(--accent-success-bg);
+  border-color: #D8EADD;
+  border-left-color: var(--accent-success);
+}
+.nyu-branch__outcome[data-tone="bad"]  {
+  background: var(--accent-danger-bg);
+  border-color: #EDD3D3;
+  border-left-color: var(--accent-danger);
+}
+.nyu-branch__outcome strong {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-md);
+  color: var(--ink);
+}
+/* The outcome box already carries its tone via a tinted background and a
+   coloured left border. Emphasised text inside it must NOT repeat that hue,
+   or it becomes green-on-green / red-on-red. Near-black reads cleanly on
+   both tints and the tone is still unmistakable from the box itself. */
+.nyu-branch__outcome[data-tone="good"] strong,
+.nyu-branch__outcome[data-tone="bad"]  strong { color: var(--ink); }
+.nyu-branch__path {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--rule);
+}
+.nyu-branch__path:empty { display: none; }
+.nyu-branch__crumb {
+  display: inline-flex;
+  align-items: center;
+  background: #4C1D95;
+  color: #fff;
+  border: 1px solid var(--nyu-violet-100);
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.nyu-branch__restart {
+  appearance: none;
+  background: var(--nyu-violet);
+  color: #fff;
+  border: 0;
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: var(--sp-3);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.nyu-branch__restart:hover { background: var(--nyu-violet-dark); color: #fff; }
+.nyu-branch__restart:active { transform: translateY(1px); }
+
+/* -- branch: light variant ------------------------------------ */
+.nyu-branch--light {
+  background: var(--surface-sunken);
+  color: var(--ink);
+  border: 2px solid var(--rule);
+  box-shadow: var(--shadow-sm);
+}
+.nyu-branch--light .nyu-branch__badge {
+  background: var(--nyu-violet);
+  color: #fff;
+}
+.nyu-branch--light .nyu-branch__prompt {
+  color: var(--ink);
+}
+.nyu-branch--light .nyu-branch__path {
+  border-bottom-color: var(--rule);
+}
+.nyu-branch--light .nyu-branch__crumb {
+  background: #4C1D95;
+  color: #fff;
+}
+.nyu-branch--light .nyu-branch__choice {
+  background: #fff;
+  color: var(--nyu-violet);
+  border-color: var(--nyu-violet-200);
+}
+.nyu-branch--light .nyu-branch__choice:hover {
+  background: var(--nyu-violet-50);
+  border-color: var(--nyu-violet);
+  transform: translateX(4px);
+}
+.nyu-branch--light .nyu-branch__choice::before {
+  color: var(--nyu-violet-light);
+  opacity: 1;
+}
+.nyu-branch--light .nyu-branch__outcome {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--accent-warning);
+}
+.nyu-branch--light .nyu-branch__outcome[data-tone="good"] {
+  border-left-color: var(--accent-success);
+  background: var(--accent-success-bg);
+}
+.nyu-branch--light .nyu-branch__outcome[data-tone="bad"] {
+  border-left-color: var(--accent-danger);
+  background: var(--accent-danger-bg);
+}
+.nyu-branch--light .nyu-branch__outcome strong {
+  color: var(--ink);
+}
+.nyu-branch--light .nyu-branch__restart {
+  background: var(--nyu-violet);
+  color: #fff;
+}
+.nyu-branch--light .nyu-branch__restart:hover {
+  background: var(--nyu-violet-dark);
+  color: #fff;
+}
+
+/* ---------- 30. Reflection prompt (persistent journal) ---------- */
+.nyu-reflect {
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-left: 5px solid #FFB81C;          /* NYU gold accent for reflection */
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+.nyu-reflect__title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  color: var(--ink);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin: 0 0 var(--sp-3);
+}
+.nyu-reflect__title svg { width: 24px; height: 24px; color: #C77700; flex-shrink: 0; }
+.nyu-reflect__prompt { margin: 0 0 var(--sp-3); }
+.nyu-reflect__textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: var(--sp-3) var(--sp-4);
+  border: 2px solid var(--rule);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: var(--fs-base);
+  color: var(--ink);
+  background: #fff;
+  resize: vertical;
+  line-height: 1.55;
+}
+.nyu-reflect__textarea:focus {
+  border-color: var(--nyu-violet);
+  outline: 3px solid rgba(87, 6, 140, 0.3);
+  outline-offset: 1px;
+}
+.nyu-reflect__textarea:focus:not(:focus-visible) { outline: none; }
+.nyu-reflect__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+}
+.nyu-reflect__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nyu-reflect__status::before {
+  content: "";
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ink-mute);
+}
+.nyu-reflect__status[data-saved="true"]::before { background: var(--accent-success); }
+
+/* ---------- 31. Hotspot diagram ---------- */
+.nyu-hotspots {
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+.nyu-hotspots__stage {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  overflow: hidden;
+}
+.nyu-hotspots__diagram {
+  display: block;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.nyu-hotspots__pin {
+  position: absolute;
+  width: 36px; height: 36px;
+  background: var(--nyu-violet);
+  color: #fff;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  box-shadow: 0 0 0 2px var(--nyu-violet), 0 4px 10px rgba(0,0,0,0.15);
+  transform: translate(-50%, -50%);
+  transition: transform 0.18s ease;
+  z-index: 2;
+}
+.nyu-hotspots__pin:hover,
+.nyu-hotspots__pin:focus-visible { transform: translate(-50%, -50%) scale(1.15); }
+.nyu-hotspots__pin[aria-pressed="true"] {
+  background: #FFB81C;
+  color: var(--ink);
+  box-shadow: 0 0 0 2px #FFB81C, 0 0 0 6px rgba(255, 184, 28, 0.25);
+}
+.nyu-hotspots__pin[data-visited="true"]::after {
+  content: "✓";
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 16px; height: 16px;
+  background: var(--accent-success);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}
+.nyu-hotspots__panel {
+  margin-top: var(--sp-4);
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-top: 4px solid var(--nyu-violet);
+  border-radius: var(--r-md);
+  padding: var(--sp-4) var(--sp-5);
+  min-height: 110px;
+}
+.nyu-hotspots__panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  color: var(--nyu-violet);
+  font-weight: 700;
+  margin: 0 0 var(--sp-2);
+}
+.nyu-hotspots__panel[data-empty="true"] .nyu-hotspots__panel-title { color: var(--ink-mute); }
+.nyu-hotspots__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+}
+.nyu-hotspots__progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--nyu-violet-100);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.nyu-hotspots__progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--nyu-violet);
+  transition: width 0.4s ease;
+}
+
+/* Hotspot diagram: structured layout for token / diagram parts */
+.nyu-jwt-diagram {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: stretch;
+  gap: var(--sp-3);
+  background: var(--code-bg);
+  color: var(--code-ink);
+  padding: var(--sp-5) var(--sp-5);
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.nyu-jwt-diagram__sep {
+  align-self: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--code-ink);
+  opacity: 0.55;
+}
+.nyu-jwt-part {
+  position: relative;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--r-sm);
+  padding: var(--sp-4) var(--sp-3) var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 130px;
+}
+.nyu-jwt-part__label {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: var(--sp-2);
+}
+.nyu-jwt-part__token {
+  word-break: break-all;
+  flex: 1;
+}
+.nyu-jwt-part--header    .nyu-jwt-part__token { color: #FF8FA8; }
+.nyu-jwt-part--header    .nyu-jwt-part__label { color: #FF8FA8; }
+.nyu-jwt-part--payload   .nyu-jwt-part__token { color: #F1D78F; }
+.nyu-jwt-part--payload   .nyu-jwt-part__label { color: #F1D78F; }
+.nyu-jwt-part--signature .nyu-jwt-part__token { color: #6CE2A4; }
+.nyu-jwt-part--signature .nyu-jwt-part__label { color: #6CE2A4; }
+.nyu-jwt-part .nyu-hotspots__pin {
+  position: absolute;
+  top: -18px;
+  right: -10px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  width: 32px; height: 32px;
+}
+.nyu-jwt-part .nyu-hotspots__pin:hover,
+.nyu-jwt-part .nyu-hotspots__pin:focus-visible {
+  transform: scale(1.15);
+}
+@media (max-width: 640px) {
+  .nyu-jwt-diagram {
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+  }
+  .nyu-jwt-diagram__sep { display: none; }
+}
+
+/* ---------- 32. Video embeds (YouTube/Vimeo/generic responsive) ---------- */
+.nyu-video {
+  margin: var(--sp-5) 0;
+}
+.nyu-video__caption {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.nyu-video__eyebrow {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--nyu-violet);
+}
+.nyu-video__title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+}
+.nyu-video__meta {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+  flex-shrink: 0;
+}
+.nyu-video__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+.nyu-video__frame iframe,
+.nyu-video__frame video {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  border: 0;
+  display: block;
+}
+.nyu-video__transcript {
+  margin-top: var(--sp-3);
+}
+.nyu-video__transcript summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--nyu-violet);
+  padding: var(--sp-2) 0;
+  list-style: none;
+}
+.nyu-video__transcript summary::-webkit-details-marker { display: none; }
+.nyu-video__transcript summary::before {
+  content: "▸ ";
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+.nyu-video__transcript[open] summary::before { content: "▾ "; }
+.nyu-video__transcript-body {
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: var(--sp-4) var(--sp-5);
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+.nyu-video__transcript-body p { margin: 0 0 var(--sp-2); }
+.nyu-video__transcript-body p:last-child { margin-bottom: 0; }
+
+/* Click-to-load thumbnail variant (privacy + performance) */
+.nyu-video__poster {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  background: #000;
+  background-size: cover;
+  background-position: center;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.nyu-video__poster::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+}
+.nyu-video__play {
+  position: relative;
+  z-index: 2;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--nyu-violet);
+  border: 4px solid #fff;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.nyu-video__poster:hover .nyu-video__play { transform: scale(1.08); background: var(--nyu-violet-dark); }
+.nyu-video__play svg { width: 28px; height: 28px; margin-left: 4px; }
+
+/* Video card variant (poster + title + duration on the side) */
+.nyu-video--card {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: var(--sp-5);
+  align-items: start;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+}
+.nyu-video--card .nyu-video__frame { aspect-ratio: 16 / 9; }
+.nyu-video--card .nyu-video__title { font-size: var(--fs-lg); margin-bottom: var(--sp-2); }
+.nyu-video--card .nyu-video__desc { color: var(--ink-soft); font-size: var(--fs-sm); }
+@media (max-width: 640px) {
+  .nyu-video--card { grid-template-columns: 1fr; }
+}
+
+/* ---------- 33. Interactive demo (iframe embed) ---------- */
+.nyu-demo {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin: var(--sp-5) 0;
+  background: #fff;
+}
+.nyu-demo__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--rule);
+}
+.nyu-demo__badge {
+  background: var(--nyu-violet);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  flex-shrink: 0;
+}
+.nyu-demo__title { margin: 0; font-size: var(--fs-md); font-weight: 700; color: var(--ink); }
+.nyu-demo__actions { margin-left: auto; display: flex; gap: var(--sp-2); }
+.nyu-demo__btn {
+  appearance: none;
+  background: #fff;
+  color: var(--nyu-violet);
+  border: 1px solid var(--rule);
+  padding: 4px 10px;
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.nyu-demo__btn:hover { background: var(--nyu-violet-50); border-color: var(--nyu-violet); }
+.nyu-demo__frame {
+  width: 100%;
+  border: 0;
+  display: block;
+  background: var(--surface-sunken);
+}
+.nyu-demo__caption {
+  padding: var(--sp-3) var(--sp-4);
+  border-top: 1px solid var(--rule);
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+  background: var(--surface-sunken);
+}
+.nyu-demo--fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+.nyu-demo--fullscreen .nyu-demo__frame { flex: 1; height: auto; }
+
+/* ---------- 34. Footer (NYU Tandon logo + copyright) ---------- */
+.nyu-footer {
+  margin: var(--sp-8) 0 0;
+  padding: var(--sp-5) 0 var(--sp-3);
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-5);
+}
+.nyu-footer__copyright {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.5;
+  text-align: left;
+  margin: 0;
+}
+.nyu-footer__copyright a {
+  color: var(--nyu-violet);
+  font-weight: 600;
+  text-decoration: underline;                /* WCAG 1.4.1: non-color link distinguisher */
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--nyu-violet-200);
+}
+.nyu-footer__copyright a:hover,
+.nyu-footer__copyright a:focus-visible {
+  text-decoration-color: var(--nyu-violet);
+  text-decoration-thickness: 2px;
+}
+.nyu-footer__logo {
+  display: inline-block;
+  flex-shrink: 0;
+}
+.nyu-footer__logo img {
+  display: block;
+  height: 36px;
+  width: auto;
+}
+@media (max-width: 540px) {
+  .nyu-footer { flex-direction: column; align-items: flex-start; gap: var(--sp-3); }
+}
+
+/* ============================================================
+   35. PILLARS: numbered emphasis grid
+   ------------------------------------------------------------
+   Use for "N principles / pillars / paradigms" content. Replaces
+   the stacked-callout antipattern. Each pillar is a card with a
+   big numeral, a tight title, and a short description.
+
+   Markup:
+     <div class="nyu-pillars" data-cols="3">
+       <article class="nyu-pillar">
+         <span class="nyu-pillar__num">1</span>
+         <h3 class="nyu-pillar__title">…</h3>
+         <p class="nyu-pillar__body">…</p>
+       </article>
+       …
+     </div>
+   ============================================================ */
+.nyu-pillars {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: var(--sp-5) 0;
+  counter-reset: nyu-pillar;
+}
+.nyu-pillars[data-cols="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nyu-pillars[data-cols="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 720px) {
+  .nyu-pillars,
+  .nyu-pillars[data-cols="2"],
+  .nyu-pillars[data-cols="4"] { grid-template-columns: 1fr; }
+}
+.nyu-pillar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-5) var(--sp-5) var(--sp-5);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  overflow: hidden;
+  isolation: isolate;
+}
+.nyu-pillar::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--nyu-violet);
+  z-index: 1;
+}
+.nyu-pillar:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--nyu-violet-200);
+}
+.nyu-pillar__num {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: 2.6rem;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--nyu-violet);
+  letter-spacing: -0.04em;
+  margin-bottom: var(--sp-3);
+}
+.nyu-pillar__num::before {
+  content: "0";
+  opacity: 0.25;
+  margin-right: 0.05em;
+  font-size: 0.78em;
+}
+.nyu-pillar__title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--nyu-violet);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.nyu-course .nyu-pillar__title { color: var(--nyu-violet); margin-top: 0; }
+.nyu-pillar__body {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  flex: 1;
+}
+.nyu-pillar__body :last-child { margin-bottom: 0; }
+.nyu-pillar__tag {
+  display: inline-block;
+  margin-top: var(--sp-3);
+  padding: 2px 8px;
+  background: #4C1D95;
+  color: #fff;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Variant: bold numeral as backdrop (for fewer, weightier items) */
+.nyu-pillars--bold .nyu-pillar { padding-top: var(--sp-6); }
+.nyu-pillars--bold .nyu-pillar__num {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-3);
+  font-size: 4.2rem;
+  color: var(--nyu-violet-50);
+  margin: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.nyu-pillars--bold .nyu-pillar__num::before { display: none; }
+.nyu-pillars--bold .nyu-pillar__title,
+.nyu-pillars--bold .nyu-pillar__body { position: relative; z-index: 1; }
+
+/* ============================================================
+   36. PROCESS: vertical numbered pipeline (replaces ASCII-art
+   ↓ in a code block). Markup:
+
+     <ol class="nyu-process">
+       <li class="nyu-process__step">
+         <span class="nyu-process__num">1</span>
+         <div class="nyu-process__body">
+           <h4 class="nyu-process__title">Add salt</h4>
+           <p class="nyu-process__detail">…</p>
+           <code class="nyu-process__sample">"7f3a4b9c" + password</code>
+         </div>
+       </li>
+       …
+     </ol>
+   ============================================================ */
+.nyu-process {
+  list-style: none;
+  padding: 0;
+  margin: var(--sp-5) 0;
+  display: grid;
+  gap: var(--sp-3);
+  position: relative;
+}
+.nyu-process__step {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: stretch;
+  position: relative;
+  margin: 0;
+}
+.nyu-process__step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: 44px;
+  bottom: -12px;
+  width: 2px;
+  background: var(--nyu-violet-100);
+  z-index: 0;
+}
+.nyu-process__num {
+  width: 44px; height: 44px;
+  flex-shrink: 0;
+  background: var(--nyu-violet);
+  color: #fff;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 4px #fff;
+}
+.nyu-process__body {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+}
+.nyu-process__title {
+  margin: 0 0 4px;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--nyu-violet);
+  line-height: 1.3;
+}
+.nyu-course .nyu-process__title { margin-top: 0; }
+.nyu-process__detail {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.nyu-process__sample {
+  display: block;
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  border-radius: var(--r-sm);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.nyu-process__step[data-tone="good"] .nyu-process__num { background: var(--accent-success); }
+.nyu-process__step[data-tone="bad"]  .nyu-process__num { background: var(--accent-danger); }
+.nyu-process__step[data-tone="good"] .nyu-process__body { border-left: 3px solid var(--accent-success); }
+.nyu-process__step[data-tone="bad"]  .nyu-process__body { border-left: 3px solid var(--accent-danger); }
+
+/* ============================================================
+   OVERFLOW SAFETY: prevent wide content (code samples, long
+   URLs/hashes, media) from forcing a horizontal page scrollbar
+   at any viewport width. Grid/flex tracks default to
+   min-width:auto, which lets non-wrapping content push the page.
+   ============================================================ */
+.nyu-process__body,
+.nyu-match__grid > *,
+.nyu-objectives__list li > *,
+.nyu-stack__row > *,
+.nyu-split > *,
+.nyu-video--card > * { min-width: 0; }
+
+.nyu-course img,
+.nyu-course video,
+.nyu-course iframe,
+.nyu-course table { max-width: 100%; }
+
+.nyu-course p,
+.nyu-course li,
+.nyu-course figcaption,
+.nyu-course a,
+.nyu-course :not(pre) > code { overflow-wrap: break-word; }
+
+@media (max-width: 680px) {
+  .nyu-code { white-space: pre-wrap; overflow-wrap: anywhere; }
+}
+
+/* ============================================================
+   37. STAT ROW: compact facts/inline metrics
+   Markup: <ul class="nyu-stats"><li><b>4</b> patterns</li>…</ul>
+   ============================================================ */
+.nyu-stats {
+  list-style: none;
+  padding: 0;
+  margin: var(--sp-4) 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-3);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding-top: var(--sp-3);
+  padding-bottom: var(--sp-3);
+}
+.nyu-stats li {
+  margin: 0;
+  /* Block layout (not flex-column): mixed inline content, text nodes,
+     glossary buttons, spans: must flow as one line of description text
+     instead of stacking as separate flex items. */
+  display: block;
+  padding: 0 var(--sp-3);
+  border-left: 1px solid var(--rule);
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+}
+.nyu-stats li > b { margin-bottom: 2px; }
+.nyu-stats li:first-child { border-left: 0; padding-left: 0; }
+.nyu-stats li b {
+  display: block;
+  font-size: var(--fs-2xl);
+  color: var(--nyu-violet);
+  font-weight: 700;
+  line-height: 1;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================
+   38. KEY POINTS: tighter alternative to a bulleted list when
+   you want emphasis without a heavy callout. Markup:
+
+     <ul class="nyu-keypoints">
+       <li><strong>Term</strong> short explanation.</li>
+       …
+     </ul>
+   ============================================================ */
+.nyu-keypoints {
+  list-style: none;
+  padding: 0;
+  margin: var(--sp-4) 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.nyu-keypoints li {
+  position: relative;
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-4);
+  background: var(--surface-sunken);
+  border-radius: var(--r-sm);
+  border-left: 4px solid var(--nyu-violet);
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+}
+/* bullet dot removed: vertical bar only */
+.nyu-keypoints li strong { color: var(--ink); font-weight: 700; }
+
+/* ============================================================
+   38b. PROMPT-ANNOTATION HIGHLIGHTS: inline labels for prompt parts.
+   Two contexts: prose (light bg) and code blocks (dark bg).
+   All combinations meet WCAG 2.1 AA contrast (4.5:1 minimum).
+   ============================================================ */
+
+/* === Prose context (light background) === */
+.nyu-hl {
+  display: inline;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-weight: 600;
+  font-size: inherit;
+  line-height: inherit;
+}
+.nyu-hl--role     { background: #166534; color: #fff; border-bottom: 2px solid #1F8A4C; } /* green: 7.1:1 */
+.nyu-hl--rule     { background: #155E63; color: #fff; border-bottom: 2px solid #1E73BE; } /* blue: 7.3:1 */
+.nyu-hl--contract { background: #57068C; color: #fff; border-bottom: 2px solid #3D0461; } /* violet: 11.6:1 */
+.nyu-hl--delimiter{ background: #F5C242; color: #1A1200; border-bottom: 2px solid #996300; } /* amber: 11.2:1 */
+
+/* === Code-block context (dark background) ===
+   Uses left-border + bright text on a slightly raised bg.
+   Text colors chosen for 4.5:1+ against the raised bg (#2A2A3C).
+   Left borders are the same hue at full saturation for color-coding. */
+.nyu-code .nyu-hl {
+  padding: 2px 8px 2px 10px;
+  border-bottom: none;
+  border-radius: 0 4px 4px 0;
+  border-left: 3px solid;
+  background: rgba(255,255,255,0.08);
+  font-family: inherit;
+}
+.nyu-code .nyu-hl--role     { border-left-color: #5DD879; color: #5DD879; } /* bright green */
+.nyu-code .nyu-hl--rule     { border-left-color: #6CB4EE; color: #6CB4EE; } /* bright blue  */
+.nyu-code .nyu-hl--contract { border-left-color: #C99AFF; color: #C99AFF; } /* bright violet */
+.nyu-code .nyu-hl--delimiter{ border-left-color: #FFD166; color: #FFD166; } /* bright amber  */
+
+/* ============================================================
+   39. COMPARE GRID: side-by-side comparison of N concepts with
+   parallel labeled sections. Replaces dense \"3 cards each with
+   how/use/requirement repeated\" antipattern. Scannable across
+   rows or columns.
+
+   Markup:
+     <div class=\"nyu-compare\" data-cols=\"3\">
+       <div class=\"nyu-compare__col\" data-tone=\"a\">\n         <header class=\"nyu-compare__head\">\n           <span class=\"nyu-compare__num\">1</span>\n           <h3>Supervised</h3>\n           <p class=\"nyu-compare__tag\">labeled data</p>\n         </header>\n         <dl class=\"nyu-compare__rows\">\n           <dt>How it works</dt><dd>...</dd>\n           <dt>Security use case</dt><dd>...</dd>\n           <dt>Key requirement</dt><dd>...</dd>\n         </dl>\n       </div>\n       ...\n     </div>
+   ============================================================ */
+.nyu-compare {
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  margin: var(--sp-5) 0;
+}
+.nyu-compare[data-cols="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nyu-compare[data-cols="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  .nyu-compare, .nyu-compare[data-cols="2"], .nyu-compare[data-cols="4"] {
+    grid-template-columns: 1fr;
+  }
+}
+.nyu-compare__col {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  height: 100%;
+}
+.nyu-compare__head {
+  background: var(--nyu-violet);
+  color: #fff;
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  position: relative;
+  border-bottom: 4px solid var(--nyu-violet-dark);
+}
+.nyu-compare__col[data-tone="a"] .nyu-compare__head { background: #156B3B; border-bottom-color: #0E4D2A; } /* green: 6.6:1 vs white */
+.nyu-compare__col[data-tone="b"] .nyu-compare__head { background: #0C7580; border-bottom-color: #09545C; } /* teal: 5.4:1 vs white */
+.nyu-compare__col[data-tone="c"] .nyu-compare__head { background: #8B5400; border-bottom-color: #643C00; } /* amber: 6.2:1 vs white */
+.nyu-compare__col[data-tone="d"] .nyu-compare__head { background: #1A5A94; border-bottom-color: #144d80; } /* blue: 7.2:1 vs white */
+/* Equal-height colored headers across columns at every scale: each
+   column subgrids onto two shared parent rows (head / body), so the
+   tallest header sets the height for all of them. Older browsers fall
+   back to the flex layout above (headers may differ, content intact). */
+@supports (grid-template-rows: subgrid) {
+  .nyu-compare { row-gap: 0; }
+  .nyu-compare__col {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 2;
+  }
+  /* When the grid stacks to one column (≤760px), row-gap: 0 would butt
+     the cards together: restore the spacing between them. */
+  @media (max-width: 760px) {
+    .nyu-compare__col + .nyu-compare__col { margin-top: var(--sp-3); }
+  }
+}
+
+/* ============================================================
+   A11Y SAFETY NET: legacy low-contrast SVG palette remaps
+   CSS overrides SVG presentation attributes, so any page (current
+   or future) still using the old figure palette automatically
+   renders with WCAG-AA colors. Keep authoring new figures with
+   the accessible palette; these rules are the backstop.
+   Text (1.4.3, needs ≥4.5:1):
+     #6B7280 → #4B5563   #1F8A4C → #166534   #B07A00 → #8B5400
+   Graphics (1.4.11, needs ≥3:1):
+     #FFB81C line → #8B5400
+   White-label cells (legacy severity ramps):
+     #E67E22 → #B45309   #D35400 → #C2410C   #CB4335 → #B91C1C
+   ============================================================ */
+.nyu-course figure svg text[fill="#6B7280"] { fill: #4B5563; }
+.nyu-course figure svg text[fill="#1F8A4C"] { fill: #166534; }
+.nyu-course figure svg text[fill="#B07A00"] { fill: #8B5400; }
+.nyu-course figure svg line[stroke="#FFB81C"],
+.nyu-course figure svg path[stroke="#FFB81C"] { stroke: #8B5400; }
+.nyu-course figure svg rect[fill="#E67E22"] { fill: #B45309; }
+.nyu-course figure svg rect[fill="#D35400"] { fill: #C2410C; }
+.nyu-course figure svg rect[fill="#CB4335"] { fill: #B91C1C; }
+.nyu-compare__num {
+  display: inline-block;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  /* A 25% white chip lightens the header behind it, so the white numeral
+     landed at 3.36 to 4.0:1 depending on the tone. Darkening instead keeps the
+     chip visible and pushes the numeral above 7:1 on every tone. */
+  background: rgba(0, 0, 0, 0.24);
+  color: #fff;
+  text-align: center;
+  line-height: 22px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  margin-bottom: var(--sp-2);
+  font-family: var(--font-mono);
+}
+.nyu-course .nyu-compare__head h3 {
+  color: #fff;
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+  min-height: 2.4em; /* accommodate 2-line titles so columns align */
+  display: flex;
+  align-items: flex-end;
+}
+.nyu-compare__tag {
+  margin: 4px 0 0;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.95;
+  font-weight: 600;
+}
+.nyu-compare__rows {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  flex: 1 1 auto;
+}
+.nyu-compare__rows dt {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ink-mute);
+  padding: var(--sp-3) var(--sp-4) 4px;
+  border-top: 1px solid var(--rule);
+}
+.nyu-compare__rows dt:first-child { border-top: 0; }
+.nyu-compare__rows dd {
+  margin: 0;
+  padding: 0 var(--sp-4) var(--sp-3);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.nyu-compare__rows dd:last-child { padding-bottom: var(--sp-4); }
+
+/* ============================================================
+   40. STAT BLOCKS: emphasized numbers in a row
+   Markup:
+     <div class=\"nyu-stat-row\">
+       <div class=\"nyu-stat-block\">\n         <div class=\"nyu-stat-block__number\">94%</div>\n         <div class=\"nyu-stat-block__label\">of leaders \u2026</div>\n         <div class=\"nyu-stat-block__source\">WEF 2026</div>\n       </div>\n       \u2026\n     </div>
+   ============================================================ */
+.nyu-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin: var(--sp-5) 0;
+}
+.nyu-stat-row[data-cols="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nyu-stat-row[data-cols="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 640px) {
+  .nyu-stat-row, .nyu-stat-row[data-cols="2"], .nyu-stat-row[data-cols="4"] {
+    grid-template-columns: 1fr;
+  }
+}
+.nyu-stat-block {
+  text-align: center;
+  padding: var(--sp-4) var(--sp-3);
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+  border: 1px solid var(--rule);
+}
+.nyu-stat-block__number {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--nyu-violet);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.nyu-stat-block__label {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  margin-top: 6px;
+  line-height: 1.35;
+}
+.nyu-stat-block__source {
+  font-size: var(--fs-xs);
+  color: var(--ink-mute);
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   41. NUMBERED LIST \u2014 ordered list with violet number badges.
+   Markup:
+     <ol class=\"nyu-numbered\">\n       <li>First item with <strong>emphasized</strong> text.</li>\n       \u2026\n     </ol>
+   ============================================================ */
+.nyu-numbered {
+  list-style: none;
+  padding: 0;
+  margin: var(--sp-4) 0;
+}
+.nyu-numbered > * {
+  padding: var(--sp-3) 0 var(--sp-3) calc(28px + var(--sp-4));
+  position: relative;
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0;
+  display: block;
+}
+.nyu-numbered > *:last-child { border-bottom: 0; }
+.nyu-numbered__num {
+  position: absolute;
+  left: 0;
+  top: var(--sp-3);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--nyu-violet);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   42. INTERACTIVE MODAL OVERLAY: full-screen overlay that hosts
+   an iframe for interactive tools (tokenizer, etc.). Markup:
+     <div class="anim-modal-overlay" id="…" aria-hidden="true">
+       <div class="anim-modal">
+         <div class="anim-modal__header">
+           <span class="anim-modal__title">…</span>
+           <button class="anim-modal__close">×</button>
+         </div>
+         <iframe class="anim-modal__iframe"></iframe>
+       </div>
+     </div>
+   Toggle .is-open on .anim-modal-overlay via JS.
+   ============================================================ */
+.anim-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+}
+
+.anim-modal-overlay.is-open {
+  display: flex;
+}
+
+.anim-modal {
+  position: relative;
+  width: 100%;
+  max-width: 1040px;
+  height: 90vh;
+  max-height: 750px;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.anim-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: var(--nyu-violet, #57068C);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.anim-modal__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.anim-modal__close {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.anim-modal__close:hover {
+  background: rgba(255,255,255,0.3);
+}
+.anim-modal__close:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.anim-modal__iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+}
+
+/* ── Styled scrollbar for modal iframes and overflow containers ──
+   Avoids the default grey browser scrollbar chrome inside modals.
+   Interactive iframe content should also include its own scrollbar
+   styles (this only covers the iframe element's outer scrollbar). */
+.anim-modal::-webkit-scrollbar,
+.anim-modal__iframe::-webkit-scrollbar { width: 6px; height: 6px; }
+.anim-modal::-webkit-scrollbar-track,
+.anim-modal__iframe::-webkit-scrollbar-track { background: transparent; }
+.anim-modal::-webkit-scrollbar-thumb,
+.anim-modal__iframe::-webkit-scrollbar-thumb {
+  background: rgba(87,6,140,0.25);
+  border-radius: 999px;
+}
+.anim-modal::-webkit-scrollbar-thumb:hover,
+.anim-modal__iframe::-webkit-scrollbar-thumb:hover { background: rgba(87,6,140,0.45); }
+.anim-modal,
+.anim-modal__iframe { scrollbar-width: thin; scrollbar-color: rgba(87,6,140,0.25) transparent; }
+
+@media (max-width: 600px) {
+  .anim-modal { height: 95vh; border-radius: 0.5rem; }
+}
+
+/* ============================================================
+   43. GLOW-ON-SCROLL PHRASE HIGHLIGHT: wrap any inline text in
+   <span class="nyu-glow-phrase"> and toggle .is-glowing via JS
+   (IntersectionObserver) to produce a subtle pulsing text-shadow.
+   ============================================================ */
+.nyu-glow-phrase {
+  --nyu-glow: 139, 63, 190;
+  --nyu-violet-rgb: 87, 6, 140;
+
+  display: inline;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+
+  text-shadow:
+    0 0 1px rgba(var(--nyu-glow), 0),
+    0 0 4px rgba(var(--nyu-glow), 0),
+    0 0 8px rgba(var(--nyu-violet-rgb), 0),
+    0 0 14px rgba(var(--nyu-violet-rgb), 0);
+}
+
+.nyu-glow-phrase.is-glowing {
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  animation: glowReveal 5.2s ease-in-out infinite;
+}
+
+@keyframes glowReveal {
+  /* OFF: hold */
+  0%, 18% {
+    text-shadow:
+      0 0 1px rgba(var(--nyu-glow), 0),
+      0 0 4px rgba(var(--nyu-glow), 0),
+      0 0 8px rgba(var(--nyu-violet-rgb), 0),
+      0 0 14px rgba(var(--nyu-violet-rgb), 0);
+  }
+
+  /* Smooth ramp up */
+  42% {
+    text-shadow:
+      0 0 1px rgba(var(--nyu-glow), 0.22),
+      0 0 4px rgba(var(--nyu-glow), 0.16),
+      0 0 8px rgba(var(--nyu-violet-rgb), 0.09),
+      0 0 14px rgba(var(--nyu-violet-rgb), 0.05);
+  }
+
+  /* FULL GLOW: hold */
+  58%, 72% {
+    text-shadow:
+      0 0 1px rgba(var(--nyu-glow), 0.44),
+      0 0 5px rgba(var(--nyu-glow), 0.34),
+      0 0 10px rgba(var(--nyu-violet-rgb), 0.20),
+      0 0 16px rgba(var(--nyu-violet-rgb), 0.12);
+  }
+
+  /* Smooth ramp down */
+  88% {
+    text-shadow:
+      0 0 1px rgba(var(--nyu-glow), 0.16),
+      0 0 4px rgba(var(--nyu-glow), 0.11),
+      0 0 8px rgba(var(--nyu-violet-rgb), 0.06),
+      0 0 14px rgba(var(--nyu-violet-rgb), 0.03);
+  }
+
+  /* OFF: hold */
+  100% {
+    text-shadow:
+      0 0 1px rgba(var(--nyu-glow), 0),
+      0 0 4px rgba(var(--nyu-glow), 0),
+      0 0 8px rgba(var(--nyu-violet-rgb), 0),
+      0 0 14px rgba(var(--nyu-violet-rgb), 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nyu-glow-phrase.is-glowing {
+    animation: none;
+    text-shadow:
+      0 0 1px rgba(var(--nyu-glow), 0.36),
+      0 0 4px rgba(var(--nyu-glow), 0.26),
+      0 0 8px rgba(var(--nyu-violet-rgb), 0.14),
+      0 0 14px rgba(var(--nyu-violet-rgb), 0.08);
+  }
+}
+
+/* ============================================================
+   44. CONFUSION MATRIX TABLE \u2014 reusable 2\u00d72 matrix layout for
+   precision/recall lessons. Markup:
+     <table class="nyu-matrix">
+       <thead>
+         <tr><th class="corner"></th><th>Actually Malicious</th><th>Actually Benign</th></tr>
+       </thead>
+       <tbody>
+         <tr><th class="label">System Flagged</th>
+             <td class="cell-good"><b>TP</b> \u2026</td>
+             <td class="cell-bad"><b>FP</b> \u2026</td></tr>
+         \u2026
+       </tbody>
+     </table>
+   ============================================================ */
+.nyu-matrix {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  max-width: 720px;
+  margin: var(--sp-5) auto;
+  font-size: var(--fs-md);
+  table-layout: fixed;
+}
+.nyu-matrix col.corner-col { width: 14ch; }
+.nyu-matrix th, .nyu-matrix td {
+  border: 1px solid var(--rule);
+  padding: var(--sp-4) var(--sp-3);
+  text-align: center;
+  vertical-align: middle;
+  font-size: var(--fs-md);
+  line-height: 1.3;
+}
+.nyu-matrix thead th {
+  background: var(--nyu-violet);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.nyu-matrix tbody .label {
+  background: var(--nyu-violet);
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+.nyu-matrix .corner {
+  background: transparent;
+  border-color: transparent;
+}
+.nyu-matrix .cell-good { background: #E8F5E9; }
+.nyu-matrix .cell-bad  { background: #FCE4EC; }
+.nyu-matrix .cell-good > b,
+.nyu-matrix .cell-bad > b {
+  display: block;
+  font-size: var(--fs-md);
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+/* Direct child only: must not catch the glossary tooltip span
+   (.nyu-define__pop) injected inside .nyu-define buttons, which
+   stays hidden until data-visible="true". */
+.nyu-matrix .cell-good > span,
+.nyu-matrix .cell-bad > span {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+
+/* ============================================================
+   43. STACK \u2014 nested concept hierarchy diagram with depth bars
+   Each row's left bar indicates depth. Useful for AI \u2192 ML \u2192 DL
+   style hierarchies. Markup:
+     <ol class=\"nyu-stack\">
+       <li class=\"nyu-stack__row\" data-depth=\"1\">
+         <span class=\"nyu-stack__bar\"><span class=\"nyu-stack__depth\">1</span></span>
+         <div class=\"nyu-stack__content\">
+           <p class=\"nyu-stack__label\">Artificial Intelligence</p>
+           <p class=\"nyu-stack__desc\">The broadest umbrella\u2026 <span class=\"nyu-stack__examples\">Expert systems\u2026</span></p>
+         </div>
+       </li>
+       \u2026
+     </ol>
+   ============================================================ */
+.nyu-stack {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: var(--sp-5) auto;
+  max-width: 640px;
+  padding: 0;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+.nyu-stack__row {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: stretch;
+  min-height: 76px;
+  margin: 0;
+}
+.nyu-stack__bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nyu-stack__bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--nyu-violet-100);
+}
+.nyu-stack__row[data-depth="1"] .nyu-stack__bar::before { background: #E8D8F2; }
+.nyu-stack__row[data-depth="2"] .nyu-stack__bar::before { background: #D2B3E5; }
+.nyu-stack__row[data-depth="3"] .nyu-stack__bar::before { background: #B07CD6; }
+.nyu-stack__row[data-depth="4"] .nyu-stack__bar::before { background: var(--nyu-violet-light); }
+.nyu-stack__depth {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: #fff;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--nyu-violet);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.nyu-stack__content {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid rgba(87, 6, 140, 0.1);
+}
+.nyu-stack__row:last-child .nyu-stack__content { border-bottom: 0; }
+.nyu-stack__row[data-depth="1"] .nyu-stack__content { background: #FAF5FD; }
+.nyu-stack__row[data-depth="2"] .nyu-stack__content { background: var(--nyu-violet-50); }
+.nyu-stack__row[data-depth="3"] .nyu-stack__content { background: #EFE3F6; }
+.nyu-stack__row[data-depth="4"] .nyu-stack__content { background: #E8D8F2; }
+.nyu-stack__label {
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  /* violet on the violet-tinted depth row; near-black instead */
+  color: var(--ink);
+  margin: 0 0 2px;
+}
+.nyu-stack__desc {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.45;
+}
+.nyu-stack__examples {
+  font-size: var(--fs-xs);
+  /* --ink-mute is 3.94:1 on the deeper depth tints; --ink-soft clears 4.5 */
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* ============================================================
+   44. DEFINITION LIST \u2014 structured \"title + description\" rows.
+   Replaces the antipattern of <p><strong>Title.</strong> body</p>
+   when listing 3+ related points (especially inside a card).
+
+   Markup:
+     <dl class=\"nyu-deflist\">
+       <dt>Data volume</dt>\n       <dd>Legitimate organizations generate massive datasets...</dd>\n       <dt>Infrastructure scale</dt>\n       <dd>Defenders can deploy AI at the network edge...</dd>\n     </dl>
+   ============================================================ */
+.nyu-deflist {
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-3);
+}
+.nyu-deflist dt {
+  font-weight: 700;
+  color: var(--nyu-violet);
+  font-size: var(--fs-sm);
+  margin: 0;
+  padding-left: var(--sp-3);
+  border-left: 3px solid var(--nyu-violet);
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+.nyu-deflist dd {
+  margin: 4px 0 0 calc(var(--sp-3) + 3px);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+/* Tone variants align with callout palette */
+.nyu-deflist--success dt { color: var(--accent-success); border-left-color: var(--accent-success); }
+.nyu-deflist--danger  dt { color: var(--accent-danger);  border-left-color: var(--accent-danger);  }
+
+/* ============================================================
+   45. DATA TABLE: general-purpose styled table.
+   Supports optional striped rows, compact variant, and
+   responsive horizontal scrolling via a wrapper.
+
+   Markup (basic):
+     <table class="nyu-table">
+       <thead>
+         <tr><th>Header 1</th><th>Header 2</th><th>Header 3</th></tr>
+       </thead>
+       <tbody>
+         <tr><td>Cell</td><td>Cell</td><td>Cell</td></tr>
+       </tbody>
+     </table>
+
+   Responsive wrapper (scroll on narrow screens):
+     <div class="nyu-table-wrap">
+       <table class="nyu-table"> ... </table>
+     </div>
+
+   Variants:
+     nyu-table--striped     Alternating row backgrounds
+     nyu-table--compact     Tighter padding for dense data
+     nyu-table--fixed       table-layout: fixed
+     nyu-table--prose       First column holds sentences, not short
+                            labels; re-enables wrapping there
+     nyu-table--even        All columns wrap normally and share
+                            space equally (table-layout: fixed).
+                            Use when every column has sentence-
+                            length content, not just the first.
+   ============================================================ */
+
+/* Scroll wrapper: opt-in for very wide tables (10+ columns, raw data).
+   Most tables should use plain .nyu-table which wraps text to fit.
+   Only add the wrapper when columns genuinely cannot shrink further. */
+.nyu-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: var(--sp-5) 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+}
+.nyu-table-wrap > .nyu-table {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  min-width: 600px;            /* force scroll only when viewport < 600px */
+}
+
+/* Base table */
+.nyu-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  margin: var(--sp-5) 0;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  table-layout: auto;
+  overflow-wrap: break-word;   /* break long words only when they overflow */
+  word-break: normal;          /* never fragment words mid-syllable        */
+}
+
+/* Cells */
+/* Opt-in fixed layout. The auto algorithm distributes width by content, which
+   on a two-column "short label / long prose" table gives the label column most
+   of the width and squeezes the prose into a sliver: the M12 Source Caveats
+   table rendered 874px against 125px, with rows over 450px tall. Pair this
+   class with a <colgroup> to state the split explicitly. */
+.nyu-table--fixed { table-layout: fixed; }
+.nyu-table th,
+.nyu-table td {
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Label columns: prevent the first column from being crushed.
+   white-space: nowrap keeps short labels ("SOAR playbooks") on one line
+   so the browser allocates enough width before distributing the remainder
+   to content-heavy columns. */
+.nyu-table td:first-child,
+.nyu-table tbody th {
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.nyu-table tbody tr:last-child th,
+.nyu-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Header row */
+.nyu-table thead th {
+  background: var(--nyu-violet);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.02em;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+/* Borders between header cells */
+.nyu-table thead th + th {
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Row header (first th in tbody) */
+.nyu-table tbody th {
+  background: #4C1D95;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Body rows */
+.nyu-table tbody tr {
+  transition: background-color 0.12s ease;
+}
+.nyu-table tbody tr:hover {
+  background: var(--nyu-violet-50);
+}
+
+/* Striped variant */
+.nyu-table--striped tbody tr:nth-child(even) {
+  background: var(--surface-sunken);
+}
+.nyu-table--striped tbody tr:nth-child(even):hover {
+  background: var(--nyu-violet-50);
+}
+
+/* Compact variant */
+.nyu-table--compact th,
+.nyu-table--compact td {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-xs);
+}
+
+/* Fixed layout variant */
+.nyu-table--fixed {
+  table-layout: fixed;
+}
+
+/* Prose variant: for tables whose first column contains full sentences
+   rather than short labels. The default label-column rule above sets
+   white-space: nowrap on td:first-child, which is wrong for prose: the
+   cell refuses to wrap and forces horizontal overflow. This variant
+   restores normal wrapping and balances the columns. */
+.nyu-table--prose {
+  table-layout: fixed;
+}
+.nyu-table--prose td:first-child,
+.nyu-table--prose tbody th {
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* Even variant: all columns wrap and share space equally.
+   Use when every column carries sentence-length content (not just the
+   first). Overrides the default nowrap on td:first-child so all
+   columns behave the same way. */
+.nyu-table--even {
+  table-layout: fixed;
+}
+.nyu-table--even td:first-child,
+.nyu-table--even td,
+.nyu-table--even tbody th {
+  white-space: normal;
+  word-break: normal;
+  /* Wrap at spaces only; never split a word mid-character. When columns get
+     too narrow to hold a whole word, the .nyu-table-wrap container scrolls
+     horizontally (min-width below) instead of chopping the word. */
+  overflow-wrap: normal;
+  hyphens: none;
+}
+/* Ensure an --even table always has room for its longest word before the
+   wrapper starts scrolling, so text never crushes mid-word on small screens. */
+.nyu-table-wrap > .nyu-table--even {
+  min-width: 640px;
+}
+
+/* Nowrap variant: ALL cells stay on one line; the table expands to
+   its natural width and the nyu-table-wrap scroll container handles
+   overflow. Use for wide tables (5+ columns) whose cells contain
+   short labels, not sentences. Avoids the ugly default scrollbar by
+   keeping everything compact and letting the wrapper scroll cleanly. */
+.nyu-table--nowrap th,
+.nyu-table--nowrap td {
+  white-space: nowrap;
+}
+
+/* Caption */
+.nyu-table caption {
+  caption-side: bottom;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-xs);
+  color: var(--ink-mute);
+  font-style: italic;
+  text-align: left;
+}
+
+/* Right-align numeric columns with data-align="right" */
+.nyu-table th[data-align="right"],
+.nyu-table td[data-align="right"] {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+/* Center-align with data-align="center" */
+.nyu-table th[data-align="center"],
+.nyu-table td[data-align="center"] {
+  text-align: center;
+}
+
+/* Print: remove sticky, ensure full render */
+@media print {
+  .nyu-table thead th { position: static; }
+  .nyu-table-wrap { overflow: visible; }
+}
+
+/* Mobile: stack responsively on very narrow screens */
+@media (max-width: 480px) {
+  .nyu-table:not(.nyu-table--fixed) {
+    font-size: var(--fs-xs);
+  }
+  .nyu-table:not(.nyu-table--fixed) th,
+  .nyu-table:not(.nyu-table--fixed) td {
+    padding: var(--sp-2) var(--sp-3);
+  }
+}
+
+/* ---------- 22. Brightspace overrides (defensive) ---------- */
+/* Brightspace ships some default content styles. These ensure ours win. */
+.nyu-course .d2l-htmlblock,
+.nyu-course .d2l-htmlblock * {
+  font-family: inherit;
+}
+
+/* ============================================================
+   23. REFERENCES & READINGS: styled ref sections
+   Single source of truth. Tag colors are solid fills with white
+   text, all >=4.5:1. Do not re-declare these in per-section
+   <style> blocks: a local copy will shadow these fixes.
+   ============================================================ */
+.ref-section {
+  margin: 1.5rem 0 2rem;
+  padding: 1.25rem 1.5rem;
+  background: #fff;
+  border: 1px solid var(--rule, #E2E2E2);
+  border-left: 4px solid var(--nyu-violet, #57068C);
+  border-radius: 0.6rem;
+}
+.ref-section__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--nyu-violet, #57068C);
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule, #E2E2E2);
+}
+.ref-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ref-list li {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.ref-list li:last-child { border-bottom: none; }
+.ref-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  /* Fallback fill. Without this, a tag whose --variant is undefined renders as
+     transparent body text with no pill, which is how ref-tag--government and
+     ref-tag--practitioner shipped unstyled in Modules 9-12. */
+  background: #3A3A3A;
+  color: #fff;
+}
+.ref-tag--paper { background: #57068C; color: #fff; }
+.ref-tag--framework { background: #166534; color: #fff; } /* darkened for ≥4.5:1 on bg */
+.ref-tag--tool { background: #8B5400; color: #fff; }      /* darkened for ≥4.5:1 on bg */
+.ref-tag--reference { background: #185D96; color: #fff; } /* darkened from #1E73BE: 6.0:1 on bg */
+.ref-tag--report { background: #185D96; color: #fff; }    /* M01 parity, accessible color */
+.ref-tag--dataset { background: #B02525; color: #fff; }   /* M01 parity, accessible color */
+.ref-tag--vulnerability { background: #3A3A3A; color: #fff; } /* M01 parity */
+/* Promoted from inline <style> blocks in the M5/M8/M13 reference pages. They
+   were used 891 times course-wide but defined in only 3 files, so M9-M12
+   rendered them with no fill at all. */
+.ref-tag--government { background: #1E40AF; color: #fff; }   /* 8.7:1 */
+.ref-tag--practitioner { background: #9D174D; color: #fff; } /* 7.9:1. Was #854D0E,
+    which sat at deltaE 7 from --tool (#8B5400): the two read as one colour, and
+    they co-occur in the M9, M11, M12 and M13 reference lists. */
+.ref-tag--standard { background: #155E63; color: #fff; }     /* 7.5:1. Was #f0f0f0
+    with dark text, the only non-solid pill in the set. */
+
+/* ============================================================
+   24. CROSS-REFERENCE LINKS & RETURN BUBBLE
+   ============================================================ */
+.nyu-xref {
+  color: var(--nyu-violet-dark);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--nyu-violet-light);
+  border-radius: 3px;
+  transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.nyu-xref:hover,
+.nyu-xref:focus-visible {
+  background: var(--nyu-violet-50);
+  text-decoration-color: var(--nyu-violet);
+}
+/* An xref dropped into a solid-violet header keeps its link colour and lands
+   at 2.35:1. On those grounds it has to take the header's white and signal
+   itself with the underline instead. */
+.nyu-table th .nyu-xref,
+.nyu-compare__head .nyu-xref,
+.nyu-callout__title .nyu-xref,
+.nyu-hero .nyu-xref {
+  color: #fff;
+  text-decoration-color: rgba(255, 255, 255, 0.75);
+}
+.nyu-table th .nyu-xref:hover,
+.nyu-table th .nyu-xref:focus-visible,
+.nyu-compare__head .nyu-xref:hover,
+.nyu-compare__head .nyu-xref:focus-visible,
+.nyu-callout__title .nyu-xref:hover,
+.nyu-callout__title .nyu-xref:focus-visible,
+.nyu-hero .nyu-xref:hover,
+.nyu-hero .nyu-xref:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+  text-decoration-color: #fff;
+}
+.nyu-xref::after {
+  content: "\2197";
+  font-size: 0.7em;
+  vertical-align: super;
+  margin-left: 1px;
+  color: var(--nyu-violet);
+}
+.nyu-xref-flash {
+  animation: nyuXrefFlash 2.6s ease 0.25s both;
+  border-radius: 8px;
+}
+@keyframes nyuXrefFlash {
+  0%   { background-color: rgba(255, 184, 28, 0.45); box-shadow: 0 0 0 8px rgba(255, 184, 28, 0.45); }
+  55%  { background-color: rgba(255, 184, 28, 0.28); box-shadow: 0 0 0 8px rgba(255, 184, 28, 0.28); }
+  100% { background-color: transparent; box-shadow: 0 0 0 8px rgba(255, 184, 28, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nyu-xref-flash { animation: none; background-color: rgba(255, 184, 28, 0.28); }
+}
+.nyu-return-bubble {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(10px);
+  display: flex;
+  align-items: stretch;
+  background: var(--nyu-violet);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  z-index: 10000;
+  max-width: min(92vw, 480px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-size: var(--fs-sm);
+}
+.nyu-return-bubble[data-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.nyu-return-bubble__back {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px 10px 18px;
+  border-radius: 999px 0 0 999px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nyu-return-bubble__back:hover,
+.nyu-return-bubble__back:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+}
+.nyu-return-bubble__close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font: inherit;
+  font-size: 1.1em;
+  line-height: 1;
+  cursor: pointer;
+  padding: 10px 16px 10px 8px;
+  border-radius: 0 999px 999px 0;
+}
+.nyu-return-bubble__close:hover,
+.nyu-return-bubble__close:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+}PROCESS FLOW: corrected v3
+   This override keeps the original two-column .ml-dl-compare behavior for existing pages, adds an optional .ml-dl-compare--stacked variant for pages that should always stack vertically, keeps each process diagram on one line, and prevents the diagram's intrinsic width from forcing the grid off-screen.
+   ============================================================ */
+.ml-dl-compare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  margin: 1.75rem 0;
+  align-items: stretch;
+  min-width: 0;
+}
+@media (max-width: 700px) {
+  .ml-dl-compare { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Optional stacked variant for pages that should always render these cards
+   vertically. Do not rename .ml-dl-compare; other pages still use it. */
+.ml-dl-compare.ml-dl-compare--stacked {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ml-dl-compare__col,
+.ml-dl-compare__body {
+  min-width: 0;
+}
+.ml-dl-flow {
+  --ml-dl-flow-scale: 1;
+  --ml-dl-flow-height: 3.1rem;
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: var(--ml-dl-flow-height);
+  margin: 1rem auto;
+  padding: 0.6rem 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.ml-dl-flow__track {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) scale(var(--ml-dl-flow-scale));
+  transform-origin: center center;
+  will-change: transform;
+}
+.ml-dl-flow__box,
+.ml-dl-flow__arrow {
+  flex: 0 0 auto;
+}
+.ml-dl-flow__box {
+  background: var(--surface-sunken, #F6F4F8);
+  border: 1.5px solid var(--rule, #E2E2E2);
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--ink-soft, #3A3A3A);
+  white-space: nowrap;
+}
+.ml-dl-flow__box--highlight {
+  border-color: #4C1D95;
+  background: #4C1D95;
+  color: #fff;
+}
+.ml-dl-flow__arrow {
+  font-size: 0.9rem;
+  color: var(--ink-mute, #6B6B6B);
+  line-height: 1;
+}
+
+/* ============================================================
+   48. OPTIONAL STACKED CARD GRID + RESPONSIVE PYM EMBEDS, v6
+   Use .nyu-cards--stacked alongside existing grid classes when a specific
+   page should force cards into a single vertical column. This intentionally
+   does not rename or alter .nyu-cards--2 / .nyu-cards--3, because other pages
+   already depend on those layouts.
+   ============================================================ */
+.nyu-cards.nyu-cards--stacked {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch;
+}
+.nyu-cards.nyu-cards--stacked > .nyu-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.nyu-embed {
+  margin: var(--sp-5) 0 0;
+}
+
+/*
+   Case-study variant: keep the red alert treatment, but use a white surface
+   so the embedded Berkeley/CLTC interactive does not sit inside a mismatched
+   pink field.
+*/
+.nyu-callout--case-study {
+  background: #fff;
+  border-color: #EDD3D3;
+  border-left-color: var(--accent-danger, #C42A2A);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(20, 0, 40, 0.06));
+}
+
+/*
+   The Berkeley/CLTC quiz is a fixed-width interactive that reports its own
+   height through pym.js. Keep the wrapper tight around the native visual width
+   and put the credit on the same white surface with breathing room.
+*/
+.nyu-embed--deepfake-quiz {
+  width: 100%;
+  max-width: 738px;
+  margin: var(--sp-5) auto 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--rule, #E2E2E2);
+  border-radius: var(--r-md, 10px);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(20, 0, 40, 0.06));
+}
+.nyu-embed--deepfake-quiz .nyu-embed__framewrap {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+.nyu-pym-embed {
+  width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+  line-height: 0;
+  background: #fff;
+}
+.nyu-pym-embed iframe,
+.nyu-embed__frame {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: 0;
+  margin: 0;
+  background: #fff;
+}
+
+/* Tight fallback before pym.js finishes loading or when external scripts are blocked. */
+.nyu-embed__frame {
+  height: clamp(590px, 88vw, 660px);
+  min-height: 590px;
+}
+
+/* Once pym.js is active, the inline iframe height comes from the child visual. */
+.nyu-pym-embed.is-pym-ready iframe {
+  min-height: 0;
+}
+.nyu-embed__credit {
+  max-width: none;
+  margin: var(--sp-3) 0 0;
+  padding: var(--sp-3) var(--sp-4) var(--sp-3);
+  border-top: 1px solid var(--rule, #E2E2E2);
+  background: #fff;
+  font-size: var(--fs-xs, 0.8125rem);
+  line-height: 1.45;
+  color: var(--ink-mute, #6B6B6B);
+}
+.nyu-embed__credit a {
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .nyu-embed--deepfake-quiz {
+    max-width: 100%;
+    border-radius: var(--r-sm, 6px);
+  }
+  .nyu-embed__frame {
+    height: clamp(560px, 150vw, 680px);
+    min-height: 560px;
+  }
+  .nyu-embed__credit {
+    padding-inline: var(--sp-3);
+  }
+}
+
+/* ── Embed frames for interactive iframes ── */
+.nyu-embed-frame {
+  width: 100%;
+  margin: 1rem auto 1.5rem;
+  line-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  border: none;
+}
+.nyu-embed-frame iframe {
+  display: block;
+  width: 100%;
+  min-height: 400px;
+  border: 0;
+  overflow: auto;
+  background: #fff;
+}
+
+
+/* ============================================================
+   46. CROSS-REFERENCE LINKS & RETURN BUBBLE
+   In-text jumps between parts of a long section, with a way back.
+
+   Markup:
+     <a class="nyu-xref" href="#latency-budget">part 1</a>
+
+   Behavior (bindXrefs in nyu-tandon-course.js):
+     - smooth-scrolls to the target element
+     - flashes a highlight on the exact relevant content
+     - shows a floating bubble at the bottom of the screen that
+       returns the reader to where they were before the jump
+   ============================================================ */
+.nyu-xref {
+  color: var(--nyu-violet-dark);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--nyu-violet-light);
+  border-radius: 3px;
+  transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.nyu-xref:hover,
+.nyu-xref:focus-visible {
+  background: var(--nyu-violet-50);
+  text-decoration-color: var(--nyu-violet);
+}
+/* Tiny jump arrow so cross-refs read differently from glossary terms */
+.nyu-xref::after {
+  content: "\2197";
+  font-size: 0.7em;
+  vertical-align: super;
+  margin-left: 1px;
+  color: var(--nyu-violet);
+}
+
+/* Highlight flash on the jump target */
+.nyu-xref-flash {
+  animation: nyuXrefFlash 2.6s ease 0.25s both;
+  border-radius: 8px;
+}
+@keyframes nyuXrefFlash {
+  0%   { background-color: rgba(255, 184, 28, 0.45); box-shadow: 0 0 0 8px rgba(255, 184, 28, 0.45); }
+  55%  { background-color: rgba(255, 184, 28, 0.28); box-shadow: 0 0 0 8px rgba(255, 184, 28, 0.28); }
+  100% { background-color: transparent; box-shadow: 0 0 0 8px rgba(255, 184, 28, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nyu-xref-flash { animation: none; background-color: rgba(255, 184, 28, 0.28); }
+}
+
+/* Floating return bubble */
+.nyu-return-bubble {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(10px);
+  display: flex;
+  align-items: stretch;
+  background: var(--nyu-violet);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  z-index: 10000;
+  max-width: min(92vw, 480px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-size: var(--fs-sm);
+}
+.nyu-return-bubble[data-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.nyu-return-bubble__back {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px 10px 18px;
+  border-radius: 999px 0 0 999px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nyu-return-bubble__back:hover,
+.nyu-return-bubble__back:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+}
+.nyu-return-bubble__close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font: inherit;
+  font-size: 1.1em;
+  line-height: 1;
+  cursor: pointer;
+  padding: 10px 16px 10px 8px;
+  border-radius: 0 999px 999px 0;
+}
+.nyu-return-bubble__close:hover,
+.nyu-return-bubble__close:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ============================================================
+   47. TRUE / FALSE RAPID-FIRE STRIP
+   ------------------------------------------------------------
+   Quick-fire knowledge check: each row is a statement the
+   student marks True or False. All answers are committed at
+   once with a "Check answers" button, revealing per-row
+   feedback stored in data-explain attributes.
+
+   Markup:
+     <div class="nyu-tf-strip" id="tfStrip">
+       <p>For each statement, decide True or False.</p>
+       <div class="nyu-tf-strip__rows">
+         <div class="nyu-tf-strip__row" data-correct="true"
+              data-explain="Explanation shown after checking.">
+           <p class="nyu-tf-strip__stmt">Statement text.</p>
+           <div class="nyu-tf-strip__toggle" role="radiogroup">
+             <button class="nyu-tf-strip__opt" data-val="true"
+                     aria-pressed="false">True</button>
+             <button class="nyu-tf-strip__opt" data-val="false"
+                     aria-pressed="false">False</button>
+           </div>
+           <span class="nyu-tf-strip__fb" aria-live="polite"></span>
+         </div>
+         ...
+       </div>
+       <div class="nyu-tf-strip__actions">
+         <button class="nyu-tf-strip__btn nyu-tf-strip__btn--primary"
+                 data-action="check">Check answers</button>
+         <button class="nyu-tf-strip__btn nyu-tf-strip__btn--ghost"
+                 data-action="reset">Reset</button>
+         <span class="nyu-tf-strip__score" aria-live="polite"></span>
+       </div>
+     </div>
+   ============================================================ */
+.nyu-tf-strip {
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+.nyu-tf-strip > p {
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+  margin: 0 0 var(--sp-4);
+}
+.nyu-tf-strip__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+.nyu-tf-strip__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--sp-3) var(--sp-4);
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  background: #fff;
+  border-bottom: 1px solid var(--rule);
+  transition: background 0.15s;
+}
+.nyu-tf-strip__row:last-child { border-bottom: 0; }
+.nyu-tf-strip__row[data-state="correct"]   { background: #F4FAF6; }
+.nyu-tf-strip__row[data-state="incorrect"] { background: #FDF5F5; }
+.nyu-tf-strip__stmt {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  line-height: 1.5;
+}
+.nyu-tf-strip__toggle {
+  display: flex;
+  gap: 0;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  flex-shrink: 0;
+}
+.nyu-tf-strip__opt {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 6px 16px;
+  border: 0;
+  background: #fff;
+  color: var(--ink-mute);
+  cursor: pointer;
+  transition: all 0.12s;
+  letter-spacing: 0.02em;
+}
+.nyu-tf-strip__opt + .nyu-tf-strip__opt { border-left: 1px solid var(--rule); }
+.nyu-tf-strip__opt:hover { background: var(--nyu-violet-50); color: var(--nyu-violet); }
+.nyu-tf-strip__opt[aria-pressed="true"] { background: var(--nyu-violet); color: #fff; }
+.nyu-tf-strip__opt[data-state="correct"]   { background: var(--accent-success); color: #fff; }
+.nyu-tf-strip__opt[data-state="incorrect"] { background: var(--accent-danger);  color: #fff; }
+.nyu-tf-strip__fb {
+  grid-column: 1 / -1;
+  font-size: var(--fs-xs);
+  color: var(--ink-mute);
+  font-style: italic;
+  min-height: 0;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.3s, opacity 0.3s, padding 0.3s;
+  padding: 0;
+}
+.nyu-tf-strip__fb.show { max-height: 200px; opacity: 1; padding-top: 4px; }
+.nyu-tf-strip__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+.nyu-tf-strip__btn {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--nyu-violet);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.nyu-tf-strip__btn--primary { background: var(--nyu-violet); color: #fff; }
+.nyu-tf-strip__btn--primary:hover { background: var(--nyu-violet-dark); }
+.nyu-tf-strip__btn--ghost { background: #fff; color: var(--nyu-violet); }
+.nyu-tf-strip__btn--ghost:hover { background: var(--nyu-violet-50); }
+.nyu-tf-strip__score {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-mute);
+}
+.nyu-tf-strip::-webkit-scrollbar { width: 6px; }
+.nyu-tf-strip::-webkit-scrollbar-thumb { background: var(--nyu-violet-200); border-radius: 3px; }
+
+/* ============================================================
+   POSITION CARDS: Section 1 interactive stance-taking
+   ============================================================ */
+.nyu-position-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  grid-template-rows: auto auto auto;
+  column-gap: var(--sp-4);
+  background: #fff;
+  border: 2px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--sp-4) var(--sp-5) var(--sp-4) 0;
+  margin: var(--sp-4) 0;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.nyu-position-card[data-chosen] {
+  border-color: var(--nyu-violet-200);
+  box-shadow: var(--shadow-md);
+}
+.nyu-position-card[data-chosen="agree"]    { border-left: 4px solid var(--accent-success); }
+.nyu-position-card[data-chosen="unsure"]   { border-left: 4px solid var(--accent-warning); }
+.nyu-position-card[data-chosen="disagree"] { border-left: 4px solid var(--accent-danger);  }
+
+.nyu-position-card__num {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 2px;
+  padding-left: var(--sp-5);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--nyu-violet);
+  opacity: 0.65;
+  line-height: 1.3;
+}
+.nyu-position-card[data-chosen] .nyu-position-card__num { opacity: 0.6; }
+
+.nyu-position-card__statement {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 var(--sp-3);
+  line-height: 1.45;
+}
+
+.nyu-position-card__btns {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.nyu-pos-btn {
+  appearance: none;
+  padding: 8px 20px;
+  border: 2px solid var(--rule);
+  border-radius: var(--r-pill);
+  background: #fff;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+.nyu-pos-btn:hover { border-color: var(--nyu-violet-200); background: var(--nyu-violet-50); }
+
+.nyu-pos-btn[data-val="agree"][aria-pressed="true"]    { border-color: #166534; background: #166534; color: #fff; }
+.nyu-pos-btn[data-val="unsure"][aria-pressed="true"]   { border-color: #854D0E; background: #854D0E; color: #fff; }
+.nyu-pos-btn[data-val="disagree"][aria-pressed="true"] { border-color: #991B1B;  background: #991B1B;  color: #fff;  }
+
+.nyu-position-card__prompt {
+  grid-column: 1 / -1;
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+  font-style: italic;
+  margin: var(--sp-3) var(--sp-5) 0;
+  min-height: 1.4em;
+  padding-left: 48px;
+  transition: opacity 0.25s ease;
+}
+.nyu-position-card__prompt:empty { display: none; }
+
+/* The "all done" / "incomplete" status callouts */
+.nyu-pos-status-callout { transition: opacity 0.3s ease; }
+
+/* Position recall blocks: appear inline within later sections */
+.nyu-pos-recall {
+  margin: var(--sp-4) 0;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--nyu-violet-200);
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  transition: border-left-color 0.25s ease, background 0.25s ease;
+}
+.nyu-pos-recall:empty { display: none; }
+.nyu-pos-recall[data-chosen="agree"]    { border-left-color: var(--accent-success); background: var(--accent-success-bg); }
+.nyu-pos-recall[data-chosen="unsure"]   { border-left-color: var(--accent-warning); background: var(--accent-warning-bg); }
+.nyu-pos-recall[data-chosen="disagree"] { border-left-color: var(--accent-danger);  background: var(--accent-danger-bg);  }
+
+/* Inline variant inside .nyu-scenario */
+.nyu-pos-recall--inline {
+  margin: var(--sp-3) 0;
+}
+
+.nyu-pos-recall__label {
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+/* Label stays --ink on all tones; the border + background already
+   communicate the outcome, so coloured text just hurts contrast. */
+
+/* Outcome tone overrides the agree/disagree colour.
+   On a statement that is false, "Disagree" is the well-reasoned answer, so the
+   block must read as held-up rather than wrong. Set data-tone-<choice> in the
+   markup to "held", "challenged" or "partial". Declared after the [data-chosen]
+   rules above so it wins at equal specificity. */
+.nyu-pos-recall[data-tone="held"]       { border-left-color: var(--accent-success); background: var(--accent-success-bg); }
+.nyu-pos-recall[data-tone="challenged"] { border-left-color: var(--accent-danger);  background: var(--accent-danger-bg);  }
+.nyu-pos-recall[data-tone="partial"]    { border-left-color: var(--accent-warning); background: var(--accent-warning-bg); }
+/* Same: tone label inherits --ink from base rule above. */
+
+@media (max-width: 540px) {
+  .nyu-position-card { grid-template-columns: 32px 1fr; }
+  .nyu-position-card__num { font-size: var(--fs-lg); }
+  .nyu-position-card__prompt { padding-left: 32px; }
+}
+
+/* ---------- Reference Tips (cross-module back-references) ----------
+   Visually distinct from glossary popovers (violet, click-to-open).
+   Reference tips use a warm neutral palette and hover/focus to open.
+   Markup: <span class="nyu-ref" data-ref="slug">visible text</span>
+   The JS in ../reference_tip/reference-tips.js injects the popup.
+   ----------------------------------------------------------------- */
+/* Reference markers appear 336 times across the course. The text was #5c3d2e
+   on a #faf5f0 tint: brown on beige, 8.97:1. It passes the ratio and still
+   breaks the same-hue rule, the identical pattern rejected in Module 1 for
+   #C77700 on #FCF1DC. The cream tint stays, because that is the affordance
+   that marks the span as a reference; the text goes near-black, which reads
+   against it at 16:1 and carries no competing hue. */
+.nyu-ref {
+  position: relative;
+  display: inline;
+  color: var(--ink);
+  font-weight: 600;
+  padding: 1px 3px;
+  cursor: help;
+  border-radius: 3px;
+  background: #faf5f0;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-decoration-color: #b89e8e;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.nyu-ref:hover,
+.nyu-ref:focus-visible {
+  background: #f3ebe3;
+  text-decoration-color: #6d5648;
+}
+
+.nyu-ref__pop {
+  position: absolute;
+  width: 340px;
+  max-width: 90vw;
+  background: #fffcf8;
+  color: var(--ink);
+  border: 1px solid #e0d5cc;
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 28px rgba(80, 50, 20, 0.12);
+  padding: var(--sp-4);
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  line-height: 1.55;
+  text-align: left;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+}
+.nyu-ref__pop[data-visible="true"] {
+  display: block;
+  animation: fadeUp 0.18s ease;
+}
+
+/* Header row: icon + label */
+.nyu-ref__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7d6555;
+}
+.nyu-ref__header svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  stroke: #7d6555;
+  fill: none;
+  stroke-width: 2;
+}
+
+/* Module/section entries */
+.nyu-ref__entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.nyu-ref__entry {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #ece4dc;
+}
+.nyu-ref__module {
+  font-family: var(--font-mono);
+  /* 11px was below the 12px legibility floor applied elsewhere, and white on
+     #8b7060 sat at 4.58:1, barely over the line. #6F5849 gives 6.63:1. */
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #6F5849;
+  border-radius: 4px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  align-self: start;
+  line-height: 1.5;
+}
+.nyu-ref__detail {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+.nyu-ref__detail strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Arrow */
+.nyu-ref__pop::after {
+  content: "";
+  position: absolute;
+  left: var(--arrow-left, 50%);
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: #fffcf8;
+}
+.nyu-ref__pop[data-pos="above"]::after {
+  bottom: -7px;
+  top: auto;
+  border-right: 1px solid #e0d5cc;
+  border-bottom: 1px solid #e0d5cc;
+}
+.nyu-ref__pop[data-pos="below"]::after {
+  top: -7px;
+  bottom: auto;
+  border-left: 1px solid #e0d5cc;
+  border-top: 1px solid #e0d5cc;
+}
+/* Accent border faces the term */
+.nyu-ref__pop[data-pos="below"] {
+  border-top: 3px solid #8b7060;
+}
+.nyu-ref__pop[data-pos="above"] {
+  border-bottom: 3px solid #8b7060;
+}
+
+
+/* ============================================================
+   SHARED-STYLESHEET COMPLETION BLOCK
+   ------------------------------------------------------------
+   Added so this file can serve EVERY module in the course, not
+   just Module 13. Two groups:
+
+   (A) Design-system components (nyu-/ml-/anim- prefixed) that
+       previously lived only in per-page inline <style> blocks.
+       Harvested verbatim from those blocks so appearance is
+       unchanged; the inline copies still win on equal
+       specificity where they remain, so this is additive only.
+
+   (B) Classes referenced in markup but defined nowhere. Several
+       were already rendering correctly via element selectors
+       (figcaption, caption); those rules simply make the class
+       explicit and are intentionally identical to the element
+       rule they mirror, so nothing changes visually.
+   ============================================================ */
+
+/* ---------- (B) Previously undefined classes ---------- */
+
+/* Body paragraph marker (M08). Matches default course paragraph. */
+.nyu-body {
+  font-size: var(--fs-base);
+  line-height: 1.7;
+  color: var(--ink);
+  margin: 0 0 var(--sp-4);
+}
+
+/* Code blocks: <pre class="nyu-pre"> (M11) and
+   <pre class="nyu-code__block"> (M01) are the same component as
+   .nyu-code, under two legacy names. */
+.nyu-pre,
+.nyu-code__block {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-md);
+  overflow-x: auto;
+  line-height: 1.65;
+  margin: var(--sp-4) 0;
+  white-space: pre;
+  tab-size: 2;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+/* When a header bar sits above the block, square off the seam. */
+.nyu-code__header + .nyu-code__block { margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+
+/* Header bar above a code block (M01). */
+.nyu-code__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  background: var(--code-bg);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  padding: var(--sp-2) var(--sp-5);
+  border-top-left-radius: var(--r-md);
+  border-top-right-radius: var(--r-md);
+  margin: var(--sp-4) 0 0;
+}
+.nyu-code__lang {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-comment, #9aa4b2);
+}
+
+/* Commit-before-reveal control (M12). The buttons also carry
+   .nyu-sequence__btn for their base look, and bindCommitChoice
+   sets opacity/outline inline on click, so only layout and a
+   transition belong here. */
+.nyu-commit-choice {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin: var(--sp-4) 0;
+}
+.nyu-commit-choice__opt {
+  flex: 1;
+  min-width: 140px;
+  transition: opacity 0.15s ease, outline-color 0.15s ease;
+}
+
+/* Figure caption class (M08, M09). Mirrors .nyu-figure figcaption. */
+.nyu-figure__caption {
+  font-size: var(--fs-sm);
+  color: var(--ink-mute);
+  margin-top: var(--sp-2);
+  text-align: center;
+  font-style: italic;
+}
+
+/* Previous-page pager link (M02). Counterpart to .nyu-pager__next. */
+.nyu-pager__prev { text-align: left; }
+
+/* Table caption class (M13). Mirrors .nyu-table caption. */
+.nyu-table__caption {
+  caption-side: bottom;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-xs);
+  color: var(--ink-mute);
+  font-style: italic;
+  text-align: left;
+}
+
+/* ---------- (A) Components harvested from per-page inline styles ---------- */
+/* [from inline style block 2739582b] */
+.ml-dl-compare__header {
+      padding: 0.75rem 1.1rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.01em;
+      text-align: center;
+      border-radius: 0.6rem 0.6rem 0 0;
+    }
+/* [from inline style block 2739582b] */
+.ml-dl-compare__col--ml .ml-dl-compare__header {
+      background: #4C1D95; color: #fff;
+    }
+/* [from inline style block 2739582b] */
+.ml-dl-compare__col--dl .ml-dl-compare__header {
+      background: var(--nyu-violet, #57068C); color: #fff;
+    }
+/* [from inline style block 2739582b] */
+.nyu-pipeline {
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: 0.5rem; margin: 2rem auto; max-width: 700px;
+    }
+/* [from inline style block 2739582b] */
+.nyu-pipeline__step {
+      background: var(--surface-sunken, #F6F4F8);
+      border: 2px solid var(--rule, #E2E2E2);
+      border-radius: 0.75rem; padding: 1rem 1.25rem;
+      text-align: center; flex: 1 1 120px; min-width: 120px;
+    }
+/* [from inline style block 2739582b] */
+.nyu-pipeline__step--active {
+      border-color: var(--nyu-violet, #57068C);
+      background: var(--nyu-violet-50, #F5EDFA);
+    }
+/* [from inline style block 2739582b] */
+.nyu-pipeline__icon { font-size: 1.75rem; margin-bottom: 0.4rem; }
+/* [from inline style block 2739582b] */
+.nyu-pipeline__label { font-weight: 600; font-size: 0.9rem; color: var(--ink, #1A1A1A); }
+/* [from inline style block 2739582b] */
+.nyu-pipeline__sub { font-size: 0.8rem; color: var(--ink-mute, #6B6B6B); margin-top: 0.2rem; }
+/* [from inline style block 2739582b] */
+.nyu-pipeline__arrow { font-size: 1.5rem; color: var(--nyu-violet, #57068C); flex: 0 0 auto; }
+/* [from inline style block 2739582b] */
+@media (max-width: 600px) {
+      .nyu-pipeline { flex-direction: column; }
+      .nyu-pipeline__arrow { transform: rotate(90deg); }
+    }
+/* [from inline style block a7bdb802] */
+.nyu-go-deeper-list {
+      margin: 0.75rem 0 0;
+      padding: 0;
+    }
+/* [from inline style block a7bdb802] */
+.nyu-go-deeper-list dt {
+      font-weight: 600;
+      font-size: 0.88rem;
+      margin-top: 0.85rem;
+      line-height: 1.4;
+    }
+/* [from inline style block a7bdb802] */
+.nyu-go-deeper-list dt:first-child { margin-top: 0.25rem; }
+/* [from inline style block a7bdb802] */
+.nyu-go-deeper-list dt a {
+      color: var(--nyu-violet, #57068C);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+/* [from inline style block a7bdb802] */
+.nyu-go-deeper-list dt a:hover { color: var(--nyu-violet-dark, #3D0063); }
+/* [from inline style block a7bdb802] */
+.nyu-go-deeper-list__icon {
+      display: inline-block;
+      width: 1.2em;
+      text-align: center;
+      margin-right: 0.15em;
+    }
+/* [from inline style block a7bdb802] */
+.nyu-go-deeper-list dd {
+      margin: 0.2rem 0 0 1.5em;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      color: var(--ink-soft, #3A3A3A);
+    }
+/* [from inline style block 50efdbac] */
+.nyu-pipeline-stage-frame {
+      width: 100%;
+      max-width: 760px;
+      margin: 0.75rem auto 0;
+      line-height: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+/* [from inline style block 50efdbac] */
+.nyu-pipeline-stage-frame--narrow {
+      max-width: 640px;
+    }
+/* [from inline style block 50efdbac] */
+.nyu-pipeline-stage-frame iframe {
+      display: block;
+      width: 100%;
+      height: var(--pipeline-fallback-height, 520px);
+      border: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+/* [from inline style block 50efdbac] */
+.anim-modal.anim-modal--embedding-space {
+      width: min(1220px, calc(100vw - 2rem));
+      max-width: 1220px;
+      height: min(900px, calc(100vh - 2rem));
+      display: flex;
+      flex-direction: column;
+    }
+/* [from inline style block 50efdbac] */
+.anim-modal__iframe.anim-modal__iframe--embedding-space {
+      flex: 1 1 auto;
+      width: 100%;
+      height: auto;
+      min-height: 0;
+      border: 0;
+      background: #fff;
+    }
+/* [from inline style block 50efdbac] */
+@media (max-width: 760px) {
+      .anim-modal.anim-modal--embedding-space {
+        width: calc(100vw - 1rem);
+        height: calc(100vh - 1rem);
+      }
+    }
+/* [from inline style block 50efdbac] */
+.nyu-pager--single-next {
+      display: flex;
+      justify-content: flex-end;
+    }
+/* [from inline style block 50efdbac] */
+.nyu-pager--single-next .nyu-pager__next {
+      margin-left: auto;
+    }
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel{background:#fff;border:1px solid var(--rule);border-radius:var(--r-md);overflow:hidden;margin:var(--sp-5) 0;box-shadow:var(--shadow-sm)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__scenario{background:var(--nyu-violet-50);padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--nyu-violet-100)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__badge{display:inline-block;font-family:var(--font-mono);font-size:var(--fs-xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--nyu-violet);padding:3px 10px;border-radius:var(--r-pill);margin-bottom:var(--sp-3)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__text{font-size:var(--fs-sm);color:var(--ink);line-height:1.6;margin:0}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid var(--rule)}
+/* [from inline style block 9ea24046] */
+@media(max-width:720px){.nyu-classify-panel__grid{grid-template-columns:1fr}}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__lens{padding:var(--sp-4) var(--sp-5);border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__lens:last-child{border-right:0}
+/* [from inline style block 9ea24046] */
+@media(max-width:720px){.nyu-classify-panel__lens{border-right:0;border-bottom:1px solid var(--rule)}.nyu-classify-panel__lens:last-child{border-bottom:0}}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__label{font-family:var(--font-mono);font-size:var(--fs-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mute)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__select{font-family:var(--font-body);font-size:var(--fs-sm);color:var(--ink);padding:8px 12px;border:2px solid var(--rule);border-radius:var(--r-sm);background:#fff;cursor:pointer;transition:border-color .15s;width:100%;min-width:0;box-sizing:border-box}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__select:focus{outline:0;border-color:var(--nyu-violet)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__select[data-state="correct"]{border-color:var(--accent-success);background:#F4FAF6}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__select[data-state="incorrect"]{border-color:var(--accent-danger);background:#FDF5F5}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__fb{font-size:var(--fs-xs);min-height:1.2em;color:var(--ink-mute);font-style:italic}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__actions{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-4) var(--sp-5)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__btn{font-family:var(--font-body);font-size:var(--fs-sm);font-weight:600;padding:8px 18px;border-radius:var(--r-sm);border:1px solid var(--nyu-violet);cursor:pointer;transition:.15s}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__btn--primary{background:var(--nyu-violet);color:#fff}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__btn--primary:hover{background:var(--nyu-violet-dark)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__btn--ghost{background:#fff;color:var(--nyu-violet)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__btn--ghost:hover{background:var(--nyu-violet-50)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__score{font-size:var(--fs-sm);font-weight:600;color:var(--ink-mute)}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__select::-webkit-scrollbar,.nyu-tf-strip::-webkit-scrollbar{width:6px}
+/* [from inline style block 9ea24046] */
+.nyu-classify-panel__select::-webkit-scrollbar-thumb,.nyu-tf-strip::-webkit-scrollbar-thumb{background:var(--nyu-violet-200);border-radius:3px}
+/* ---------- 47. Accuracy / error-distribution visual ----------
+   Used by M03 Section 4 ("What 85% accuracy looks like in one shift").
+   The markup shipped without any styling, so the whole block rendered as
+   unstyled stacked divs: this is the missing rule set.
+
+   Markup:
+     <div class="acc-visual">
+       <p class="acc-visual__title">…</p>
+       <p class="acc-visual__lede">…</p>
+       <div class="acc-visual__grid">
+         <div class="acc-card acc-card--success">
+           <div class="acc-card__num acc-card__num--lg">850</div>
+           <div class="acc-card__label">…</div>
+           <div class="acc-card__detail">…</div>
+           <div class="acc-card__impact">…</div>
+         </div>
+       </div>
+       <div class="acc-bar-wrap"> … </div>
+       <p class="acc-visual__footer">…</p>
+     </div>
+   ------------------------------------------------------------ */
+.acc-visual {
+  margin: var(--sp-5) 0;
+  padding: var(--sp-5);
+  /* Neutral surface. A violet panel would put the violet title on a tint of
+     its own hue, which the contrast policy forbids regardless of ratio. */
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--nyu-violet);
+  border-radius: var(--r-md);
+}
+.acc-visual__title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--ink);
+}
+.acc-visual__lede,
+.acc-visual__mid,
+.acc-visual__footer {
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+.acc-visual__mid { margin-top: var(--sp-4); }
+.acc-visual__footer { margin: var(--sp-4) 0 0; }
+
+.acc-visual__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+@media (max-width: 640px) {
+  .acc-visual__grid { grid-template-columns: 1fr; }
+}
+
+.acc-card {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: var(--sp-4);
+}
+/* Semantic colour is carried by the left border (non-text, 3:1) and by the
+   solid-fill label pill. No coloured text sits on a light background. */
+.acc-card--success { border-left-color: var(--accent-success); }
+.acc-card--warning { border-left-color: var(--accent-warning); }
+.acc-card--danger  { border-left-color: var(--accent-danger);  }
+
+.acc-card__num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.acc-card__num--lg { font-size: 2.1rem; }
+.acc-card__num--md { font-size: 1.6rem; }
+.acc-card__label {
+  display: inline-block;
+  margin-top: var(--sp-2);
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--ink-soft);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.acc-card--success .acc-card__label { background: #166534; }
+.acc-card--warning .acc-card__label { background: #854D0E; }
+.acc-card--danger  .acc-card__label { background: #991B1B; }
+.acc-card__detail {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.acc-card__impact {
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--rule);
+  font-size: var(--fs-xs);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+/* Proportional bar: one shift's 1,000 alerts */
+.acc-bar-wrap { margin-top: var(--sp-5); }
+.acc-bar-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-mute);
+  margin-bottom: var(--sp-2);
+}
+.acc-bar {
+  display: flex;
+  width: 100%;
+  height: 34px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+.acc-bar__seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+.acc-bar__legend {
+  display: flex;
+  gap: var(--sp-4);
+  margin-top: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-mute);
+}
+.acc-bar__legend span { display: inline-flex; align-items: center; gap: 6px; }
+.acc-bar__legend span::before {
+  content: "";
+  width: 10px; height: 10px; border-radius: 2px;
+  background: var(--accent-success);
+}
+.acc-bar__legend span:nth-child(2)::before { background: var(--accent-warning); }
+.acc-bar__legend span:nth-child(3)::before { background: var(--accent-danger); }

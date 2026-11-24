@@ -1,0 +1,359 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Triage Capacity Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+/* same-hue: coloured text on its own tint; near-black instead */
+    :root{
+      --v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;
+      --red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;
+      --amb:#8A5D00;--amb-bg:#FCF1DC;--ink:#1A1A1A;--ink2:#6B6B6B;--ink3:#767676;
+      --rule:#E6E2EA;--sf:#FFF;--sk:#F6F4F8;
+      --mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:680px;margin:0 auto}
+
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:16px;box-shadow:0 10px 34px rgba(18,22,33,.07);overflow:hidden}
+    .top{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--rule)}
+    .top h1{font-size:.98rem;font-weight:800;letter-spacing:-.02em;flex:1 1 auto;line-height:1.25}
+    .tag{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;padding:4px 9px;border-radius:6px;background:#4C1D95;color:#fff}
+    .body-wrap{padding:18px 20px 20px}
+
+    /* Fixed constraints */
+    .constraints{display:flex;gap:8px;margin-bottom:18px}
+    .con{flex:1 1 0;display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--sk);border:1px solid var(--rule);border-radius:10px}
+    .con svg{width:19px;height:19px;flex:0 0 auto;color:var(--v)}
+    .con .ct{line-height:1.15}
+    .con .cn{font-family:var(--mono);font-size:.92rem;font-weight:700;color:var(--ink);display:block}
+    .con .cl{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);display:block;margin-top:1px}
+
+    /* Slider */
+    .ctl-label{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin-bottom:9px;text-align:center}
+    .slider-ends{display:flex;justify-content:space-between;margin-bottom:5px}
+    .send{display:flex;flex-direction:column;gap:1px;max-width:46%}
+    .send.r{align-items:flex-end;text-align:right}
+    .send b{font-size:.74rem;font-weight:800;color:var(--ink);letter-spacing:-.01em}
+    .send span{font-size:.6rem;color:var(--ink3);line-height:1.25}
+    input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:6px;outline:none;cursor:pointer;
+      background:linear-gradient(90deg,var(--v) 0%,var(--v200) 50%,var(--grn) 100%);}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--v);box-shadow:0 3px 8px rgba(87,6,140,.32);cursor:grab;transition:transform .08s}
+    input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12);cursor:grabbing}
+    input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--v);box-shadow:0 3px 8px rgba(87,6,140,.32);cursor:grab}
+
+    .metrics{display:flex;gap:10px;margin:13px 0 4px}
+    .met{flex:1 1 0;padding:8px 12px;border-radius:10px;border:1px solid var(--rule);position:relative;overflow:hidden}
+    .met.rec{background:var(--v50)}
+    .met.pre{background:var(--grn-bg)}
+    .met-top{display:flex;justify-content:space-between;align-items:baseline}
+    .met-k{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+    .met.rec .met-k{color:var(--ink)}
+    .met.pre .met-k{color:var(--ink)}
+    .met-v{font-family:var(--mono);font-size:1.05rem;font-weight:700}
+    .met.rec .met-v{color:var(--ink)}
+    .met.pre .met-v{color:var(--ink)}
+    .met-bar{height:5px;border-radius:3px;background:rgba(0,0,0,.07);margin-top:6px;overflow:hidden}
+    .met-bar i{display:block;height:100%;border-radius:3px;transition:width .18s ease}
+    .met.rec .met-bar i{background:var(--v)}
+    .met.pre .met-bar i{background:var(--grn)}
+    .met-sub{font-size:.56rem;color:var(--ink2);margin-top:5px;line-height:1.2}
+
+    .divider{height:1px;background:var(--rule);margin:18px 0}
+
+    /* Engineer's queue */
+    .qhead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px}
+    .qhead h2{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
+    .qhead .qflag{font-family:var(--mono);font-size:.66rem;font-weight:700;color:var(--ink)}
+
+    .queue-wrap{position:relative;border:1px solid var(--rule);border-radius:12px;background:var(--sk);padding:14px 14px 11px}
+    .queue{display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:30px}
+    .fd{width:15px;height:15px;border-radius:50%;flex:0 0 auto;transition:opacity .18s,transform .18s}
+    .fd.real{background:var(--red);box-shadow:0 1px 3px rgba(196,42,42,.4)}
+    .fd.false{background:var(--ink3);opacity:.55}
+    .fd.bk{opacity:.2}
+    .fd.bk.real{opacity:.34}
+    .cap-line{width:3px;align-self:stretch;min-height:24px;background:repeating-linear-gradient(var(--v) 0 5px,transparent 5px 9px);border-radius:2px;margin:0 4px;position:relative;flex:0 0 auto}
+    .cap-line::after{content:"15";position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.54rem;font-weight:700;color:var(--v);background:var(--sk);padding:0 2px}
+    .qfoot{display:flex;justify-content:space-between;margin-top:10px;font-size:.6rem;font-weight:700}
+    .qfoot .rv{color:var(--grn)}
+    .qfoot .bl{color:var(--red)}
+    .qfoot .sp{color:var(--v)}
+    .qfoot .muted{color:var(--ink3)}
+
+    .qlegend{display:flex;gap:14px;margin-top:9px}
+    .lg{display:flex;align-items:center;gap:5px;font-size:.58rem;color:var(--ink2)}
+    .lg i{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+    .lg i.real{background:var(--red)}
+    .lg i.false{background:var(--ink3)}
+
+    /* Scoreboard */
+    .score-wrap{margin-top:18px;border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+    .score-head{padding:9px 14px;background:var(--v-d);color:#fff;display:flex;align-items:center;justify-content:space-between}
+    .score-head h2{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+    .score-head .gt{font-family:var(--mono);font-size:.62rem;font-weight:600;opacity:.82}
+    .bugrow{display:flex;gap:6px;padding:14px;flex-wrap:wrap;justify-content:center;background:var(--sf)}
+    .bug{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .bug svg{width:15px;height:15px}
+    .bug.fixed{background:#166534;color:#fff}
+    .bug.escaped{background:#991B1B;color:#fff}
+
+    .tallies{display:flex;border-top:1px solid var(--rule)}
+    .tal{flex:1 1 0;text-align:center;padding:11px 6px}
+    .tal:first-child{border-right:1px solid var(--rule)}
+    .tal .tv{font-family:var(--mono);font-size:1.7rem;font-weight:700;line-height:1}
+    .tal .tk{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+    .tal.fixed .tv{color:var(--grn)}
+    .tal.fixed .tk{color:var(--grn)}
+    .tal.escaped .tv{color:var(--red)}
+    .tal.escaped .tk{color:var(--red)}
+
+    /* Diagnosis */
+    .diag{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:11px 13px;border-radius:11px;border-left:4px solid var(--v200);background:var(--sk);transition:border-color .2s,background .2s}
+    .diag.warn{background:var(--red-bg);border-left-color:var(--red)}
+    .diag.good{background:var(--grn-bg);border-left-color:var(--grn)}
+    .diag-ic{flex:0 0 auto;width:22px;height:22px}
+    .diag-ic svg{width:22px;height:22px}
+    .diag.warn .diag-ic{color:var(--red)}
+    .diag.good .diag-ic{color:var(--grn)}
+    .diag-tx{font-size:.74rem;line-height:1.5;color:var(--ink)}
+    .diag-tx b{font-weight:800}
+    .diag.warn .diag-tx b{color:var(--ink)}
+    .diag.good .diag-tx b{color:var(--ink)}
+
+    .best-badge{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:2px 8px;border-radius:20px;background:var(--grn);color:#fff;font-size:.56rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;vertical-align:middle}
+    .best-badge svg{width:11px;height:11px}
+
+    @media(max-width:560px){
+      .constraints{flex-wrap:wrap}
+      .con{flex:1 1 46%}
+      .metrics{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+<div class="w">
+  <div class="card">
+    <div class="top">
+      <h1>Triage Capacity Simulator</h1>
+      <span class="tag">Interactive</span>
+    </div>
+    <div class="body-wrap">
+
+      <!-- Fixed constraints -->
+      <div class="constraints">
+        <div class="con">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="ct"><span class="cn">50</span><span class="cl">developers</span></span>
+        </div>
+        <div class="con">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="6" width="8" height="14" rx="4"/><path d="M19 7l-3 2M5 7l3 2M12 2v4M20 13h-4M8 13H4M19 18l-3-1.5M5 18l3-1.5"/></svg>
+          <span class="ct"><span class="cn">10</span><span class="cl">real bugs hiding</span></span>
+        </div>
+        <div class="con">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span class="ct"><span class="cn">15<span style="font-size:.6rem">/day</span></span><span class="cl">1 engineer reviews</span></span>
+        </div>
+      </div>
+
+      <!-- Slider control -->
+      <div class="ctl-label">Tune the AI &rarr; drag to set how aggressively it flags code</div>
+      <div class="slider-ends">
+        <div class="send"><b>Catch everything</b><span>flags freely &middot; high recall</span></div>
+        <div class="send r"><b>Flag only the obvious</b><span>stays quiet &middot; high precision</span></div>
+      </div>
+      <input id="sld" type="range" min="0" max="100" value="0" step="1" aria-label="AI flagging aggressiveness from catch-everything to flag-only-the-obvious">
+
+      <div class="metrics">
+        <div class="met rec">
+          <div class="met-top"><span class="met-k">Recall</span><span class="met-v" id="recV">100%</span></div>
+          <div class="met-bar"><i id="recBar" style="width:100%"></i></div>
+          <div class="met-sub">% of the 10 real bugs the AI flags</div>
+        </div>
+        <div class="met pre">
+          <div class="met-top"><span class="met-k">Precision</span><span class="met-v" id="preV">20%</span></div>
+          <div class="met-bar"><i id="preBar" style="width:20%"></i></div>
+          <div class="met-sub">% of AI flags that are real bugs</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Engineer's queue -->
+      <div class="qhead">
+        <h2>The engineer's review queue</h2>
+        <span class="qflag" id="qflag">AI flagged 50 today</span>
+      </div>
+      <div class="queue-wrap">
+        <div class="queue" id="queue"></div>
+        <div class="qfoot">
+          <span class="rv" id="footRv">&#10003; 15 reviewed</span>
+          <span id="footRest" class="bl">25 stuck in backlog &rarr;</span>
+        </div>
+      </div>
+      <div class="qlegend">
+        <span class="lg"><i class="real"></i> real bug</span>
+        <span class="lg"><i class="false"></i> false alarm</span>
+        <span class="lg"><span style="font-size:.8rem;line-height:1;color:var(--v);font-weight:800">&#8942;</span> = capacity cutoff (15)</span>
+      </div>
+
+      <!-- Scoreboard -->
+      <div class="score-wrap">
+        <div class="score-head">
+          <h2>Did we fix the bugs that mattered?</h2>
+          <span class="gt">10 real bugs</span>
+        </div>
+        <div class="bugrow" id="bugrow"></div>
+        <div class="tallies">
+          <div class="tal fixed"><div class="tv" id="fixedN">3</div><div class="tk">fixed</div></div>
+          <div class="tal escaped"><div class="tv" id="escN">7</div><div class="tk">escaped</div></div>
+        </div>
+      </div>
+
+      <!-- Adaptive diagnosis -->
+      <div class="diag" id="diag">
+        <span class="diag-ic" id="diagIc"></span>
+        <span class="diag-tx" id="diagTx"></span>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var REAL=10, CAP=15, POOL=40;
+  var sld=document.getElementById('sld');
+
+  var ICONS={
+    check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg>',
+    x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    star:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+  };
+
+  function compute(t){
+    var recall = 1 - 0.6*t;
+    var TP = Math.round(REAL*recall);
+    var FP = Math.round(POOL*Math.pow(1-t,2));
+    var flagged = TP+FP;
+    var reviewed = Math.min(flagged, CAP);
+    var precision = flagged>0 ? TP/flagged : 1;
+    var found = Math.min(TP, Math.round(reviewed*precision));
+    var backlog = TP - found;
+    var missed = REAL - TP;
+    return {recall:recall, TP:TP, FP:FP, flagged:flagged, reviewed:reviewed,
+      precision:precision, fixed:found, backlog:backlog, missed:missed,
+      escaped:REAL-found, spare:Math.max(0,CAP-flagged)};
+  }
+
+  function buildQueue(m){
+    var q=document.getElementById('queue');
+    q.innerHTML='';
+    var n=m.flagged;
+    var realSlots={};
+    if(m.TP>0){ for(var k=0;k<m.TP;k++){ realSlots[Math.floor((k+0.5)*n/m.TP)]=true; } }
+    var cutoff=Math.min(CAP,n);
+    for(var i=0;i<n;i++){
+      var d=document.createElement('span');
+      var isReal=!!realSlots[i];
+      d.className='fd '+(isReal?'real':'false')+(i>=cutoff?' bk':'');
+      q.appendChild(d);
+      if(i===cutoff-1 && n>CAP){
+        var line=document.createElement('span');
+        line.className='cap-line';
+        q.appendChild(line);
+      }
+    }
+    if(m.spare>0){
+      var line2=document.createElement('span');
+      line2.className='cap-line';
+      q.appendChild(line2);
+      for(var s=0;s<m.spare;s++){
+        var sp=document.createElement('span');
+        sp.className='fd';
+        sp.style.cssText='background:transparent;border:2px dashed var(--v200);opacity:.7';
+        q.appendChild(sp);
+      }
+    }
+    document.getElementById('qflag').textContent='AI flagged '+m.flagged+' today';
+    var rv=document.getElementById('footRv'), rest=document.getElementById('footRest');
+    rv.textContent='✓ '+m.reviewed+' reviewed';
+    if(m.flagged>CAP){
+      rest.className='bl';
+      rest.textContent=(m.flagged-CAP)+' stuck in backlog →';
+    } else if(m.spare>0){
+      rest.className='sp';
+      rest.textContent=m.spare+' slots to spare';
+    } else {
+      rest.className='muted';
+      rest.textContent='queue cleared';
+    }
+  }
+
+  function buildScore(m){
+    var row=document.getElementById('bugrow');
+    row.innerHTML='';
+    for(var i=0;i<REAL;i++){
+      var b=document.createElement('span');
+      var fixed=i<m.fixed;
+      b.className='bug '+(fixed?'fixed':'escaped');
+      b.innerHTML=fixed?ICONS.check:ICONS.x;
+      row.appendChild(b);
+    }
+    document.getElementById('fixedN').textContent=m.fixed;
+    document.getElementById('escN').textContent=m.escaped;
+  }
+
+  function buildDiag(t,m){
+    var diag=document.getElementById('diag'),
+        ic=document.getElementById('diagIc'),
+        tx=document.getElementById('diagTx');
+    var best = m.fixed>=6;
+    diag.className='diag'+(best?' good':((t<0.34||t>0.78)?' warn':''));
+    if(best){
+      ic.innerHTML=ICONS.star;
+      tx.innerHTML='<b>Best balance.</b> Few enough flags to review them all, precise enough to catch most real bugs. With one engineer, the sweet spot leans toward <b>precision</b>.<span class="best-badge">'+ICONS.star+' optimum</span>';
+    } else if(t<0.34){
+      ic.innerHTML=ICONS.warn;
+      tx.innerHTML='<b>Drowning in noise.</b> The AI flags '+m.flagged+', but the engineer can only review 15, mostly false alarms. '+m.backlog+' real bugs sit unreviewed in the backlog.';
+    } else if(t>0.78){
+      ic.innerHTML=ICONS.warn;
+      tx.innerHTML='<b>Blind spots.</b> The queue is easy to clear, but the AI stayed too quiet: '+m.missed+' real bugs were never flagged at all.';
+    } else {
+      ic.innerHTML=ICONS.star;
+      tx.innerHTML='Getting closer. Escapes split between AI <b>blind spots</b> ('+m.missed+' never flagged) and <b>backlog</b> ('+m.backlog+' unreviewed). Nudge toward the balance point.';
+    }
+  }
+
+  function render(){
+    var t=+sld.value/100;
+    var m=compute(t);
+    document.getElementById('recV').textContent=Math.round(m.recall*100)+'%';
+    document.getElementById('recBar').style.width=(m.recall*100)+'%';
+    document.getElementById('preV').textContent=Math.round(m.precision*100)+'%';
+    document.getElementById('preBar').style.width=(m.precision*100)+'%';
+    buildQueue(m);
+    buildScore(m);
+    buildDiag(t,m);
+  }
+
+  sld.addEventListener('input',render);
+  render();
+})();
+</script>
+
+<script>
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  function send(){var el=document.querySelector('.w');if(!el)return;var r=el.getBoundingClientRect();var pad=parseFloat(getComputedStyle(body).paddingTop)+parseFloat(getComputedStyle(body).paddingBottom);window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+pad),src:location.href},'*');}
+  if(window.ResizeObserver){new ResizeObserver(send).observe(document.querySelector('.w')||body);}else{setInterval(send,500);}
+  window.addEventListener('load',function(){setTimeout(send,200);});setTimeout(send,50);
+})();
+</script>
+
+</body>
+</html>

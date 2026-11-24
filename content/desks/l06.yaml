@@ -1,0 +1,30 @@
+title: Run a signed-only release
+lede: A team ships models through a registry. Decide what signing proves, what it does not, and what the AI-BOM must say.
+blurb: Read cosign results, find what a signature cannot prove, and write a useful AI-BOM line.
+situation: |
+  **Larch Labs** pushes model artifacts to an internal OCI registry. A deploy script runs `cosign verify` with the team's public key before any rollout.
+rounds:
+  - title: Round 1. Read the gate
+    items:
+      - type: sort
+        q: What should deploy.sh do in each case?
+        rows:
+          - ["v1, signed by the team key, unchanged", "Deploy"]
+          - ["v2, pushed but never signed", "Block"]
+          - ["v1 tag moved to new content after signing", "Block"]
+          - ["v3, signed by a key the gate does not trust", "Block"]
+        opts: ["Deploy", "Block"]
+        why: "Verification passes only when the content matches a signature made by the trusted key. A moved tag points at content with no matching signature."
+      - q: v4 is signed correctly, but its training data was poisoned. What does the signature tell you?
+        opts: ["The model is safe", "Only that the file is unchanged and came from the key holder", "That the data was licensed"]
+        a: 1
+        why: "Signing proves integrity and origin. Safety needs provenance, testing and data controls."
+  - title: Round 2. Write the AI-BOM
+    items:
+      - q: Which AI-BOM entry helps a security team trace poisoned data fastest?
+        opts: ["Data source. Common Crawl", "Data source. Common Crawl snapshot CC-MAIN-2025-08, filters v3, SHA-256 of the snapshot list", "Data source. The internet"]
+        a: 1
+        why: "Snapshot, filter version and a hash let the team find exactly which models used the bad data."
+      - type: open
+        q: Why might a company list only "Common Crawl"?
+        a: "Detailed source lists can be used as evidence in copyright disputes, so legal teams prefer vague entries. A middle path keeps the detailed record internally, under access control, and publishes a summary."

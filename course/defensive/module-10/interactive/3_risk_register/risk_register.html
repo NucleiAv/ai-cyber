@@ -1,0 +1,250 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Build the Supply-Chain Risk Register</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--green:#0f7a43;--greenline:#c3e2d0;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:64ch}
+.body{padding:14px 22px 22px}
+.klabel{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.09em;font-weight:600;color:var(--ink3);margin:4px 0 10px}
+.pipe{display:flex;align-items:stretch;gap:5px;flex-wrap:wrap}
+.node{flex:1;min-width:118px;border:1px solid var(--line2);border-radius:12px;padding:11px 10px 10px;cursor:pointer;background:var(--bg);transition:.16s;position:relative;text-align:center}
+.node:hover{border-color:var(--violet2)}
+.node[aria-pressed="true"]{border-color:var(--violet);box-shadow:inset 0 0 0 1px var(--violet)}
+.node.done{border-color:var(--greenline)}
+.node .ic{width:26px;height:26px;margin:0 auto 6px;color:var(--violet)}
+.node.done .ic{color:var(--green)}
+.node .nn{font-weight:700;font-size:.76rem;line-height:1.2}
+.node .ns{font-size:0.75rem;color:var(--ink2);margin-top:2px}
+.node .chk{position:absolute;top:7px;right:8px;width:16px;height:16px;color:var(--green);opacity:0;transform:scale(.5);transition:.25s}
+.node.done .chk{opacity:1;transform:none}
+.conn{align-self:center;color:var(--ink3);font-family:var(--mono);flex:none;font-size:.9rem}
+.sink{flex:none;align-self:stretch;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px dashed var(--line2);border-radius:12px;padding:8px 12px;min-width:96px}
+.sink .ic{width:24px;height:24px;color:var(--ink3)}
+.sink .sl{font-size:0.75rem;color:var(--ink2);font-weight:600;margin-top:4px;text-align:center}
+.tracker{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.75rem;color:var(--ink2)}
+.tbar{flex:1;height:6px;background:var(--line);border-radius:20px;overflow:hidden}
+.tbar i{display:block;height:100%;width:0;background:var(--green);transition:width .4s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+.inspector{border:1px solid var(--line);border-radius:12px;padding:14px;min-height:120px}
+.inspector .ih{font-weight:700;font-size:.86rem}
+.inspector .iq{font-size:.81rem;color:var(--ink2);margin:7px 0 12px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;border:1px solid var(--line2);background:var(--bg);border-radius:9px;padding:9px 11px;cursor:pointer;font-family:var(--sans);font-size:.79rem;color:var(--ink);transition:.14s;display:flex;gap:9px;align-items:flex-start}
+.opt:hover{border-color:var(--violet)}
+.opt .mk{width:16px;height:16px;flex:none;border:1.5px solid var(--line2);border-radius:50%;margin-top:1px}
+.opt .otag{display:block;font-family:var(--mono);font-size:0.75rem;color:var(--ink3);margin-top:2px}
+.opt.correct{border-color:var(--green)} .opt.correct .mk{border-color:var(--green);background:var(--green)}
+.opt.wrong{border-color:var(--red)} .opt.wrong .mk{border-color:var(--red)}
+.opt[disabled]{cursor:default}
+.fb{margin-top:10px;font-size:.78rem;color:var(--ink2);border-left:2px solid var(--line2);padding-left:10px;display:none}
+.fb.show{display:block}
+.fb.good{border-left-color:var(--green)} .fb.bad{border-left-color:var(--red)}
+.placeholder{color:var(--ink3);font-size:.82rem;text-align:center;padding:24px 8px}
+.register{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--paper)}
+.register .rt{font-family:var(--mono);font-size:0.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:700;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:.75rem}
+th{text-align:left;font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);font-weight:700;padding:0 0 6px;border-bottom:1px solid var(--line2)}
+td{padding:7px 6px 7px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink)}
+td.risk{font-weight:600}
+td .std{font-family:var(--mono);font-size:0.75rem;color:var(--violet)}
+tr.empty td{color:var(--ink3);font-style:italic;border-bottom:none;padding-top:12px}
+.animrow{animation:fadein .35s}
+@keyframes fadein{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.final{margin-top:16px;border:1px solid var(--greenline);border-left-width:3px;border-radius:10px;padding:0 15px;background:var(--bg);opacity:0;max-height:0;overflow:hidden;transition:.4s}
+/* Reveal caps raised. These boxes animate open with max-height and keep overflow:hidden, so any content taller than the cap was silently cut off. At 440px wide with a 20px root font the poison-lab verdict lost 46px of its explanation, which is the clipping reported in the first-round review. 1200px is far above any realistic verdict, so the box now sizes to content at every width and text scale. */
+.final.show{opacity:1;max-height:1200px;padding:13px 15px}
+.final .vk{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;color:var(--green)}
+.final .vt{font-size:.85rem;color:var(--ink);line-height:1.5}
+.final .vt b{font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 3 · ML Supply Chain</div>
+    <h1>Build the supply-chain risk register</h1>
+    <p class="lede">A team wants to deploy a fine-tuned model to triage alerts. Four parts of their pipeline come from outside their control. Classify the primary risk each one carries, and watch the register fill in. Then find the single fix that helps most.</p>
+  </div>
+  <div class="body">
+
+    <div class="klabel">The deployment pipeline (click a component)</div>
+    <div class="pipe" id="pipe"></div>
+
+    <div class="tracker"><span id="tcount">0 of 4 classified</span><div class="tbar"><i id="tbar"></i></div></div>
+
+    <div class="grid2">
+      <div class="inspector" id="inspector"><div class="placeholder">Select a component above to classify its risk.</div></div>
+      <div class="register">
+        <div class="rt">Risk register</div>
+        <table><thead><tr><th>Component</th><th>Primary risk</th></tr></thead><tbody id="regbody"></tbody></table>
+      </div>
+    </div>
+
+    <div class="final" id="final"></div>
+  </div>
+</div></div>
+
+<script>
+const CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+const ICONS={
+  base:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+  adapter:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 8v6M2 12h6m8 0h6"/><circle cx="12" cy="12" r="3"/></svg>',
+  plugin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7M17.5 14v7"/></svg>',
+  data:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>',
+  model:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>'
+};
+const NODES=[
+  {id:'base',name:'Base model',sub:'from a public hub',reg:'Tampered or edited weights',
+   q:'The team downloads a model whose name looks like a well-known research group. What is the primary risk?',
+   opts:[{t:'Tampered or edited weights',tag:'Supply chain · OWASP LLM03',correct:true,
+          why:'Correct. A look-alike name lures you into an attacker’s edited copy. Edited weights can pass every benchmark while hiding a trigger or asserting a planted falsehood, so accuracy tests miss it. Only provenance (who published it, is it signed, does it match a trusted source) catches this.'},
+         {t:'Attacker instructions inside a prompt',tag:'Prompt injection · LLM01',
+          why:'Not here. Prompt injection is malicious text arriving at run time in the model’s input. This risk lives in the downloaded file itself, before any prompt is ever sent.'},
+         {t:'The model acts beyond its scope',tag:'Excessive agency · LLM06',
+          why:'Not here. Excessive agency is about giving a model too much power to act (tools, permissions). Downloading a look-alike model is a trust problem with the artifact, not an over-privileged action.'}]},
+  {id:'adapter',name:'Community adapter',sub:'fine-tuned by a stranger',reg:'Backdoor that passes casual testing',
+   q:'The adapter adjusts the base model’s behaviour. What is the primary risk in trusting it?',
+   opts:[{t:'A backdoor that passes casual testing',tag:'Data & model poisoning · LLM04',correct:true,
+          why:'Correct. A stranger’s fine-tune can implant a backdoor that behaves normally on ordinary inputs and misfires only on the attacker’s secret trigger. Casual testing never hits the trigger, so it looks clean. That hidden, conditional defect is poisoning.'},
+         {t:'It leaks its own training data on request',tag:'Sensitive disclosure · LLM02',
+          why:'Not the primary risk. Data leakage is real, but it is not what makes an untrusted adapter dangerous. The core threat is a planted, trigger-activated behaviour, not accidental disclosure.'},
+         {t:'It overloads the host and denies service',tag:'Unbounded consumption · LLM10',
+          why:'Not the primary risk. Resource exhaustion is about cost and availability. A backdoor is silent and cheap to run; denial of service is a different concern.'}]},
+  {id:'plugin',name:'Enrichment plugin',sub:'third-party integration',reg:'Unscoped permissions widen blast radius',
+   q:'The plugin is trusted to do only what its description says. What is the primary risk?',
+   opts:[{t:'Unscoped permissions widen the blast radius',tag:'Excessive agency · LLM06',correct:true,
+          why:'Correct. A plugin integrated with more permission than its task needs can take unauthorised actions once trusted. Scope it to the minimum, and a compromise or a misfire stays contained.'},
+         {t:'It poisons the training data at collection time',tag:'Data poisoning · LLM04',
+          why:'Not here. Poisoning happens at training time. A plugin runs at integration and inference time, so its danger is what it is allowed to DO, not what it teaches the model.'},
+         {t:'Its weights are stolen and copied',tag:'Model theft',
+          why:'Not here. Model theft is about protecting your own model’s confidentiality. A third-party plugin is something you integrate; the risk is the access you grant it, not exfiltration.'}]},
+  {id:'data',name:'Scraped dataset',sub:'public threat feeds',reg:'Poison salted into the scraped data',
+   q:'They fine-tune on data scraped from public sources. What is the primary risk?',
+   opts:[{t:'Poison salted into the scraped data',tag:'Data poisoning · LLM04',correct:true,
+          why:'Correct. Anyone can publish to a public feed, so scraped training data may already carry attacker-planted examples. This is the same cheap web-scale attack from Section 1, and tracking data provenance is the check.'},
+         {t:'Unsafe rendering of the model’s output',tag:'Improper output handling · LLM05',
+          why:'Not here. Output handling is about how you render or execute what the model returns downstream. This component is training input: the risk is what goes in, not what comes out.'},
+         {t:'The agent deletes data with no approval',tag:'Excessive agency · LLM06',
+          why:'Not here. That is an agent-action risk. A scraped dataset is passive training input and cannot take actions; its danger is being adversarial from the start.'}]}
+];
+const pipe=document.getElementById('pipe'), inspector=document.getElementById('inspector'),
+      tcount=document.getElementById('tcount'), tbar=document.getElementById('tbar'), regbody=document.getElementById('regbody'), final=document.getElementById('final');
+const done={}; let active=null;
+
+NODES.forEach((n,i)=>{
+  const d=document.createElement('div'); d.className='node'; d.dataset.id=n.id; d.setAttribute('aria-pressed','false');
+  d.innerHTML='<span class="chk">'+CHK+'</span><div class="ic">'+ICONS[n.id]+'</div><div class="nn">'+n.name+'</div><div class="ns">'+n.sub+'</div>';
+  d.addEventListener('click',()=>open(n.id)); pipe.appendChild(d);
+  const c=document.createElement('span'); c.className='conn'; c.textContent='→'; pipe.appendChild(c);
+});
+// model sink
+const sink=document.createElement('div'); sink.className='sink'; sink.innerHTML='<div class="ic">'+ICONS.model+'</div><div class="sl">deployed<br>model</div>'; pipe.appendChild(sink);
+renderReg();
+
+function open(id){
+  active=id; [...pipe.querySelectorAll('.node')].forEach(c=>c.setAttribute('aria-pressed', c.dataset.id===id?'true':'false'));
+  const n=NODES.find(x=>x.id===id);
+  inspector.innerHTML='<div class="ih">'+n.name+' <span style="font-weight:400;color:var(--ink3);font-size:0.75rem">('+n.sub+')</span></div><div class="iq">'+n.q+'</div><div class="opts" id="opts"></div><div class="fb" id="fb"></div>';
+  const opts=inspector.querySelector('#opts'); const solved=done[id];
+  n.opts.forEach((o,idx)=>{
+    const b=document.createElement('button'); b.className='opt'+(solved&&o.correct?' correct':'');
+    b.innerHTML='<span class="mk"></span><span>'+o.t+'<span class="otag">'+o.tag+'</span></span>';
+    if(solved){ b.disabled=true; } else { b.addEventListener('click',()=>choose(n,idx,b,opts)); }
+    opts.appendChild(b);
+  });
+  if(solved){ const fb=inspector.querySelector('#fb'); fb.className='fb good show'; fb.textContent=n.opts.find(o=>o.correct).why; }
+  sh();
+}
+function choose(n,idx,btn,opts){
+  const o=n.opts[idx], fb=inspector.querySelector('#fb');
+  if(o.correct){
+    btn.classList.add('correct'); [...opts.children].forEach(c=>c.disabled=true);
+    fb.className='fb good show'; fb.textContent=o.why;
+    if(!done[n.id]){ done[n.id]=true; markDone(n.id); }
+  } else {
+    btn.classList.add('wrong'); fb.className='fb bad show'; fb.textContent=o.why;
+    setTimeout(()=>btn.classList.remove('wrong'),650);
+  }
+  sh();
+}
+function markDone(id){
+  pipe.querySelector('.node[data-id="'+id+'"]').classList.add('done');
+  const c=Object.keys(done).length; tcount.textContent=c+' of 4 classified'; tbar.style.width=(c/4*100)+'%';
+  renderReg();
+  if(c===4){ final.className='final show';
+    final.innerHTML='<div class="vk">The single fix that helps most</div><div class="vt">The base model and the adapter both arrive as serialized weight files, and loading one can execute code before any inference. Prefer a <b>tensors-only format</b> and <b>verify provenance</b> (who signed it, does it match a trusted source). That one change closes the sharpest hole, the one no benchmark score can catch, and it is the top line of a strong register.</div>'; }
+  sh();
+}
+function renderReg(){
+  const rows=NODES.filter(n=>done[n.id]);
+  if(rows.length===0){ regbody.innerHTML='<tr class="empty"><td colspan="2">Classify a component to add its first row…</td></tr>'; return; }
+  regbody.innerHTML=rows.map(n=>{ const o=n.opts.find(x=>x.correct);
+    return '<tr class="animrow"><td>'+n.name+'</td><td class="risk">'+n.reg+'<br><span class="std">'+o.tag+'</span></td></tr>'; }).join('');
+}
+function sh(){const el=document.querySelector('.wrap');if(!el)return;const pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+22),src:location.href},'*');}
+if(window.ResizeObserver){ new ResizeObserver(sh).observe(document.querySelector('.wrap')); } else { setInterval(sh,600); }
+window.addEventListener('load',()=>setTimeout(sh,150));
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

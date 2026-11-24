@@ -1,0 +1,43 @@
+- title: Reading one AI attack with ATLAS
+  stats: [Tactic, Technique ID]
+  nodes:
+    recon: {label: Reconnaissance, x: 0, y: 0, kind: box, tag: find RAG-indexed sources}
+    access: {label: Initial Access, x: 2, y: 0, kind: atk, tag: plant text in a public page}
+    model: {label: AI Model Access, x: 4, y: 0, kind: raised, tag: ATLAS only}
+    exec: {label: Execution, x: 4, y: 2, kind: atk, tag: prompt injection}
+    exfil: {label: Exfiltration, x: 6, y: 2, kind: atk, tag: through an agent tool}
+    mit: {label: Mitigation, x: 2, y: 3, kind: def, tag: limit tools and outputs}
+  links: [[recon, access], [access, model], [model, exec], [exec, exfil], [mit, exec]]
+  steps:
+    - title: The attacker studies the target
+      text: They learn which public sources the assistant indexes. ATLAS calls this Gather RAG-Indexed Targets.
+      on: [recon]
+      stats: [Reconnaissance, AML.T0064]
+    - title: They plant text where the AI will read it
+      text: A page the assistant retrieves now carries an instruction. This is Prompt Infiltration via Public-Facing Application.
+      on: [access]
+      flow: [[recon, access, atk]]
+      stats: [Initial Access, AML.T0093]
+    - title: They reach the model through normal use
+      text: The attacker never touches the model directly. A normal user's question pulls the page in. This is the ATLAS-only AI Model Access tactic.
+      on: [model]
+      flow: [[access, model, atk]]
+      stats: [AI Model Access, AML.TA0000]
+    - title: The instruction runs
+      text: The model follows the planted text. LLM Prompt Injection, Indirect.
+      on: [exec]
+      flow: [[model, exec, atk]]
+      mark: {exec: bad}
+      stats: [Execution, AML.T0051.001]
+    - title: Data leaves through a tool
+      text: The agent's own tool carries the data out.
+      on: [exfil]
+      flow: [[exec, exfil, atk]]
+      mark: {exfil: bad}
+      stats: [Exfiltration, AML.T0086]
+    - title: Mitigations attach to techniques
+      text: Each technique page lists mitigations. Here, limiting what the agent can send out breaks the chain at Execution and Exfiltration.
+      on: [mit, exec]
+      flow: [[mit, exec, def]]
+      mark: {exec: ok}
+      stats: [Mitigation, AML.M0000 series]

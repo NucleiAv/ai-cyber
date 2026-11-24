@@ -1,0 +1,505 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 4 &middot; Section 5 &middot; Comparing Approaches: Baseline, Classical ML, and LLM Triage &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 4 &middot; Section 5 of 8</div>
+      <h1 class="nyu-hero__title">Comparing Approaches: Baseline, Classical ML, and LLM Triage</h1>
+      <p class="nyu-hero__subtitle">
+        Ten thousand events and three analysts, the baseline already running, the alert record as a data contract, what classical ML adds to it, and where LLM-assisted triage fits as one more tool rather than a replacement.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~18 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 6 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks</span>
+        <span aria-label="Pre-reading">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Recommended Pre-reading: Google ML Crash Course, ROC and AUC (reference page, R2)
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Ten Thousand Events, Three Analysts</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Baseline We Already Run</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> The Alert Record: Our Data Contract</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> What Classical ML Adds to the Baseline</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> One More Tool, Not a Replacement: LLM-Assisted Triage</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+        <p class="nyu-objectives__lede">By the end of this section, we will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Describe</strong> what the conventional detection stack (signatures, correlation rules, and human review) already does well, and where it needs help.</span></li>
+          <li><span><strong>Describe</strong> the alert record as a data contract, and explain what classical ML and LLM-assisted triage each add to the conventional stack.</span></li>
+        </ul>
+      </section>
+
+      <!-- ===== 1 ===== -->
+
+      <!-- ====================== TEN THOUSAND EVENTS, THREE ANALYSTS ====================== -->
+<section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Ten Thousand Events, Three Analysts</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Before we compare any tools, we need to be honest about the problem they are supposed to solve. Throughout this section we will work with one running set of numbers, typical of a small <button type="button" class="nyu-define" data-term="soc">SOC</button>:</p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>About 10,000 security-relevant events per day</strong> reach our triage queue after collection and <button type="button" class="nyu-define" data-term="normalization-rule">normalization</button>.</li>
+          <li><strong>About 3 of those events per day</strong>, on average, are genuinely malicious.</li>
+          <li><strong>Our 3 analysts can investigate about 15 alerts per day</strong> between them before investigation quality degrades.</li>
+        </ul>
+
+        <p>Those numbers define a hard constraint. Whatever detection stack we run, it must compress 10,000 events into roughly 15 investigations without losing the 3 that matter. Every alert past the budget is skimmed, deferred, or ignored, and that is how <button type="button" class="nyu-define" data-term="alert-fatigue">alert fatigue</button> turns a <button type="button" class="nyu-define" data-term="false-positive">false positive</button> problem into a <button type="button" class="nyu-define" data-term="false-negative">false negative</button> problem.</p>
+
+        <figure class="nyu-figure" role="img" aria-label="Funnel diagram: about 10,000 events per day enter the detection stack, which reduces them to an alert queue, which must fit a budget of about 15 investigations per day. An overflow arrow shows that alerts beyond the budget are skimmed, deferred, or ignored.">
+          <svg viewBox="0 0 660 190" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+            <defs>
+              <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#57068C"/>
+              </marker>
+            </defs>
+            <rect x="10" y="40" width="150" height="56" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="85" y="62" font-size="11.5" fill="#374151" text-anchor="middle">&#8776;10,000 events/day</text>
+            <text x="85" y="78" font-size="10.5" fill="#4B5563" text-anchor="middle">(&#8776;3 truly malicious)</text>
+            <line x1="160" y1="68" x2="200" y2="68" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr1)"/>
+            <rect x="200" y="40" width="150" height="56" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="275" y="62" font-size="11.5" fill="#374151" text-anchor="middle">Detection stack</text>
+            <text x="275" y="78" font-size="10.5" fill="#4B5563" text-anchor="middle">(sections 2, 4, 5)</text>
+            <line x1="350" y1="68" x2="390" y2="68" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr1)"/>
+            <rect x="390" y="40" width="120" height="56" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="450" y="62" font-size="11.5" fill="#374151" text-anchor="middle">Alert queue</text>
+            <text x="450" y="78" font-size="10.5" fill="#4B5563" text-anchor="middle">tens to hundreds</text>
+            <line x1="510" y1="68" x2="550" y2="68" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr1)"/>
+            <rect x="550" y="40" width="100" height="56" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="600" y="62" font-size="11.5" fill="#374151" text-anchor="middle">15 investigations</text>
+            <text x="600" y="78" font-size="10.5" fill="#4B5563" text-anchor="middle">per day, total</text>
+            <line x1="450" y1="96" x2="450" y2="140" stroke="#B91C1C" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr1)"/>
+            <text x="450" y="160" font-size="10.5" fill="#B91C1C" text-anchor="middle">everything past the budget: skimmed, deferred, or ignored</text>
+          </svg>
+          <figcaption>Our shift-capacity problem. The detection stack must fit the analyst budget on the right, not the event volume on the left.</figcaption>
+        </figure>
+
+        <p>"Which tool is better?" is not a useful question. The useful question, which we will answer step by step, is: <em>which combination of tools gets the 3 real attacks into the 15 investigations, at a cost we can sustain?</em></p>
+      </section>
+
+      <!-- ===== 2 ===== -->
+
+      <!-- ====================== THE BASELINE WE ALREADY RUN ====================== -->
+<section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Baseline We Already Run</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>No serious SOC starts from zero. Before any machine learning or language model enters the picture, three conventional layers are already on duty, and any new tool must beat or complement them, not replace them by assumption.</p>
+
+        <p><strong>Signature detection.</strong> In Section 3 we read an annotated Snort rule line by line. A <button type="button" class="nyu-define" data-term="signature-based">signature</button> is a precise, human-written description of one known attack pattern. Signature engines such as <button type="button" class="nyu-define" data-term="snort">Snort</button> and Suricata are fast (line rate), deterministic (the same traffic always produces the same result), and interpretable (the explanation for the alert is the rule itself). On known patterns their false positive rate can be tuned very low, which is exactly what our 15-alert budget needs.</p>
+
+        <p><strong>Correlation rules.</strong> Our <button type="button" class="nyu-define" data-term="siem">SIEM</button> runs <button type="button" class="nyu-define" data-term="correlation-rule">correlation rules</button> that combine events across sources: five failed logins followed by a success, a new account creation followed by a privilege change. Like signatures, they encode human knowledge and are auditable after the fact.</p>
+
+        <p><strong>Human review.</strong> Analysts are the existing decision layer. They carry the organizational context no tool has: which server is due for maintenance, which vendor scans us on Tuesdays, which alert pattern preceded last year's incident.</p>
+
+        <p>The baseline's limits are the mirror image of its strengths. Signatures and correlation rules only describe what someone has already seen and written down, and rule sets decay unless they are continuously maintained. The table below previews the traffic we will follow for the rest of this section, and shows where the baseline needs help.</p>
+
+        <table class="nyu-table" aria-label="What the conventional baseline catches and what slips through">
+          <thead>
+            <tr>
+              <th scope="col">Traffic</th>
+              <th scope="col">What the baseline does</th>
+              <th scope="col">Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">SSH brute-force attempts</th>
+              <td>Caught</td>
+              <td>The Section 3 Snort rule describes the pattern exactly: 5 connections in 60 seconds.</td>
+            </tr>
+            <tr>
+              <th scope="row">Known-malware downloads</th>
+              <td>Caught</td>
+              <td>Hash and URL signatures exist and are updated from feeds.</td>
+            </tr>
+            <tr>
+              <th scope="row">Small periodic transfers to a domain registered last week</th>
+              <td>Slips through</td>
+              <td>No signature describes this domain. No correlation rule was written for this interval pattern. Volumes are too small to trip thresholds.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>That third row is <button type="button" class="nyu-define" data-term="c2-beaconing">C2 beaconing</button>, and it is the example we will trace end to end in part 6. Keep it in mind as we add layers.</p>
+      </section>
+
+      <!-- ===== 3 ===== -->
+
+      <!-- ====================== THE ALERT RECORD: OUR DATA CONTRACT ====================== -->
+<section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">The Alert Record: Our Data Contract</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Before we can chain tools together, we have to agree on what they hand each other. Three different data shapes move through our pipeline, and confusing them is a common source of design errors:</p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>Numeric flow features.</strong> Engineered values such as packet counts, byte totals, and interval statistics, derived from the <button type="button" class="nyu-define" data-term="five-tuple">five-tuple</button>. This is what classical ML models consume.</li>
+          <li><strong>The structured alert record.</strong> A machine-readable record that every detector writes and every downstream stage reads. Ours is serialized as <button type="button" class="nyu-define" data-term="json">JSON</button>.</li>
+          <li><strong>Free-text rationale.</strong> Human-readable explanation attached to an alert for the analyst. Never parsed by code, never used as a decision input by machines.</li>
+        </ul>
+
+        <p>Here is one alert record produced by the Section 3 Snort rule, with each field annotated. Hover or tap a line to see who writes it, who reads it, and what governs it.</p>
+
+        <div class="nyu-annot-code" aria-label="Annotated JSON alert record, one field per line">
+          <div class="nyu-annot-code__line" data-note="<strong>Opening brace.</strong> JSON is a general-purpose data syntax. It defines how to write objects, arrays, strings, and numbers. It says nothing about security. Every security meaning below comes from our schema, not from the format."><span class="nyu-annot-code__num">1</span><span class="nyu-annot-code__code">{</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Our own identifier convention.</strong> Written by the detector, used by every later stage to refer to this alert. The pattern (year, date, counter) is a house choice documented in our schema."><span class="nyu-annot-code__num">2</span><span class="nyu-annot-code__code">  "alert_id": "A-2026-0608-0142",</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Timestamp in ISO 8601 form.</strong> An international standard for writing dates and times unambiguously. The trailing Z means UTC. Cross-source correlation only works because every producer agrees on this one representation."><span class="nyu-annot-code__num">3</span><span class="nyu-annot-code__code">  "created_at": "2026-06-08T02:14:09Z",</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Which detector fired.</strong> Here, the Snort rule from Section 3, identified by its rule ID. This field is what lets us measure each detector&#39;s false positive rate separately."><span class="nyu-annot-code__num">4</span><span class="nyu-annot-code__code">  "source": "snort:sid-1000001",</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Category from the rule&#39;s classtype.</strong> A controlled vocabulary: only values listed in our schema are valid. Free-text here would break downstream filtering."><span class="nyu-annot-code__num">5</span><span class="nyu-annot-code__code">  "event_type": "attempted-recon",</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Network endpoints.</strong> Copied from the triggering traffic. These addresses come from the documentation ranges reserved for examples, which is why they look unfamiliar."><span class="nyu-annot-code__num">6</span><span class="nyu-annot-code__code">  "src_ip": "203.0.113.41", "dst_ip": "198.51.100.7", "dst_port": 22,</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>A house severity scale.</strong> Four values defined by us: low, medium, high, critical. This is an organizational convention, not part of JSON and not any external standard. Other formats define their own, different scales."><span class="nyu-annot-code__num">7</span><span class="nyu-annot-code__code">  "severity": "medium",</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Detector confidence, 0 to 1.</strong> Meaningful only relative to this detector&#39;s own threshold. A 0.92 from one model and a 0.92 from another are not comparable."><span class="nyu-annot-code__num">8</span><span class="nyu-annot-code__code">  "detector_score": 0.92,</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Pointers to evidence, never copies.</strong> References to the raw log lines that triggered the alert. Anyone validating this alert goes back to these originals."><span class="nyu-annot-code__num">9</span><span class="nyu-annot-code__code">  "evidence_refs": ["fw01:2026-06-08:L48121", "fw01:2026-06-08:L48127"],</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Empty until enrichment.</strong> A later stage (part 5) may draft a human-readable rationale here. Code must never branch on this field: it is for people."><span class="nyu-annot-code__num">10</span><span class="nyu-annot-code__code">  "rationale": null</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__line" data-note="<strong>Closing brace.</strong> Before any downstream stage accepts this record, schema validation checks it: required fields present, types correct, severity in the allowed set. Records that fail are rejected, not repaired silently."><span class="nyu-annot-code__num">11</span><span class="nyu-annot-code__code">}</span><span class="nyu-annot-code__marker">?</span></div>
+          <div class="nyu-annot-code__notes">Hover or tap a line to see what governs each field.</div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="json-not-standard">
+          <h3 class="nyu-callout__title" id="json-not-standard"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> JSON Is Syntax, Not a Security Standard</h3>
+          <p>A tidy JSON alert does not supply its own meaning: JSON defines punctuation, not semantics. Severity is the test case. <button type="button" class="nyu-define" data-term="syslog">Syslog</button> uses a 0&#8211;7 scale (0 most urgent), <button type="button" class="nyu-define" data-term="cef">CEF</button> a 0&#8211;10 scale, and our alert record a four-word house scale. Three formats, three incompatible vocabularies; mapping between them is a normalization decision we document in our <button type="button" class="nyu-define" data-term="schema">schema</button>. Section 1 covers syslog and CEF in detail.</p>
+        </aside>
+
+        <p>The alert record is our pipeline's contract: every stage we add in parts 4 and 5 reads this record, writes back only fields it owns, and passes through <button type="button" class="nyu-define" data-term="schema-validation">schema validation</button> before the next stage trusts it. With the contract pinned down, we can start adding detection layers.</p>
+      </section>
+
+      <!-- ===== 4 ===== -->
+
+      <!-- ====================== WHAT CLASSICAL ML ADDS TO THE BASELINE ====================== -->
+<section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">What Classical ML Adds to the Baseline</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Section 3 built the detection mechanics; here we place them in the pipeline. A <button type="button" class="nyu-define" data-term="ml-ids">ML-based IDS</button> consumes the numeric flow features from part 3 and adds the one thing rules cannot offer: detection of patterns nobody has written down.</p>
+
+        <p><button type="button" class="nyu-define" data-term="supervised-ml">Supervised models</button> generalize from labeled examples of known attack families, so they can catch variants that evade an exact signature. <button type="button" class="nyu-define" data-term="unsupervised-anomaly">Unsupervised anomaly detectors</button> learn a baseline of normal traffic and flag statistical outliers, which gives us a chance against patterns absent from any training set, at the price of more false positives.</p>
+
+        <p>The costs are real and recurring. Supervised models need labeled data, which is expensive to produce. Both kinds degrade as traffic and attacker behavior change, the <button type="button" class="nyu-define" data-term="concept-drift">concept drift</button> problem, so retraining is a scheduled maintenance task, not an emergency fix. And neither kind can explain itself in operational terms or apply organizational context. An anomaly score of 0.92 is not an explanation.</p>
+
+        <figure class="nyu-figure" role="img" aria-label="Flow diagram, version one: about 10,000 events per day pass through the signature engine and the ML detectors, producing tens to hundreds of alerts per day in the alert queue. Both detection stages operate in milliseconds.">
+          <svg viewBox="0 0 660 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+            <defs>
+              <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#57068C"/>
+              </marker>
+            </defs>
+            <rect x="10" y="35" width="130" height="56" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="75" y="57" font-size="11.5" fill="#374151" text-anchor="middle">All events</text>
+            <text x="75" y="73" font-size="10.5" fill="#4B5563" text-anchor="middle">&#8776;10,000/day</text>
+            <line x1="140" y1="63" x2="180" y2="63" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr2)"/>
+            <rect x="180" y="35" width="140" height="56" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="250" y="57" font-size="11.5" fill="#374151" text-anchor="middle">Signature engine</text>
+            <text x="250" y="73" font-size="10.5" fill="#4B5563" text-anchor="middle">known patterns &#183; ms</text>
+            <line x1="320" y1="63" x2="360" y2="63" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr2)"/>
+            <rect x="360" y="35" width="140" height="56" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="430" y="57" font-size="11.5" fill="#374151" text-anchor="middle">ML detectors</text>
+            <text x="430" y="73" font-size="10.5" fill="#4B5563" text-anchor="middle">statistical patterns &#183; ms</text>
+            <line x1="500" y1="63" x2="540" y2="63" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr2)"/>
+            <rect x="540" y="35" width="110" height="56" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="595" y="57" font-size="11.5" fill="#374151" text-anchor="middle">Alert queue</text>
+            <text x="595" y="73" font-size="10.5" fill="#4B5563" text-anchor="middle">tens to hundreds/day</text>
+            <text x="330" y="125" font-size="10.5" fill="#4B5563" text-anchor="middle">Every alert is written as the part-3 alert record and passes schema validation between stages.</text>
+          </svg>
+          <figcaption>Pipeline, version 1: signatures plus ML compress event volume into an alert queue. Detection happens in milliseconds; explanation does not happen at all yet.</figcaption>
+        </figure>
+
+        <p>This version of the pipeline already fits our volume constraint. What it leaves unsolved is the analyst's first question about every alert in the queue: <em>why is this suspicious?</em></p>
+      </section>
+
+      <!-- ===== 5 ===== -->
+
+      <!-- ====================== ONE MORE TOOL, NOT A REPLACEMENT: LLM-ASSISTED TRIAGE ====================== -->
+<section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">One More Tool, Not a Replacement: LLM-Assisted Triage</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Only now, with the baseline and ML layer in place, do we add <button type="button" class="nyu-define" data-term="llm-analysis">LLM-based analysis</button>, for one specific job: second-pass work on the already-reduced alert queue. Given an alert record and the raw log lines it references, an <button type="button" class="nyu-define" data-term="llm">LLM</button> can draft a summary, suggest a severity, and connect related alerts into a narrative. That is the entire job we give it, and it comes with four limits we state up front:</p>
+
+        <ul class="nyu-keypoints">
+          <li><strong>Latency.</strong> Seconds to minutes per alert. An LLM can never sit at line rate, so it can never be the primary detection layer. It works here only because parts 2 and 4 already shrank the volume.</li>
+          <li><strong>Generated rationales are not evidence.</strong> The explanation an LLM writes is fluent text produced by the same process that produces its mistakes, including <button type="button" class="nyu-define" data-term="hallucination">hallucination</button>. Section 2 catalogued the failure modes. A rationale is a draft to verify, not a finding.</li>
+          <li><strong>No quantitative threshold.</strong> We tune an ML detector by moving a numeric threshold. An LLM's behavior is steered by prompt changes, which are coarser and harder to measure.</li>
+          <li><strong>A knowledge cutoff.</strong> The model knows nothing newer than its training data. Yesterday's attack infrastructure is invisible to it unless we put the evidence in the prompt.</li>
+        </ul>
+
+        <p>With three tool families on the table, we can compare them honestly, dimension by dimension.</p>
+
+        <div class="nyu-table-wrap">
+          <table class="nyu-table nyu-table--striped" aria-label="Comparison of signature and rule-based detection, classical ML, and LLM-based analysis across eight dimensions">
+            <thead>
+              <tr>
+                <th scope="col">Dimension</th>
+                <th scope="col">Signatures &amp; correlation rules</th>
+                <th scope="col">Classical ML</th>
+                <th scope="col">LLM-based analysis</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Input</th>
+                <td>Packets, events, log fields</td>
+                <td>Engineered numeric features</td>
+                <td>Text: alert records, log excerpts</td>
+              </tr>
+              <tr>
+                <th scope="row">Speed</th>
+                <td>Line rate</td>
+                <td>Milliseconds</td>
+                <td>Seconds to minutes per alert</td>
+              </tr>
+              <tr>
+                <th scope="row">Tunability</th>
+                <td>Edit, add, retire rules</td>
+                <td>Numeric threshold on a continuum</td>
+                <td>Prompt changes; coarse, hard to measure</td>
+              </tr>
+              <tr>
+                <th scope="row">Known patterns</th>
+                <td>Excellent; very low false positives</td>
+                <td>Good; generalizes to variants</td>
+                <td>Unnecessary; earlier layers already catch these</td>
+              </tr>
+              <tr>
+                <th scope="row">Novel patterns</th>
+                <td>Blind by design</td>
+                <td>Unsupervised: flags outliers, with more false positives</td>
+                <td>May surface contextual leads; unreliable, treat as hypotheses</td>
+              </tr>
+              <tr>
+                <th scope="row">Explanation</th>
+                <td>The rule is the explanation</td>
+                <td>Scores and feature weights; limited</td>
+                <td>Readable rationale; generated text that requires validation</td>
+              </tr>
+              <tr>
+                <th scope="row">Maintenance</th>
+                <td>Continuous rule curation</td>
+                <td>Labeled data, scheduled retraining</td>
+                <td>Prompt upkeep, model upgrades, cutoff limits</td>
+              </tr>
+              <tr>
+                <th scope="row">Place in our pipeline</th>
+                <td>First pass, full volume</td>
+                <td>First pass, full volume</td>
+                <td>Second pass, flagged subset only</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <figure class="nyu-figure" role="img" aria-label="Flow diagram, version two: the version-one pipeline now feeds the alert queue into an LLM enrichment stage, which drafts rationales in seconds to minutes, and then to analyst decision. A feedback loop runs from the analyst back to the detection stages: verdicts become labels, and feedback tunes rules, models, and prompts.">
+          <svg viewBox="0 0 660 230" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+            <defs>
+              <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#57068C"/>
+              </marker>
+            </defs>
+            <rect x="10" y="35" width="110" height="56" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="65" y="57" font-size="11" fill="#374151" text-anchor="middle">All events</text>
+            <text x="65" y="73" font-size="10" fill="#4B5563" text-anchor="middle">&#8776;10,000/day</text>
+            <line x1="120" y1="63" x2="152" y2="63" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr3)"/>
+            <rect x="152" y="35" width="130" height="56" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="217" y="57" font-size="11" fill="#374151" text-anchor="middle">Signatures + ML</text>
+            <text x="217" y="73" font-size="10" fill="#4B5563" text-anchor="middle">full volume &#183; ms</text>
+            <line x1="282" y1="63" x2="314" y2="63" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr3)"/>
+            <rect x="314" y="35" width="130" height="56" rx="8" fill="#FFF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="379" y="51" font-size="11" fill="#374151" text-anchor="middle">LLM enrichment</text>
+            <text x="379" y="66" font-size="10" fill="#4B5563" text-anchor="middle">flagged subset only</text>
+            <text x="379" y="81" font-size="10" fill="#4B5563" text-anchor="middle">drafts &#183; sec&#8211;min</text>
+            <line x1="444" y1="63" x2="476" y2="63" stroke="#57068C" stroke-width="1.5" marker-end="url(#arr3)"/>
+            <rect x="476" y="35" width="170" height="56" rx="8" fill="#F3E8FF" stroke="#57068C" stroke-width="1.5"/>
+            <text x="561" y="57" font-size="11" fill="#374151" text-anchor="middle">Analyst decision</text>
+            <text x="561" y="73" font-size="10" fill="#4B5563" text-anchor="middle">verifies drafts &#183; accountable</text>
+            <path d="M 561 91 L 561 150 L 217 150 L 217 95" fill="none" stroke="#0F766E" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr3)"/>
+            <path d="M 500 150 L 379 150 L 379 95" fill="none" stroke="#0F766E" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr3)"/>
+            <text x="390" y="172" font-size="10.5" fill="#0F766E" text-anchor="middle">verdicts become labels &#183; feedback tunes rules, models, and prompts</text>
+            <text x="330" y="205" font-size="10.5" fill="#4B5563" text-anchor="middle">The analyst is a loop, not a terminal box: every decision feeds the next round of detection.</text>
+          </svg>
+          <figcaption>Pipeline, version 2: LLM enrichment is added behind the volume-reducing layers, and the analyst's verdicts flow back as the human-in-the-loop cycle we saw in Section 3.</figcaption>
+        </figure>
+
+        <p>One stage of the diagram deserves emphasis. The analyst's verification is what makes the LLM's drafts usable at all. This is the same <button type="button" class="nyu-define" data-term="hitl">human-in-the-loop</button> cycle from Section 3, now applied to generated text: the model drafts, an independent check settles disputed claims, and the verdict becomes a labeled example that improves the next round.</p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="match-tip">
+          <h3 class="nyu-callout__title" id="match-tip"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a7 7 0 0 1 4 12.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2zM9 21h6M10 17v1M14 17v1"></path></svg></span> How to Use</h3>
+          <p>Now that every component is on the table, test the assignment of work. Click an item on the left, then click its match on the right. Lines will connect your pairs. When all five are matched, click <strong>Check</strong>.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Match: Who Handles What?</h3>
+        <p>Each SOC task on the left belongs to one stage of the pipeline we just built. Match each task to the stage that should own it.</p>
+
+        <div class="nyu-match">
+          <div class="nyu-match__grid">
+            <div class="nyu-match__col">
+              <h4>SOC Task</h4>
+              <span class="nyu-match__term" data-match="A">Classify 50,000 network flows per second in real time</span>
+              <span class="nyu-match__term" data-match="B">Draft an explanation of why a flagged DNS query looks suspicious</span>
+              <span class="nyu-match__term" data-match="C">Decide whether to escalate an alert to incident response</span>
+              <span class="nyu-match__term" data-match="D">Detect anomalous byte-count distributions in flow metadata</span>
+              <span class="nyu-match__term" data-match="E">Combine three related alerts into one incident summary for review</span>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap">
+              <svg class="nyu-match__svg"></svg>
+            </div>
+            <div class="nyu-match__col">
+              <h4>Pipeline Stage</h4>
+              <span class="nyu-match__def" data-match="E">LLM enrichment drafts a combined narrative; the SOC lead checks it against the underlying alerts</span>
+              <span class="nyu-match__def" data-match="A">ML detectors process numeric flow features at full volume in milliseconds</span>
+              <span class="nyu-match__def" data-match="C">Human analyst makes the call and carries accountability for it</span>
+              <span class="nyu-match__def" data-match="B">LLM enrichment drafts a rationale from the alert record and log excerpts, for the analyst to verify</span>
+              <span class="nyu-match__def" data-match="D">Unsupervised model compares flow statistics against a learned baseline</span>
+            </div>
+          </div>
+
+          <div class="nyu-match__actions">
+            <button class="nyu-btn nyu-btn--sm" data-action="check">Check</button>
+            <button class="nyu-btn nyu-btn--sm nyu-btn--outline" data-action="reveal">Reveal Answers</button>
+            <button class="nyu-btn nyu-btn--sm nyu-btn--outline" data-action="reset">Reset</button>
+          </div>
+          <p class="nyu-match__hint" aria-live="polite"></p>
+        </div>
+
+        <h3 class="nyu-subsection-title">Match: Limitation &rarr; Mitigation</h3>
+        <p>Each limitation on the left belongs to a single tool used alone. Match it to the way the combined pipeline mitigates it. Note the verbs: the pipeline <em>mitigates</em> these limits, it does not erase them.</p>
+
+        <div class="nyu-match">
+          <div class="nyu-match__grid">
+            <div class="nyu-match__col">
+              <h4>Single-Tool Limitation</h4>
+              <span class="nyu-match__term" data-match="F">ML detector flags an alert; the analyst cannot see why</span>
+              <span class="nyu-match__term" data-match="G">LLM needs 30 seconds per entry, far too slow for full traffic volume</span>
+              <span class="nyu-match__term" data-match="H">Supervised model misses attack types absent from its training data</span>
+              <span class="nyu-match__term" data-match="I">LLM fabricates a threat that does not exist in the logs</span>
+              <span class="nyu-match__term" data-match="J">ML accuracy degrades over months as traffic and tactics change</span>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap">
+              <svg class="nyu-match__svg"></svg>
+            </div>
+            <div class="nyu-match__col">
+              <h4>How the Pipeline Mitigates It</h4>
+              <span class="nyu-match__def" data-match="I">Validation gates: schema checks, ground-truth lookups, and analyst review before any action</span>
+              <span class="nyu-match__def" data-match="J">Scheduled retraining on fresh labels; prompt updates are a stopgap, not a fix</span>
+              <span class="nyu-match__def" data-match="F">LLM drafts a rationale from the alert plus raw logs; the analyst verifies it before acting</span>
+              <span class="nyu-match__def" data-match="H">Unsupervised detection flags statistical outliers; LLM leads are treated as hypotheses, not detections</span>
+              <span class="nyu-match__def" data-match="G">Signatures and ML reduce volume first; the LLM sees only the flagged subset</span>
+            </div>
+          </div>
+
+          <div class="nyu-match__actions">
+            <button class="nyu-btn nyu-btn--sm" data-action="check">Check</button>
+            <button class="nyu-btn nyu-btn--sm nyu-btn--outline" data-action="reveal">Reveal Answers</button>
+            <button class="nyu-btn nyu-btn--sm nyu-btn--outline" data-action="reset">Reset</button>
+          </div>
+          <p class="nyu-match__hint" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <!-- ===== 6 ===== -->
+
+      <!-- ====================== CHECK YOUR UNDERSTANDING ====================== -->
+<section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 1</span></div>
+          <p class="nyu-quiz__prompt" id="kc-1">A financial institution needs to screen millions of transactions per day in real time, catching both known fraud patterns and novel variants. Which approach fits the primary detection layer?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-1">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="LLMs are useful for second-pass work, but their latency (seconds to minutes per item) rules out the primary layer at this volume. They could analyze flagged transactions downstream.">LLM-based analysis, because it can identify complex contextual patterns.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">ML-based classification, because it provides millisecond throughput and generalizes to variants of known patterns.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Rules are fast and excellent against precisely known patterns, and they belong in the stack. But the requirement includes novel variants, which is exactly where human-written rules are blind by design. The primary layer here needs statistical generalization on top of rules.">Rule-based detection alone, because fraud patterns are well documented.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="LLMs do require training data; their pre-training corpus is their training data. More importantly, the constraint here is throughput, which no amount of training fixes.">LLM-based analysis, because it requires no training data.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. ML classifiers deliver the millisecond latency the volume demands and generalize beyond exact rule matches. Rules still belong in the stack for known patterns, and an LLM can serve downstream triage on the flagged subset, but the primary high-volume layer is classical ML."
+               data-incorrect-msg="Reconsider. The constraints are throughput (millions per day, real time) plus generalization to novel variants. Match each tool family's measured strengths from the comparison grid to those constraints."></div>
+        </div>
+
+        
+<div class="nyu-quiz" aria-labelledby="kc-4">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 4</span></div>
+          <p class="nyu-quiz__prompt" id="kc-4">An LLM enrichment states: "This domain was registered in 2019 and is a known software-update endpoint." Which validation step settles that claim?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-4">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Re-prompting asks the same generator to grade its own work. It may produce a different answer, but it is not an independent source, so it cannot settle the claim.">Re-prompt the LLM and ask it to double-check its answer.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Schema validation checks shape: required fields, types, allowed values. The claim has perfectly valid shape. Schema checks cannot tell true claims from invented ones.">Confirm the enriched record passes schema validation.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Query the domain's WHOIS/RDAP registration record and compare the registration date.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="A second LLM is still a generator, not a ground-truth source. Two fluent models can share the same blind spot, and neither has access to the actual registration record.">Ask a different LLM and see whether it agrees.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. The registration date is a factual claim with an authoritative, independent source: the domain's registration record. Ground truth means going to that source. Generated text, however confident, is never its own evidence."
+               data-incorrect-msg="Reconsider. The claim is factual and checkable. Which option consults an independent, authoritative source rather than another round of generated text or a shape check?"></div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 6: Evidence, Failure, and Choosing Tools.</strong> Next we trace a single alert end to end, put a number on the false-positive budget, and study a case where the pipeline failed.</p>
+        </aside>
+      
+      </section>
+
+
+</main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+</body>
+</html>

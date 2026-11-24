@@ -1,0 +1,856 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate the Shift - Four Levers of Attacker Economics</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --violet: #57068C;
+  --violet-dark: #3D0461;
+  --violet-50: #F5EDFA;
+  --violet-100: #E8D8F2;
+  --violet-200: #D2B3E5;
+  --danger: #C42A2A;
+  --danger-bg: #FBE8E8;
+  --success: #166B3A;
+  --success-bg: #E6F4EC;
+  --warning: #8A5D00;
+  --warning-bg: #FCF1DC;
+  --blue: #1560AC;
+  --blue-bg: #E6F0FA;
+  --ink: #1A1A1A;
+  --ink-soft: #3A3A3A;
+  --ink-mute: #6B6B6B;
+  --rule: #E2E2E2;
+  --surface: #FFFFFF;
+  --sunken: #F6F4F8;
+  --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+  --skill-color: #C42A2A;
+  --cost-color: #854D0E;
+  --time-color: #1560AC;
+  --scale-color: #166B3A;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { overflow: visible; height: auto; }
+body { font-family: var(--sans); color: var(--ink); background: var(--sunken); padding: 10px 12px; }
+.wrap { max-width: 920px; margin: 0 auto; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 14px; box-shadow: 0 10px 30px rgba(18,22,33,.06);
+  overflow: hidden;
+}
+
+/* Top bar */
+.topbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 14px 18px; border-bottom: 1px solid var(--rule);
+}
+.topbar-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--violet); color: #fff;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.topbar-icon svg { width: 16px; height: 16px; }
+.topbar h1 { font-size: 0.9812rem; font-weight: 700; letter-spacing: -.02em; flex: 1; }
+.counter {
+  font-family: var(--mono); font-size: 0.8875rem; font-weight: 600;
+  color: var(--ink-soft); letter-spacing: -.01em;
+}
+.progress { height: 3px; background: var(--rule); }
+.progress-fill { height: 100%; width: 0; background: var(--violet); transition: width .5s ease; }
+
+/* Task banner */
+.task-banner {
+  padding: 14px 18px; border-bottom: 1px solid var(--rule);
+  background: var(--violet-50);
+}
+.task-banner p { font-size: 0.9325rem; line-height: 1.55; color: var(--ink); margin: 0; }
+.task-banner strong { color: var(--ink); }
+.task-banner .task-q { font-size: 0.97rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+
+/* Scenario strip */
+.scenario-strip {
+  border-bottom: 1px solid var(--rule); background: var(--sunken); padding: 10px 18px;
+}
+.scenario-label {
+  font-size: 0.8575rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--ink-mute); margin-bottom: 6px;
+  display: flex; align-items: center; gap: 5px;
+}
+.scenario-label svg { width: 13px; height: 13px; flex-shrink: 0; }
+.scenario-list { display: flex; gap: 6px; flex-wrap: wrap; }
+.scenario-btn {
+  appearance: none; border: 1.5px solid var(--rule);
+  background: var(--surface); color: var(--ink-soft);
+  border-radius: 8px; padding: 6px 12px;
+  font: inherit; font-size: 0.895rem; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.scenario-btn:hover:not(:disabled) { border-color: var(--violet); color: var(--ink); }
+.scenario-btn.active { border-color: var(--violet); background: var(--violet-50); color: var(--ink); }
+.scenario-btn.done { border-color: var(--success); background: var(--success-bg); color: var(--ink-soft); }
+.scenario-btn:disabled { cursor: default; }
+.scenario-btn .s-icon { width: 14px; height: 14px; flex-shrink: 0; }
+.scenario-btn .s-check { display: none; }
+.scenario-btn.done .s-check { display: block; }
+.scenario-btn.done .s-icon:not(.s-check) { display: none; }
+
+/* Main body */
+.body-wrap { padding: 18px; }
+
+.scenario-desc {
+  background: var(--sunken); border: 1px solid var(--rule);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;
+}
+.scenario-desc-top { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.scenario-desc-text { flex: 1; min-width: 0; }
+.scenario-desc h2 {
+  font-size: 0.955rem; font-weight: 700; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.scenario-desc h2 .sd-badge {
+  font-family: var(--mono); font-size: 0.85rem; font-weight: 700;
+  background: var(--violet); color: #fff;
+  padding: 2px 7px; border-radius: 4px; letter-spacing: .04em;
+}
+.scenario-desc p { font-size: 0.925rem; line-height: 1.6; color: var(--ink-soft); margin: 0; }
+
+.scenario-reset-btn {
+  appearance: none; border: 1.5px solid var(--rule); background: var(--surface);
+  color: var(--ink-mute); border-radius: 7px; padding: 5px 12px;
+  font: inherit; font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; transition: all .2s; flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+}
+.scenario-reset-btn:hover { border-color: #991B1B; color: #fff; background: #991B1B; }
+.scenario-reset-btn svg { width: 12px; height: 12px; }
+
+/* Lever cards */
+.levers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+/* Two cards need ~800px between them before the five tick labels start to
+   squeeze; below that a single column is more readable than a tighter grid. */
+@media (max-width: 820px) { .levers-grid { grid-template-columns: 1fr; } }
+
+.lever-card {
+  border: 1.5px solid var(--rule); border-radius: 10px;
+  padding: 14px; background: var(--surface);
+  transition: border-color .3s, box-shadow .3s;
+  /* Cards stretch to equal height in the grid; the slider is pushed to the
+     bottom so the two side-by-side tracks line up regardless of how much
+     "Before AI" copy sits above them. */
+  display: flex; flex-direction: column;
+}
+.lever-card .lever-slider-wrap { margin-top: auto; }
+.lever-card:hover:not(.locked) { border-color: var(--violet-200); }
+.lever-card.locked { }  /* an .88 veil dropped the card copy under 4.5:1 */
+
+.lever-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.lever-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.lever-icon svg { width: 16px; height: 16px; }
+.lever-icon.skill { background: var(--skill-color); color: #fff; }
+.lever-icon.cost { background: var(--cost-color); color: #fff; }
+.lever-icon.time { background: var(--time-color); color: #fff; }
+.lever-icon.scale { background: var(--scale-color); color: #fff; }
+
+.lever-name { font-size: 0.9175rem; font-weight: 700; flex: 1; }
+.lever-value {
+  font-family: var(--mono); font-size: 0.8725rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 5px; min-width: 76px; text-align: center; transition: all .3s;
+  color: var(--ink);
+}
+
+.lever-question { font-size: 0.9025rem; font-weight: 700; color: var(--ink-soft); margin: 6px 0 4px; line-height: 1.4; }
+
+.lever-before {
+  font-size: 0.88rem; line-height: 1.45; color: #4A4A4A;
+  margin-bottom: 10px; padding: 6px 9px;
+  background: var(--sunken); border-radius: 6px; border-left: 3px solid var(--rule);
+}
+.lever-before strong { font-weight: 700; color: var(--ink-soft); font-size: 0.8575rem; text-transform: uppercase; letter-spacing: .04em; }
+
+.lever-slider-wrap { position: relative; padding: 0 2px; }
+.lever-slider {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 6px; border-radius: 3px;
+  background: var(--rule); outline: none; cursor: pointer;
+}
+.lever-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--violet); border: 3px solid var(--surface);
+  box-shadow: 0 1px 6px rgba(87,6,140,.3); cursor: grab; transition: transform .15s;
+}
+.lever-slider::-webkit-slider-thumb:active { transform: scale(1.15); cursor: grabbing; }
+.lever-slider::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--violet); border: 3px solid var(--surface);
+  box-shadow: 0 1px 6px rgba(87,6,140,.3); cursor: grab;
+}
+.lever-slider:disabled { cursor: default; opacity: .7; }
+.lever-slider:disabled::-webkit-slider-thumb { cursor: default; }
+
+.lever-tick-labels {
+  /* Equal columns with a real gutter. space-between sized each label to its own
+     text, so once the labels wrap to two lines the neighbours touched. */
+  display: flex; gap: 8px; align-items: start;
+  font-size: 0.8125rem; color: #4A4A4A; margin-top: 6px;
+  font-weight: 600; letter-spacing: -.01em; line-height: 1.35;
+  /* Two lines are always reserved: without this a card whose labels fit on one
+     line sits its slider lower than its neighbour's. */
+  min-height: 2.7em;
+}
+.lever-tick-labels span {
+  flex: 1 1 0; min-width: 0; text-align: center;
+  overflow-wrap: normal; hyphens: none;
+}
+.lever-tick-labels span:first-child { text-align: left; }
+.lever-tick-labels span:last-child { text-align: right; }
+
+.correct-bar { display: none; height: 4px; border-radius: 2px; margin-top: 6px; position: relative; background: var(--rule); }
+.correct-bar.show { display: block; }
+.correct-marker {
+  position: absolute; top: -5px; width: 14px; height: 14px;
+  border-radius: 50%; border: 2px solid var(--surface);
+  transform: translateX(-50%); box-shadow: 0 1px 4px rgba(0,0,0,.15); transition: left .5s ease;
+}
+.correct-marker.skill { background: var(--skill-color); }
+.correct-marker.cost { background: var(--cost-color); }
+.correct-marker.time { background: var(--time-color); }
+.correct-marker.scale { background: var(--scale-color); }
+
+.lever-feedback {
+  display: none; margin-top: 10px; padding: 8px 10px;
+  border-radius: 8px; font-size: 0.8875rem; line-height: 1.5; animation: feedFade .4s ease;
+}
+.lever-feedback.show { display: block; }
+.lever-feedback.correct { background: var(--success-bg); color: var(--ink-soft); border: 1px solid rgba(22,107,58,.2); }
+.lever-feedback.close { background: var(--warning-bg); color: var(--ink-soft); border: 1px solid rgba(138,93,0,.2); }
+.lever-feedback.wrong { background: var(--danger-bg); color: var(--ink-soft); border: 1px solid rgba(196,42,42,.2); }
+.lever-feedback .fb-label { font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: .04em; margin-bottom: 2px; color: var(--ink); }
+.lever-feedback.correct .fb-label { color: var(--ink); }
+.lever-feedback.close .fb-label { color: var(--ink); }
+.lever-feedback.wrong .fb-label { color: var(--ink); }
+@keyframes feedFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Submit / actions */
+.submit-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.submit-btn {
+  appearance: none; border: 2px solid var(--violet); background: var(--violet); color: #fff;
+  border-radius: 10px; padding: 10px 24px; font: inherit; font-size: 0.9325rem; font-weight: 700;
+  cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px;
+}
+.submit-btn:hover { background: var(--violet-dark); border-color: var(--violet-dark); }
+.submit-btn:disabled { opacity: .4; cursor: default; }
+.submit-btn svg { width: 16px; height: 16px; }
+
+.score-badge {
+  font-family: var(--mono); font-size: 0.9175rem; font-weight: 700;
+  padding: 6px 14px; border-radius: 8px; display: none; animation: feedFade .4s ease;
+  border: 1.5px solid transparent;
+}
+.score-badge.show { display: inline-flex; align-items: center; gap: 6px; }
+
+.next-btn {
+  appearance: none; border: 1.5px solid var(--violet);
+  background: var(--surface); color: var(--ink);
+  border-radius: 8px; padding: 8px 18px;
+  font: inherit; font-size: 0.91rem; font-weight: 700;
+  cursor: pointer; transition: all .2s; display: none; align-items: center; gap: 5px;
+}
+.next-btn.show { display: inline-flex; }
+.next-btn:hover { background: var(--violet); color: #fff; }
+.next-btn svg { width: 14px; height: 14px; }
+
+/* Insight bar */
+.insight { padding: 14px 18px; font-size: 0.91rem; color: var(--ink-soft); border-top: 1px solid var(--rule); line-height: 1.55; }
+.insight b { color: var(--ink); font-weight: 700; }
+
+/* Results panel */
+.results-panel { display: none; padding: 18px; animation: feedFade .5s ease; }
+.results-panel.show { display: block; }
+.results-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.results-title svg { width: 22px; height: 22px; color: var(--ink); }
+.results-summary { font-size: 0.9325rem; line-height: 1.6; color: var(--ink-soft); margin-bottom: 16px; }
+.results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.result-card { background: var(--sunken); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; text-align: center; }
+.result-card .rc-num { font-family: var(--mono); font-size: 1.4rem; font-weight: 800; color: var(--ink); }
+.result-card .rc-label { font-size: 0.8725rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-mute); margin-top: 2px; }
+.result-card .rc-sub { font-size: 0.88rem; color: var(--ink-mute); margin-top: 4px; }
+.results-takeaway { background: var(--violet-50); border: 1px solid var(--violet-100); border-radius: 10px; padding: 14px 16px; }
+.results-takeaway p { font-size: 0.925rem; line-height: 1.6; color: var(--ink-soft); margin: 0; }
+.results-takeaway strong { color: var(--ink); }
+.restart-btn {
+  appearance: none; border: 1.5px solid var(--violet); background: var(--surface); color: var(--ink);
+  border-radius: 8px; padding: 8px 18px; margin-top: 12px; font: inherit; font-size: 0.91rem; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+}
+.restart-btn:hover { background: var(--violet); color: #fff; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--ink-mute); }
+.empty-state svg { width: 48px; height: 48px; color: var(--ink-mute); margin-bottom: 12px; }
+.empty-state p { font-size: 0.9325rem; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+
+  <div class="topbar">
+    <div class="topbar-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+    </div>
+    <h1>Rate the Shift</h1>
+    <span class="counter" id="counter">0 / 5</span>
+  </div>
+  <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="task-banner">
+    <div class="task-q">Your task: How much did AI change the attacker's economics?</div>
+    <p>Each scenario describes an attack that existed <strong>before AI</strong>. Read the baseline, then rate how much <strong>the introduction of AI</strong> shifted each lever compared to how this attack worked without it. You are not rating the attack's difficulty. You are rating <strong>how much AI changed it</strong>.</p>
+  </div>
+
+  <div class="scenario-strip">
+    <div class="scenario-label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Scenarios
+    </div>
+    <div class="scenario-list" id="scenarioList"></div>
+  </div>
+
+  <div class="body-wrap" id="mainBody">
+    <div class="empty-state" id="emptyState">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/><circle cx="12" cy="6" r="2"/></svg>
+      <p>Select a scenario above to begin</p>
+    </div>
+
+    <div id="activeScenario" style="display:none">
+      <div class="scenario-desc" id="scenarioDesc">
+        <div class="scenario-desc-top">
+          <div class="scenario-desc-text">
+            <h2><span class="sd-badge" id="sdBadge">SCENARIO 1</span> <span id="sdTitle"></span></h2>
+            <p id="sdText"></p>
+          </div>
+          <button class="scenario-reset-btn" id="resetThisBtn" onclick="resetThisScenario()" title="Reset this scenario">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="levers-grid" id="leversGrid"></div>
+
+      <div class="submit-row" id="submitRow">
+        <button class="submit-btn" id="submitBtn" onclick="submitAnalysis()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Check My Analysis
+        </button>
+        <span class="score-badge" id="scoreBadge"></span>
+        <button class="next-btn" id="nextBtn" onclick="nextScenario()">
+          Next Scenario
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight" id="insightBar">
+    <b>Read the "Before AI" baseline</b> on each lever card. Then drag the slider to rate how much <b>the introduction of AI</b> shifted that lever for this specific scenario.</div>
+
+  <div class="results-panel" id="resultsPanel">
+    <div class="results-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Analysis Complete
+    </div>
+    <div class="results-summary" id="resultsSummary"></div>
+    <div class="results-grid" id="resultsGrid"></div>
+    <div class="results-takeaway">
+      <p><strong>Key takeaway:</strong> AI does not uniformly amplify all attacks. Different scenarios shift different levers by different amounts. A defender who can name which lever moved most, and which barely budged, can make concrete, defensible budget arguments instead of defaulting to "AI makes everything worse."</p>
+    </div>
+    <button class="restart-btn" onclick="restart()">Start Over</button>
+  </div>
+
+</div>
+</div>
+
+<script>
+var LEVER_KEYS = ['skill','cost','time','scale'];
+
+var LEVER_META = {
+  skill: {
+    name: 'Skill',
+    question: 'How much did AI reduce the expertise required?',
+    iconClass: 'skill',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    labels: ['No reduction','Slight reduction','Moderate reduction','Major reduction','Nearly eliminated'],
+    tickLabels: ['No reduction','Slight reduction','Moderate reduction','Major reduction','Nearly eliminated'],
+    colorVar: 'var(--skill-color)', colorBg: 'rgba(196,42,42,.08)'
+  },
+  cost: {
+    name: 'Cost',
+    question: 'How much did AI reduce the money and infrastructure needed?',
+    iconClass: 'cost',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+    labels: ['No reduction','Slight reduction','Moderate reduction','Major reduction','Nearly free'],
+    tickLabels: ['No reduction','Slight reduction','Moderate reduction','Major reduction','Nearly free'],
+    colorVar: 'var(--cost-color)', colorBg: 'rgba(184,134,11,.08)'
+  },
+  time: {
+    name: 'Time',
+    question: 'How much did AI compress the time from start to result?',
+    iconClass: 'time',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    labels: ['No compression','Slight compression','Moderate compression','Major compression','Near-instant'],
+    tickLabels: ['No comp.','Slight comp.','Moderate comp.','Major comp.','Near-instant'],
+    colorVar: 'var(--time-color)', colorBg: 'rgba(26,111,196,.08)'
+  },
+  scale: {
+    name: 'Scale',
+    question: 'How much did AI increase the number of targets one operator can reach?',
+    iconClass: 'scale',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    labels: ['No increase','Slight increase','Moderate increase','Major increase','Massively multiplied'],
+    tickLabels: ['No increase','Slight increase','Moderate increase','Major increase','Massively multiplied'],
+    colorVar: 'var(--scale-color)', colorBg: 'rgba(22,107,58,.08)'
+  }
+};
+
+var SCENARIOS = [
+  {
+    id: 1,
+    title: 'AI-Generated Spear-Phishing Campaign',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+    desc: 'A threat actor uses a large language model to research executives on LinkedIn, then generates 200 personalized spear-phishing emails, each referencing the recipient\'s recent conference talk, project name, or team member. The attacker does not speak fluent English natively.',
+    before: {
+      skill: 'Required fluent English, strong writing ability, and hours of manual LinkedIn/web research per target to craft convincing personalized lures.',
+      cost: 'Needed a paid native-English collaborator or translator, plus manual OSINT effort for each email, or expensive outsourcing.',
+      time: 'Researching and hand-writing 200 individually tailored emails took weeks of full-time work for even a skilled operator.',
+      scale: 'One person could produce perhaps 5-10 quality tailored lures per day. Reaching 200 targets with personalized content required a team.'
+    },
+    answers: { skill: 4, cost: 2, time: 3, scale: 4 },
+    feedback: {
+      skill: 'The attacker no longer needs fluent English or manual OSINT research skills. The LLM handles language, tone, and personalization. This is a near-total elimination of the expertise barrier.',
+      cost: 'A ChatGPT subscription replaces a paid collaborator. Moderate savings, but delivery infrastructure (domains, mail servers) still costs real money.',
+      time: 'Research-and-draft for 200 tailored lures drops from weeks to hours. Major compression, though infrastructure setup time is unchanged.',
+      scale: 'The core shift: one operator producing 200 unique, personalized lures was previously a team effort. AI makes this a solo operation. The reach per operator is massively multiplied.'
+    },
+    mostMoved: 'scale'
+  },
+  {
+    id: 2,
+    title: '$11 Voice-Clone Vishing Call',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.88.36 1.75.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.06.34 1.93.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    desc: 'Using an $11/month voice-cloning service and a 30-second audio sample from an earnings call, an attacker generates a realistic voice clone of a company\'s CFO. They call a finance team member requesting an urgent wire transfer, spoofing the CFO\'s caller ID.',
+    before: {
+      skill: 'Convincingly impersonating a specific person\'s voice required a trained voice actor, impressionist, or innate talent. This was a rare and difficult skill.',
+      cost: 'Hiring a professional voice actor for a targeted scam was expensive and risky (potential witness). Building custom voice synthesis was a research-lab expense.',
+      time: 'Finding and coaching a voice double took days to weeks. Real-time impersonation required rehearsal and still often failed.',
+      scale: 'Each call required a live human impersonator on the line. Scaling meant hiring more actors, inherently a one-at-a-time operation.'
+    },
+    answers: { skill: 3, cost: 3, time: 2, scale: 1 },
+    feedback: {
+      skill: 'Producing a convincing voice impersonation previously required a trained actor or impressionist. Now it requires uploading an audio sample and paying $11/month. A major skill reduction.',
+      cost: '$11/month replaces hiring a voice actor or having innate rare ability. Major cost reduction for the impersonation step, though the social-engineering craft is still needed.',
+      time: 'Voice generation is fast, but the rest of the operation (OSINT, call setup, money movement) takes the same time. Slight to moderate overall compression.',
+      scale: 'The attack is inherently one call at a time with a human operator on the line. AI improves the quality of each call, not the quantity. Scale barely moves.'
+    },
+    mostMoved: 'skill'
+  },
+  {
+    id: 3,
+    title: 'LLM-Assisted Exploit Code Generation',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+    desc: 'A moderately skilled attacker reads a CVE advisory for a newly disclosed vulnerability and asks an LLM to generate working proof-of-concept exploit code. The attacker understands exploitation concepts but struggles to write reliable exploit code from scratch.',
+    before: {
+      skill: 'Writing a working exploit from an advisory required deep programming skill and vulnerability-specific expertise. Understanding the bug was not enough; you had to code the exploit reliably.',
+      cost: 'Exploit development tools were mostly free. The bottleneck was human expertise, not infrastructure cost.',
+      time: 'Going from CVE advisory to working proof-of-concept typically took days of coding, debugging, and testing, even for skilled developers.',
+      scale: 'One exploit targets one vulnerability on one system type. Broadening reach required finding more bugs, not repeating the same exploit.'
+    },
+    answers: { skill: 3, cost: 1, time: 3, scale: 0 },
+    feedback: {
+      skill: 'The attacker still needs to understand exploitation concepts and test the output, but the LLM bridges the gap between "understands the bug" and "can write exploit code." Major reduction in the coding expertise required.',
+      cost: 'The tools involved (an LLM, a debugger) are cheap or free. But the baseline cost of exploit development was already low for someone with the knowledge. Barely any change.',
+      time: 'Going from advisory to working PoC drops from days of coding to hours of prompting and debugging. Major compression for the code-writing step.',
+      scale: 'One exploit still targets one vulnerability on one type of system. AI doesn\'t change the target scope. Scale stays the same.'
+    },
+    mostMoved: 'skill'
+  },
+  {
+    id: 4,
+    title: 'AI-Powered Polymorphic Malware',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2l1.88 1.88M14.12 3.88L16 2M9 7.13v-1a3 3 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/></svg>',
+    desc: 'A malware developer uses an LLM to automatically generate variant after variant of a payload, each with different variable names, control flow, string encodings, and junk code, to evade signature-based detection. The functional behavior of each variant is identical.',
+    before: {
+      skill: 'Polymorphic techniques already existed (packers, metamorphic engines). Creating diverse variants required malware engineering skill, but established tools handled much of it.',
+      cost: 'Existing packer/obfuscation tools were cheap or free in underground markets. Infrastructure costs were minimal.',
+      time: 'Manually writing semantically diverse variants (not just byte-level obfuscation) took days of work. Automated packers were faster but produced less diversity.',
+      scale: 'Each variant still needed a delivery mechanism (phishing, exploit kit). More variants improved evasion breadth but didn\'t directly increase target count.'
+    },
+    answers: { skill: 2, cost: 1, time: 4, scale: 2 },
+    feedback: {
+      skill: 'The attacker still needs to understand evasion concepts and validate output. The LLM makes variants more semantically diverse but doesn\'t eliminate the need for malware engineering knowledge. Moderate reduction.',
+      cost: 'LLM API costs are trivial compared to existing malware development infrastructure. Barely any change to the cost structure.',
+      time: 'This is where AI has the most impact: producing 100 semantically unique variants that would have taken days of manual obfuscation now takes minutes. Near-instant variant generation.',
+      scale: 'More variants means better evasion across different AV engines, but the delivery mechanism still determines actual target reach. Moderate indirect increase.'
+    },
+    mostMoved: 'time'
+  },
+  {
+    id: 5,
+    title: 'AI-Enhanced Reconnaissance and OSINT',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    desc: 'Before launching a targeted intrusion, an attacker uses AI tools to summarize a target organization\'s public filings, scrape and cross-reference employee social media profiles, map the external attack surface (subdomains, exposed services), and identify likely technology stacks, all in an afternoon.',
+    before: {
+      skill: 'OSINT tools existed (Shodan, theHarvester, Google dorks) but synthesizing findings into actionable intelligence required an experienced analyst who knew what to look for.',
+      cost: 'Most OSINT data sources were free or cheap. The real cost was analyst time: days of a skilled person\'s labor.',
+      time: 'Thorough recon on a single target (filings, social media, attack surface, tech stack) took days of manual research, cross-referencing, and report writing.',
+      scale: 'Reconnaissance is inherently per-target: each organization requires its own research. Broadening to more targets meant proportionally more analyst time.'
+    },
+    answers: { skill: 2, cost: 2, time: 4, scale: 1 },
+    feedback: {
+      skill: 'AI makes the synthesis and summarization steps easier, but the attacker still needs to know what questions to ask and how to interpret results. Moderate reduction in required expertise.',
+      cost: 'Most OSINT sources remain free. AI tools add a subscription cost that roughly offsets savings from not needing as much analyst time. Moderate net change.',
+      time: 'This is the biggest shift: what previously required days of manual research, cross-referencing, and report writing can now be compressed into a single afternoon. Near-instant synthesis.',
+      scale: 'Reconnaissance is still inherently per-target. You research one organization at a time. AI makes each pass more thorough, not broader. Barely any change.'
+    },
+    mostMoved: 'time'
+  }
+];
+
+var currentScenario = -1;
+var savedStates = {};
+var completed = [];
+
+function buildLeverCards() {
+  var grid = document.getElementById('leversGrid');
+  grid.innerHTML = '';
+  LEVER_KEYS.forEach(function(key) {
+    var m = LEVER_META[key];
+    var card = document.createElement('div');
+    card.className = 'lever-card';
+    card.id = 'leverCard-' + key;
+    card.innerHTML =
+      '<div class="lever-header">' +
+        '<div class="lever-icon ' + m.iconClass + '">' + m.icon + '</div>' +
+        '<span class="lever-name">' + m.name + '</span>' +
+        '<span class="lever-value" id="leverVal-' + key + '" style="background:' + m.colorBg + ';border-left:3px solid ' + m.colorVar + '">' + m.labels[0] + '</span>' +
+      '</div>' +
+      '<div class="lever-question" id="leverQ-' + key + '">' + m.question + '</div>' +
+      '<div class="lever-before" id="leverBefore-' + key + '"><strong>Before AI:</strong> </div>' +
+      '<div class="lever-slider-wrap">' +
+        '<input type="range" class="lever-slider" id="lever-' + key + '" min="0" max="4" value="0" step="1">' +
+        '<div class="lever-tick-labels">' +
+          m.tickLabels.map(function(l) { return '<span>' + l + '</span>'; }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="correct-bar" id="correctBar-' + key + '"><div class="correct-marker ' + m.iconClass + '" id="correctMark-' + key + '"></div></div>' +
+      '<div class="lever-feedback" id="feedback-' + key + '"></div>';
+    grid.appendChild(card);
+  });
+  LEVER_KEYS.forEach(function(key) {
+    document.getElementById('lever-' + key).addEventListener('input', function() {
+      updateLeverDisplay(key);
+    });
+  });
+}
+
+function init() {
+  var list = document.getElementById('scenarioList');
+  list.innerHTML = '';
+  SCENARIOS.forEach(function(s, i) {
+    var btn = document.createElement('button');
+    btn.className = 'scenario-btn';
+    btn.id = 'scBtn-' + i;
+    btn.innerHTML =
+      '<span class="s-icon">' + s.icon + '</span>' +
+      '<span class="s-icon s-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>' +
+      s.title;
+    btn.onclick = function() { selectScenario(i); };
+    list.appendChild(btn);
+  });
+  buildLeverCards();
+}
+
+function selectScenario(idx) {
+  currentScenario = idx;
+  var s = SCENARIOS[idx];
+  document.querySelectorAll('.scenario-btn').forEach(function(btn, i) {
+    btn.classList.remove('active');
+    if (i === idx) btn.classList.add('active');
+  });
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('activeScenario').style.display = 'block';
+  document.getElementById('resultsPanel').classList.remove('show');
+  document.getElementById('mainBody').style.display = '';
+  document.getElementById('sdBadge').textContent = 'SCENARIO ' + (idx + 1);
+  document.getElementById('sdTitle').textContent = s.title;
+  document.getElementById('sdText').textContent = s.desc;
+  LEVER_KEYS.forEach(function(key) {
+    document.getElementById('leverBefore-' + key).innerHTML =
+      '<strong>Before AI:</strong> ' + s.before[key];
+  });
+  if (savedStates[idx]) {
+    restoreState(idx);
+  } else {
+    resetLevers();
+  }
+  if (savedStates[idx] && savedStates[idx].submitted) {
+    document.getElementById('insightBar').innerHTML =
+      '<b>Most-shifted lever: <span style="color:var(--' + s.mostMoved + '-color);text-transform:uppercase">' + s.mostMoved + '</span>.</b> Review the feedback above, or click <b>Reset</b> to try again.';
+  } else {
+    document.getElementById('insightBar').innerHTML =
+      '<b>Read the "Before AI" baseline</b> on each lever card. Then drag the slider to rate how much <b>introducing AI</b> shifted that lever for this specific attack scenario.';
+  }
+  sendHeight();
+}
+
+function resetLevers() {
+  LEVER_KEYS.forEach(function(key) {
+    var slider = document.getElementById('lever-' + key);
+    slider.value = 0;
+    slider.disabled = false;
+    updateLeverDisplay(key);
+    document.getElementById('leverCard-' + key).classList.remove('locked');
+    document.getElementById('feedback-' + key).className = 'lever-feedback';
+    document.getElementById('feedback-' + key).innerHTML = '';
+    document.getElementById('correctBar-' + key).classList.remove('show');
+  });
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('submitBtn').style.display = '';
+  document.getElementById('scoreBadge').className = 'score-badge';
+  document.getElementById('scoreBadge').innerHTML = '';
+  document.getElementById('nextBtn').className = 'next-btn';
+}
+
+function restoreState(idx) {
+  var state = savedStates[idx];
+  var s = SCENARIOS[idx];
+  LEVER_KEYS.forEach(function(key) {
+    var slider = document.getElementById('lever-' + key);
+    slider.value = state.sliderValues[key];
+    updateLeverDisplay(key);
+    if (state.submitted) {
+      slider.disabled = true;
+      document.getElementById('leverCard-' + key).classList.add('locked');
+      var bar = document.getElementById('correctBar-' + key);
+      bar.classList.add('show');
+      document.getElementById('correctMark-' + key).style.left = (s.answers[key] / 4 * 100) + '%';
+      var userVal = state.sliderValues[key];
+      var diff = Math.abs(userVal - s.answers[key]);
+      var fb = document.getElementById('feedback-' + key);
+      var cls, lbl;
+      if (diff === 0) { cls = 'correct'; lbl = 'Exact match'; }
+      else if (diff === 1) { cls = 'close'; lbl = 'Close (off by 1)'; }
+      else { cls = 'wrong'; lbl = 'Off by ' + diff; }
+      fb.className = 'lever-feedback show ' + cls;
+      fb.innerHTML = '<div class="fb-label">' + lbl + '</div>' +
+        '<strong>Answer: ' + LEVER_META[key].labels[s.answers[key]] + '.</strong> ' + s.feedback[key];
+    } else {
+      slider.disabled = false;
+      document.getElementById('leverCard-' + key).classList.remove('locked');
+      document.getElementById('feedback-' + key).className = 'lever-feedback';
+      document.getElementById('feedback-' + key).innerHTML = '';
+      document.getElementById('correctBar-' + key).classList.remove('show');
+    }
+  });
+  if (state.submitted) {
+    document.getElementById('submitBtn').style.display = 'none';
+    var badge = document.getElementById('scoreBadge');
+    badge.classList.add('show');
+    var score = state.score;
+    if (score >= 85) {
+      badge.style.background = 'var(--success-bg)'; badge.style.color = 'var(--ink-soft)'; badge.style.borderColor = 'var(--success)';
+      badge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ' + score + '%';
+    } else if (score >= 60) {
+      badge.style.background = 'var(--warning-bg)'; badge.style.color = 'var(--ink-soft)'; badge.style.borderColor = 'var(--warning)';
+      badge.innerHTML = score + '%';
+    } else {
+      badge.style.background = 'var(--danger-bg)'; badge.style.color = 'var(--ink-soft)'; badge.style.borderColor = 'var(--danger)';
+      badge.innerHTML = score + '%';
+    }
+    var hasMore = false;
+    for (var i = 0; i < SCENARIOS.length; i++) {
+      if (!completed.includes(i)) { hasMore = true; break; }
+    }
+    document.getElementById('nextBtn').className = hasMore ? 'next-btn show' : 'next-btn';
+  } else {
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').style.display = '';
+    document.getElementById('scoreBadge').className = 'score-badge';
+    document.getElementById('nextBtn').className = 'next-btn';
+  }
+}
+
+function updateLeverDisplay(key) {
+  var slider = document.getElementById('lever-' + key);
+  var val = parseInt(slider.value);
+  var m = LEVER_META[key];
+  document.getElementById('leverVal-' + key).textContent = m.labels[val];
+  var pct = (val / 4) * 100;
+  slider.style.background = 'linear-gradient(90deg, ' + m.colorVar + ' 0%, ' + m.colorVar + ' ' + pct + '%, var(--rule) ' + pct + '%, var(--rule) 100%)';
+}
+
+function submitAnalysis() {
+  if (currentScenario < 0) return;
+  var idx = currentScenario;
+  var s = SCENARIOS[idx];
+  var totalDiff = 0;
+  var sliderValues = {};
+  LEVER_KEYS.forEach(function(key) {
+    var slider = document.getElementById('lever-' + key);
+    var userVal = parseInt(slider.value);
+    sliderValues[key] = userVal;
+    var correctVal = s.answers[key];
+    var diff = Math.abs(userVal - correctVal);
+    totalDiff += diff;
+    slider.disabled = true;
+    document.getElementById('leverCard-' + key).classList.add('locked');
+    var bar = document.getElementById('correctBar-' + key);
+    bar.classList.add('show');
+    document.getElementById('correctMark-' + key).style.left = (correctVal / 4 * 100) + '%';
+    var fb = document.getElementById('feedback-' + key);
+    var cls, lbl;
+    if (diff === 0) { cls = 'correct'; lbl = 'Exact match'; }
+    else if (diff === 1) { cls = 'close'; lbl = 'Close (off by 1)'; }
+    else { cls = 'wrong'; lbl = 'Off by ' + diff; }
+    fb.className = 'lever-feedback show ' + cls;
+    fb.innerHTML = '<div class="fb-label">' + lbl + '</div>' +
+      '<strong>Answer: ' + LEVER_META[key].labels[correctVal] + '.</strong> ' + s.feedback[key];
+  });
+  var score = Math.round((1 - totalDiff / 16) * 100);
+  savedStates[idx] = { sliderValues: sliderValues, submitted: true, score: score };
+  if (!completed.includes(idx)) { completed.push(idx); }
+  document.getElementById('scBtn-' + idx).classList.add('done');
+  document.getElementById('counter').textContent = completed.length + ' / ' + SCENARIOS.length;
+  document.getElementById('progressFill').style.width = (completed.length / SCENARIOS.length * 100) + '%';
+  var badge = document.getElementById('scoreBadge');
+  badge.classList.add('show');
+  if (score >= 85) {
+    badge.style.background = 'var(--success-bg)'; badge.style.color = 'var(--ink-soft)'; badge.style.borderColor = 'var(--success)';
+    badge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ' + score + '%';
+  } else if (score >= 60) {
+    badge.style.background = 'var(--warning-bg)'; badge.style.color = 'var(--ink-soft)'; badge.style.borderColor = 'var(--warning)';
+    badge.innerHTML = score + '%';
+  } else {
+    badge.style.background = 'var(--danger-bg)'; badge.style.color = 'var(--ink-soft)'; badge.style.borderColor = 'var(--danger)';
+    badge.innerHTML = score + '%';
+  }
+  document.getElementById('submitBtn').style.display = 'none';
+  var hasMore = false;
+  for (var i = 0; i < SCENARIOS.length; i++) {
+    if (!completed.includes(i)) { hasMore = true; break; }
+  }
+  document.getElementById('nextBtn').className = hasMore ? 'next-btn show' : 'next-btn';
+  document.getElementById('insightBar').innerHTML =
+    '<b>Most-shifted lever: <span style="color:var(--' + s.mostMoved + '-color);text-transform:uppercase">' + s.mostMoved + '</span>.</b> Review the feedback above, or click <b>Reset</b> to try again.';
+  if (completed.length >= SCENARIOS.length) {
+    document.getElementById('nextBtn').className = 'next-btn';
+    setTimeout(showResults, 600);
+  }
+  sendHeight();
+}
+
+function resetThisScenario() {
+  if (currentScenario < 0) return;
+  var idx = currentScenario;
+  delete savedStates[idx];
+  var ci = completed.indexOf(idx);
+  if (ci !== -1) completed.splice(ci, 1);
+  document.getElementById('scBtn-' + idx).classList.remove('done');
+  document.getElementById('counter').textContent = completed.length + ' / ' + SCENARIOS.length;
+  document.getElementById('progressFill').style.width = (completed.length / SCENARIOS.length * 100) + '%';
+  resetLevers();
+  document.getElementById('insightBar').innerHTML =
+    '<b>Read the "Before AI" baseline</b> on each lever card. Then drag the slider to rate how much <b>introducing AI</b> shifted that lever for this specific attack scenario.';
+  sendHeight();
+}
+
+function nextScenario() {
+  for (var i = 0; i < SCENARIOS.length; i++) {
+    if (!completed.includes(i)) { selectScenario(i); return; }
+  }
+}
+
+function showResults() {
+  document.getElementById('mainBody').style.display = 'none';
+  var totalScore = 0;
+  completed.forEach(function(idx) {
+    if (savedStates[idx]) totalScore += savedStates[idx].score;
+  });
+  var avg = Math.round(totalScore / completed.length);
+  var panel = document.getElementById('resultsPanel');
+  panel.classList.add('show');
+  var msg;
+  if (avg >= 85) msg = 'Outstanding analytical precision. You accurately identified how AI shifts different levers for different attack types. That is the foundation of defensible resource allocation.';
+  else if (avg >= 65) msg = 'Solid analysis with room to sharpen. You generally identified the right levers but could be more precise about magnitude. Click a scenario to review its feedback.';
+  else msg = 'Your analysis needs calibration. The most common mistake is assuming AI shifts all levers equally. Review the feedback and try again. The distinctions matter for defense.';
+  document.getElementById('resultsSummary').textContent = msg;
+  var grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+  var overall = document.createElement('div');
+  overall.className = 'result-card';
+  overall.innerHTML = '<div class="rc-num">' + avg + '%</div><div class="rc-label">Overall Accuracy</div><div class="rc-sub">Average across all scenarios</div>';
+  grid.appendChild(overall);
+  for (var i = 0; i < SCENARIOS.length; i++) {
+    var sc = savedStates[i] ? savedStates[i].score : 0;
+    var card = document.createElement('div');
+    card.className = 'result-card';
+    card.innerHTML = '<div class="rc-num">' + sc + '%</div><div class="rc-label">Scenario ' + (i + 1) + '</div><div class="rc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + SCENARIOS[i].title + '</div>';
+    grid.appendChild(card);
+  }
+  sendHeight();
+}
+
+function restart() {
+  currentScenario = -1;
+  savedStates = {};
+  completed = [];
+  document.getElementById('counter').textContent = '0 / ' + SCENARIOS.length;
+  document.getElementById('progressFill').style.width = '0%';
+  document.querySelectorAll('.scenario-btn').forEach(function(btn) {
+    btn.classList.remove('active', 'done');
+  });
+  document.getElementById('resultsPanel').classList.remove('show');
+  document.getElementById('mainBody').style.display = '';
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('activeScenario').style.display = 'none';
+  document.getElementById('insightBar').innerHTML =
+    '<b>Read the "Before AI" baseline</b> on each lever card. Then drag the slider to rate how much <b>introducing AI</b> shifted that lever for this specific attack scenario.';
+  sendHeight();
+}
+
+function sendHeight() {
+  try {
+    var el = document.querySelector('.wrap');
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    var cs = getComputedStyle(document.body);
+    var pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    window.parent.postMessage({ type: 'iframeHeight', height: Math.ceil(r.height + pad), src: location.href }, '*');
+  } catch(e) {}
+}
+
+(function() {
+  var root = document.documentElement, body = document.body;
+  root.style.height = 'auto'; body.style.height = 'auto';
+  root.style.overflow = 'visible'; body.style.overflow = 'visible';
+  if (window.ResizeObserver) {
+    new ResizeObserver(sendHeight).observe(document.querySelector('.wrap') || body);
+  } else { setInterval(sendHeight, 500); }
+  window.addEventListener('load', function() { setTimeout(sendHeight, 200); });
+  setTimeout(sendHeight, 50);
+})();
+
+init();
+</script>
+</body>
+</html>

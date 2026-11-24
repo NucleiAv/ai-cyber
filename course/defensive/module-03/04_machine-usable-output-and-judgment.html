@@ -1,0 +1,413 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 3 · Section 4 · Machine-Usable Output &amp; Production Judgment · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 3 · Section 4 of 6</div>
+<h1 class="nyu-hero__title">Machine-Usable Output &amp; Production Judgment</h1>
+<p class="nyu-hero__subtitle">How to get output a security pipeline can consume automatically, how to guarantee that output is structurally valid, and how to decide whether a prompt is ready for production.</p>
+<div class="nyu-hero__meta" aria-label="Section overview"><span aria-label="Estimated time"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg> ~32 min read </span> <span aria-label="Number of parts"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> 4 parts </span> <span aria-label="Knowledge checks"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line><circle cx="12" cy="12" r="10"></circle></svg> 1 knowledge check </span></div>
+</header><nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+<li><a href="#sec-1"><span class="nyu-toc__num">1</span> Why Machine-Usable Output Matters</a></li>
+<li><a href="#sec-2"><span class="nyu-toc__num">2</span> Two Ways to Get Structured Output</a></li>
+<li><a href="#sec-3"><span class="nyu-toc__num">3</span> Valid Does Not Mean Correct</a></li>
+<li><a href="#sec-4"><span class="nyu-toc__num">4</span> Is It Ready for Production?</a></li>
+</ol>
+</nav><main id="main" tabindex="-1">
+<section class="nyu-objectives" aria-labelledby="lo-title">
+<h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+<p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+<ul class="nyu-objectives__list">
+<li><span><strong>Design</strong> prompts that produce machine-parseable structured output (JSON, and a simplified STIX 2.1 object) for downstream automation.</span></li>
+<li><span><strong>Differentiate</strong> requested output from constrained decoding, and explain why schema-valid is not the same as correct.</span></li>
+<li><span><strong>Evaluate</strong> production-readiness using the cost asymmetry of false positives and false negatives.</span></li>
+</ul>
+</section>
+<!-- ===== 1 ===== -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">Why Machine-Usable Output Matters</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>So far your prompt's output has been for a human to read. Real security automation needs output a machine can read: a correlation rule in a <button type="button" class="nyu-define" data-term="siem">SIEM</button>, a ticketing system, or a threat-intelligence platform. That means <button type="button" class="nyu-define" data-term="structured-output">structured output</button>, typically <button type="button" class="nyu-define" data-term="json">JSON</button>, with defined fields.</p>
+<p>This section covers the difference between <em>asking</em> for JSON (which often breaks) and <em>constraining</em> the model so the output is guaranteed to be valid. It then uses a real standard, <button type="button" class="nyu-define" data-term="stix">STIX 2.1</button>, as a realistic target for your output, and ends with the most important caution: structurally valid output is not the same as factually correct output.</p>
+</section>
+<!-- ===== 2 ===== -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">Two Ways to Get Structured Output</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>There are two approaches to getting JSON from a model. They look similar from the outside, but the guarantees they provide are fundamentally different.</p>
+<h3 class="nyu-subsection-title">Approach 1: Requested output (ask for it in the prompt)</h3>
+<p>In Section 1 you built a structured prompt with a role, a task, and an output contract that said "respond with one word only." That output contract was the simplest version of requested output: you told the model what shape of answer to produce. Now you are doing the same thing, but the shape is more complex. Instead of a single word, you are asking for a JSON object with named fields. The principle is identical. You describe the structure you want inside the prompt text, and the model tries to follow it.</p>
+<p>Here is the Section 1 triage prompt evolved into a JSON request. Notice it still has the same pieces (system role, task, delimiter), but the output contract now specifies fields and types instead of a single word:</p>
+<pre class="nyu-code" aria-label="Requesting JSON in a prompt"><code><span class="c-comment"># System instruction</span>
+You are a SOC triage assistant. Classify the SSH log line provided.
+Respond with a JSON object containing exactly these fields:
+  - "label": one of "benign", "suspicious", "malicious"
+  - "source_ip": the IP address from the log line
+  - "confidence": one of "low", "medium", "high"
+Output only the JSON. No explanation, no markdown fences.
+
+<span class="c-comment"># User message</span>
+&lt;&lt;&lt;LOG
+Mar 14 02:17:09 web01 sshd[20447]: Failed password for invalid user admin from 203.0.113.45 port 4022 ssh2
+LOG&gt;&gt;&gt;</code></pre>
+<p>This often works. But "often" is not "always." The model may add a friendly sentence before the JSON, wrap it in code fences, omit a field, or trail off. Any of these breaks an automated parser. You have described what you want, but you have not enforced it.</p>
+<p><strong>What you might actually get back:</strong></p>
+<pre class="nyu-code" aria-label="Requested output with surrounding prose"><code>Sure! Here's the analysis you asked for:
+{ "label": "suspicious", "source_ip": "203.0.113.45" }
+Let me know if you'd like more detail!</code></pre>
+<p>That has prose before and after the JSON, and the <code>confidence</code> field is missing entirely. A strict parser fails on it.</p>
+<h3 class="nyu-subsection-title">Approach 2: Constrained output (enforce it at the runtime level)</h3>
+<p><button type="button" class="nyu-define" data-term="constrained-decoding">Constrained decoding</button> works differently. Instead of describing the schema in the prompt and hoping the model follows it, you pass the schema to the runtime as a separate parameter. The runtime then enforces the structure during token generation, before the model can deviate. This is the genuinely new idea in this section: not just asking for structure (which you have been doing since Section 1), but making it impossible for the model to produce anything else.</p>
+<p>Compare the API call below to the one you saw in Section 1. The <code>messages</code> list still uses the same role structure (system, user). What is new is the <code>format</code> parameter: a JSON schema that lives outside the prompt and controls token generation directly.</p>
+<pre class="nyu-code" aria-label="Constrained output with Ollama"><code><span class="c-comment"># Python: constrained output via Ollama</span>
+import json
+
+<span class="c-comment"># Define the schema separately from the prompt</span>
+triage_schema = {
+  "type": "object",
+  "properties": {
+    "label":      {"type": "string", "enum": ["benign", "suspicious", "malicious"]},
+    "source_ip":  {"type": "string"},
+    "confidence": {"type": "string", "enum": ["low", "medium", "high"]}
+  },
+  "required": ["label", "source_ip", "confidence"]
+}
+
+<span class="c-comment"># Pass the schema to the runtime via the format parameter</span>
+response = client.chat(
+  model="your-model-name",
+  messages=[
+    {"role": "system", "content": "You are a SOC triage assistant. Classify the SSH log line."},
+    {"role": "user",   "content": "Classify:\n&lt;&lt;&lt;LOG\nFailed password for invalid user admin from 203.0.113.45...\nLOG&gt;&gt;&gt;"}
+  ],
+  format=triage_schema   <span class="c-comment"># This is where the constraint is enforced</span>
+)</code></pre>
+<p>The <code>format</code> parameter tells the runtime to mask any token that would violate the schema during generation. The model literally cannot produce output that breaks the structure. No extra prose, no missing fields, no markdown fences.</p>
+<p><strong>What you get back:</strong></p>
+<pre class="nyu-code" aria-label="Constrained output result"><code>{"label": "suspicious", "source_ip": "203.0.113.45", "confidence": "medium"}</code></pre>
+<p>Every field is present, the values conform to the allowed options, and there is no surrounding text. This is parseable by any JSON parser without cleanup.</p>
+<h3 class="nyu-subsection-title">How constrained decoding works under the hood</h3>
+<p>Recall from Section 2 that the model produces one token at a time by sampling from a <button type="button" class="nyu-define" data-term="probability-distribution">probability distribution</button>. Constrained decoding inserts a step before each sample: the runtime checks the schema for what is structurally legal at the current position, and sets the probability of every illegal token to zero.</p>
+<ol class="nyu-process">
+<li class="nyu-process__step"><span class="nyu-process__num">1</span>
+<div class="nyu-process__body">
+<h4 class="nyu-process__title">Schema says: object must open with <code>{</code></h4>
+<p class="nyu-process__detail">Every token except <code>{</code> is masked to zero probability. The model emits <code>{</code>.</p>
+</div>
+</li>
+<li class="nyu-process__step"><span class="nyu-process__num">2</span>
+<div class="nyu-process__body">
+<h4 class="nyu-process__title">Schema says: first field name must be <code>"label"</code></h4>
+<p class="nyu-process__detail">Only the tokens that form <code>"label":</code> are allowed. The model emits the field name and colon.</p>
+</div>
+</li>
+<li class="nyu-process__step"><span class="nyu-process__num">3</span>
+<div class="nyu-process__body">
+<h4 class="nyu-process__title">Schema says: value must be one of <code>"benign"</code>, <code>"suspicious"</code>, <code>"malicious"</code></h4>
+<p class="nyu-process__detail">The model chooses from these three options based on the prompt context. This is where it makes its classification decision. It picks <code>"suspicious"</code>.</p>
+</div>
+</li>
+<li class="nyu-process__step"><span class="nyu-process__num">4</span>
+<div class="nyu-process__body">
+<h4 class="nyu-process__title">Schema says: close the object with <code>}</code></h4>
+<p class="nyu-process__detail">Only <code>}</code> (or the next required field) is allowed. No prose, no apology, no "Let me know if you'd like more detail."</p>
+</div>
+</li>
+</ol>
+<p>At every step the schema decides which tokens are legal. The model never has the option to break the structure. But notice step 3: the schema forces the model to pick one of the allowed labels, but it cannot force the model to pick the <em>correct</em> one. The model still makes its own judgment call. That is the gap between syntax and semantics.</p>
+<aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="syntax-not-semantics">
+<h3 class="nyu-callout__title" id="syntax-not-semantics"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg></span> It guarantees syntax, not semantics</h3>
+<p>The schema can force <code>source_ip</code> to be a string, but it cannot force that string to be the correct IP, or even a real one. That means you can get output that is perfectly structured, passes every automated validation check, flows cleanly into your SIEM or threat-intel platform, and is still wrong. <button type="button" class="nyu-define" data-term="downstream-system">Downstream systems</button> cannot tell the difference between a real IP extracted from evidence and one the model invented. Every tool that consumes that JSON will treat it as fact. This is the gap between syntax and semantics, and understanding it is essential before you connect any model output to automation.</p>
+</aside>
+</section>
+<!-- ===== 3 ===== -->
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Valid Does Not Mean Correct</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Structured output is what lets a model's analysis flow into automation: an <button type="button" class="nyu-define" data-term="stix-indicator"><code>indicator</code></button> object dropped into a threat-intelligence platform, or a JSON verdict feeding a SIEM rule. That is genuinely useful. But it raises the stakes of the <button type="button" class="nyu-define" data-term="hallucination-structured">hallucination</button> problem from Section 3, because a schema-valid object <em>looks</em> trustworthy and flows downstream without a human reading it.</p>
+<p>A perfectly formed object whose field contains a hallucinated IP is worse than malformed output. Malformed output fails loudly and someone investigates. A valid object with a fabricated field fails silently and acts on a fiction. The more machine-usable your output, the more rigorously its contents must be verified.</p>
+<h3 class="nyu-subsection-title">From triage JSON to a STIX indicator</h3>
+<p>Using the constrained output from the previous example, you can map the triage verdict to a simplified <button type="button" class="nyu-define" data-term="stix">STIX 2.1</button> <code>indicator</code> object. This is the kind of object a threat-intelligence platform actually consumes:</p>
+<pre class="nyu-code" aria-label="STIX indicator object"><code>{"type": "indicator", "name": "Suspicious SSH source", "pattern_type": "stix",
+ "pattern": "[ipv4-addr:value = '203.0.113.45']", "confidence": 50}</code></pre>
+<p>This is a reduced subset of the full STIX standard, containing only the fields needed for a basic <button type="button" class="nyu-define" data-term="ioc">IoC</button> entry. Now consider a second run that is also schema-valid:</p>
+<pre class="nyu-code" aria-label="STIX indicator with a fabricated value"><code>{"type": "indicator", "name": "Known C2 node", "pattern_type": "stix",
+ "pattern": "[ipv4-addr:value = '198.51.100.222']", "confidence": 95}</code></pre>
+<h3 class="nyu-subsection-title">Why the second object is the real lesson</h3>
+<p>The second object has a higher confidence score (95) and passes <button type="button" class="nyu-define" data-term="schema-validation">schema validation</button>. But the IP <code>198.51.100.222</code> was never in the original alert. The model introduced it. The name claims this is a <button type="button" class="nyu-define" data-term="c2">C2</button> node. A teammate scanning JSON sees a clean "Known C2 node" with high confidence and might push it to a <button type="button" class="nyu-define" data-term="blocklist">blocklist</button>.</p>
+<p>Only the verification habit from Section 3 catches this: does this IP actually appear in the source evidence? Is it in any authoritative threat feed? The answer to both questions is no. The object is valid JSON, valid STIX, and completely fabricated. Higher confidence made it more dangerous, not more trustworthy.</p>
+<h3 class="nyu-subsection-title">How to catch fabricated structured output</h3>
+<p>The example above is not a hypothetical edge case. Any time a model produces structured output that feeds into automation, fabricated content can slip through. Here is a concrete checklist for catching it:</p>
+<ol class="nyu-process">
+<li class="nyu-process__step"><span class="nyu-process__num">1</span>
+<div class="nyu-process__body">
+<h4 class="nyu-process__title">Trace every identifier back to the source</h4>
+<p class="nyu-process__detail">Every IP address, domain, hash, or CVE in the output must appear in the input you provided. If the model produced <code>198.51.100.222</code> but you fed it a log containing only <code>203.0.113.45</code>, the value is fabricated. This is a direct text-matching check; no judgment required.</p>
+</div>
+</li>
+<li class="nyu-process__step"><span class="nyu-process__num">2</span>
+<div class="nyu-process__body">
+<h4 class="nyu-process__title">Cross-reference against authoritative sources</h4>
+<p class="nyu-process__detail">If the model labels an IP as "Known C2 node," check it against your <button type="button" class="nyu-define" data-term="threat-intel-feeds">threat-intelligence feeds</button>, <button type="button" class="nyu-define" data-term="virustotal">VirusTotal</button>, or <button type="button" class="nyu-define" data-term="abuseipdb">AbuseIPDB</button>. A model's assertion is not evidence. The label is only as good as the source behind it, and the model has no source.</p>
+</div>
+</li>
+<li class="nyu-process__step"><span class="nyu-process__num">3</span>
+<div class="nyu-process__body">
+<h4 class="nyu-process__title">Treat confidence scores as model opinion, not probability</h4>
+<p class="nyu-process__detail">A constrained schema that allows <code>"confidence": 95</code> just means the model chose that number from the allowed range. It does not mean there is a 95 percent chance the assessment is correct. Never use a model-generated confidence score as the sole input to an automated decision.</p>
+</div>
+</li>
+<li class="nyu-process__step"><span class="nyu-process__num">4</span>
+<div class="nyu-process__body">
+<h4 class="nyu-process__title">Automate what you can</h4>
+<p class="nyu-process__detail">Steps 1 and 2 can be scripted. A post-processing check that diffs every identifier in the output against the input data, and queries a threat-intel API for any new values, turns a manual habit into a <button type="button" class="nyu-define" data-term="pipeline-gate">pipeline gate</button>. If an identifier fails both checks, flag the output for human review before it reaches downstream systems.</p>
+</div>
+</li>
+</ol>
+<aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="production-challenge">
+<h3 class="nyu-callout__title" id="production-challenge"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg></span> This is a production problem, not a lab problem</h3>
+<p>In a classroom exercise, you read the JSON yourself and notice the wrong IP. In a production pipeline processing thousands of alerts per hour, no human reads most of the output. Fabricated data that passes schema validation flows silently into blocklists, case tickets, and automated responses. The more you automate, the more you depend on the verification steps above, and the harder the next question becomes: is this model actually ready to run without a human in the loop?</p>
+</aside>
+</section>
+<!-- ===== 4 ===== -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Is It Ready for Production?</h2>
+</div>
+<hr class="nyu-section__rule">
+<h3 class="nyu-subsection-title">The cost of getting it wrong</h3>
+<p>Suppose your iterated, measured, constrained triage prompt scores 85 percent accuracy on your <button type="button" class="nyu-define" data-term="held-out-set">held-out set</button>, with most errors being <button type="button" class="nyu-define" data-term="false-negative">false negatives</button> on novel attack patterns. Your CISO asks: can we deploy this?</p>
+<p>There is no universal accuracy threshold. The answer depends on what each type of error costs:</p>
+<div class="nyu-compare" data-cols="2">
+<div class="nyu-compare__col" data-tone="a"><header class="nyu-compare__head"><span class="nyu-compare__num">1</span>
+<h3>False Positive</h3>
+<p class="nyu-compare__tag">Lower cost</p>
+</header>
+<dl class="nyu-compare__rows">
+<dt>What happens</dt>
+<dd>The model labels a benign event as suspicious. An analyst spends a few minutes investigating and clears it.</dd>
+<dt>Consequence</dt>
+<dd>Wasted analyst time. Manageable at moderate volume.</dd>
+</dl>
+</div>
+<div class="nyu-compare__col" data-tone="c"><header class="nyu-compare__head"><span class="nyu-compare__num">2</span>
+<h3>False Negative</h3>
+<p class="nyu-compare__tag">Higher cost</p>
+</header>
+<dl class="nyu-compare__rows">
+<dt>What happens</dt>
+<dd>The model labels a real attack as benign. No analyst ever sees it.</dd>
+<dt>Consequence</dt>
+<dd>An intrusion proceeds undetected. Damage can be severe and irreversible.</dd>
+</dl>
+</div>
+</div>
+<p>An accuracy of 85 percent with false-negative-heavy errors on novel attacks is a real risk, because novel attacks are exactly what you most need to catch. To see why, consider what those numbers look like in a real shift:</p>
+<!-- ===== Accuracy Visual ===== -->
+<div class="acc-visual">
+<p class="acc-visual__title">What "85% accuracy" looks like in one shift</p>
+<p class="acc-visual__lede">Imagine your model triages <strong>1,000 alerts</strong> during a shift. 85% accuracy means 150 wrong calls. Where those errors land changes everything.</p>
+<div class="acc-visual__grid">
+<div class="acc-card acc-card--success">
+<div class="acc-card__num acc-card__num--lg">850</div>
+<div class="acc-card__label">Correct classifications</div>
+<div class="acc-card__detail">These alerts are routed correctly. The model earns its keep here.</div>
+</div>
+<div class="acc-card acc-card--danger">
+<div class="acc-card__num acc-card__num--lg">150</div>
+<div class="acc-card__label">Wrong classifications</div>
+<div class="acc-card__detail">These are the 15%. What kind of errors are they?</div>
+</div>
+</div>
+<p class="acc-visual__mid">Now break down those 150 errors. Where the errors concentrate matters far more than the total count:</p>
+<div class="acc-visual__grid">
+<div class="acc-card acc-card--warning">
+<div class="acc-card__num acc-card__num--md">~30</div>
+<div class="acc-card__label">False Positives</div>
+<div class="acc-card__detail" style="margin-bottom: var(--sp-2);">Benign events flagged as suspicious.</div>
+<div class="acc-card__impact"><strong>Impact:</strong> Analysts waste time investigating clean events. Annoying, but each one is caught and cleared. No security damage.</div>
+</div>
+<div class="acc-card acc-card--danger">
+<div class="acc-card__num acc-card__num--md">~120</div>
+<div class="acc-card__label">False Negatives</div>
+<div class="acc-card__detail" style="margin-bottom: var(--sp-2);">Real attacks labeled benign. <strong>No analyst ever sees them.</strong></div>
+<div class="acc-card__impact"><strong>Impact:</strong> Intrusions proceed undetected. Any one of these could be a breach. This is the dangerous 15%.</div>
+</div>
+</div>
+<div class="acc-bar-wrap">
+<div class="acc-bar-label">1,000 alerts in one shift</div>
+<div class="acc-bar">
+<div class="acc-bar__seg" style="width: 85%; background: var(--accent-success); color: #fff;" title="850 correct" aria-label="850 correct classifications">850 correct</div>
+<div class="acc-bar__seg" style="width: 3%; background: var(--accent-warning);" title="~30 false positives" aria-label="Approximately 30 false positives"></div>
+<div class="acc-bar__seg" style="width: 12%; background: var(--accent-danger); color: #fff;" title="~120 false negatives" aria-label="Approximately 120 false negatives">120 missed</div>
+</div>
+<div class="acc-bar__legend"><span>Correct</span> <span>FP (annoying)</span> <span>FN (dangerous)</span></div>
+</div>
+<p class="acc-visual__footer">The same 85% accuracy with errors concentrated as false <em>positives</em> would mean wasted analyst time but no missed attacks. That is a very different risk profile. The number alone does not tell you whether to deploy. The <strong>distribution</strong> of errors does.</p>
+</div>
+<!-- ===== End Accuracy Visual ===== -->
+<p>So the question is not "is 85% good enough?" but rather "what role should the model play, and where does a human fit?" This is the <button type="button" class="nyu-define" data-term="hitl">human-in-the-loop</button> question.</p>
+<!-- ===== Human-in-the-Loop Visual ===== -->
+<h3 class="nyu-subsection-title">Choosing how much autonomy to give the model</h3>
+<p>There is no single answer to "should a human review this?" It depends on what happens when the model is wrong. The three deployment models below represent a spectrum from full human control to full autonomy. Most real SOC deployments sit somewhere in the middle.</p>
+<div class="nyu-compare" data-cols="3">
+<div class="nyu-compare__col" data-tone="a"><header class="nyu-compare__head"><span class="nyu-compare__num">1</span>
+<h3>Human Decides</h3>
+<p class="nyu-compare__tag">Model advises only</p>
+</header>
+<dl class="nyu-compare__rows">
+<dt>How it works</dt>
+<dd>The model processes every alert and suggests a label, but a human analyst reviews each suggestion before any action is taken.</dd>
+<dt>When to use it</dt>
+<dd>High-stakes decisions where a wrong call causes serious harm: blocking production traffic, escalating to law enforcement, suppressing alerts on critical infrastructure.</dd>
+<dt>Tradeoff</dt>
+<dd>Safest, but slowest. If you have 10,000 alerts per day and one analyst, this does not scale. The model saves reading time but not decision time.</dd>
+</dl>
+</div>
+<div class="nyu-compare__col" data-tone="b"><header class="nyu-compare__head"><span class="nyu-compare__num">2</span>
+<h3>Human Spot-Checks</h3>
+<p class="nyu-compare__tag">Model acts, human audits</p>
+</header>
+<dl class="nyu-compare__rows">
+<dt>How it works</dt>
+<dd>The model acts on high-confidence verdicts automatically. Low-confidence, novel, or borderline cases are routed to a human queue. A random sample of auto-processed cases is audited regularly.</dd>
+<dt>When to use it</dt>
+<dd>When the volume is too high for full review but the consequences of error are still significant. This is the most common model for SOC triage assistance.</dd>
+<dt>Tradeoff</dt>
+<dd>Balances speed and safety, but depends entirely on where you draw the confidence threshold and how large the audit sample is. Set the threshold wrong and you are back to missing attacks silently.</dd>
+</dl>
+</div>
+<div class="nyu-compare__col" data-tone="c"><header class="nyu-compare__head"><span class="nyu-compare__num">3</span>
+<h3>Full Autonomy</h3>
+<p class="nyu-compare__tag">No human review</p>
+</header>
+<dl class="nyu-compare__rows">
+<dt>How it works</dt>
+<dd>The model classifies and acts without human review. Alerts labeled benign are suppressed. Alerts labeled malicious trigger automated response.</dd>
+<dt>When to use it</dt>
+<dd>Only when the error rate is extremely low on your specific data, the cost of each error type is well understood, and robust monitoring and rollback are in place.</dd>
+<dt>Tradeoff</dt>
+<dd>Fastest, but most dangerous. Every false negative from the accuracy visual above (those 120 missed attacks) proceeds completely undetected. No human ever sees them.</dd>
+</dl>
+</div>
+</div>
+<aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="hitl-key">
+<h3 class="nyu-callout__title" id="hitl-key"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg></span> The key question is not "how accurate is the model?" but "what happens when it is wrong?"</h3>
+<p>A 95% accurate model making low-stakes suggestions (sorting a reading list) can run with full autonomy. An 85% accurate model making high-stakes decisions (suppressing security alerts) needs human review on every consequential action. Accuracy alone does not determine the right deployment model. The cost of each error type does.</p>
+</aside>
+<!-- ===== End Human-in-the-Loop Visual ===== -->
+<p>What you should not do is read "85 percent" as "production-ready." Operational data sharpens the stakes: false-positive rates in some SOC environments are reported to approach 99 percent, which is why <button type="button" class="nyu-define" data-term="triage-assistance">triage assistance</button> is attractive, and why an assistant that quietly drops true positives is dangerous.</p>
+<h3 class="nyu-subsection-title">Three prompting modes this module has not used</h3>
+<p>Everything so far has been text in, text out, with you supplying the data. Three other modes change what goes into the prompt, and each changes the security picture. This is orientation only; the modules named below do the real work.</p>
+<div class="nyu-table-wrap">
+<table class="nyu-table nyu-table--even">
+<thead>
+<tr><th scope="col">Mode</th><th scope="col">What changes about the prompt</th><th scope="col">Why it matters for security</th></tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Multimodal</strong></td>
+<td>The prompt carries an image, a screenshot, or a document scan alongside the text. Your instructions and the evidence now arrive through different channels.</td>
+<td>Everything you learned about the instruction and data boundary applies to pixels too, and text inside an image is data your delimiters do not enclose. A screenshot of a phishing email is evidence; the words in it are not instructions.</td>
+</tr>
+<tr>
+<td><strong>Retrieval-augmented</strong></td>
+<td>A retrieval step fetches documents and pastes them into the prompt before the model sees it. You wrote the instructions; a search index chose the data.</td>
+<td>The data is selected at run time from a corpus you may not control, so the delimiter matters more, not less. Module 11 covers the retrieval attack surface, including what happens when the corpus itself is poisoned.</td>
+</tr>
+<tr>
+<td><strong>Adversarial and jailbreak</strong></td>
+<td>The prompt is written to defeat the model's rules rather than to use them: role-play framings, many-shot priming, encodings the safety training did not cover, and optimized suffixes.</td>
+<td>These are the offensive use of the same structure you have been building. You cannot evaluate a guardrail without knowing what is thrown at it. Module 9 covers the technique families and the defenses in depth.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The through-line is the one from Section 1: a model reads one sequence, and any channel that can put tokens into that sequence is a channel an attacker may reach. Adding an image or a retriever adds a channel. It does not add a wall.</p>
+
+<aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="vendor-guides">
+<h3 class="nyu-callout__title" id="vendor-guides"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span> Check the vendor's own guide before you tune</h3>
+<p>The structure taught here transfers across models. The tuning does not. Each model family publishes its own prompting guidance, and it is usually more current than any course can be, so treat these as the authority for the model you are actually running:</p>
+<dl class="nyu-go-deeper-list">
+<dt><span class="nyu-go-deeper-list__icon" aria-hidden="true">📄</span> <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices" target="_blank" rel="noopener">Anthropic: prompting best practices for Claude's latest models</a></dt>
+<dd>Model-specific guidance for the current Claude family, alongside the general <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">prompt engineering overview</a>.</dd>
+<dt><span class="nyu-go-deeper-list__icon" aria-hidden="true">📄</span> <a href="https://developers.openai.com/api/docs/guides/prompt-engineering" target="_blank" rel="noopener">OpenAI: prompt engineering</a></dt>
+<dd>Covers the developer, user, and assistant roles and how instruction priority differs between the general and reasoning model lines.</dd>
+<dt><span class="nyu-go-deeper-list__icon" aria-hidden="true">📄</span> <a href="https://ai.google.dev/gemini-api/docs/prompting-strategies" target="_blank" rel="noopener">Google: Gemini prompt design strategies</a></dt>
+<dd>Zero-shot and few-shot patterns, context handling, and current model-specific notes.</dd>
+<dt><span class="nyu-go-deeper-list__icon" aria-hidden="true">📄</span> <a href="https://developer.meta.com/ai/docs/how-to-guides/prompting/" target="_blank" rel="noopener">Meta: Llama prompting how-to</a></dt>
+<dd>Relevant if you run open-weight Llama-family models locally, as in this module's lab.</dd>
+</dl>
+<p>If a link fails, search the vendor's developer documentation rather than trusting a third-party copy.</p>
+</aside>
+
+<h3 class="nyu-subsection-title">Assembling your prompt-engineering playbook</h3>
+<p>This module has built up a set of practices that work together. Before moving to Module 4, capture them as a reusable playbook in your own notes. A strong playbook records:</p>
+<ul class="nyu-keypoints">
+<li><strong>Your standard prompt structure:</strong> the role and rules, the task, the output contract, and a delimiter around untrusted data.</li>
+<li><strong>Your few-shot rules:</strong> how you select examples (including boundary cases), the order you fix, and the single format you keep consistent.</li>
+<li><strong>Your iteration loop:</strong> the held-out test set you use, how you measure accuracy and consistency, the one-variable rule, and where you keep the change log.</li>
+<li><strong>Your verification checklist:</strong> which claims you always cross-check (identifiers, scores, IPs, package names) and the authoritative source you check each against.</li>
+<li><strong>One technique that did not help</strong> on the model you are using, and why, so you do not repeat it.</li>
+</ul>
+<h3 class="nyu-subsection-title">What commonly gets confused</h3>
+<ul class="nyu-keypoints">
+<li><strong>"Asking for JSON in the prompt guarantees JSON."</strong> It does not. Only constrained decoding, where the runtime enforces a schema during generation, guarantees valid output.</li>
+<li><strong>"Machine-parseable means any valid JSON."</strong> For sharing with other tools, it means conformance to a specific schema (such as STIX 2.1) that consuming platforms expect.</li>
+<li><strong>"If the output is valid and confident, it is trustworthy."</strong> Structural validity and factual correctness are independent. Higher confidence scores do not indicate higher truth. Verify contents.</li>
+<li><strong>"85 percent accuracy means production-ready."</strong> Readiness depends on the cost of the remaining 15 percent, and especially on which types of errors they are.</li>
+</ul>
+<div class="nyu-callout nyu-scenario">
+<h3 class="nyu-callout__title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> Try it yourself: design output for an auto-suppress rule</h3>
+<p class="nyu-scenario__prompt">Your SIEM has a rule that will auto-suppress any alert the model labels <code>benign</code>. Think through: would you use requested or constrained output, and why? What fields should the schema include, and what field would you add specifically because of the auto-suppress risk? What rule would you set for which verdicts may trigger auto-suppression? And what would you verify about the model's <code>benign</code> outputs before trusting auto-suppression at all?</p>
+<button class="nyu-scenario__btn">Possible Answer</button>
+<div class="nyu-scenario__answer">
+<ul>
+<li><strong>Constrained output</strong> is required, because a malformed verdict must never reach an auto-suppress rule.</li>
+<li>The schema should include <code>label</code>, <code>confidence</code>, and a <code>rationale</code> or <code>evidence</code> field. The <code>confidence</code> field is specifically needed because of the auto-suppress risk.</li>
+<li>Only allow auto-suppression when <code>confidence</code> is high, because auto-suppressing a false <code>benign</code> is a silent false negative, the worst possible error in this context.</li>
+<li>Before trusting any of this, measure the false-negative rate of <code>benign</code> verdicts on a held-out set, since the suppression rule acts on exactly those outputs.</li>
+</ul>
+</div>
+</div>
+<div class="nyu-quiz" aria-labelledby="kc-4">
+<div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+<p class="nyu-quiz__prompt" id="kc-4">Which approach actually guarantees the model's output is valid JSON conforming to your fields?</p>
+<div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-4"><button class="nyu-quiz__option" role="radio" data-explain-wrong="A prompt-text request usually helps, but the model can still add prose, wrap the JSON in code fences, or omit a field. It is a hope, not a guarantee.">Writing "Output only valid JSON with fields x, y, z" in the prompt.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Politeness and an example raise the odds of valid output but do not restrict the token space, so invalid output is still possible.">Asking the model politely and adding one example.</button> <button class="nyu-quiz__option" role="radio" data-correct="true">Constrained decoding, where the runtime enforces a grammar or JSON schema during generation.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Encoding changes the representation, not the structure. You would still have to produce and validate the underlying JSON, and the model could still emit malformed content.">Base64-encoding the output so it cannot contain stray characters.</button></div>
+<div class="nyu-quiz__feedback" data-correct-msg="Correct. Constrained decoding masks invalid tokens during generation, so the output cannot violate the schema. Asking for JSON in the prompt or adding an example usually helps but provides no guarantee. And remember: constrained decoding guarantees syntax, not correctness." data-incorrect-msg="Not quite. Only constrained decoding (where the runtime enforces a grammar or JSON schema during generation) guarantees valid JSON. Asking for it in the prompt is a request, not a guarantee. And even constrained decoding only guarantees the structure, not the truth of the contents."></div>
+</div>
+<div class="nyu-accordion"><button class="nyu-accordion__trigger" aria-expanded="false"> <span class="nyu-accordion__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg></span> Custom Grammar for a STIX Bundle <svg xmlns="http://www.w3.org/2000/svg" class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg> </button>
+<div class="nyu-accordion__panel">
+<p><strong>What is a grammar in this context?</strong> A <button type="button" class="nyu-define" data-term="grammar">grammar</button> is a formal set of rules that defines exactly which token sequences are legal output. Think of it as a stricter version of a JSON schema: where a schema says "this field must be a string," a grammar says "at this position, the only legal next characters are <code>{</code>, <code>"</code>, or a digit." Some runtimes (like llama.cpp and Outlines) accept a grammar written in <button type="button" class="nyu-define" data-term="gbnf">GBNF</button> or a similar notation. Others accept a JSON schema and convert it to a grammar internally. The effect is the same: the model cannot produce output that violates the rules.</p>
+<p><strong>The exercise:</strong> Author a custom grammar (or a richer JSON schema) for a multi-object simplified STIX bundle containing an <code>indicator</code> plus a <code>relationship</code>, and validate conformance against the schema using your runtime. Start with the single-object schema from this section and extend it to require both objects in an array.</p>
+</div>
+</div>
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 5: Lab: Requested vs. Schema-Layer Output.</strong> Four curated prompts, each with its own frustrations. A live model runs in your browser and sends the same security log through two paths: requested JSON and schema-layer JSON. Some outputs break in obvious ways. Others look clean until you check the evidence. The patterns in how each path fails, and how the schema layer recovers, are the lesson. Then <strong>Module 4</strong> puts it all into practice on real SOC logs. Keep your playbook and change-log template ready.</p>
+        </aside>
+</section>
+</main><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"> <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"> </a></footer><button class="nyu-fab" aria-label="Back to top of section"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> </button></div>
+<p>
+<script src="../js/nyu-tandon-course.js"></script>
+<script src="../tooltips/glossary.js"></script>
+</p></body></html>

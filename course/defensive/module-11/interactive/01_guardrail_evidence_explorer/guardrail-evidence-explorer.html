@@ -1,0 +1,408 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Guardrail Evidence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redbg:#fef2f2;--redline:#efc9c9;
+  --green:#0f7a43;--greenbg:#f0f9f3;--greenline:#c3e2d0;
+  --amber:#8a5d00;--amberbg:#fdf6e7;--amberline:#e8d5a8;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) var(--paper)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:0 16px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;background:var(--bg);border:none;border-radius:0;overflow:hidden}
+
+/* ── header ── */
+.hdr{padding:24px 28px 16px}
+.eyebrow{font-family:var(--mono);font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.11em;color:var(--violet);margin-bottom:6px}
+h1{font-size:1.15rem;font-weight:700;color:var(--ink)}
+
+/* ── panels ── */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 28px;align-items:start}
+.panel{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg)}
+.panel-head{padding:10px 14px;background:var(--paper);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.panel-head .ph-tag{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.panel-head .ph-name{font-size:.82rem;font-weight:700;color:var(--ink)}
+.panel-context{padding:10px 14px 0;font-size:.76rem;color:var(--ink2);line-height:1.45}
+.panel-body{padding:14px;display:flex;flex-direction:column;align-items:center;min-height:220px;justify-content:center;gap:8px}
+
+/* ── Study A: bars ── */
+.bars-area{display:flex;align-items:flex-end;justify-content:center;gap:24px;width:100%}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto}
+.bar-val{font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--ink);min-height:1.5em;display:flex;align-items:flex-end}
+.bar-track{width:48px;height:150px;display:flex;align-items:flex-end;background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden;padding:2px}
+.bar-inner{width:100%;height:0;border-radius:6px;transition:height .7s ease-out}
+.bar-inner.known{background:linear-gradient(180deg,var(--violet) 0%,var(--violet2) 100%)}
+.bar-inner.unseen{background:linear-gradient(180deg,var(--amber) 0%,#c09020 100%)}
+.bar-label{font-size:.68rem;color:var(--ink2);text-align:center;line-height:1.3;font-weight:500}
+
+/* drop indicator */
+.drop{display:flex;flex-direction:column;align-items:center;gap:3px;align-self:center;opacity:0;transition:opacity .5s}
+.drop.show{opacity:1}
+.drop-badge{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--ink);background:var(--redbg);border:1px solid var(--redline);border-radius:6px;padding:2px 8px;white-space:nowrap}
+.drop-arrow{width:2px;height:24px;background:var(--red);position:relative}
+.drop-arrow::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--red)}
+
+.study-note{font-size:.72rem;color:var(--ink3);text-align:center;font-style:italic;opacity:0;transition:opacity .4s;margin-top:4px}
+.study-note.show{opacity:1}
+
+/* ── Study B: shields ── */
+.shields{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;max-width:260px}
+.shield{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;position:relative;border-radius:8px;transition:background .2s}
+.shield svg{width:34px;height:34px}
+.shield .s-body{fill:var(--vsoft);stroke:var(--violet);stroke-width:1.5;transition:fill .2s,stroke .2s}
+.shield .s-check{fill:none;stroke:var(--violet);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:opacity .15s}
+.shield .s-x{stroke:var(--red);stroke-width:2;stroke-linecap:round;display:none}
+.shield .s-name{font-family:var(--mono);font-size:.58rem;font-weight:500;color:var(--ink3);text-align:center;line-height:1.2}
+
+.shield.broken{background:var(--redbg)}
+.shield.broken .s-body{fill:var(--redbg);stroke:var(--red)}
+.shield.broken .s-check{display:none}
+.shield.broken .s-x{display:inline}
+.shield.shaking{animation:shake .2s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+
+.bypass-result{font-size:.76rem;font-weight:600;color:var(--ink);text-align:center;opacity:0;transition:opacity .4s;margin-top:4px}
+.bypass-result.show{opacity:1}
+.bypass-result span{color:var(--red)}
+
+/* ── interaction area ── */
+.interact{border-top:1px solid var(--line);padding:16px 28px 20px}
+.q-text{font-size:.85rem;font-weight:600;color:var(--ink);margin-bottom:10px;line-height:1.4}
+.q-sub{font-size:.76rem;color:var(--ink2);margin-bottom:12px;line-height:1.4}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);text-align:left;font-size:.79rem;color:var(--ink);line-height:1.4;cursor:pointer;transition:.15s}
+.opt:hover{border-color:var(--violet);background:var(--vsoft)}
+.opt .letter{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--ink2);flex-shrink:0;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+.opt.right{border-color:var(--greenline);background:var(--greenbg);pointer-events:none}
+.opt.right .letter{border-color:var(--greenline);background:#dff0e5}
+.opt.wrong{border-color:var(--redline);background:var(--redbg);pointer-events:none}
+.opt.wrong .letter{border-color:var(--redline);background:#fde8e8}
+.opt.locked{pointer-events:none;cursor:default}
+
+.fb{margin-top:10px;padding:9px 12px;border-radius:8px;font-size:.79rem;line-height:1.4;color:var(--ink);border-left:3px solid;display:none}
+.fb.show{display:block}
+.fb.ok{background:var(--greenbg);border-left-color:var(--green)}
+.fb.no{background:var(--redbg);border-left-color:var(--red)}
+
+.btn{font-family:var(--sans);font-size:.82rem;font-weight:600;padding:9px 22px;border-radius:8px;border:none;cursor:pointer;transition:.15s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-primary{background:var(--violet);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--violet2)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+
+.method-note{margin-top:12px;padding:10px 14px;border-left:3px solid var(--amber);background:var(--amberbg);border-radius:0 8px 8px 0;display:none}
+.method-note.show{display:block}
+.method-note .mn-tag{font-family:var(--mono);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin-bottom:4px}
+.method-note .mn-text{font-size:.76rem;color:var(--ink);line-height:1.4}
+
+.status-tag{font-family:var(--mono);font-size:.72rem;color:var(--ink3)}
+.restart{display:inline-block;margin-top:10px;background:none;border:none;color:var(--ink3);font-size:.72rem;text-decoration:underline;cursor:pointer}
+.restart:hover{color:var(--ink2)}
+
+@media(max-width:700px){
+  .panels{grid-template-columns:1fr}
+  .hdr,.interact{padding-left:16px;padding-right:16px}
+  .panels{padding:0 16px}
+  h1{font-size:1.05rem}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <h1>Guardrail Evidence</h1>
+</div>
+
+<div class="panels">
+  <!-- Study A -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="ph-tag">Study A</span>
+      <span class="ph-name">Distribution Shift</span>
+    </div>
+    <div class="panel-context">Researchers tested a guardrail on attack patterns it was <strong>trained on</strong>, then on patterns it had <strong>never seen</strong>.</div>
+    <div class="panel-body">
+      <div class="bars-area">
+        <div class="bar-col">
+          <span class="bar-val" id="v1"></span>
+          <div class="bar-track"><div class="bar-inner known" id="b1"></div></div>
+          <span class="bar-label">Known<br>patterns</span>
+        </div>
+        <div class="drop" id="drop">
+          <div class="drop-badge">&minus;51.5 pp</div>
+          <div class="drop-arrow"></div>
+        </div>
+        <div class="bar-col">
+          <span class="bar-val" id="v2"></span>
+          <div class="bar-track"><div class="bar-inner unseen" id="b2"></div></div>
+          <span class="bar-label">Unseen<br>patterns</span>
+        </div>
+      </div>
+      <div class="study-note" id="noteA">Same guardrail. Different attack distribution.</div>
+    </div>
+  </div>
+
+  <!-- Study B -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="ph-tag">Study B</span>
+      <span class="ph-name">Adaptive Attacks</span>
+    </div>
+    <div class="panel-context">Researchers gave attackers full knowledge of 12 guardrail defenses and measured how many could be <strong>bypassed</strong>.</div>
+    <div class="panel-body">
+      <div class="shields" id="shields"></div>
+      <div class="bypass-result" id="bypass">Result: <span>12 of 12 defenses bypassed</span> (&gt;90% success each)</div>
+    </div>
+  </div>
+</div>
+
+<div class="interact" id="ix"></div>
+
+</div>
+
+<script>
+(function(){
+/* ── iframe height ── */
+function sh(){
+  var w=document.querySelector('.wrap');if(!w)return;
+  var r=w.getBoundingClientRect();
+  var s=getComputedStyle(document.body);
+  var h=Math.ceil(r.top+r.height+parseFloat(s.marginBottom)+parseFloat(s.paddingBottom)+2);
+  window.parent.postMessage({kind:'nyu-embed-height',height:h,src:location.href},'*');
+}
+new ResizeObserver(sh).observe(document.querySelector('.wrap'));
+window.addEventListener('load',sh);
+document.addEventListener('transitionend',sh);
+
+/* ── helpers ── */
+function $(id){return document.getElementById(id)}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+
+/* ── build shield grid ── */
+var defenses=['Keyword\nfilter','Perplexity\ncheck','Paraphrase\ndetector','Semantic\nclassifier','Intent\nclassifier','Toxicity\nfilter','Input\nsanitizer','Output\nfilter','Embedding\ndistance','Few-shot\ndetector','Prompt\ntemplate','Response\nvalidator'];
+var sg=$('shields');
+for(var i=0;i<12;i++){
+  var d=document.createElement('div');
+  d.className='shield';
+  d.innerHTML='<svg viewBox="0 0 36 36"><path class="s-body" d="M18 3L30 9V18C30 26 24.5 31 18 33C11.5 31 6 26 6 18V9L18 3Z"/><polyline class="s-check" points="13 18 16.5 21.5 23 15" fill="none"/><line class="s-x" x1="14" y1="14" x2="22" y2="22"/><line class="s-x" x1="22" y1="14" x2="14" y2="22"/></svg><span class="s-name">'+defenses[i].replace('\n','<br>')+'</span>';
+  sg.appendChild(d);
+}
+
+/* ── reset visuals ── */
+function resetVis(){
+  $('b1').style.height='0';$('b2').style.height='0';
+  $('v1').textContent='';$('v2').textContent='';
+  $('drop').classList.remove('show');
+  $('noteA').classList.remove('show');
+  $('bypass').classList.remove('show');
+  var cells=document.querySelectorAll('.shield');
+  for(var k=0;k<cells.length;k++) cells[k].classList.remove('broken','shaking');
+}
+
+/* ── render interaction area ── */
+var ix=$('ix');
+function render(html){ix.innerHTML=html;sh();}
+
+/* ════════════════════════════════
+   PHASE 1: Predict
+   ════════════════════════════════ */
+function phase1(){
+  resetVis();
+  render(
+    '<div class="q-text">A guardrail\'s accuracy is measured on its own test set. Can you trust that number to hold when the guardrail encounters attack patterns that were not in the test set?</div>'
+    +'<div class="opts" id="p1opts">'
+    +'<button class="opt" type="button" data-a="yes"><span class="letter">A</span><span>Yes, if the test set was large and representative enough</span></button>'
+    +'<button class="opt" type="button" data-a="correct"><span class="letter">B</span><span>No, ML classifiers are not guaranteed to generalize to inputs outside their training distribution</span></button>'
+    +'</div>'
+    +'<div class="fb" id="p1fb"></div>'
+    +'<div class="btn-row" id="p1next" style="display:none"><button class="btn btn-primary" type="button" id="btn-reveal">See the results</button></div>'
+  );
+  $('p1opts').addEventListener('click',handleP1);
+}
+
+var p1done=false;
+function handleP1(e){
+  var b=e.target.closest('.opt');
+  if(!b||p1done)return;
+  p1done=true;
+  var a=b.dataset.a;
+  var ok=a==='correct';
+  b.classList.add(ok?'right':'wrong');
+  var btns=$('p1opts').querySelectorAll('.opt');
+  for(var i=0;i<btns.length;i++){
+    if(!ok&&btns[i].dataset.a==='correct') btns[i].classList.add('right');
+    else if(btns[i]!==b) { btns[i].classList.add('locked'); btns[i].disabled = true; }
+  }
+  var fb=$('p1fb');
+  fb.className='fb show '+(ok?'ok':'no');
+  if(a==='correct') fb.textContent='Correct. A test set only covers the patterns it contains. Adversarial inputs are designed to fall outside known distributions, so test-set accuracy is not a reliable predictor of deployment performance.';
+  else fb.textContent='A large test set helps, but adversaries specifically craft inputs that fall outside known distributions. Size does not solve a coverage gap. Let\'s see how large the gap actually was.';
+  $('p1next').style.display='flex';
+  $('btn-reveal').addEventListener('click',runReveals);
+  sh();
+}
+
+/* ════════════════════════════════
+   PHASE 2: Animated reveals
+   ════════════════════════════════ */
+async function runReveals(){
+  $('btn-reveal').disabled=true;
+  $('btn-reveal').textContent='Revealing Study A...';
+
+  /* Study A: known bar first */
+  $('b1').style.height='85.3%';
+  await wait(700);
+  $('v1').textContent='85.3%';
+
+  await wait(500);
+
+  /* Study A: unseen bar */
+  $('b2').style.height='33.8%';
+  await wait(700);
+  $('v2').textContent='33.8%';
+
+  await wait(400);
+  $('drop').classList.add('show');
+  $('noteA').classList.add('show');
+
+  await wait(800);
+
+  /* Study B: shields break */
+  $('btn-reveal').textContent='Revealing Study B...';
+  var cells=document.querySelectorAll('.shield');
+  for(var i=0;i<cells.length;i++){
+    await breakShield(cells[i]);
+  }
+
+  await wait(300);
+  $('bypass').classList.add('show');
+
+  await wait(500);
+  showInterpret();
+}
+
+function breakShield(cell){
+  return new Promise(function(resolve){
+    cell.classList.add('shaking');
+    setTimeout(function(){
+      cell.classList.remove('shaking');
+      cell.classList.add('broken');
+      sh();
+      resolve();
+    },200);
+  });
+}
+
+/* ════════════════════════════════
+   PHASE 3: Interpret
+   ════════════════════════════════ */
+function showInterpret(){
+  render(
+    '<div class="q-text">Both studies are real. What do they tell us together?</div>'
+    +'<div class="opts" id="p3opts">'
+    +'<button class="opt" type="button" data-a="useless"><span class="letter">A</span><span>Guardrails are useless and should not be deployed</span></button>'
+    +'<button class="opt" type="button" data-a="enough"><span class="letter">B</span><span>One guardrail is enough if its accuracy is high enough</span></button>'
+    +'<button class="opt" type="button" data-a="correct"><span class="letter">C</span><span>Guardrails reduce routine abuse but cannot be the sole defense against adaptive attackers</span></button>'
+    +'</div>'
+    +'<div class="fb" id="p3fb"></div>'
+    +'<div class="method-note" id="mnote"><div class="mn-tag">Methodological note</div><div class="mn-text">These studies measure different things. Study A measures accuracy under distribution shift. Study B measures resilience under adaptive attack. Do not combine them into one chart or number.</div></div>'
+    +'<div id="rstbox" style="display:none"><button class="restart" type="button" id="btn-rst">Reset</button></div>'
+  );
+  $('p3opts').addEventListener('click',handleP3);
+}
+
+var p3done=false;
+function handleP3(e){
+  var b=e.target.closest('.opt');
+  if(!b||p3done)return;
+  p3done=true;
+  var a=b.dataset.a;
+  var ok=a==='correct';
+  b.classList.add(ok?'right':'wrong');
+  var btns=$('p3opts').querySelectorAll('.opt');
+  for(var i=0;i<btns.length;i++){
+    if(!ok&&btns[i].dataset.a==='correct') btns[i].classList.add('right');
+    else if(btns[i]!==b) { btns[i].classList.add('locked'); btns[i].disabled = true; }
+  }
+  var fb=$('p3fb');
+  fb.className='fb show '+(ok?'ok':'no');
+  if(a==='correct'){
+    fb.textContent='Correct. Guardrails filter known patterns effectively, but degrade on novel inputs and fail under adaptive attack. Defense-in-depth pairs them with deterministic controls.';
+    $('mnote').classList.add('show');
+  } else if(a==='useless'){
+    fb.textContent='Over-generalization. Study A showed 85.3% on known patterns. Guardrails are insufficient alone, not valueless.';
+  } else {
+    fb.textContent='Study B contradicts this: every defense was bypassed regardless of benchmark score. High accuracy on known patterns does not predict resilience to adaptive attack.';
+  }
+  $('rstbox').style.display='block';
+  $('btn-rst').addEventListener('click',function(){p1done=false;p3done=false;phase1();});
+  sh();
+}
+
+/* ── init ── */
+phase1();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

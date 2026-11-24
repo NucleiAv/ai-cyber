@@ -1,0 +1,80 @@
+- title: A confused deputy in an email agent
+  stats: [Agent scope, Approval, Invoices leaked]
+  nodes:
+    atk: {label: Attacker, x: 0, y: 0, kind: atk}
+    inbox: {label: User inbox, x: 2, y: 0, kind: box}
+    agent: {label: Email agent, x: 2, y: 2, kind: def, tag: files travel receipts}
+    policy: {label: Policy engine, x: 4, y: 2, kind: raised, tag: checks each call}
+    mailapi: {label: Mail API, x: 6, y: 2, kind: box, tag: user's real rights}
+    out: {label: Outside address, x: 6, y: 0, kind: atk}
+  links: [[atk, inbox], [inbox, agent], [agent, policy], [policy, mailapi], [mailapi, out]]
+  steps:
+    - title: One email with hidden text
+      text: The attacker cannot read the user's mail. They only send one email that says, in small print, to forward all invoices to an outside address.
+      on: [atk, inbox]
+      flow: [[atk, inbox, atk]]
+      stats: [Full mailbox, None, "0"]
+    - title: The agent reads it during a normal task
+      text: The agent reads the inbox to file travel receipts. The email's text enters its context as an observation.
+      on: [inbox, agent]
+      flow: [[inbox, agent, atk]]
+      mark: {agent: warn}
+      stats: [Full mailbox, None, "0"]
+    - title: It uses the user's power for the attacker
+      text: The agent calls forward with the user's own token. OAuth sees a valid user and a valid scope, so the mail API obeys. This is the **confused deputy**.
+      on: [agent, mailapi, out]
+      flow: [[agent, mailapi, atk], [mailapi, out, atk]]
+      mark: {out: bad}
+      stats: [Full mailbox, None, "All"]
+    - title: Put a policy engine in the middle
+      text: Every tool call now passes a check on its content. Forwarding outside the company is not part of filing receipts, so the call is denied.
+      on: [policy]
+      flow: [[agent, policy, atk]]
+      mark: {policy: ok}
+      stats: [Full mailbox, Policy, "0"]
+    - title: And shrink the agent
+      text: Give it read-only access to one label, and ask a person before anything is sent. A fooled agent then has nothing dangerous to do.
+      on: [agent, policy]
+      show: [atk, inbox, agent, policy, mailapi]
+      flow: [[inbox, agent, ink], [agent, policy, def], [policy, mailapi, def]]
+      mark: {agent: ok}
+      stats: [One label, Policy and person, "0"]
+- title: How ARTEX keeps an autonomous pentest agent on a leash
+  stats: [Inside scope, Human approved, Budget left]
+  nodes:
+    goal: {label: Goal, x: 0, y: 1, kind: box, tag: authorized test}
+    planner: {label: Planner, x: 2, y: 1, kind: def, tag: splits into intents}
+    worker: {label: Worker, x: 4, y: 1, kind: def, tag: runs real tools}
+    gate: {label: Gates, x: 4, y: 3, kind: raised, tag: "scope, commands, approval"}
+    target: {label: In-scope target, x: 6, y: 3, kind: box}
+    graph: {label: Evidence graph, x: 2, y: 3, kind: box, tag: findings with proof}
+  links: [[goal, planner], [planner, worker], [worker, gate], [gate, target], [target, graph], [graph, planner]]
+  steps:
+    - title: A goal becomes small intents
+      text: The planner reads the goal and the current graph, and sends out small tasks called intents.
+      on: [goal, planner]
+      flow: [[goal, planner, ink], [planner, worker, def]]
+      stats: ["Yes", "-", Full]
+    - title: Every action passes the gates
+      text: Before a worker runs a command, scope and deny rules, command prefix rules and approval gates check it. A person approves risky steps.
+      on: [worker, gate]
+      flow: [[worker, gate, def]]
+      mark: {gate: ok}
+      stats: ["Yes", "Yes", Full]
+    - title: Tool output is treated as data
+      text: The target can answer with text that tries to steer the agent. ARTEX frames tool output as data, the same idea as spotlighting in lesson 3.
+      on: [target, gate]
+      flow: [[gate, target, def], [target, graph, atk]]
+      mark: {target: warn}
+      stats: ["Yes", "Yes", Spending]
+    - title: Findings keep their receipts
+      text: Each finding links to the exact request and response that proves it, so a person can check the agent's claim instead of trusting it.
+      on: [graph]
+      flow: [[graph, planner, ink]]
+      mark: {graph: ok}
+      stats: ["Yes", "Yes", Spending]
+    - title: Budgets stop a runaway loop
+      text: Token and turn budgets and a noise limit stop the agent when it has spent its share. These are the same brakes OWASP LLM06 asks for. Use tools like this only with written permission.
+      on: [planner]
+      mark: {planner: ok}
+      stats: ["Yes", "Yes", Capped]

@@ -1,0 +1,30 @@
+title: Secure a shared vector store
+lede: A SaaS company keeps every customer's documents in one vector index. Find the weak points and plan fixes.
+blurb: Classify RAG store attacks and choose controls for inversion, poisoning and cross-tenant leaks.
+situation: |
+  **Docuverse** serves 300 business customers. All their chunks live in one vector index with a tenant field. The app adds a tenant filter to each query in code. Customers can upload any document. Embeddings are exported nightly to an analytics bucket.
+rounds:
+  - title: Round 1. Name the risk
+    items:
+      - type: sort
+        q: Match each event to its risk.
+        rows:
+          - ["A code change forgets the tenant filter for one endpoint", "Cross-tenant leakage"]
+          - ["A customer uploads text crafted to sit near 'how do I reset my password'", "Corpus poisoning"]
+          - ["The analytics bucket with raw vectors is made public by mistake", "Embedding inversion"]
+          - ["A chunk appears in answers for hundreds of unrelated questions", "Possible poisoning, investigate"]
+        opts: ["Cross-tenant leakage", "Corpus poisoning", "Embedding inversion", "Possible poisoning, investigate"]
+        why: "One missing filter leaks another tenant. Crafted text wins similarity search. Vectors can be turned back into much of their text. Unusual retrieval frequency is a detection signal."
+      - q: The bucket holds only vectors, not text. Is that data safe to share?
+        opts: ["Yes", "No, research such as Vec2Text rebuilt most short inputs exactly from vectors"]
+        a: 1
+        why: "Embeddings keep much of the wording and meaning. Treat them like the source text."
+  - title: Round 2. Plan the fixes
+    items:
+      - q: Which change removes the forgotten-filter risk best?
+        opts: ["Code review", "Separate indexes or namespaces per tenant, so one query cannot reach another tenant", "A warning in the system prompt"]
+        a: 1
+        why: "Structural separation does not depend on every developer remembering the filter."
+      - type: open
+        q: Name two controls against corpus poisoning.
+        a: "Record the source of each chunk and limit who can add to shared stores. Monitor retrieval frequency and rank trusted sources above uploads."

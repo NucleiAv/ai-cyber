@@ -1,0 +1,36 @@
+- title: One generation step inside an LLM
+  stats: [Text so far, Top next token, Probability]
+  nodes:
+    text: {label: Text, x: 0, y: 1, kind: box, tag: Reset the admin}
+    tok: {label: Tokenizer, x: 2, y: 1, kind: raised, tag: text to token IDs}
+    emb: {label: Embeddings, x: 4, y: 1, kind: raised, tag: IDs to vectors}
+    tf: {label: Transformer, x: 4, y: 3, kind: def, tag: attention layers}
+    prob: {label: Probabilities, x: 2, y: 3, kind: def, tag: every possible token}
+    pick: {label: Pick and append, x: 0, y: 3, kind: box, tag: temperature}
+  links: [[text, tok], [tok, emb], [emb, tf], [tf, prob], [prob, pick], [pick, text]]
+  steps:
+    - title: Cut the text into tokens
+      text: The tokenizer turns text into token IDs. Common words are one token. IP addresses and hashes break into many, which is the token tax on security data.
+      on: [text, tok]
+      flow: [[text, tok, ink]]
+      stats: [Reset the admin, "-", "-"]
+    - title: Look up a vector for each token
+      text: Each ID maps to a list of numbers. Tokens with related meaning sit close together.
+      on: [emb]
+      flow: [[tok, emb, ink]]
+      stats: [Reset the admin, "-", "-"]
+    - title: Mix the context
+      text: Attention layers let each token weigh the tokens before it. The last position ends up holding what the model needs to guess what comes next.
+      on: [tf]
+      flow: [[emb, tf, def]]
+      stats: [Reset the admin, "-", "-"]
+    - title: Score every possible next token
+      text: The model outputs a probability for every token in its vocabulary. It has no fact database. It only scores what is likely.
+      on: [prob]
+      flow: [[tf, prob, def]]
+      stats: [Reset the admin, password, "high"]
+    - title: Pick one and repeat
+      text: The app picks a token, appends it, and runs again. Temperature 0 always takes the top token. Higher values add randomness, which is why the same prompt can give different answers.
+      on: [pick, text]
+      flow: [[prob, pick, ink], [pick, text, pen]]
+      stats: [Reset the admin password, "-", "-"]

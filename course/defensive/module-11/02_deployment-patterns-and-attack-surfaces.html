@@ -1,0 +1,494 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 11 · Section 2 · Deployment Patterns · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 11 &middot; Section 2 of 7</div>
+      <h1 class="nyu-hero__title">Deployment Patterns and Their Attack Surfaces</h1>
+      <p class="nyu-hero__subtitle">Three deployment architectures, three security envelopes: the chatbot baseline, RAG's four retrieval-specific vulnerabilities, and API-exposure risks including denial-of-wallet.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~27 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 6 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          1 knowledge check
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Three Patterns, Three Attack Surface Envelopes</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The RAG Pattern: Four Retrieval-Specific Attack Surfaces</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> The API-Exposed Pattern</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> RAG Attack Surface Mapping</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> PoisonedRAG Case Analysis</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Describe</strong> the attack surfaces introduced by chatbot, RAG, and API-exposed LLM deployment patterns.</span></li>
+          <li><span><strong>Explain</strong> what the RAG pattern adds beyond the baseline chatbot attack surface.</span></li>
+          <li><span><strong>Recommend</strong> pattern-specific security controls for each deployment architecture.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Three Patterns, Three Attack Surface Envelopes</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Deploying an LLM into production connects it to real systems, real users, and real data, and how we deploy it determines what can go wrong. Each deployment architecture connects the model to different systems, exposes different interfaces, and draws different trust boundaries.</p>
+
+        <p>We analyze three common deployment patterns here as security design problems, not implementation tutorials. The question is not "how do I build a RAG pipeline?" but "what attack surfaces does a RAG pipeline create, and what controls address each one?" Every pattern inherits the general risks we studied in the attacks modules: <button type="button" class="nyu-define" data-term="prompt-injection">prompt injection</button>, <button type="button" class="nyu-define" data-term="jailbreaking">jailbreaking</button>, <button type="button" class="nyu-define" data-term="system-prompt-extraction">system prompt extraction</button>, <button type="button" class="nyu-define" data-term="sensitive-info-disclosure">sensitive information disclosure</button>. The patterns differ in what they add on top of that baseline, and the additions are where most real-world incidents originate.</p>
+
+        <div class="nyu-tabs" data-tabs="deployment-patterns">
+          <div class="nyu-tabs__tablist" role="tablist" aria-label="Deployment patterns">
+            <button class="nyu-tabs__tab" role="tab" aria-selected="true" id="tab-chatbot" aria-controls="panel-chatbot">Chatbot</button>
+            <button class="nyu-tabs__tab" role="tab" aria-selected="false" id="tab-rag" aria-controls="panel-rag">RAG-Augmented</button>
+            <button class="nyu-tabs__tab" role="tab" aria-selected="false" id="tab-api" aria-controls="panel-api">API-Exposed</button>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-chatbot" aria-labelledby="tab-chatbot">
+            <h4>The Baseline Pattern</h4>
+            <p>The simplest deployment: direct user interaction with an LLM, no external data retrieval, no tool access. Its attack surface is the baseline against which we compare everything else. Every prompt injection technique we studied applies: override attempts, encoding tricks, role impersonation, system prompt extraction.</p>
+            <p>All the defenses from Section 1 apply: input validation, output filtering, guardrails, privilege separation. Because the chatbot pattern does not retrieve external content or call external tools, it has no retrieval-specific or tool-specific attack surfaces. That clean baseline lets us see exactly what the next two patterns add.</p>
+            <p><em>Unique risks:</em> None beyond the general LLM baseline. That is the point of defining it as the baseline.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-rag" aria-labelledby="tab-rag" hidden>
+            <h4>Inherits Chatbot + Four Retrieval-Specific Surfaces</h4>
+            <p><button type="button" class="nyu-define" data-term="rag">Retrieval-Augmented Generation</button> combines an LLM with a knowledge base. The architecture: documents are ingested and stored, embeddings are generated, those embeddings are indexed in a <button type="button" class="nyu-define" data-term="vector-store">vector store</button>, and at query time relevant documents are retrieved and injected into the model's context alongside the user's question.</p>
+            <p>RAG inherits all chatbot risks and adds four retrieval-specific attack surfaces (detailed in the next section). It has the largest attack surface of the three patterns.</p>
+            <p><em>Unique risks:</em> <button type="button" class="nyu-define" data-term="corpus-poisoning">Corpus poisoning</button>, <button type="button" class="nyu-define" data-term="adversarial-embeddings">adversarial embeddings</button>, <button type="button" class="nyu-define" data-term="cross-document-injection">cross-document injection</button>, <button type="button" class="nyu-define" data-term="cross-tenant-leakage">cross-tenant leakage</button>.</p>
+          </div>
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-api" aria-labelledby="tab-api" hidden>
+            <h4>Programmatic Access Risks</h4>
+            <p>An API-exposed LLM serves programmatic clients rather than human users. This adds risks that neither chatbots nor RAG systems face: unauthorized endpoint discovery, <button type="button" class="nyu-define" data-term="model-extraction">model extraction</button>, <button type="button" class="nyu-define" data-term="denial-of-wallet">denial-of-wallet</button>, and lifecycle endpoint exploitation.</p>
+            <p><em>Unique risks:</em> Endpoint discovery (research has found hundreds of exposed endpoints across popular frameworks), credential-based financial abuse (documented incidents with tens of thousands of dollars in compute costs per day), lifecycle endpoint exploitation (model management endpoints exposed alongside inference).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The RAG Pattern: Four Retrieval-Specific Attack Surfaces</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>We study this architecture at the security-analysis level only: what attack surfaces does retrieval introduce, and what controls address them? How to build a RAG pipeline, choose an embedding model, or configure a vector database is outside our scope. What matters here is understanding why each step in the RAG pipeline creates an opportunity for an attacker, and how to evaluate whether the controls in place actually address the right threat.</p>
+
+        <p>The core issue is that RAG adds a data channel that bypasses the model's training. In a plain chatbot, the model responds from its weights. In a RAG system, the model also responds from whatever documents the retrieval system hands it. That retrieval channel is a new attack surface because the model treats retrieved content like anything else in its <button type="button" class="nyu-define" data-term="context-window">context window</button>: content to process and potentially follow. If an attacker can influence what gets retrieved, they can influence what the model says.</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_rag_pipeline_flow/rag-pipeline-flow.html" title="Interactive: animated data flow through a RAG pipeline showing how documents are ingested, embedded, stored, retrieved, and injected into the model context" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <p>Each step in the RAG architecture introduces a distinct vulnerability:</p>
+
+        <div class="nyu-pillars" data-cols="1" style="grid-template-columns:1fr">
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">1</span>
+            <h3 class="nyu-pillar__title">Corpus Poisoning</h3>
+            <p class="nyu-pillar__body">An attacker injects adversarial documents into the knowledge base, crafted to surface for specific queries and steer the model's response. A peer-reviewed study showed that injecting just 5 adversarially crafted documents into a corpus of 400 million achieved 90-99% attack success rates at a cost of roughly $60 (domain purchase and web crawling). Embedding similarity cannot distinguish adversarial content from legitimate content; both are retrieved by the same mechanism.</p>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">2</span>
+            <h3 class="nyu-pillar__title">Adversarial Embeddings</h3>
+            <p class="nyu-pillar__body">An attacker crafts content designed to maximize <button type="button" class="nyu-define" data-term="embedding-similarity">embedding similarity</button> with target queries, so the adversarial content surfaces even when it is not semantically relevant. Embedding spaces compress meaning in ways that can be gamed: high similarity in vector space does not guarantee honest relevance.</p>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">3</span>
+            <h3 class="nyu-pillar__title">Cross-Document Injection</h3>
+            <p class="nyu-pillar__body">Instructions hidden in retrieved content are processed by the model alongside legitimate documents. This is <button type="button" class="nyu-define" data-term="indirect-prompt-injection">indirect prompt injection</button> through the retrieval channel: the attacker places the payload in a document, and the retrieval system delivers it to the model.</p>
+          </article>
+          <article class="nyu-pillar">
+            <span class="nyu-pillar__num">4</span>
+            <h3 class="nyu-pillar__title">Cross-Tenant Leakage</h3>
+            <p class="nyu-pillar__body">In multi-tenant deployments where customers share a <button type="button" class="nyu-define" data-term="vector-store">vector store</button>, data from one tenant's namespace can leak into another's results. The root cause is usually architectural: access control enforced at the application level rather than at the database level, so a filtering bug exposes everything.</p>
+          </article>
+        </div>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_corpus_poisoning_field/corpus-poisoning-field.html" title="Interactive: particle field visualization showing 5 adversarial documents hidden among 400 million legitimate documents in a RAG knowledge base" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_adversarial_embeddings/adversarial-embeddings.html" title="Interactive: 3D vector space visualization showing how adversarial embeddings manipulate similarity scores to hijack retrieval results" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">Deterministic versus probabilistic RAG controls</h3>
+
+        <p>The deterministic/probabilistic distinction from Section 1 applies directly here. Database-level <button type="button" class="nyu-define" data-term="namespace-isolation">namespace isolation</button> is <button type="button" class="nyu-define" data-term="deterministic-control">deterministic</button>: tenants physically cannot query each other's namespace regardless of what the application does. Application-level <button type="button" class="nyu-define" data-term="metadata-filtering">metadata filtering</button> is <button type="button" class="nyu-define" data-term="probabilistic-control">probabilistic</button>: it depends on the application correctly tagging and enforcing access metadata for every single query.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="rag-warning-title">
+          <h3 class="nyu-callout__title" id="rag-warning-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Cross-Tenant Leakage: A Documented Incident
+          </h3>
+          <p>A shared vector store in a major <button type="button" class="nyu-define" data-term="crm">CRM</button> platform allowed sales representatives from Company A to retrieve Company B's knowledge base data. The root cause: access control was enforced at the application layer via metadata tags, not at the database. When the filtering failed, every tenant's documents became accessible through similarity search. The fix is architectural: enforce isolation at the database level, where it is deterministic.</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_cross_tenant_leakage/cross-tenant-leakage.html" title="Interactive: side-by-side comparison of deterministic database-level isolation versus probabilistic application-level filtering, showing how a metadata bug exposes confidential tenant data" loading="lazy" style="height:700px;"></iframe>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">The API-Exposed Pattern: Programmatic Access Risks</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>An API-exposed LLM serves programmatic clients rather than human users, which changes the threat model. Programmatic access enables automation: an attacker can write a script that sends thousands of requests per minute, probes every endpoint, extracts model behavior systematically, and runs up compute bills at machine speed. The following risks are unique to API exposure:</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Unauthorized endpoint discovery</h4>
+              <p class="nyu-process__detail">Security researchers examining popular LLM deployment frameworks have found hundreds of API endpoints, many with minimal or default authentication. Default framework configurations prioritize ease of setup, not security, and the number of exposed endpoints grows as frameworks add features.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Model extraction</h4>
+              <p class="nyu-process__detail">Repeated queries through an API can extract enough information to reconstruct a reasonable approximation of the model, especially for smaller or fine-tuned models.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Denial-of-wallet</h4>
+              <p class="nyu-process__detail">Stolen API credentials generate massive compute bills. Documented incidents have run up costs in the tens of thousands of dollars per day from a single compromised key. <button type="button" class="nyu-define" data-term="token-based-rate-limiting">Token-based rate limiting</button> (not just request-count limiting) is necessary because one long-context request can cost as much as dozens of small ones.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">4</span>
+            <div class="nyu-process__body">
+              <h4 class="nyu-process__title">Lifecycle endpoint exploitation</h4>
+              <p class="nyu-process__detail">Many frameworks expose model management endpoints (reload, configuration, fine-tuning triggers) alongside inference endpoints. Without proper authentication, these let an attacker modify the model itself, not just query it.</p>
+            </div>
+          </li>
+        </ol>
+
+
+        <h3 class="nyu-subsection-title">Going deeper: denial-of-wallet</h3>
+        <p>Denial-of-wallet is easy to pass over, because nothing stops working while it happens. The two panels below add the OWASP framing and the controls that follow from it.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </span>
+            Where OWASP places denial-of-wallet, and why it is not denial-of-service
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>OWASP does not give denial-of-wallet an entry of its own. It sits inside <button type="button" class="nyu-define" data-term="unbounded-consumption">LLM10:2025 Unbounded Consumption</button>. OWASP describes that entry as an application permitting excessive and uncontrolled inference, with denial of service, economic loss, model theft, and service degradation among the results. Denial-of-wallet is the economic branch: OWASP defines it as a high volume of operations aimed at the cost-per-use model of cloud AI services, large enough to create a financial burden the provider may not be able to absorb.</p>
+            <p>The placement matters, because a denial-of-wallet attack does not look like an outage. Latency can stay normal, error rates flat, and the service keeps answering correctly while the cost keeps rising. Several of the consumption patterns OWASP lists run up cost without any of the usual availability symptoms.</p>
+            <div class="nyu-table-wrap">
+              <table class="nyu-table">
+                <thead>
+                  <tr>
+                    <th scope="col">OWASP consumption pattern</th>
+                    <th scope="col">What the caller sends</th>
+                    <th scope="col">Why the bill moves</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Variable-length input flood</td>
+                    <td>Many requests of differing sizes</td>
+                    <td>Each request looks unremarkable on its own, so it is the total that drains the budget</td>
+                  </tr>
+                  <tr>
+                    <td>Continuous input overflow</td>
+                    <td>Input that runs past the model's context window</td>
+                    <td>Work is done on input that is then discarded, so the cost is paid and nothing is returned</td>
+                  </tr>
+                  <tr>
+                    <td>Resource-intensive queries</td>
+                    <td>Prompts that force long reasoning chains or long output</td>
+                    <td>A few requests can account for a large share of the cost</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>The simulation below makes the same point with numbers: a request-count limit treats a 200-token request and a 200,000-token request as one unit each, so it can be working exactly as configured while the bill grows a thousandfold.</p>
+          </div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </span>
+            The controls OWASP lists for this risk
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>OWASP's mitigation list for LLM10 runs to fifteen items and covers the whole of unbounded consumption, model extraction included. For the financial branch, a smaller set does most of the work, and it maps onto controls we have already met:</p>
+            <ul>
+              <li><strong>Rate limiting counted in tokens.</strong> The unit of cost is the token, so a limit counted in requests measures the wrong thing. This is the control the comparison below is built around.</li>
+              <li><strong>Resource allocation management, timeouts and throttling.</strong> A ceiling on how long one inference may run and how much of the pool one caller may hold, so a single client cannot occupy the service indefinitely.</li>
+              <li><strong>Bounded queues alongside deliberate scaling.</strong> Autoscaling answers a load spike by buying more capacity, which is the wrong response when the spike is the attack. OWASP pairs its scaling guidance with a limit on queued actions for this reason.</li>
+              <li><strong>Logging, monitoring, and anomaly detection.</strong> Spend per credential over time is the signal that separates a busy day from a compromised key. Section 4 returns to denial-of-wallet from that angle.</li>
+              <li><strong>Access controls and graceful degradation.</strong> Narrow what a given key may call, and decide in advance what the service does when a limit is reached, so that degrading is something the system does on purpose rather than an outage.</li>
+            </ul>
+            <p>The two incidents this module cites, roughly $46,000 in a day and $82,000 across 48 hours, both ran through valid credentials against services that stayed healthy throughout. The figures come from the reporting parties and have not been independently audited. What matters here is which control would have caught them, not the exact amounts.</p>
+          </div>
+        </div>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_denial_of_wallet/denial-of-wallet.html" title="Interactive: denial-of-wallet simulation comparing request-count rate limiting against token-based rate limiting, showing how a single stolen API key generates massive compute bills" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/02_api_attack_surface/api-attack-surface.html" title="Interactive: radial network topology showing 18 API endpoints across 5 categories, animated discovery sweep reveals unauthenticated endpoints that attackers exploit" loading="lazy" style="height:700px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">Comparing the three patterns</h3>
+
+        <table class="nyu-table">
+          <thead>
+            <tr><th>Pattern</th><th>Inherits</th><th>Adds</th><th>Defensive emphasis</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Chatbot</strong></td>
+              <td>Baseline</td>
+              <td>General LLM risks only</td>
+              <td>Input/output controls, privilege separation</td>
+            </tr>
+            <tr>
+              <td><strong>RAG</strong></td>
+              <td>All chatbot risks</td>
+              <td>4 retrieval-specific surfaces (largest total attack surface)</td>
+              <td>Database-level access isolation, corpus integrity monitoring, retrieval-behavior analysis</td>
+            </tr>
+            <tr>
+              <td><strong>API-exposed</strong></td>
+              <td>All chatbot risks</td>
+              <td>Programmatic access risks, financial exposure</td>
+              <td>Endpoint authentication, <button type="button" class="nyu-define" data-term="token-based-rate-limiting">token-based rate limiting</button>, lifecycle endpoint protection</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The takeaway is that security controls must be pattern-specific. An organization that deploys a RAG-based chatbot and secures it using only the controls appropriate for a plain chatbot has left four attack surfaces entirely undefended. An organization that exposes an LLM API without <button type="button" class="nyu-define" data-term="token-based-rate-limiting">token-based rate limiting</button> is vulnerable to denial-of-wallet attacks where a single request can cost hundreds of dollars. The assessment skill is matching the deployment pattern to the correct threat model and verifying that controls actually address the pattern-specific risks, not just the baseline.</p>
+      </section>
+
+      <!-- ====================== ERT-2 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">RAG Attack Surface Mapping</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>For each of the three scenarios below, identify (a) which RAG-specific attack surface it targets, (b) whether it would work against a plain chatbot with no RAG, and (c) what control would mitigate it.</p>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario 1: The Paralegal's Upload
+          </h3>
+          <p class="nyu-scenario__prompt">A paralegal at a law firm uploads a document to the firm's legal research knowledge base. The document contains hidden instructions that redirect queries about contract termination clauses to return misleading information.</p>
+          <button class="nyu-scenario__btn">Show Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p>This is <em>cross-document injection</em> (indirect prompt injection via the retrieval channel). The paralegal's document carries hidden instructions that the model follows when the document is retrieved. It would not work against a plain chatbot because the chatbot has no retrieval mechanism to deliver the payload. Mitigation: scan ingested documents for hidden instructions, restrict who can add documents, and apply output filtering to detect responses that deviate from the retrieval source.</p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario 2: Shared Vector Store
+          </h3>
+          <p class="nyu-scenario__prompt">Company A's employees can retrieve Company B's internal product documentation from a shared vector store, even though both companies were told their data would be isolated.</p>
+          <button class="nyu-scenario__btn">Show Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p>This is <em>cross-tenant leakage</em>. It targets the vector store's access control architecture. It would not work against a plain chatbot because there is no shared data store. Mitigation: enforce namespace isolation at the database level (deterministic), not just application-level metadata filtering (probabilistic).</p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario 3: System Prompt Extraction
+          </h3>
+          <p class="nyu-scenario__prompt">A user types a prompt that makes the customer support chatbot reveal the first 200 characters of its system prompt. The chatbot uses RAG to search product documentation, but the attack does not involve any retrieved documents.</p>
+          <button class="nyu-scenario__btn">Show Possible Explanation</button>
+          <div class="nyu-scenario__answer">
+            <p>This is <em>system prompt extraction</em>, a general chatbot-level attack. It works against any chatbot, with or without RAG, because it targets the model's system prompt rather than the retrieval system. The RAG component is irrelevant to this attack. Mitigation: input validation to detect extraction patterns, output filtering to scan responses for system prompt content.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== CB-1 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">PoisonedRAG Case Analysis</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>A research team demonstrated that injecting 5 adversarially crafted documents into a RAG knowledge base of 400 million documents achieved 90-99% attack success across multiple question types. The adversarial documents were optimized to maximize embedding similarity with target queries, so the retrieval system actively delivered the attack: poisoned documents scored high on relevance precisely because they were designed to.</p>
+
+        <p>This study is worth analyzing because it reveals how retrieval-based systems break the trust assumptions that make them useful. Work through each question, then check your reasoning against the explanation.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </span>
+            Q1. What trust assumption about retrieved documents does this attack violate?
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>The implicit trust assumption is that documents in the knowledge base are benign and accurate. RAG systems treat retrieved content as grounding context, but the retrieval mechanism has no way to judge whether content is trustworthy. Retrieval selects by similarity, not credibility.</p>
+          </div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </span>
+            Q2. Why does the ratio (5 documents in 400 million) make content-level defense impractical?
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Reviewing 5 documents in 400 million is like finding 5 specific needles in a haystack the size of a building. Content-level review of the entire corpus is infeasible at that scale. The attacker needs to poison a vanishingly small fraction; the defender needs to verify the entire corpus.</p>
+          </div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </span>
+            Q3. Why can embedding similarity not distinguish the adversarial documents from legitimate ones?
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Embedding similarity measures how closely a document's vector representation matches a query's. Adversarial documents are crafted to maximize that similarity, so in embedding space they look indistinguishable from highly relevant legitimate documents. The retrieval system surfaces them precisely because they score high on the same metric used for legitimate retrieval.</p>
+          </div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </span>
+            Q4. Propose two controls that could reduce the risk of corpus poisoning.
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Two controls that reduce risk: (a) anomaly detection on retrieval patterns, flagging when a small number of recently added documents are retrieved disproportionately often across many different queries; (b) multi-source verification, requiring the model to corroborate retrieved claims across multiple independent documents before presenting them as answers.</p>
+          </div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </span>
+            Q5. Even with your proposed controls, explain why the fundamental vulnerability persists.
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>Even with these controls, the vulnerability persists because the LLM processes retrieved content and instructions in the same representation space. The instruction/data boundary is still collapsed. Any content injected into the model's context, whether through user input or retrieval, can potentially be interpreted as instructions. Controls reduce the likelihood; they do not create a structural separation.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== KC-2 ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc2-q1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc2-q1-prompt">A company deploys a RAG-based customer support chatbot. The vector store contains product documentation from all 15 product lines, and customer queries match against the full corpus regardless of which product the customer purchased. Which OWASP LLM Top 10 (2025) category is most directly relevant?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc2-q1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Prompt injection is always relevant, but this scenario describes a data access issue, not an injection attack. The problem is that retrieval returns documents the customer should not see.">LLM01: Prompt Injection</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Excessive agency applies to systems that take actions beyond their intended scope. This scenario is about data exposure through retrieval, not unauthorized actions.">LLM06: Excessive Agency</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">LLM08: Vector and Embedding Weaknesses</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="LLM02 is related (product docs may contain sensitive information), but the root cause is the retrieval architecture. LLM08 addresses the vector store access control issue more precisely.">LLM02: Sensitive Information Disclosure</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. LLM08 covers vector store access control issues, including the absence of document-level permissions. A customer querying about Product A should not retrieve internal documentation about Products B through O. Fix: pre-retrieval authorization filtering with document-level role-based access metadata."
+               data-incorrect-msg="Not quite. The core issue is the vector store's access control: all 15 product lines are accessible to all customers, regardless of what they purchased."></div>
+        </div>
+
+        <!-- Up Next -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 3: Detecting Abuse: Log Signatures and Compound Detection.</strong> We cover what comes after deployment, starting with detection: what prompt injection and exfiltration leave in the logs, and why combining weak signals is what makes an alert worth acting on.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

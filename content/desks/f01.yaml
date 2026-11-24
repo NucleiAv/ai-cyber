@@ -1,0 +1,34 @@
+title: Write an incident in ATLAS
+lede: Turn a short incident story into ATLAS tactics and technique IDs.
+blurb: Map each step of a real-style AI incident to its ATLAS tactic and technique.
+situation: |
+  An attacker found that a company's support assistant indexes its public forum. They posted a forum message with hidden instructions. A customer asked the assistant a question, the assistant read the post, and it used its ticket tool to send account details to an outside address.
+rounds:
+  - title: Round 1. Tactic for each step
+    items:
+      - type: sort
+        q: Which ATLAS tactic does each step belong to?
+        rows:
+          - ["Learn which sources the assistant indexes", "Reconnaissance"]
+          - ["Post the hidden instruction on the public forum", "Initial Access"]
+          - ["The assistant follows the instruction", "Execution"]
+          - ["Account details leave through the ticket tool", "Exfiltration"]
+        opts: ["Reconnaissance", "Initial Access", "Execution", "Exfiltration"]
+        why: "The order of tactics follows the story. Learn, get in, run, and take data out."
+      - type: sort
+        q: Which technique ID fits each step?
+        rows:
+          - ["Learn which sources the assistant indexes", "AML.T0064 Gather RAG-Indexed Targets"]
+          - ["The assistant follows the hidden instruction", "AML.T0051.001 LLM Prompt Injection, Indirect"]
+          - ["Data leaves through the ticket tool", "AML.T0086 Exfiltration via AI Agent Tool Invocation"]
+        opts: ["AML.T0064 Gather RAG-Indexed Targets", "AML.T0051.001 LLM Prompt Injection, Indirect", "AML.T0086 Exfiltration via AI Agent Tool Invocation"]
+        why: "IDs from ATLAS release 2026.10. Always record the release, because IDs can move."
+  - title: Round 2. Use it
+    items:
+      - q: Which ATLAS-only tactic covers the attacker reaching the model through normal customer questions?
+        opts: ["AI Model Access", "Lateral Movement", "Impact"]
+        a: 0
+        why: "AI Model Access covers how an attacker gets to the model. It is one of the two tactics ATLAS adds to the ATT&CK set."
+      - type: open
+        q: Why tag your detection rules with ATLAS IDs?
+        a: "So reports, coverage maps and other teams speak one language, and so you can see which techniques have no detection yet."

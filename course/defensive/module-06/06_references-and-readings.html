@@ -1,0 +1,257 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 6 · Section 6 · References &amp; Readings · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 6 · Section 6 of 6</div>
+      <h1 class="nyu-hero__title">References &amp; Readings</h1>
+      <p class="nyu-hero__subtitle">All sources, citations, and recommended readings referenced throughout Module 6: AI-Assisted Secure Code Review and Supply Chain Awareness, organized by category and section.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Section type"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Reference</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 7 parts</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Academic Papers &amp; Preprints</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Frameworks &amp; Standards</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Government Sources</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Tools &amp; Documentation</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Case Studies &amp; Incident Reports</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Source Caveats</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> References by Section</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+      <!-- ====================== ACADEMIC ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Academic Papers &amp; Preprints</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>Ding, Y., et al.</strong> (2025). "Vulnerability Detection with Code Language Models: How Far Are We?" <em>ICSE 2025.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Introduces PrimeVul, a de-duplicated vulnerability benchmark. Shows that prior datasets had low label accuracy (25% of BigVul's "vulnerable" functions were actually vulnerable) and train/test duplication, and that measured performance collapses on a relabeled, de-duplicated, chronologically split benchmark. Foundation for Section 1's LLM analysis mechanism and Section 2's dataset quality discussion. <br><a href="https://doi.org/10.1109/ICSE55347.2025.00038" target="_blank" rel="noopener">doi.org/10.1109/ICSE55347.2025.00038</a></li>
+          <li><strong>Perry, N., et al.</strong> (2023). "Do Users Write More Insecure Code with AI Assistants?" <em>ACM CCS 2023.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Controlled experiment showing developers using AI code assistants produced less secure code while believing it was more secure. Source for the overconfidence finding in Section 2 and the trust calibration framework in Section 5. <br><a href="https://doi.org/10.1145/3576915.3623157" target="_blank" rel="noopener">doi.org/10.1145/3576915.3623157</a></li>
+          <li><strong>Ladisa, P., et al.</strong> (2023). "A Taxonomy of Attacks on Open-Source Software Supply Chains." <em>IEEE S&amp;P 2023.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Systematic taxonomy of supply chain attack vectors: dependency confusion, typosquatting, maintainer compromise, and build system compromise. Structural framework for Section 4. <br><a href="https://doi.org/10.1109/SP46215.2023.10179304" target="_blank" rel="noopener">doi.org/10.1109/SP46215.2023.10179304</a></li>
+          <li><strong>Spracklen, J., et al.</strong> (2025). "We Have a Package for You! A Comprehensive Analysis of Package Hallucinations by Code Generating LLMs." <em>USENIX Security 2025.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Code-generating models recommend nonexistent packages at 5&#8211;22% rates. When the same prompt is re-run ten times, 43% of hallucinated names appear in every single run, and 58% appear more than once. That predictability enables "slopsquatting" attacks. Source for Section 4's AI-specific supply chain vector. <br><a href="https://www.usenix.org/conference/usenixsecurity25/presentation/spracklen" target="_blank" rel="noopener">USENIX Security '25</a></li>
+          <li><strong>Hu, E. J., et al.</strong> (2022). "LoRA: Low-Rank Adaptation of Large Language Models." <em>ICLR 2022.</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Low-rank adaptation technique for efficient fine-tuning. Foundation for Section 5's instruction/completion pair construction exercise. <br><a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">arXiv:2106.09685</a></li>
+          <li><strong>Mitropoulos, D., et al.</strong> (2026). "Measuring and Exploiting Contextual Bias in LLM-Assisted Security Code Review." <span class="ref-tag ref-tag--paper">Preprint</span> <br>Demonstrates that adversarial PR metadata can bias LLM-based vulnerability detection, reducing critical evaluation. Cited in Section 2's confirmation bias discussion. <em>Not peer-reviewed.</em> <br><a href="https://arxiv.org/abs/2603.18740" target="_blank" rel="noopener">arXiv:2603.18740</a></li>
+          <li><strong>"Friends or Foes? Combining Static Analysis Tools and LLMs for Vulnerability Detection."</strong> <em>ITEQS 2026 workshop (co-located with ICST 2026).</em> <span class="ref-tag ref-tag--paper">Paper</span> <br>Reports F1 improvements of 17-60% when combining LLM review with traditional SAST tools for SQL injection detection. Cited in Sections 1, 3, and 5. <br><a href="https://conf.researchr.org/details/icst-2026/iteqs-2026-papers/1/Friends-or-Foes-Combining-Static-Analysis-Tools-and-LLMs-for-Vulnerability-Detection" target="_blank" rel="noopener">conf.researchr.org/details/icst-2026/iteqs-2026-papers</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== FRAMEWORKS ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Frameworks &amp; Standards</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>NIST.</strong> <em>SP 800-218: Secure Software Development Framework (SSDF) v1.1.</em> February 2022. <span class="ref-tag ref-tag--framework">Framework</span> <br>Four practice groups (PO, PS, PW, RV) organizing the secure development lifecycle. Structural framework for Section 3's SDLC integration discussion. <br><a href="https://csrc.nist.gov/pubs/sp/800/218/final" target="_blank" rel="noopener">csrc.nist.gov/sp/800-218</a></li>
+          <li><strong>NIST.</strong> <em>SP 800-218A: Secure Software Development Practices for Generative AI and Dual-Use Foundation Models (SSDF Community Profile).</em> July 2024. <span class="ref-tag ref-tag--framework">Framework</span> <br>Extends SSDF practices to AI/ML-specific development concerns. Referenced in Section 3. <br><a href="https://csrc.nist.gov/pubs/sp/800/218/a/final" target="_blank" rel="noopener">csrc.nist.gov/sp/800-218a</a></li>
+          <li><strong>MITRE/CISA.</strong> <em>2025 CWE Top 25 Most Dangerous Software Weaknesses.</em> CWE v4.20, January 2026. <span class="ref-tag ref-tag--framework">Framework</span> <br>Weakness taxonomy used for the Section 1 CWE mapping exercise and three-tool comparison. <br><a href="https://cwe.mitre.org/top25/" target="_blank" rel="noopener">cwe.mitre.org/top25/</a></li>
+          <li><strong>CISA.</strong> <em>Secure by Design.</em> Revised April 2024. <span class="ref-tag ref-tag--framework">Framework</span> <br>Design-phase security principles referenced in Section 3's defense-in-depth discussion. <br><a href="https://www.cisa.gov/resources-tools/resources/secure-by-design" target="_blank" rel="noopener">cisa.gov/secure-by-design</a></li>
+          <li><strong>SLSA (Supply-chain Levels for Software Artifacts).</strong> <span class="ref-tag ref-tag--framework">Framework</span> <br>Four-level build integrity framework. Defensive layer in Section 4. <br><a href="https://slsa.dev/" target="_blank" rel="noopener">slsa.dev</a></li>
+          <li><strong>Sigstore.</strong> <span class="ref-tag ref-tag--framework">Framework</span> <br>Keyless code signing and verification for open-source software. Referenced in Section 4. <br><a href="https://docs.sigstore.dev/" target="_blank" rel="noopener">docs.sigstore.dev</a></li>
+          <li><strong>SPDX (Software Package Data Exchange).</strong> ISO/IEC 5962:2021. <span class="ref-tag ref-tag--reference">Standard</span> <br>SBOM standard for communicating software component information. Referenced in Section 4. <br><a href="https://spdx.dev/" target="_blank" rel="noopener">spdx.dev</a></li>
+          <li><strong>CycloneDX.</strong> <span class="ref-tag ref-tag--reference">Standard</span> <br>OWASP-originated SBOM standard. Referenced alongside SPDX in Section 4. <br><a href="https://cyclonedx.org/" target="_blank" rel="noopener">cyclonedx.org</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== GOVERNMENT ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Government Sources</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>NCSC UK.</strong> <em>Guidelines for Secure AI System Development.</em> 2023 (updated 2025). <span class="ref-tag ref-tag--reference">Government</span> <br>Government guidance on secure design, development, deployment, and operation of AI systems, including vulnerability management considerations. Referenced in Sections 2, 3, and 5. <br><a href="https://www.ncsc.gov.uk/collection/guidelines-secure-ai-system-development" target="_blank" rel="noopener">ncsc.gov.uk/guidelines-secure-ai-system-development</a></li>
+          <li><strong>NCSC UK (Ruth C).</strong> <em>10 Questions to Ask When Using AI Models to Find Vulnerabilities.</em> Blog post, 11 May 2026. <span class="ref-tag ref-tag--reference">Government</span> <br>Source of the point that finding vulnerabilities does not by itself improve security. Referenced in Sections 3 and 5. <br><a href="https://www.ncsc.gov.uk/blogs/10-questions-ask-using-ai-models-find-vulnerabilities" target="_blank" rel="noopener">ncsc.gov.uk/blogs/10-questions-ask-using-ai-models-find-vulnerabilities</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== TOOLS ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Tools &amp; Documentation</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>Semgrep.</strong> <em>Documentation.</em> <span class="ref-tag ref-tag--tool">Tool Docs</span> <br>Pattern-based SAST tool used as the representative pattern-matching analyzer in Section 1's three-tool comparison. <br><a href="https://semgrep.dev/docs/" target="_blank" rel="noopener">semgrep.dev/docs/</a></li>
+          <li><strong>CodeQL.</strong> <em>Documentation.</em> GitHub. <span class="ref-tag ref-tag--tool">Tool Docs</span> <br>Semantic-query SAST tool used as the representative dataflow analyzer in Section 1's three-tool comparison. <br><a href="https://codeql.github.com/docs/" target="_blank" rel="noopener">codeql.github.com/docs/</a></li>
+          <li><strong>OpenSSF Scorecard.</strong> <span class="ref-tag ref-tag--tool">Tool</span> <br>Automated security health assessment for open-source projects. Defensive tool in Section 4. <br><a href="https://scorecard.dev/" target="_blank" rel="noopener">scorecard.dev</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== CASE STUDIES ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Case Studies &amp; Incident Reports</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>All four case studies are used in Section 4's supply chain attack timeline and the attack/defense matching exercise.</p>
+
+        <ul class="ref-list">
+          <li><strong>event-stream (2018).</strong> <span class="ref-tag ref-tag--paper">Incident</span> <br>Maintainer handoff attack: a new maintainer added a malicious dependency targeting cryptocurrency wallets. npm security team advisory; CERT/CC VU#534320.</li>
+          <li><strong>Birsan dependency confusion (2021).</strong> <span class="ref-tag ref-tag--paper">Incident</span> <br>Researcher demonstrated dependency confusion attacks against Apple, Microsoft, and Tesla by publishing public packages that shadowed internal package names. <br>Birsan, A. "Dependency Confusion: How I Hacked Into Apple, Microsoft and Dozens of Other Companies." Medium, February 2021.</li>
+          <li><strong>Codecov (2021).</strong> <span class="ref-tag ref-tag--paper">Incident</span> <br>Build system compromise: attacker modified the Bash Uploader script to exfiltrate CI/CD environment variables including credentials. Codecov post-mortem, April 2021; Rapid7 analysis, May 2021.</li>
+          <li><strong>3CX (2023).</strong> <span class="ref-tag ref-tag--paper">Incident</span> <br>Cascading supply chain attack: compromise of Trading Technologies software was used to compromise 3CX's build environment, distributing trojanized desktop clients. <br>Mandiant (Google Cloud blog, April 2023); CrowdStrike (March 2023).</li>
+        </ul>
+      </section>
+
+      <!-- ====================== CAVEATS ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Source Caveats</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">Reading Sources Critically</h3>
+          <p>Every source has a context. When you read security research, keep these caveats in mind:</p>
+        </aside>
+
+        <table class="nyu-table nyu-table--even">
+          <thead>
+            <tr><th>Source Category</th><th>Key Caveat</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tool documentation (Semgrep, CodeQL)</td>
+              <td>Describes tool capabilities accurately but does not assess limitations or compare against competitors objectively</td>
+            </tr>
+            <tr>
+              <td>Vendor statistics (Sonatype)</td>
+              <td>Sonatype sells supply chain security products; statistics may reflect methodology that favors larger numbers. Treat vendor-sourced figures as directional, not authoritative</td>
+            </tr>
+            <tr>
+              <td>Academic preprints (arXiv:2603.18740)</td>
+              <td>Not peer-reviewed; treat claims with appropriate caution</td>
+            </tr>
+            <tr>
+              <td>Government guidance (NCSC UK, CISA, NIST)</td>
+              <td>Authoritative for policy context but may not reflect the latest empirical findings</td>
+            </tr>
+            <tr>
+              <td>Incident reports (event-stream, Codecov, 3CX)</td>
+              <td>Post-incident analysis; details may be incomplete where investigations are ongoing or where affected parties limited disclosure</td>
+            </tr>
+            <tr>
+              <td>Benchmark results (PrimeVul, any tool evaluation)</td>
+              <td>Always specify: which dataset, which model, what conditions. Benchmark performance does not equal production performance</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================== BY SECTION ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">References by Section</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Use this index to find sources cited in each section of Module 6.</p>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 1: How LLMs Analyze Code (and Where They Fail)</h3>
+          <ul class="ref-list">
+            <li>MITRE/CISA, "2025 CWE Top 25." Weakness taxonomy and CWE mapping exercise.</li>
+            <li>Semgrep Documentation. Pattern-based SAST representative.</li>
+            <li>CodeQL Documentation, GitHub. Semantic-query SAST representative.</li>
+            <li>Ding et al. (2025, ICSE). LLM analysis mechanism and PrimeVul dataset.</li>
+            <li>"Friends or Foes?" LLM+SAST study (ITEQS 2026 / ICST). F1 improvement claim. Preprint; not peer-reviewed.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 2: Evaluating LLM Code Review: Metrics, Failures, and Trust</h3>
+          <ul class="ref-list">
+            <li>Ding et al. (2025, ICSE). PrimeVul dataset quality crisis and de-duplication methodology.</li>
+            <li>Perry et al. (2023, ACM CCS). Overconfidence finding: developers using AI wrote less secure code.</li>
+            <li>Mitropoulos et al. (arXiv:2603.18740, 2026). Contextual bias in LLM-assisted code review. Preprint; not peer-reviewed.</li>
+            <li>NCSC UK, "Guidelines for Secure AI System Development." Government guidance context.</li>
+            <li>Metrics framework applied from M01/M04 prior knowledge (confusion matrix, precision, recall, F1).</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 3: AI Review in the Secure Development Lifecycle</h3>
+          <ul class="ref-list">
+            <li>NIST SP 800-218 (SSDF v1.1, 2022). Four practice groups framing the SDLC discussion.</li>
+            <li>NIST SP 800-218A (2024). AI-specific SSDF companion.</li>
+            <li>CISA Secure by Design (2024). Design-phase security principles.</li>
+            <li>Perry et al. (2023, ACM CCS). Human oversight requirements in AI-assisted workflows.</li>
+            <li>"Friends or Foes?" LLM+SAST study (ITEQS 2026 / ICST). Defense-in-depth evidence.</li>
+            <li>NCSC UK, "Guidelines for Secure AI System Development." Government guidance context.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 4: Software Supply Chain Attacks and Defenses</h3>
+          <ul class="ref-list">
+            <li>Ladisa et al. (2023, IEEE S&amp;P). Supply chain attack taxonomy.</li>
+            <li>Spracklen et al. (2025, USENIX Security). Slopsquatting: AI-specific supply chain vector.</li>
+            <li>Birsan (2021). Dependency confusion demonstration.</li>
+            <li>event-stream incident (2018). Maintainer handoff attack case study.</li>
+            <li>Codecov incident (2021). Build system compromise case study.</li>
+            <li>3CX incident (2023). Cascading supply chain attack case study.</li>
+            <li>Sonatype (2026). Supply chain attack statistics. Vendor source; treat as directional.</li>
+            <li>SLSA, Sigstore, SPDX, CycloneDX, OpenSSF Scorecard. Defensive frameworks and tools.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 5: Synthesis: Judgment, Limitations, and Fine-Tuning Data</h3>
+          <ul class="ref-list">
+            <li>Perry et al. (2023, ACM CCS). Trust calibration evidence.</li>
+            <li>Ding et al. (2025, ICSE). Trust calibration evidence.</li>
+            <li>Spracklen et al. (2025, USENIX Security). Trust calibration evidence.</li>
+            <li>NCSC UK, "Guidelines for Secure AI System Development." Government guidance for trust boundaries.</li>
+            <li>"Friends or Foes?" LLM+SAST study (ITEQS 2026 / ICST). Evidence synthesis. Preprint; not peer-reviewed.</li>
+            <li>Hu et al. (2022, ICLR). LoRA fine-tuning methodology; instruction/completion pair construction.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

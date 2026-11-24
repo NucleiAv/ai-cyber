@@ -1,0 +1,155 @@
+slug: l10
+num: "10"
+lecture: 10
+week: 10
+short: Excessive agency, governance
+title: Excessive agency, governance and policy as code
+time: about 3 hours
+lede: How to control agents with rules that a computer enforces. Anthropic's RSP, the EU AI Act, and Open Policy Agent with Rego.
+owasp: [LLM06]
+agentic: [ASI02, ASI03, ASI10]
+atlas: [AML.T0053]
+other_fw:
+  - [NIST AI RMF 1.0, "Four functions. Govern, Map, Measure and Manage. Policy as code is one way to Manage risk. [Read it](@nistrmf)."]
+  - [EU AI Act, "Binding EU law with risk tiers and fines. The roadmap page has the current dates."]
+  - [ISO/IEC 42001, "A certifiable AI management system standard."]
+
+idea: |
+  Lesson 9 said "put a check between the agent and its tools". This lesson builds that check.
+
+  There are two kinds of rules.
+
+  - **Organization rules**, such as a company's safety policy or a law. People read them.
+  - **Code rules**, such as "deny DELETE requests". A computer enforces them on every call. This is **policy as code**.
+
+  Good governance turns the first kind into the second kind wherever it can.
+
+  !eli5 A sign that says "staff only" is a people rule. A door that opens only for a staff badge is a code rule. The door works even when nobody reads the sign.
+
+terms:
+  - [RSP, "Anthropic's Responsible Scaling Policy. It ties stronger safety and security measures to stronger model capabilities."]
+  - [ASL, "AI Safety Level. A set of required safeguards in Anthropic's RSP, such as ASL-3."]
+  - [OPA, "Open Policy Agent. An open source engine that decides allow or deny from a policy and an input."]
+  - [Rego, "The policy language of OPA."]
+  - [Default deny, "If no rule allows an action, it is blocked."]
+  - [LLM-as-a-judge, "Using a model to score or classify another model's output."]
+
+how: |
+  ### Self-regulation and law
+
+  Anthropic's RSP sets **capability thresholds**. When a model reaches one, the company must apply a matching AI Safety Level of protection before it trains further or deploys. In May 2025 Anthropic turned on ASL-3 protections for Claude Opus 4. The policy is voluntary. Anthropic can change it.
+
+  The **EU AI Act** is law. It sorts AI systems by risk. High-risk systems carry duties such as risk management, logging and human oversight, with fines for breaches.
+
+  ### How OPA decides
+
+  1. The app sends OPA a JSON **input** that describes the action, such as the method, the path and the user's role.
+  2. OPA evaluates the **Rego policy** against the input.
+  3. OPA returns a **decision**, such as allow true or false.
+  4. The app enforces the decision. The model never sees the policy and cannot argue with it.
+
+  ### The limit
+
+  Rego is exact. It can check `amount > 5000`. It cannot check "this answer is biased", because that needs judgment about meaning. For that, teams add an LLM judge or a classifier in the loop. A judge is probabilistic, so its decision needs logging, testing and often a person.
+
+diagrams:
+  - type: flow
+    title: Policy as code between an agent and an API
+    nodes: [["Agent wants an API call", "def"], ["App builds JSON input", "box"], ["OPA evaluates Rego", "raised"], ["allow or deny", "box"], ["API call runs or is blocked", "box"]]
+    edges: ["", "input", "decision", "enforce"]
+    caption: The policy sits outside the model. Prompt injection cannot rewrite it.
+
+defense: |
+  - Write agent permissions as code with default deny.
+  - Keep exact rules in code (methods, paths, roles, amounts). Send meaning-based rules to a judge plus a person.
+  - Version, review and test policies like code.
+  - Log every decision for audit.
+
+artex: |
+  ARTEX, the autonomous pentest platform from lesson 9, shows policy as code in an offensive tool. Its README describes **argv-prefix rules**, which allow only commands that start with an approved prefix, plus **scope and deny gates** and **approval gates**. A Rego policy in your own agent does the same job. It decides, outside the model, which actions are allowed.
+
+lab:
+  intro: |
+    Write a Rego policy in the OPA Playground that limits an AI agent's API calls. Try your own policy first. Then open the solution and compare.
+  steps:
+    - "Rule 1. Allow GET requests to /products."
+    - "Rule 2. Deny DELETE requests to any endpoint."
+    - "Rule 3. Allow POST to /orders only if user_role is admin."
+    - "Test 1. `{\"method\": \"POST\", \"path\": [\"orders\"], \"user_role\": \"admin\"}` must be allowed."
+    - "Test 2. `{\"method\": \"GET\", \"path\": [\"products\"], \"user_role\": \"guest\"}` must be allowed."
+    - "Test 3. `{\"method\": \"DELETE\", \"path\": [\"products\"], \"user_role\": \"admin\"}` must be denied."
+    - "Extend task. Write a Rego rule that would have blocked your week 9 LLMGoat attack."
+  hints:
+    - The Playground uses OPA 1.x syntax, so rule bodies use the keyword if.
+    - With default allow false, any request that no rule allows is already denied. Rule 2 makes the deny explicit, so a later allow rule cannot open DELETE by mistake.
+  solution: |
+    package agent.authz
+
+    default allow := false
+
+    deny if input.method == "DELETE"
+
+    allow if {
+        not deny
+        input.method == "GET"
+        input.path == ["products"]
+    }
+
+    allow if {
+        not deny
+        input.method == "POST"
+        input.path == ["orders"]
+        input.user_role == "admin"
+    }
+  links: [opaplay, opaexplainer]
+
+readings:
+  - [gaas, "Proposes a policy layer for multi-agent systems. It checks agent actions against declared rules at run time and keeps a trust score for each agent."]
+  - [rsp, "Anthropic's policy. Read how capability thresholds link to required safeguards."]
+  - [opaexplainer, "Written for Kubernetes, but it explains the policy-as-code idea and Rego clearly."]
+star: [rsp]
+
+questions:
+  - - If frameworks like the RSP are voluntary, will companies drop them under competition? Compare the EU AI Act (hard law) with RSPs (self-regulation). Does regulation hurt open source?
+    - |
+      **Voluntary frameworks** move fast and are written by people close to the technology. Their weakness is that nothing forces a company to keep them. Under pressure, a company can weaken or rewrite its own policy.
+
+      **Hard law** like the EU AI Act applies to everyone in the market, with fines. It removes the advantage of cutting corners. Its weakness is speed. Law takes years and the technology changes in months.
+
+      **Open source** worries are real. Compliance costs fall harder on small teams. The AI Act has some exceptions for free and open source models, but not for all cases. A balanced view is that law should set a floor for high-risk uses, and voluntary frameworks should add depth on top, with public reports so others can check them.
+  - - How do we turn a high-level policy such as "do not discriminate" into an OPA Rego rule? We can write deny if amount > 5000. How do we write deny if the response is biased?
+    - |
+      You cannot do it directly. Rego checks exact facts in the input. Bias is a judgment about meaning and about patterns across many decisions.
+
+      What you can do:
+
+      - Turn parts of the policy into exact rules. For example, deny any decision that uses a protected attribute, such as a field for gender or religion, as an input.
+      - Add a classifier or an LLM judge that scores the response and returns a field such as `bias_score`. Then Rego can check `input.bias_score < 0.2`. The judge is probabilistic, so test it and log it.
+      - Measure fairness across many decisions offline, such as error rates per group. One response cannot show bias. A pattern can.
+      - Send borderline cases to a person.
+
+quiz:
+  - q: An agent sends a DELETE request. Your policy has default allow := false and no rule allows DELETE. What does OPA return?
+    opts: ["allow true", "allow false", "an error"]
+    a: 1
+    why: Default deny blocks anything that no rule allows.
+  - q: Why can prompt injection not change an OPA policy?
+    opts: ["OPA reads only the system prompt", "The policy runs outside the model, and the model never edits it", "OPA uses encryption"]
+    a: 1
+    why: The decision comes from code and input data, not from the model's text.
+  - q: Which policy fits Rego well?
+    opts: ["Allow refunds only up to 500 dollars", "Do not write rude replies", "Be fair to all users"]
+    a: 0
+    why: A number limit is an exact check. The other two need judgment about meaning.
+
+deliverables:
+  - Your answers to both discussion questions.
+  - Your Rego policy that passes the three tests.
+
+refs:
+  - "Anthropic. [Responsible Scaling Policy](@rsp)."
+  - "Anthropic. [Activating AI Safety Level 3 protections](https://www.anthropic.com/news/activating-asl3-protections), May 2025."
+  - "[Governance-as-a-Service for multi-agent systems](@gaas), 2025."
+  - "Open Policy Agent. [Policy language documentation](https://www.openpolicyagent.org/docs/policy-language)."
+  - "Aqua. [Open Policy Agent explained](@opaexplainer)."
+  - "[EU AI Act](@euaiact)."

@@ -1,0 +1,214 @@
+n: 11
+short: Defending AI systems
+title: Defending AI systems
+time: 7 sections · about 4.5 hours
+lede: Stack layers that fail for different reasons, treat model output as untrusted, close the API door, detect abuse in logs, respond to AI incidents, and check AI's own defensive work.
+idea: |
+  No single control stops attacks on an AI system. So defenders stack layers. The trick is that **layers multiply only when they fail for different reasons**. Two classifiers trained on the same jailbreak data miss the same new prompts.
+
+  This module builds a full defense for one public service. Guardrails, output encoding, schema checks, API authentication, token budgets, detection rules and incident response. Then it turns AI around and asks how far to trust AI doing defensive work.
+
+  !eli5 Two locks from the same factory with the same flaw open with the same trick. A lock and a guard dog and a camera fail for different reasons, so a thief must beat all three.
+primer: |
+  ### Step 1. Input and output guardrails
+
+  Guardrails check text before and after the model. Keyword filters are cheap. Classifiers catch more. Both are tuned on known attacks, so their scores on new attacks are much lower. Ask what a guardrail's accuracy was measured on. Prefer an honest low number on new attacks to a high number on known ones.
+
+  ### Step 2. Treat output as untrusted
+
+  The same model output can be harmless in one place and dangerous in another. In a web page it needs **output encoding**. In a database query it needs a **schema check** or parameters. These deterministic controls work whatever the text says. A second model reviewing output is probabilistic and reads the same attacker-controlled text.
+
+  ### Step 3. Three deployment patterns
+
+  A **chatbot** has the smallest attack surface. **RAG** adds four retrieval surfaces, such as poisoned documents, cross-tenant leakage, adversarial embeddings and the retrieval pipeline itself. An **API-exposed** model adds lifecycle endpoints, such as model reload and config, which must never be public.
+
+  ### Step 4. Detect abuse in logs
+
+  Compare two signals. Did the input guardrail flag it? Is the output normal? **Flagged plus normal** means the controls worked. **Not flagged plus odd output** means something got past the input checks. Investigate that first.
+
+  ### Step 5. Respond to an AI incident
+
+  A replay is not a reproduction, because the model is random and its context may have changed. Log the full request, the full output, the retrieved documents and the guardrail verdicts at the time. Containment means removing the data source the model copies from, not just disconnecting a server.
+
+  ### Step 6. AI for defense
+
+  AI helps with infrastructure-as-code review, YARA rule drafts, IAM analysis and malware classification. Each has a known failure. Keep the speed and aim one cheap check at that failure, such as compiling a YARA rule in the exact engine you run.
+diagrams:
+  - type: layers
+    title: Fernhill's Intake stack
+    attack: a new injection on a work order request
+    layers:
+      - ["Keyword filter", "Tuned on known phrases", "pass"]
+      - ["Guardrail classifier G1", "Misses about two thirds of new attacks", "partial"]
+      - ["Output encoding and schema check", "Payload is harmless wherever it lands", "stop"]
+      - ["Token budget and rate limit per account", "Caps abuse whatever the text says", "stop"]
+    caption: The last two layers decide on something other than resemblance to known attacks, which is why they add real protection.
+  - type: flow
+    title: Containing an AI data leak, in order
+    nodes: [["Preserve the logs", "def"], ["Block the sender", "def"], ["Remove the leaking data source", "def"], ["Use logs to find every exposed output", "def"], ["Update detection rules", "def"]]
+    edges: ["", "", "", ""]
+    caption: From the Round 4 answers. Disconnecting a server is not containment while the data source is still in the reference documents.
+terms:
+  - [Guardrail, "A check before or after the model that blocks unsafe input or output."]
+  - [Defense in depth, "Several independent layers, so one failure does not mean a breach."]
+  - [Output encoding, "Showing special characters as text, so markup cannot run."]
+  - [Schema check, "Accepting only values that match an allowed format or list."]
+  - [Inference endpoint, "An API that answers requests."]
+  - [Lifecycle endpoint, "An API that manages the model, such as reload, config or retrain."]
+  - [Compound detection, "Combining weak signals so their mix shows an attack."]
+  - [Containment, "Stopping an incident from spreading or continuing."]
+sections:
+  01_defending-the-pipeline.html: "Why defense in depth is the answer to an unsolvable root cause, input validation and output filtering, guardrail architectures, and honest evidence on why guardrails fail against adaptive attacks."
+  02_deployment-patterns-and-attack-surfaces.html: "Three deployment patterns and their attack surfaces, the four RAG-specific surfaces, the API-exposed pattern, and a PoisonedRAG case analysis. Six labs, including denial of wallet."
+  03_detecting-abuse.html: "What prompt injection and data exfiltration look like in application logs, and why combining weak signals beats one strong rule."
+  04_incident-response-and-detection-rules.html: "How AI incident response differs from the usual playbook, and how to design, test and tune detection rules."
+  05_owasp-defensive-assessment.html: "Use the OWASP LLM Top 10 as a defensive checklist and run a full assessment on MedAssist, a sample medical assistant."
+  06_ai-for-defense.html: "Where AI helps in cloud security, IAM analysis and malware work, what the evidence says, and a check of an LLM's IAM analysis."
+  07_references-and-readings.html: "Every reading, paper, framework, tool and incident used in Module 11."
+desk:
+  title: The Fernhill defense desk
+  blurb: "Five rounds at Fernhill Water Authority. Multiply guardrail miss rates honestly, follow one payload to three destinations, price a leaked API key, read sender logs and contain a leak, then check AI's own defensive work."
+  lede: "Fernhill Water Authority runs Intake, an LLM that turns residents' requests into work orders for field crews. Contractors use an API to summarize field notes. Answers come from the Module 11 answer slides."
+  rounds:
+    - title: Round 1. How much gets through?
+      info: "Stack A is a keyword filter, then classifier G1. On known attacks the filter misses 40 percent and G1 misses 15 percent. On new attacks the filter misses 95 percent and G1 misses 66 percent. Multiply the miss rates to get the share that gets through."
+      items:
+        - type: num
+          q: Share of known attacks that get through Stack A, in percent
+          a: 6
+          tol: 0.2
+          unit: "%"
+          why: "0.40 × 0.15 = 0.06, so 6 percent get through and the vendor can say 94 percent stopped."
+        - type: num
+          q: Share of new attacks that get through Stack A, in percent
+          a: 63
+          tol: 0.6
+          unit: "%"
+          why: "0.95 × 0.66 ≈ 0.63. The same stack stops only about 37 percent of new attacks. A headline number is true only for the attacks it was measured on."
+        - q: "Stack B adds G2, from another vendor but trained on the same public jailbreak sets. On new attacks G2 misses almost exactly what G1 misses. About how much gets through Stack B?"
+          opts: ["About 41 percent, by multiplying 0.63 × 0.66", "Still about 63 percent", "About 6 percent"]
+          a: 1
+          why: "Multiplying assumes G2 fails for different reasons. It learned from the same data, so it stops almost nothing G1 missed."
+        - type: open
+          q: Name one layer that fails for a different reason than G1 and G2, and say what it checks.
+          a: "Any layer that decides on something other than resemblance to known attacks. For example an output check that reads the work order Intake writes, a token budget per request, or a rate limit per account."
+        - type: sort
+          q: "Product P is model-based, scans input only, takes 450 ms, has a fixed category list, reports 98 percent on its own test set, and is commercial with monthly updates. Product Q is hybrid, scans input and output, takes 140 ms, allows custom categories, has an independent lab score of 86 percent known and 41 percent new, and is open source with one volunteer and no release for 14 months. Which product meets each need?"
+          rows:
+            - ["Each check under 2 seconds (five-minute batches)", "Both"]
+            - ["Scans residents' requests and the work orders Intake writes", "Q"]
+            - ["Lets Fernhill add a category for text that tries to change a work order's priority", "Q"]
+            - ["Keeps receiving security updates", "P"]
+          opts: ["P", "Q", "Both"]
+          why: "Q fits the job and has more honest evidence. P's 98 percent was measured by its vendor on data close to its training, which says little about new attacks."
+        - type: open
+          q: "The course notes that LLM Guard, a guardrail toolkit, was archived on 9 July 2026, with no further patches. What does an abandoned guardrail mean, and what should Fernhill ask before adopting Q?"
+          a: "No patches for its own bugs, no updates when its libraries change and no adaptation to new attacks, while it keeps running so nobody notices it weakening. Ask who maintains it and who funds them, how the project is governed, and what the migration plan is if it is archived tomorrow. A guardrail is a dependency too."
+    - title: Round 2. Follow the work order
+      info: "One injected request makes Intake write `<img src=x onerror=\"send(document.cookie)\">` into a work-order summary and `North 3' OR '1'='1` into the district field."
+      items:
+        - type: sort
+          q: "Which deterministic control fixes each destination?"
+          rows:
+            - ["1. Request tracker, shown to whoever submitted the request", "Output encoding"]
+            - ["2. Dispatch console, opened later by a dispatcher", "Output encoding"]
+            - ["3. District lookup, a SQL query", "Schema check, district must be one of 12 names"]
+          opts: ["Output encoding", "Schema check, district must be one of 12 names", "Output review by a second model"]
+          why: "At stop 1 the script runs only for the attacker. At stop 2 it runs in a dispatcher's browser and sends their session cookie out. At stop 3 the query matches every crew. Encoding and the schema check are deterministic."
+        - type: open
+          q: Give two reasons output encoding and the schema check are still needed even with a second model reviewing every work order.
+          a: "Output review is probabilistic and misses new payloads. It also reads the same attacker-influenced text, so the injection can target it too. Encoding and the schema check work whatever the text says."
+        - type: open
+          q: Name three signs in a work-order summary that suggest data is being extracted, not just a request being summarized.
+          a: "Any three of these. Personal data that was not in the request. Internal asset IDs, file paths or author names. What looks like a whole document. JSON, config or database field names. Pieces of the system prompt. A summary far longer than usual."
+    - title: Round 3. The API door
+      info: "A scan of the Contractor API found GET /v1/docs (public), POST /v1/summarize (contractor key), POST /v1/models/reload (no login) and POST /v1/config (no login)."
+      items:
+        - type: sort
+          q: "What type is each endpoint?"
+          rows:
+            - ["GET /v1/docs", "Docs"]
+            - ["POST /v1/summarize", "Inference"]
+            - ["POST /v1/models/reload", "Lifecycle"]
+            - ["POST /v1/config", "Lifecycle"]
+          opts: ["Docs", "Inference", "Lifecycle"]
+          why: "Fix the two lifecycle endpoints first. With no login, anyone can swap in their own model file or rewrite Intake's instructions, which changes the model for every user at once."
+        - type: num
+          q: "A contractor leaked its key in a public repo. It allows 60 requests per minute, up to 200,000 tokens each, at 3 dollars per million input tokens, with no spending cap. What could it cost in one day, in dollars?"
+          a: 51840
+          tol: 1
+          unit: "$"
+          why: "60 × 200,000 = 12 million tokens a minute. 12 × 3 = 36 dollars a minute. 36 × 60 × 24 = 51,840 dollars a day, all inside the rate limit."
+        - type: open
+          q: The key already had a 60 requests per minute limit. Why did it not cap the cost, and what limits should Fernhill add?
+          a: "The bill grows with tokens, and the limit counts requests. Add token limits per key, a daily spending cap per key that alerts and stops, and billing anomaly alerts. Sysdig named this kind of abuse LLMjacking in 2024."
+    - title: Round 4. Reading the logs and responding
+      info: "Four senders in 24 hours. A sent 1 web request about low pressure, summary 60 tokens, 0 flags. B sent 5 texts including 'you are now DAN', summaries 70 tokens, 2 flags. C sent 7 requests from one phone in an hour, summaries 600 tokens with internal asset IDs and engineers' names, 0 flags. D sent 847 requests from 40 new accounts, 14 with Base64, summaries 900 tokens, 38 percent flagged."
+      items:
+        - type: sort
+          q: "What does each sender's pattern most likely mean?"
+          rows:
+            - ["Sender A", "Ordinary use"]
+            - ["Sender B", "Blocked, the controls worked"]
+            - ["Sender C", "Got past the input checks, investigate first"]
+            - ["Sender D", "Partly got through, investigate"]
+          opts: ["Ordinary use", "Blocked, the controls worked", "Partly got through, investigate", "Got past the input checks, investigate first"]
+          why: "Flags on normal work orders mean the controls worked. Silence on odd work orders means they were bypassed."
+        - type: open
+          q: Sender C raised no flags. What is the strongest evidence in its work orders, and how could the attacker read it?
+          a: "Internal asset IDs and engineers' names, data that never appears in a resident's request, in summaries ten times the usual length. Intake was copying its reference documents, and C read each summary on the request tracker."
+        - type: open
+          q: The investigator replays C's seven requests and Intake writes ordinary summaries. Did the attack not happen? What should Fernhill log?
+          a: "A replay is not a reproduction. The model is random and the context may differ. Log each full request, the full model output, the documents retrieved for it, the guardrail verdicts and the context, at the time."
+        - type: sort
+          q: "Put the response steps in order."
+          rows:
+            - ["Preserve the full logs for sender C", "1"]
+            - ["Block sender C's phone number and accounts", "2"]
+            - ["Remove the valve register from Intake's reference documents", "3"]
+            - ["Use the logs to find every work order that copied register entries", "4"]
+            - ["Update detection rules for the techniques used", "5"]
+          opts: ["1", "2", "3", "4", "5"]
+          why: "Evidence first, then stop the sender, then remove the source of the leak, then find the damage, then improve detection."
+        - type: open
+          q: An engineer disconnects the server and reports the incident contained. Why is it not?
+          a: "The register is still in the reference documents. Reconnect, and the next request that retrieves it copies it again. Containment means removing the data source, then checking that work orders are back to normal."
+    - title: Round 5. AI on the defender's side
+      info: "IaC review finds Terraform misconfigurations and writes repairs, but 20.4 percent of repairs that passed the linter were still wrong. A YARA drafting tool saves 44 to 86 percent of analyst time but sometimes writes YARA-L, which will not run in YARA. An IAM reviewer rated iam:PassRole low without checking which role can be passed. A behavioral malware model has over 97 percent accuracy and catches zero-days but has false positives that signatures avoid."
+      items:
+        - type: open
+          q: Write the cheapest check that catches each tool's failure.
+          a: |
+            - **IaC review.** Validate against the provider's real schema with terraform validate and plan, then rescan to confirm the issue is gone and nothing new appeared.
+            - **YARA rules.** Compile in the exact YARA engine Fernhill runs, and test on the target samples and on clean files.
+            - **IAM review.** Look up what the target role can do. If it has administrator rights, PassRole is an escalation path.
+            - **Malware classification.** Signatures first. Send behavioral-only detections to an analyst instead of auto-quarantine.
+        - q: After adding the compile-and-test check, is the YARA tool's time saving still real?
+          opts: ["Yes, mostly", "No"]
+          a: 0
+          why: "Compiling and testing a rule takes minutes, while writing a good rule by hand takes far longer. The check costs a small part of the time saved."
+  card: |
+    - Ask what a guardrail's accuracy was measured on.
+    - Layers multiply only when they fail for different reasons.
+    - Encode output for where it lands. Use schema checks for structured fields.
+    - Lifecycle endpoints are never public.
+    - Limit tokens and spend, not only requests.
+    - Not flagged plus odd output is the case to investigate first.
+    - Containment removes the data source.
+other_fw:
+  - [OWASP LLM Top 10 2025, "Section 5 turns the list into a defensive checklist. [Open the list](@owasptop10)."]
+  - [MITRE ATLAS, "Detection rules in Section 4 can be tagged with ATLAS technique IDs. [Open ATLAS](@atlas)."]
+  - [NIST AI 600-1, "The generative AI profile gives actions for each risk. [Read it](@nist6001)."]
+slides:
+  summary: |
+    The lecture follows Fernhill Water Authority through five rounds with answer slides. Multiplying guardrail miss rates, a live layer-stack demo, choosing between two guardrail products, the LLM Guard archive case, one payload in three destinations, the Contractor API scan, the 51,840 dollar key, four senders in the logs, incident ordering and containment, and checks for AI used in defense.
+  files: [M11_Lecture.pdf]
+quiz:
+  - q: Two guardrails trained on the same data each miss 60 percent of new attacks. Roughly how many get through both?
+    opts: ["36 percent", "About 60 percent", "0 percent"]
+    a: 1
+    why: They fail for the same reason, so the second adds little.
+  - q: Which endpoint must never be public?
+    opts: ["API documentation", "A model reload or config endpoint", "An inference endpoint behind a key"]
+    a: 1
+    why: Lifecycle endpoints change the model for every user at once.

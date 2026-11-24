@@ -1,0 +1,401 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 6 · Section 5 · Synthesis and Forward · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 6 · Section 5 of 6</div>
+      <h1 class="nyu-hero__title">Synthesis: Judgment, Limitations, and Fine-Tuning Data</h1>
+      <p class="nyu-hero__subtitle">What is the right level of trust to place in AI as a security tool, and how does domain knowledge from code review become training data that makes a model better at a specific task?</p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~22 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Trust Calibration</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> From Code Review to Fine-Tuning Data (optional depth)</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Forward Connections</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Test Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Synthesize</strong> evidence from Sections 1-4 into a calibrated trust position on AI-assisted code review, specifying conditions where trust is appropriate, where it is not, and why.</span></li>
+          <li><span><strong>Construct</strong> a verified instruction/completion pair from a code-review task, suitable for fine-tuning a language model on vulnerability detection.</span></li>
+          <li><span><strong>Connect</strong> the software supply chain vocabulary to ML-specific supply chains, identifying structural parallels between package registries and model repositories.</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>What is the right level of trust to place in AI as a security tool, and how does domain knowledge from code review translate into fine-tuning data?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Trust Calibration</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+
+        <h3 class="nyu-subsection-title">The Module's Synthesis</h3>
+
+        <p>AI is both a useful tool and a source of risk in security contexts. The evidence does not support either blanket trust or blanket distrust. It supports calibrated trust that varies by context.</p>
+
+        <div class="nyu-compare" data-cols="2">
+          <div class="nyu-compare__col" data-tone="a">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">&#10003;</span>
+              <h3>What AI Code Review Can Do</h3>
+              <p class="nyu-compare__tag">supported by evidence</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Pattern Recognition</dt>
+              <dd>Identify code structures that resemble known vulnerability patterns across multiple languages simultaneously.</dd>
+              <dt>Natural-Language Explanation</dt>
+              <dd>Generate developer-readable explanations of findings, lowering the expertise barrier for triage.</dd>
+              <dt>Complement SAST Coverage</dt>
+              <dd>Catch novel patterns that rule-based tools miss, improving combined F1 by 17-60% when layered with traditional SAST.</dd>
+              <dt>Scale</dt>
+              <dd>Review code at speeds and volumes that human reviewers cannot sustain.</dd>
+            </dl>
+          </div>
+          <div class="nyu-compare__col" data-tone="c">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">&#10007;</span>
+              <h3>What AI Code Review Cannot Do</h3>
+              <p class="nyu-compare__tag">structural limitations</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Formal Verification</dt>
+              <dd>Cannot prove the absence of vulnerabilities. A "clean" result means no patterns matched, not that the code is safe.</dd>
+              <dt>Cross-Boundary Analysis</dt>
+              <dd>Cannot trace data flow across context window boundaries. Large codebases require chunking that breaks inter-procedural analysis.</dd>
+              <dt>Novel Vulnerability Classes</dt>
+              <dd>Cannot detect vulnerability types not represented in training data. Knowledge is frozen at training cutoff.</dd>
+              <dt>Replace Human Judgment</dt>
+              <dd>Cannot determine whether a finding is exploitable in a specific deployment context. As Section 2 showed, AI assistance actually increases false confidence.</dd>
+            </dl>
+          </div>
+        </div>
+
+        <h3 class="nyu-subsection-title">Trust Calibration Framework</h3>
+
+        <p>Calibrated trust is a structured process: verify performance against ground truth, layer defenses so each compensates for the others' blind spots, and communicate limitations honestly.</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Verify Ground Truth</h3>
+              <p class="nyu-process__detail">Before trusting any AI code review tool, establish baseline accuracy against a verified dataset. As the PrimeVul study showed, published benchmarks are unreliable. Test against your own codebase with known vulnerabilities.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Layer Defenses</h3>
+              <p class="nyu-process__detail">Never rely on a single tool. Combine pattern-based SAST, semantic-query SAST, and LLM review so each compensates for the others' blind spots. The NIST SSDF PW practice group requires multiple verification methods.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step" data-tone="good">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Communicate with Calibration</h3>
+              <p class="nyu-process__detail">When reporting AI-assisted findings, state what the tool checked, what it cannot check, and its measured precision (the share of its findings that turned out to be real). The overconfidence problem applies to teams, not just individual developers.</p>
+            </div>
+          </li>
+        </ol>
+
+        <h3 class="nyu-subsection-title">Responsible Communication of Limitations</h3>
+
+        <p>If you deploy AI code review in an organization, or recommend it to colleagues, communicate clearly what it can and cannot do. The UK NCSC puts it plainly: finding vulnerabilities does not automatically improve security. An organization that increases its detection count without building the process to remediate and learn from findings has not improved its security posture.</p>
+
+        <p>When communicating about AI review capabilities to non-technical stakeholders, avoid both extremes: "AI reviews all our code" (implies completeness that does not exist) and "AI code review doesn't work" (ignores genuine utility). Instead: "AI review catches common vulnerability patterns and generates useful explanations, but it misses categories of flaws that require human judgment, its performance varies by vulnerability type, and published accuracy numbers likely overestimate real-world performance."</p>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Reflection Exercise
+          </h3>
+          <p class="nyu-scenario__prompt">Think through this position question:
+		  <br>
+		  "What should a security team communicate to its developers about the capabilities and limitations of AI-assisted code review?"
+		  <br>
+		  Your statement must cite at least two specific findings from this module (e.g., the F1 drop when benchmarks are properly labeled, the developer overconfidence effect, the confirmation bias finding, slopsquatting predictability, the 17-60% F1 improvement from combined approaches). Do not generalize ("AI has limitations"). Try to hold yourself accountable to be specific about what the evidence shows.</p>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p>A strong response should include specific evidence, e.g.: "Security teams should tell developers that AI code review catches common vulnerability patterns and, when combined with static analysis, improves detection rates by 17-60%. However, when benchmark datasets were rigorously re-labeled, published accuracy (68% F1) dropped to 3%, meaning vendor-reported numbers likely overstate real-world capability. A controlled experiment found that developers with AI assistance wrote less secure code while feeling more confident, so a clean AI review should never be interpreted as proof the code is secure. AI review should be treated as one layer in a multi-layer review process, not a replacement for human expert review of security-critical paths."</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">From Code Review to Fine-Tuning Data</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout" role="note" aria-labelledby="depth-title">
+          <h3 class="nyu-callout__title" id="depth-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Optional depth
+          </h3>
+          <p>This part looks ahead rather than back. It shows what the review work you have been doing becomes if an organization decides to train a model on it, and it is here because that is where the labeling discipline from this module pays off. Nothing later in the module depends on it, and the knowledge checks do not cover it. Read it if you expect to touch training data; skip to the next part if you do not.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Instruction/Completion Pairs for Fine-Tuning</h3>
+
+        <p>The LLMs you have been evaluating throughout this course are general-purpose models. They were trained on broad internet text, not specifically on your organization's codebase or your preferred vulnerability taxonomy. <button type="button" class="nyu-define" data-term="lora-fine-tuning">Fine-tuning</button> is the process of taking a pre-trained model and training it further on a narrower, task-specific dataset so that it performs better on that task. One common technique, LoRA (Low-Rank Adaptation), makes this feasible without retraining the entire model.</p>
+
+        <p>The key input to fine-tuning is a dataset of <button type="button" class="nyu-define" data-term="instruction-completion-pair">instruction/completion pairs</button>: examples of the task you want the model to perform, paired with the correct output for each example. The code-review work from this module provides natural material for building those pairs.</p>
+
+        <p>An instruction/completion pair for code review consists of:</p>
+
+        <p><strong>Instruction:</strong> A prompt describing the code-review task, including the code to review and the expected output format.</p>
+
+        <p><strong>Completion:</strong> The correct output: the vulnerabilities that should be identified, their CWE mappings, descriptions, and recommended remediations.</p>
+
+        <h3 class="nyu-subsection-title">Worked Example: SQL Injection</h3>
+
+        <p>Consider this vulnerable Flask endpoint:</p>
+
+        <div class="nyu-annot-code">
+          <pre class="nyu-code"><code><span data-note="Route decorator: public endpoint">@app.route('/search')</span>
+<span data-note="No authentication check">def search():</span>
+<span data-note="User input: untrusted source">    query = request.args.get('q')</span>
+<span data-note="String concatenation into SQL: CWE-89">    sql = "SELECT * FROM products WHERE name LIKE '%" + query + "%'"</span>
+<span data-note="Executes unsanitized query">    results = db.engine.execute(sql)</span>
+<span data-note="Returns results to user">    return render_template('results.html', results=results)</span></code></pre>
+        </div>
+
+        <p>From this code, you construct the instruction, a prompt that describes the review task and embeds the code:</p>
+
+        <p><strong>The Instruction</strong></p>
+
+        <div class="nyu-annot-code">
+          <pre class="nyu-code"><code>Review the following Python/Flask code for security vulnerabilities. For each
+vulnerability found, provide: the affected line(s), the CWE identifier, a
+description of the weakness, and a recommended remediation. Format as JSON.
+
+@app.route('/search')
+def search():
+    query = request.args.get('q')
+    sql = "SELECT * FROM products WHERE name LIKE '%" + query + "%'"
+    results = db.engine.execute(sql)
+    return render_template('results.html', results=results)</code></pre>
+        </div>
+
+        <p>And the verified completion, the correct output that the fine-tuned model should learn to produce:</p>
+
+        <p><strong>The Verified Completion</strong></p>
+
+        <div class="nyu-annot-code">
+          <pre class="nyu-code"><code>{
+  "findings": [
+    {
+      "lines": "4-5",
+      "cwe_id": "CWE-89",
+      "cwe_name": "SQL Injection",
+      "description": "User input from request.args.get('q') is concatenated
+        directly into a SQL query string on line 4 and passed to
+        db.engine.execute() on line 5 without parameterization or
+        sanitization. An attacker can inject arbitrary SQL commands
+        through the 'q' parameter.",
+      "remediation": "Use parameterized queries:
+        db.engine.execute('SELECT * FROM products WHERE name LIKE %s',
+        ['%' + query + '%']). This separates the SQL structure from
+        user data, preventing injection."
+    }
+  ]
+}</code></pre>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            The PrimeVul Connection
+          </h3>
+          <p>The quality of your fine-tuning data is bounded by the quality of your labels. If the completion contains an incorrect CWE mapping (e.g., the over-broad CWE-20 instead of CWE-89), a missed vulnerability, or a false positive, you are teaching the model to reproduce that error. The same dataset quality problem that collapsed benchmark scores from 68% to 3% in Section 2 applies here. Every completion must be verified against the answer key before inclusion in the fine-tuning dataset.</p>
+        </aside>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            Quality Gate
+          </h3>
+          <p>Ask: would you be satisfied if the fine-tuned model produced exactly this output? If the model produced CWE-20 instead of CWE-89, or said "line 3" instead of "lines 4-5," or suggested "input validation" instead of parameterized queries: those are errors in the completion that the fine-tuned model would learn to reproduce.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Second Example: Missing Authorization (CWE-862)</h3>
+
+        <div class="nyu-annot-code">
+          <pre class="nyu-code"><code><span data-note="Endpoint accepts any user_id in the URL path">@app.route('/api/user/&lt;user_id&gt;/settings', methods=['GET'])</span>
+<span data-note="No authorization check: any caller can request any user's settings">def get_user_settings(user_id):</span>
+<span data-note="Returns settings for any user ID passed in the URL">    # Returns settings for any user ID passed in the URL</span>
+<span data-note="Queries by the URL parameter, not the authenticated user">    settings = db.session.query(UserSettings).filter_by(</span>
+<span data-note="user_id comes from the URL, not from the session">        user_id=user_id</span>
+<span data-note="No check that the authenticated user owns this resource">    ).first()</span>
+<span data-note="Serializes and returns the data">    return jsonify(settings.to_dict())</span></code></pre>
+        </div>
+
+        <p>The verified completion for this example:</p>
+
+        <div class="nyu-annot-code">
+          <pre class="nyu-code"><code>{
+  "findings": [
+    {
+      "lines": "1-6",
+      "cwe_id": "CWE-862",
+      "cwe_name": "Missing Authorization",
+      "description": "The endpoint retrieves settings for any user ID
+        passed in the URL parameter without checking whether the
+        authenticated user is authorized to access that user's settings.
+        Any authenticated user can view any other user's settings by
+        changing the user_id parameter.",
+      "remediation": "Add an authorization check verifying that the
+        authenticated user's ID matches the requested user_id, or that
+        the authenticated user has an administrative role that permits
+        access to other users' settings."
+    }
+  ]
+}</code></pre>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Common Misconceptions
+          </h3>
+          <p><strong>1. "Fine-tuning on model-generated labels is safe as long as the output looks reasonable."</strong> The benchmark quality crisis applies directly: models trained on noisy labels learn noisy boundaries. "Looks reasonable" is not the same as "verified against ground truth."</p>
+          <p><strong>2. "AI is either useful or dangerous: pick one."</strong> It is both. AI code review provides detection capability with measurable but bounded reliability, and introduces new attack surfaces through hallucination-based supply chain risks. That is not a contradiction; it is a tool with specific capabilities and specific failure modes.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">What Carries Forward: Data Quality and ML Supply Chains</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">Why Fine-Tuning Data Quality Matters Now</h3>
+
+        <p>The instruction/completion pairs from Section 2 matter. When organizations fine-tune models for vulnerability detection, the quality of those pairs directly determines what the model learns. Sloppy CWE mappings, missed findings, or unverified labels in the training set produce a model that confidently reproduces those same errors at scale. The PrimeVul benchmark collapse (68% F1 down to 3%) is a preview of what happens when fine-tuning data inherits the same labeling problems.</p>
+
+        <p>Evaluating AI output against verified ground truth, applying structured CWE taxonomies, and catching false confidence, helps us separate useful fine-tuning data from noise.</p>
+
+        <h3 class="nyu-subsection-title">From Software Supply Chains to ML Supply Chains</h3>
+
+        <p>The supply-chain vocabulary from Section 4 (dependency confusion, typosquatting, maintainer compromise, build system compromise, SBOM) maps directly to ML-specific supply chains. Model repositories like Hugging Face function analogously to package registries. Poisoned models, malicious plugins for AI frameworks, and compromised training data pipelines are structural equivalents of the software supply chain attacks covered here. The attack patterns are identical; only the supply chain is different. Module 10 takes this up directly: its ML supply chain section works the same trust-boundary vocabulary against model files, weights, and plugins, so the terms you have just learned are the terms it starts from.</p>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Test Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="quiz-finetune">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-finetune">A company is constructing LoRA fine-tuning data from code-review tasks. They include an instruction/completion pair where the completion contains a CWE mapping that the model originally generated, without verifying it against the answer key. What is the risk?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-finetune">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Model-generated CWE mappings are frequently incorrect; the CWE accuracy metric from Section 2 measured this at 67% in the worked example.">No risk: the model generated it, so it is correct.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Format errors are fixable. Incorrect labels teach the model incorrect vulnerability boundaries, which is a fundamental quality problem.">The risk is only that the JSON format might be wrong.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Unverified CWE mappings may be incorrect; fine-tuning on wrong labels teaches the model incorrect vulnerability boundaries, the same dataset quality problem PrimeVul exposed in public benchmarks.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="CWE accuracy directly determines whether the fine-tuned model learns correct vulnerability classification boundaries.">CWE accuracy does not matter for fine-tuning quality.</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct: fine-tuning data quality is bounded by label accuracy. An incorrect CWE mapping teaches the model to reproduce that error." data-incorrect-msg="The core issue is label quality: the PrimeVul finding showed that noisy labels produce models with noisy decision boundaries, and the same applies to fine-tuning data."></div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Open Question
+          </h3>
+          <p class="nyu-scenario__prompt">Explain in 2-3 sentences how the software supply chain attack vocabulary from this module (dependency confusion, typosquatting, maintainer compromise) maps to ML-specific supply chains. What is the ML equivalent of typosquatting on a package registry?</p>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p>In ML supply chains, model repositories (like Hugging Face) function analogously to package registries. The ML equivalent of typosquatting is publishing a malicious model with a name similar to a popular model, for example, "bert-base-uncased-v2" mimicking "bert-base-uncased." The ML equivalent of maintainer compromise is gaining control of a legitimate model's repository to publish a poisoned version. The ML equivalent of build system compromise is tampering with training data pipelines to inject backdoors into models during training. The structural patterns are identical; what flows through the supply chain (packages vs. models vs. training data) differs.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== MODULE COMPLETE ====================== -->
+      <aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="module-complete">
+        <h3 class="nyu-callout__title" id="module-complete"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Module 6 Complete</h3>
+        <p>Across five sections this module covered how language models analyze code and where they fail, the metrics for evaluating code review and the trust calibration they support, where AI review fits in the secure development lifecycle alongside SSDF practices, software supply chain attacks and their defenses, and how to construct verified instruction and completion pairs for fine-tuning.</p>
+      </aside>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 6: References &amp; Readings.</strong> All sources, citations, and recommended readings for this module, organized by category and section.</p>
+        </aside>
+
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

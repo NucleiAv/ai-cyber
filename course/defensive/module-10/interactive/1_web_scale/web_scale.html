@@ -1,0 +1,386 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: The Economics of Web-Scale Poisoning</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redsoft:#fcf1f1;--amber:#8a5d00;--ambersoft:#fbf3df;
+  --green:#0f7a43;--greenline:#c3e2d0;--greensoft:#eef7f2;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:62ch}
+.body{padding:14px 22px 22px}
+.stagewrap{margin-top:4px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#ffffff,#fcfcfd);overflow:hidden;line-height:0;position:relative}
+canvas{display:block;width:100%}
+.cap{min-height:1.35em;margin-top:12px;font-size:.83rem;color:var(--ink);display:flex;align-items:center;gap:9px}
+.cap .cstep{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--violet);border-radius:5px;padding:3px 7px;flex:none}
+.cap.warn .cstep{background:var(--amber)} .cap.done .cstep{background:var(--green)}
+.controls{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.83rem;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer;transition:.14s}
+.btn:hover{background:var(--violet2);border-color:var(--violet2)}
+.btn:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.btn.ghost{background:var(--bg);color:var(--violet);border-color:var(--vline)}
+.btn.ghost:hover{background:var(--vsoft)}
+.rehint{font-size:0.75rem;color:var(--ink3)}
+/* idle placeholder */
+.idle-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:2;transition:opacity .4s ease;pointer-events:none}
+.idle-ph.hidden{opacity:0}
+.idle-grid{display:grid;grid-template-columns:repeat(5,14px);gap:4px}
+.idle-cell{width:14px;height:14px;border-radius:3px;background:var(--line);opacity:.22}
+@keyframes idleFade{0%,100%{opacity:.12}50%{opacity:.30}}
+.idle-cell{animation:idleFade 3s ease-in-out infinite}
+.idle-cell:nth-child(2){animation-delay:.3s}.idle-cell:nth-child(3){animation-delay:.6s}
+.idle-cell:nth-child(4){animation-delay:.9s}.idle-cell:nth-child(5){animation-delay:1.2s}
+.idle-cell:nth-child(6){animation-delay:.15s}.idle-cell:nth-child(7){animation-delay:.45s}
+.idle-cell:nth-child(8){animation-delay:.75s}.idle-cell:nth-child(9){animation-delay:1.05s}
+.idle-cell:nth-child(10){animation-delay:1.35s}
+.idle-cell:nth-child(11){animation-delay:.25s}.idle-cell:nth-child(12){animation-delay:.55s}
+.idle-cell:nth-child(13){animation-delay:.85s}.idle-cell:nth-child(14){animation-delay:1.15s}
+.idle-cell:nth-child(15){animation-delay:1.45s}
+.idle-cell.poison{background:var(--violet);opacity:.18}
+.idle-ph-txt{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.verdict{margin-top:14px;border:1px solid var(--line);border-left-width:3px;border-radius:10px;padding:0 15px;background:var(--bg);opacity:0;max-height:0;overflow:hidden;transition:.4s}
+/* Reveal caps raised. These boxes animate open with max-height and keep overflow:hidden, so any content taller than the cap was silently cut off. At 440px wide with a 20px root font the poison-lab verdict lost 46px of its explanation, which is the clipping reported in the first-round review. 1200px is far above any realistic verdict, so the box now sizes to content at every width and text scale. */
+.verdict.show{opacity:1;max-height:1200px;padding:13px 15px}
+.verdict .vk{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;color:var(--violet)}
+.verdict .vt{font-size:.85rem;color:var(--ink);line-height:1.5}
+.verdict .vt b{font-weight:700}
+.src{margin-top:12px;font-size:0.75rem;color:var(--ink3);line-height:1.55}
+.src b{color:var(--ink2);font-weight:600}
+.src a{color:var(--violet2);text-decoration:none}
+.src a:hover{text-decoration:underline}
+
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 1 · Data Poisoning</div>
+    <h1>What does it cost to poison a web-scale model?</h1>
+    <p class="lede">Big models train on a scrape of the open web. Step through how much poison an attacker really needs as the model grows, and how cheaply it slips into the crawl.</p>
+  </div>
+  <div class="body">
+
+    <div class="stagewrap">
+      <div class="idle-ph" id="idlePh">
+        <div class="idle-grid">
+          <div class="idle-cell"></div><div class="idle-cell"></div><div class="idle-cell"></div><div class="idle-cell"></div><div class="idle-cell"></div>
+          <div class="idle-cell"></div><div class="idle-cell"></div><div class="idle-cell poison"></div><div class="idle-cell"></div><div class="idle-cell"></div>
+          <div class="idle-cell"></div><div class="idle-cell"></div><div class="idle-cell"></div><div class="idle-cell"></div><div class="idle-cell poison"></div>
+        </div>
+        <span class="idle-ph-txt">Web-scale training data</span>
+      </div>
+      <canvas id="c"></canvas>
+    </div>
+
+    <div class="cap" id="cap"><span class="cstep" id="cstep">Ready</span><span id="captxt">Press Start to walk through the economics, one step at a time.</span></div>
+
+    <div class="controls">
+      <button class="btn ghost" id="backBtn" disabled>◀ Back</button>
+      <button class="btn" id="nextBtn">Start ▶</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+      <span class="rehint" id="rehint">Step through at your own pace.</span>
+    </div>
+
+    <div class="verdict" id="verdict"></div>
+
+    <div class="src">
+      <b>Sources.</b> $60 cost and the split-view / frontrunning attacks: Carlini et al., <a href="https://arxiv.org/abs/2302.10149" target="_blank" rel="noopener">Poisoning Web-Scale Training Datasets Is Practical</a> (IEEE S&amp;P 2024). The ~250-document, size-independent backdoor: <a href="https://www.anthropic.com/research/small-samples-poison" target="_blank" rel="noopener">A Small Number of Samples Can Poison LLMs of Any Size</a> (Anthropic, UK AI Security Institute &amp; Alan Turing Institute, 2025), tested 600M to 13B; treat it as an early, narrow finding.
+    </div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+const W=720,H=384;
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const backBtn=document.getElementById('backBtn'),nextBtn=document.getElementById('nextBtn'),resetBtn=document.getElementById('resetBtn'),
+      rehint=document.getElementById('rehint'),capEl=document.getElementById('cap'),cstep=document.getElementById('cstep'),
+      captxt=document.getElementById('captxt'),verdict=document.getElementById('verdict'),idlePh=document.getElementById('idlePh');
+const C={ink:'#15171C',ink2:'#565a63',ink3:'#5c6270',line:'#e5e7ec',line2:'#d3d6dd',paper:'#f2f3f6',
+  violet:'#57068C',violet2:'#8a3fb8',vsoft:'#f3e9fb',teal:'#155e63',
+  red:'#cf2b2b',redsoft:'#fdeeee',amber:'#8a5d00',green:'#0f7a43',bg:'#ffffff'};
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;};}
+const MONO="'JetBrains Mono',monospace",SANS="'Inter',sans-serif";
+
+let T=0,busy=false;
+const state=fresh();
+function fresh(){return{step:-1,reveal:0,comp:0,mIdx:0,banner:0,inject:0};}
+
+const SIZES=[
+ {p:'600M',web:'≈1 B pages',pct:'≈1 M',u:0.12},
+ {p:'1B',  web:'≈3 B pages',pct:'≈3 M',u:0.28},
+ {p:'3B',  web:'≈9 B pages',pct:'≈9 M',u:0.50},
+ {p:'7B',  web:'≈20 B pages',pct:'≈20 M',u:0.76},
+ {p:'13B', web:'≈40 B pages',pct:'≈40 M',u:1.0}
+];
+
+/* helpers */
+function easeIO(p){return p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;}
+function easeOut(p){return 1-Math.pow(1-p,3);}
+function tween(o,to,dur,ease){ease=ease||easeIO;return new Promise(res=>{const f={};for(const k in to)f[k]=o[k];const t0=performance.now();(function fr(n){let p=Math.min(1,(n-t0)/dur),e=ease(p);for(const k in to)o[k]=f[k]+(to[k]-f[k])*e;if(p<1)requestAnimationFrame(fr);else res();})(performance.now());});}
+function noShadow(){ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;}
+function shadow(c,b,y){ctx.shadowColor=c;ctx.shadowBlur=b;ctx.shadowOffsetY=y||0;}
+function lerp(a,b,t){return a+(b-a)*t;}
+function txtWrap(s,x,y,maxW,font,color){
+  ctx.font=font;ctx.fillStyle=color;ctx.textAlign='left';ctx.textBaseline='middle';
+  var words=s.split(' '),lines=[],cur='';
+  for(var i=0;i<words.length;i++){
+    var t=cur?cur+' '+words[i]:words[i];
+    if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=words[i];}else{cur=t;}
+  }
+  if(cur)lines.push(cur);
+  var lh=14, startY=y-(lines.length-1)*lh;
+  for(var j=0;j<lines.length;j++) ctx.fillText(lines[j],x,startY+j*lh);
+}
+function txt(s,x,y,font,color,align,base){ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align||'left';ctx.textBaseline=base||'alphabetic';ctx.fillText(s,x,y);}
+
+/* ---------- SCALE scene ---------- */
+const WEB={x:36,y:74,w:196,h:210};
+const CHIP={cx:352,cy:180};
+function drawWebGrid(a){
+  ctx.save();ctx.globalAlpha=a;
+  ctx.fillStyle='#fff';ctx.strokeStyle=C.line2;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(WEB.x,WEB.y,WEB.w,WEB.h,12);ctx.fill();ctx.stroke();
+  const cols=11,rows=12,pad=14,gw=(WEB.w-pad*2)/cols,gh=(WEB.h-pad*2-6)/rows;
+  for(let r=0;r<rows;r++)for(let cI=0;cI<cols;cI++){const x=WEB.x+pad+cI*gw,y=WEB.y+pad+r*gh;
+    ctx.fillStyle=((r*7+cI*3)%9===0)?'#e7e2ef':'#eef0f4';ctx.beginPath();ctx.roundRect(x,y,gw-2,gh-2,2);ctx.fill();}
+  txt('the open web',WEB.x+WEB.w/2,WEB.y-9,'700 12px '+MONO,C.ink3,'center','bottom');
+  txt('billions of scraped pages',WEB.x+WEB.w/2,WEB.y+WEB.h+14,'500 12px '+SANS,C.ink2,'center','top');
+  ctx.restore();
+}
+function drawArrow(x0,x1,y,a){ctx.save();ctx.globalAlpha=a;ctx.strokeStyle=C.ink3;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1-8,y);ctx.stroke();
+  ctx.fillStyle=C.ink3;ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x1-9,y-5);ctx.lineTo(x1-9,y+5);ctx.closePath();ctx.fill();ctx.restore();}
+function drawChip(a){
+  const u=state.mIdx/4, sz=lerp(64,150,state.mIdx/4);
+  const x=CHIP.cx-sz/2,y=CHIP.cy-sz/2;
+  ctx.save();ctx.globalAlpha=a;
+  shadow('rgba(87,6,140,.18)',16,6);ctx.fillStyle='#fff';ctx.strokeStyle=C.violet;ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(x,y,sz,sz,14);ctx.fill();noShadow();ctx.stroke();
+  // pins
+  ctx.strokeStyle=C.violet2;ctx.lineWidth=2;const n=Math.max(3,Math.round(sz/20));
+  for(let i=1;i<n;i++){const yy=y+sz*i/n;ctx.beginPath();ctx.moveTo(x-7,yy);ctx.lineTo(x,yy);ctx.moveTo(x+sz,yy);ctx.lineTo(x+sz+7,yy);ctx.stroke();}
+  // grid inside
+  ctx.strokeStyle=C.vsoft;ctx.lineWidth=1;for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(x+sz*i/3,y+8);ctx.lineTo(x+sz*i/3,y+sz-8);ctx.moveTo(x+8,y+sz*i/3);ctx.lineTo(x+sz-8,y+sz*i/3);ctx.stroke();}
+  const idx=Math.round(state.mIdx);
+  txt('MODEL',CHIP.cx,y+16,'700 12px '+MONO,C.violet,'center','middle');
+  txt(SIZES[idx].p,CHIP.cx,CHIP.cy+2,'700 '+(sz>110?18:14)+'px '+MONO,C.ink,'center','middle');
+  txt('parameters',CHIP.cx,CHIP.cy+ (sz>110?22:18),'500 12px '+SANS,C.ink3,'center','middle');
+  txt('trained on '+SIZES[idx].web,CHIP.cx,y+sz+16,'500 12px '+SANS,C.ink2,'center','top');
+  ctx.restore();
+}
+function drawCompare(a){
+  if(a<=0)return;ctx.save();ctx.globalAlpha=a;
+  const idx=state.mIdx, i0=Math.floor(idx), i1=Math.min(4,Math.ceil(idx)), f=idx-i0;
+  const u=lerp(SIZES[i0].u,SIZES[i1].u,f);
+  const pctStr=(f<.5?SIZES[i0].pct:SIZES[i1].pct);
+  const baseY=300, maxH=150, bx1=512, bx2=628, bw=52;
+  txt('poison needed to plant one backdoor',570,50,'700 12px '+MONO,C.ink3,'center','top');
+  // A: scales-with-data (red)
+  const hA=18+u*maxH;
+  ctx.fillStyle=C.red;ctx.beginPath();ctx.roundRect(bx1-bw/2,baseY-hA,bw,hA,5);ctx.fill();
+  txt(pctStr+' docs',bx1,baseY-hA-7,'700 12px '+MONO,C.red,'center','bottom');
+  txt('if it scaled',bx1,baseY+8,'600 12px '+SANS,C.ink2,'center','top');
+  txt('with the data',bx1,baseY+21,'600 12px '+SANS,C.ink2,'center','top');
+  // B: fixed count (violet)
+  const hB=30;
+  ctx.fillStyle=C.violet;ctx.beginPath();ctx.roundRect(bx2-bw/2,baseY-hB,bw,hB,5);ctx.fill();
+  txt('250 docs',bx2,baseY-hB-7,'700 12px '+MONO,C.violet,'center','bottom');
+  txt('measured',bx2,baseY+8,'600 12px '+SANS,C.ink2,'center','top');
+  txt('(flat)',bx2,baseY+21,'600 12px '+SANS,C.ink2,'center','top');
+  // baseline
+  ctx.strokeStyle=C.line2;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(bx1-42,baseY+.5);ctx.lineTo(bx2+42,baseY+.5);ctx.stroke();
+  ctx.restore();
+}
+function drawBanner(a){
+  if(a<=0)return;ctx.save();ctx.globalAlpha=a;
+  const bx=262,by=286,bw=196,bh=40;
+  ctx.fillStyle='#ffffff';ctx.strokeStyle=C.red;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,bw,bh,9);ctx.fill();ctx.stroke();
+  txt('Bigger is NOT safer',bx+bw/2,by+15,'700 12px '+SANS,C.red,'center','middle');
+  txt('scale does not dilute the attack',bx+bw/2,by+29,'500 12px '+SANS,C.ink2,'center','middle');
+  ctx.restore();
+}
+function drawCaveat(a){
+  if(a<=0)return;ctx.save();ctx.globalAlpha=a;
+  const y=350;
+  ctx.fillStyle=C.amber;ctx.font='700 12px '+MONO;ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText('⚠',WEB.x,y);
+  txt("the 250-doc figure is one 2025 preprint on a narrow backdoor. hold it loosely.",WEB.x+16,y,'500 12px '+SANS,C.ink2,'left','middle');
+  ctx.restore();
+}
+function drawScaleScene(){
+  drawWebGrid(state.reveal);
+  drawArrow(WEB.x+WEB.w+10, CHIP.cx-lerp(64,150,state.mIdx/4)/2-12, CHIP.cy, state.reveal);
+  drawChip(state.reveal);
+  drawCompare(state.comp);
+  drawBanner(state.banner);
+  drawCaveat(state.banner);
+}
+
+/* ---------- INJECT scene ---------- */
+function drawInjectScene(){
+  const a=state.inject; if(a<=0)return; ctx.save();ctx.globalAlpha=a;
+  // ratio bar: billions grey, 250 red sliver
+  const rx=40,ry=74,rw=640,rh=26;
+  ctx.fillStyle='#eef0f4';ctx.strokeStyle=C.line2;ctx.lineWidth=1.2;ctx.beginPath();ctx.roundRect(rx,ry,rw,rh,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle=C.red;ctx.beginPath();ctx.roundRect(rx,ry,4,rh,2);ctx.fill();
+  txt('250 poisoned pages',rx+10,ry-8,'700 12px '+MONO,C.red,'left','bottom');
+  txt('hidden in ~40,000,000,000 scraped pages',rx+rw,ry-8,'500 12px '+SANS,C.ink2,'right','bottom');
+  txt('the red sliver on the left is the entire attack',rx,ry+rh+8,'500 12px '+SANS,C.ink3,'left','top');
+  // cost
+  txt('$60',rx+8,ry+rh+52,'700 40px '+MONO,C.violet,'left','middle');
+  txt('buys control of ≈0.01% of a popular web-image dataset',rx+96,ry+rh+42,'600 12px '+SANS,C.ink,'left','middle');
+  txt('enough to place the 250 pages. peer-reviewed, and solid.',rx+96,ry+rh+60,'500 12px '+SANS,C.ink2,'left','middle');
+  // two mechanism cards
+  mechCard(40,206,320,150,'SPLIT-VIEW','breaks across space','split');
+  mechCard(380,206,300,150,'FRONTRUNNING','breaks across time','front');
+  ctx.restore();
+}
+function mechCard(x,y,w,h,title,sub,kind){
+  ctx.fillStyle='#fff';ctx.strokeStyle=C.line2;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x,y,w,h,12);ctx.fill();ctx.stroke();
+  txt(title,x+14,y+16,'700 12px '+MONO,C.violet,'left','middle');
+  txt(sub,x+w-14,y+16,'600 12px '+MONO,C.ink3,'right','middle');
+  const cy=y+64;
+  if(kind==='split'){
+    // one URL, two contents at two times
+    node(x+40,cy,'URL',C.ink2);
+    txt('same link',x+40,cy+22,'500 12px '+SANS,C.ink3,'center','top');
+    arrow(x+58,cy-10,x+150,y+40); arrow(x+58,cy+10,x+150,y+92);
+    node(x+170,y+40,'✓',C.green); txt('reviewer sees',x+170,y+16,'500 12px '+SANS,C.ink2,'center','top'); txt('a clean page',x+230,y+40,'600 12px '+SANS,C.green,'left','middle');
+    node(x+170,y+92,'✗',C.red); txt('crawler later gets',x+230,y+86,'600 12px '+SANS,C.red,'left','middle'); txt('poison',x+230,y+100,'600 12px '+SANS,C.red,'left','middle');
+    txtWrap('the attacker owns the domain and swaps content after review',x+14,y+h-14,w-28,'500 12px '+SANS,C.ink2);
+  } else {
+    // timeline: review -> edit -> snapshot
+    const ly=cy, x0=x+30,x1=x+w-30;
+    ctx.strokeStyle=C.line2;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,ly);ctx.lineTo(x1,ly);ctx.stroke();
+    const px=[x0, (x0+x1)/2, x1];
+    node(px[0],ly,'✓',C.green); txt('reviewed',px[0],ly+20,'500 12px '+SANS,C.ink2,'center','top'); txt('(clean)',px[0],ly+32,'500 12px '+SANS,C.green,'center','top');
+    node(px[1],ly,'✎',C.red); txt('attacker',px[1],ly+20,'500 12px '+SANS,C.ink2,'center','top'); txt('edits',px[1],ly+32,'500 12px '+SANS,C.red,'center','top');
+    node(px[2],ly,'✗',C.red); txt('snapshot',px[2],ly+20,'500 12px '+SANS,C.ink2,'center','top'); txt('(poison)',px[2],ly+32,'500 12px '+SANS,C.red,'center','top');
+    txtWrap('edit lands after review, just before the training snapshot',x+14,y+h-14,w-28,'500 12px '+SANS,C.ink2);
+  }
+}
+function node(x,y,gl,col){var r=gl.length>1?15:11;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle='#fff';ctx.strokeStyle=col;ctx.lineWidth=2;ctx.fill();ctx.stroke();
+  txt(gl,x,y+.5,'700 12px '+MONO,col,'center','middle');}
+function arrow(x0,y0,x1,y1){ctx.strokeStyle=C.line2;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();
+  ctx.fillStyle=C.line2;const a=Math.atan2(y1-y0,x1-x0);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1-8*Math.cos(a-.4),y1-8*Math.sin(a-.4));ctx.lineTo(x1-8*Math.cos(a+.4),y1-8*Math.sin(a+.4));ctx.closePath();ctx.fill();}
+
+function draw(){ctx.clearRect(0,0,W,H); if(state.step>=3) drawInjectScene(); else drawScaleScene();}
+function loop(){T+=1/60;draw();requestAnimationFrame(loop);}
+
+/* ---------- steps ---------- */
+const STEPS=[
+ {step:'STEP 1',cap:'A modern model trains on a scrape of the open web: billions of pages nobody fully vets. This one has 600M parameters.'},
+ {step:'STEP 2',cap:'To plant a hidden backdoor, how many of those pages must an attacker control? Two answers compete: a fixed fraction of the data, or a fixed count of documents.'},
+ {step:'STEP 3',cap:'Scale the model from 600M to 13B. The fraction answer explodes into millions of pages. But a 2025 study found the real number barely moves: about 250 poisoned documents, at any size.',warn:true},
+ {step:'STEP 4',cap:'And 250 pages is cheap to slip into a crawl. About $60 buys control of ~0.01% of a popular web-image dataset. Attackers place the poison two ways, shown here.'}
+];
+function maxStep(){return STEPS.length-1;}
+function setCap(s,t,cls){cstep.textContent=s;captxt.textContent=t;capEl.className='cap'+(cls?' '+cls:'');}
+
+function snapTo(n){
+  state.reveal=n>=0?1:0; state.comp=n>=1?1:0; state.mIdx=n>=2?4:0; state.banner=n>=2?1:0; state.inject=n>=3?1:0;
+}
+async function animateStep(target){
+  if(target===0){ snapTo(-1); state.reveal=0; await tween(state,{reveal:1},420); snapTo(0); }
+  else if(target===1){ snapTo(0); state.comp=0; await tween(state,{comp:1},380); snapTo(1); }
+  else if(target===2){ snapTo(1); state.banner=0; await tween(state,{mIdx:4},1300,easeIO); await tween(state,{banner:1},300); snapTo(2); }
+  else if(target===3){ snapTo(2); state.inject=0; await tween(state,{inject:1},420); snapTo(3); }
+}
+function showVerdict(){
+  verdict.className='verdict show';
+  verdict.innerHTML='<div class="vk">Why this matters</div><div class="vt">If a <b>fixed, tiny count</b> of poisoned pages can plant a backdoor, then making the model bigger does not dilute the attack, and slipping ~250 pages into a web crawl costs about <b>$60</b>. Scale is not a defense. The real defenses are <b>data provenance</b> (know where each page came from) and <b>trusted, vetted sources</b>, not size. Treat the 250-doc figure as an early, narrow finding; treat the $60 economics as well established.</div>';
+}
+
+/* stepping */
+async function goNext(){ if(busy)return;const mx=maxStep();if(state.step>=mx)return;busy=true;idlePh.classList.add('hidden');updateButtons();
+  const target=state.step+1,t=STEPS[target];verdict.className='verdict'; verdict.innerHTML='';setCap(t.step,t.cap,t.warn?'warn':'');
+  await animateStep(target);state.step=target;if(state.step===mx)showVerdict();busy=false;updateButtons(); }
+function goPrev(){ if(busy||state.step<0)return;state.step--;verdict.className='verdict'; verdict.innerHTML='';
+  if(state.step<0){snapTo(-1);idlePh.classList.remove('hidden');introCap();}else{idlePh.classList.add('hidden');snapTo(state.step);const t=STEPS[state.step];setCap(t.step,t.cap,t.warn?'warn':'');}
+  updateButtons(); }
+function introCap(){setCap('Ready','Press Start to walk through the economics of web-scale poisoning, one step at a time.');}
+function updateButtons(){const mx=maxStep();
+  backBtn.disabled=busy||state.step<0;nextBtn.disabled=busy||state.step>=mx;resetBtn.disabled=busy;
+  nextBtn.textContent=state.step<0?'Start ▶':(state.step>=mx?'Done':'Next ▶');
+  rehint.textContent=busy?'…':(state.step<0?'Step through at your own pace.':(state.step>=mx?'Finished. Reset to replay.':'Step '+(state.step+1)+' of '+(mx+1)));sh();}
+function reset(){busy=false;Object.assign(state,fresh());snapTo(-1);verdict.className='verdict'; verdict.innerHTML='';idlePh.classList.remove('hidden');introCap();updateButtons();}
+
+nextBtn.addEventListener('click',goNext);backBtn.addEventListener('click',goPrev);
+resetBtn.addEventListener('click',()=>{if(!busy)reset();});
+window.addEventListener('keydown',e=>{if(e.key==='ArrowRight')goNext();else if(e.key==='ArrowLeft')goPrev();});
+
+function resize(){const cssW=canvas.clientWidth||canvas.parentElement.clientWidth||W;const cssH=cssW*H/W;canvas.style.height=cssH+'px';
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);
+  const s=cssW/W;ctx.setTransform(dpr*s,0,0,dpr*s,0,0);sh();}
+function sh(){const el=document.querySelector('.wrap');if(!el)return;const pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+24),src:location.href},'*');}
+new ResizeObserver(resize).observe(document.querySelector('.stagewrap'));
+window.addEventListener('load',()=>{resize();reset();setTimeout(sh,180);});
+resize();reset();loop();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

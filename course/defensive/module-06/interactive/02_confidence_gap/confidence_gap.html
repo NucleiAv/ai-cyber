@@ -1,0 +1,304 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confidence vs Security Gap</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--blue:#1560AC;--blue-bg:#E6F0FA;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+    .top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em;flex:1 1 auto}
+    .step-badge{font-size:.7rem;font-weight:700;color:#fff;background:#4C1D95;border:1.5px solid var(--v200);border-radius:8px;padding:4px 12px;white-space:nowrap}
+    .body-wrap{padding:0 18px 14px}
+
+    /* Task banner */
+    .task-banner{background:var(--sk);border-radius:10px;padding:10px 14px;margin-bottom:14px;text-align:center}
+    .task-label{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin-bottom:3px}
+    .task-desc{font-size:.78rem;font-weight:700;color:var(--ink)}
+
+    /* Progress */
+    .prog{height:4px;background:var(--rule);border-radius:2px;margin-bottom:14px;overflow:hidden}
+    .prog-fill{height:100%;background:var(--v);border-radius:2px;transition:width .5s ease;width:0}
+
+    /* Decision card */
+    .decision{animation:fadeUp .3s ease}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .dec-req{text-align:center;font-size:.72rem;font-weight:700;color:#fff;margin-bottom:12px;padding:6px 12px;background:#57068C;border-radius:8px;display:inline-block;width:100%}
+
+    .columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:600px){.columns{grid-template-columns:1fr}}
+    .col{border:1.5px solid var(--rule);border-radius:10px;overflow:hidden;transition:border-color .4s;display:flex;flex-direction:column}
+    .col.safe{border-color:var(--grn)}
+    .col.partial{border-color:var(--amb)}
+    .col.vuln{border-color:var(--red)}
+    .col-head{padding:8px 10px;border-bottom:1px solid var(--rule);font-size:.7rem;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0}
+    .col.manual .col-head{background:var(--sk);color:var(--ink)}
+    .col.ai .col-head{background:#4C1D95;color:#fff}
+    .col-head svg{width:16px;height:16px;flex-shrink:0}
+
+    /* Inner layout for vertical alignment */
+    .col-inner{display:flex;flex-direction:column;flex:1;padding-bottom:4px}
+
+    /* Thought / AI bubbles */
+    .bubble{margin:8px 10px 6px;padding:8px 10px;border-radius:8px;font-size:.68rem;line-height:1.45;position:relative;flex-shrink:0}
+    .bubble::before{content:'';position:absolute;top:-5px;left:16px;width:10px;height:10px;transform:rotate(45deg)}
+    .think-bubble{background:#4C1D95;border:1px solid #C7D2FE;color:#fff}
+    .think-bubble::before{background:#EEF2FF;border-left:1px solid #C7D2FE;border-top:1px solid #C7D2FE}
+    .ai-bubble{background:#4C1D95;border:1px solid var(--v200);color:#fff}
+    .ai-bubble::before{background:var(--v50);border-left:1px solid var(--v200);border-top:1px solid var(--v200)}
+    .bubble .label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;opacity:.7}
+
+    /* Code block */
+    .code-block{margin:0 10px 6px;background:#1E2028;border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:.66rem;line-height:1.7;color:#D4D4D8;overflow-x:auto;flex-shrink:0}
+    .code-block .kw{color:#C586C0}
+    .code-block .fn{color:#DCDCAA}
+    .code-block .str{color:#CE9178}
+    .code-block .cm{color:#6A9955}
+    .code-block .bad{background:rgba(196,42,42,.3);border-radius:2px;padding:0 2px}
+
+    /* Context note (what the developer does next) */
+    .ctx-note{margin:0 10px 6px;font-size:.66rem;color:var(--ink2);font-style:italic;line-height:1.4;flex-shrink:0}
+
+    /* Vulnerability / safety callout: pushed to bottom */
+    .result-note{margin:auto 10px 8px;padding:6px 10px;border-radius:6px;font-size:.66rem;line-height:1.4;display:none}
+    .result-note.safe{background:#166534;color:#fff}
+    .result-note.partial-note{background:#854D0E;color:#fff}
+    .result-note.danger{background:#991B1B;color:#fff}
+    .result-note b{font-weight:700}
+    .result-note code{font-family:var(--mono);font-size:.62rem}
+    .result-note.show{display:block;animation:fadeUp .3s ease}
+
+    .next-btn{appearance:none;border:none;background:var(--v);color:#fff;border-radius:8px;padding:8px 20px;font:inherit;font-size:.74rem;font-weight:600;cursor:pointer;margin-top:10px;display:none;transition:background .2s}
+    .next-btn:hover{background:var(--v-d)}
+
+    /* Final summary */
+    .summary{display:none;animation:fadeUp .4s ease}
+    .sum-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+    @media(max-width:500px){.sum-cols{grid-template-columns:1fr}}
+    .sum-card{border:1.5px solid var(--rule);border-radius:10px;padding:14px;text-align:center}
+    .sum-card.mixed{border-color:var(--amb);background:var(--amb-bg)}
+    .sum-card.bad{border-color:var(--red);background:var(--red-bg)}
+    .sum-who{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);margin-bottom:8px}
+    .sum-stat{margin-bottom:6px}
+    .sum-stat .num{font-size:1.3rem;font-weight:700;font-family:var(--mono)}
+    .sum-stat .num.grn{color:var(--grn)}
+    .sum-stat .num.amb{color:var(--amb)}
+    .sum-stat .num.red{color:var(--red)}
+    .sum-stat .num.blue{color:var(--blue)}
+    .sum-stat .lbl{font-size:.62rem;font-weight:700;text-transform:uppercase;color:var(--ink2)}
+    .sum-sub{font-size:.64rem;color:var(--ink2);margin-top:6px;font-style:italic;line-height:1.35}
+
+    .sum-finding{margin-top:14px;padding:12px 16px;border-radius:10px;border:1.5px solid var(--red);background:var(--red-bg);text-align:center}
+    .sum-finding .big{font-size:.82rem;font-weight:700;color:var(--red);margin-bottom:4px}
+    .sum-finding .detail{font-size:.72rem;color:#8B1A1A;line-height:1.45}
+
+    .restart-btn{appearance:none;border:1.5px solid var(--v200);background:#57068C;color:#fff;border-radius:8px;padding:6px 14px;font:inherit;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s;margin-top:10px}
+    .restart-btn:hover{background:var(--v);color:#fff}
+
+    .insight{padding:12px 18px;font-size:.76rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.5}
+    .insight b{color:var(--ink);font-weight:700}
+  </style>
+</head>
+<body>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>Confidence vs Security Gap</h1>
+    <span class="step-badge" id="stepBadge">Decision 1 of 3</span>
+  </div>
+  <div class="body-wrap">
+    <div class="task-banner">
+      <div class="task-label">Both developers received the same task</div>
+      <div class="task-desc">Write an endpoint that looks up a user by name and returns their profile</div>
+    </div>
+    <div class="prog"><div class="prog-fill" id="progFill"></div></div>
+    <div id="decArea"></div>
+    <div class="summary" id="summary">
+      <div class="sum-cols">
+        <div class="sum-card mixed">
+          <div class="sum-who">Manual Developer</div>
+          <div class="sum-stat"><span class="num amb">1</span><div class="lbl">Vulnerability</div></div>
+          <div class="sum-stat"><span class="num blue">58%</span><div class="lbl">Self-Rated Confidence</div></div>
+          <div class="sum-sub">"I think it's mostly right, but I want a review before merging."</div>
+        </div>
+        <div class="sum-card bad">
+          <div class="sum-who">AI-Assisted Developer</div>
+          <div class="sum-stat"><span class="num red">3</span><div class="lbl">Vulnerabilities</div></div>
+          <div class="sum-stat"><span class="num blue">92%</span><div class="lbl">Self-Rated Confidence</div></div>
+          <div class="sum-sub">"The AI wrote it, it runs correctly, it's good to ship."</div>
+        </div>
+      </div>
+      <div class="sum-finding">
+        <div class="big">Both developers made mistakes. Only one knew it.</div>
+        <div class="detail">The manual developer's lower confidence triggered a code review that caught the cookie issue before it shipped. The AI-assisted developer's inflated confidence meant three vulnerabilities reached production unchecked. The danger is not that AI writes bad code. The danger is that it suppresses the doubt that catches bad code. (Perry et al., 2023)</div>
+      </div>
+      <button class="restart-btn" onclick="restart()">Restart</button>
+    </div>
+  </div>
+  <div class="insight" id="ins">Both developers write the same endpoint. Step through each decision to see <b>where</b> and <b>why</b> their code diverges.</div>
+</div></div>
+
+<script>
+const DECISIONS = [
+  {
+    req:"Decision: How to handle user input from the request",
+    manual:{
+      think:"User input is untrusted. I need to validate the name parameter before it touches anything else.",
+      code:'name = request.args.<span class="fn">get</span>(<span class="str">"name"</span>, <span class="str">""</span>)\n<span class="kw">if not</span> name <span class="kw">or</span> <span class="fn">len</span>(name) > 100:\n    <span class="kw">return</span> <span class="fn">abort</span>(400)',
+      ctx:"The developer validates presence and length, relying on parameterized queries downstream for injection defense.",
+      note:"Input validated for presence and length. Defense-in-depth with parameterized queries handles injection risk downstream.",
+      noteClass:"safe",
+      colClass:"safe"
+    },
+    ai:{
+      suggest:"Here is the code to get the user's name from the request parameters:",
+      code:'name = request.args[<span class="str">"name"</span>]',
+      ctx:"The developer accepts. It looks clean and simple.",
+      note:"<b>No validation.</b> If the parameter is missing, the code crashes with a KeyError. If it's present, raw input flows directly into every downstream operation with no length check or sanitization.",
+      noteClass:"danger",
+      colClass:"vuln"
+    }
+  },
+  {
+    req:"Decision: How to query the database for the user",
+    manual:{
+      think:"Never build SQL from string concatenation. Always use parameterized queries to prevent injection.",
+      code:'query = <span class="str">"SELECT * FROM users WHERE name = %s"</span>\nresult = db.<span class="fn">execute</span>(query, (name,))',
+      ctx:"The developer writes the parameterized query from memory. This pattern is well-drilled.",
+      note:"Parameterized query. The database driver handles escaping. Injection is not possible.",
+      noteClass:"safe",
+      colClass:"safe"
+    },
+    ai:{
+      suggest:"Here is a query to find the user by name:",
+      code:'result = db.<span class="fn">execute</span>(\n    <span class="bad">f<span class="str">"SELECT * FROM users WHERE name = \'{name}\'"</span></span>\n)',
+      ctx:"The developer accepts. The f-string looks like normal Python. The query works in testing.",
+      note:'<b>SQL injection.</b> The f-string interpolates the name directly into the query. An attacker can input <code>\' OR 1=1 --</code> to dump the entire table, or worse.',
+      noteClass:"danger",
+      colClass:"vuln"
+    }
+  },
+  {
+    req:"Decision: How to set the session cookie in the response",
+    manual:{
+      think:"Session cookies need security flags. I know HttpOnly prevents JavaScript access to the cookie. I'll add that.",
+      code:'resp.<span class="fn">set_cookie</span>(<span class="str">"session"</span>, token,\n    httponly=<span class="kw">True</span>)',
+      ctx:"The developer remembers HttpOnly but does not think to add Secure or SameSite.",
+      note:"<b>Partial protection.</b> HttpOnly is set, which prevents XSS cookie theft. But Secure is missing (cookie sent over HTTP) and SameSite is missing (CSRF is possible). One flag out of three is not enough.",
+      noteClass:"partial-note",
+      colClass:"partial"
+    },
+    ai:{
+      suggest:"Set the session cookie on the response:",
+      code:'resp.<span class="fn">set_cookie</span>(<span class="str">"session"</span>, <span class="bad">token</span>)',
+      ctx:"The developer accepts. It sets the cookie and the login works correctly.",
+      note:"<b>Missing all security flags.</b> Without HttpOnly, XSS can steal the session token via <code>document.cookie</code>. Without Secure, the token transmits over HTTP. Without SameSite, CSRF attacks can ride the session.",
+      noteClass:"danger",
+      colClass:"vuln"
+    }
+  }
+];
+
+let step = 0;
+
+function renderDecision(){
+  var d = DECISIONS[step];
+  document.getElementById('stepBadge').textContent = 'Decision '+(step+1)+' of 3';
+  document.getElementById('progFill').style.width = ((step)/3*100)+'%';
+  var area = document.getElementById('decArea');
+
+  area.innerHTML =
+    '<div class="decision">'
+    +'<div class="dec-req">'+d.req+'</div>'
+    +'<div class="columns">'
+      +'<div class="col manual">'
+        +'<div class="col-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Manual Developer</div>'
+        +'<div class="col-inner">'
+          +'<div class="bubble think-bubble"><div class="label">Developer thinks:</div>'+d.manual.think+'</div>'
+          +'<div class="code-block">'+d.manual.code.replace(/\n/g,'<br>')+'</div>'
+          +'<div class="ctx-note">'+d.manual.ctx+'</div>'
+          +'<div class="result-note '+d.manual.noteClass+'" id="manualNote">'+d.manual.note+'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="col ai">'
+        +'<div class="col-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg> AI-Assisted Developer</div>'
+        +'<div class="col-inner">'
+          +'<div class="bubble ai-bubble"><div class="label">AI suggests:</div>'+d.ai.suggest+'</div>'
+          +'<div class="code-block">'+d.ai.code.replace(/\n/g,'<br>')+'</div>'
+          +'<div class="ctx-note">'+d.ai.ctx+'</div>'
+          +'<div class="result-note '+d.ai.noteClass+'" id="aiNote">'+d.ai.note+'</div>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+    +'<button class="next-btn" id="revealBtn" onclick="revealVuln()">Reveal the Difference</button>'
+    +'<button class="next-btn" id="nextBtn" onclick="nextStep()" style="display:none">'+(step<2?'Next Decision':'See the Result')+'</button>'
+    +'</div>';
+
+  document.getElementById('revealBtn').style.display = 'inline-block';
+  sendHeight();
+}
+
+function revealVuln(){
+  document.getElementById('revealBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+  document.getElementById('manualNote').classList.add('show');
+  document.getElementById('aiNote').classList.add('show');
+
+  var d = DECISIONS[step];
+  document.querySelector('.col.manual').classList.add(d.manual.colClass);
+  document.querySelector('.col.ai').classList.add(d.ai.colClass);
+
+  if(step === 2){
+    document.getElementById('ins').innerHTML = '<b>Both developers made a mistake here.</b> The manual developer got partial protection; the AI-assisted developer got none. But notice the difference in awareness.';
+  } else {
+    document.getElementById('ins').innerHTML = '<b>Same requirement. Different outcome.</b> The manual developer thought about security; the AI-assisted developer trusted the suggestion.';
+  }
+  sendHeight();
+}
+
+function nextStep(){
+  step++;
+  if(step >= 3){
+    showSummary();
+  } else {
+    renderDecision();
+  }
+}
+
+function showSummary(){
+  document.getElementById('decArea').innerHTML = '';
+  document.getElementById('stepBadge').textContent = 'Result';
+  document.getElementById('progFill').style.width = '100%';
+  document.getElementById('summary').style.display = 'block';
+  document.getElementById('ins').innerHTML = '<b>Perry et al. (2023):</b> Developers with AI assistance wrote less secure code while rating their code as more secure. The mechanism is exactly what you just saw: plausible AI output that passes casual inspection and suppresses the caution that would otherwise trigger a review.';
+  sendHeight();
+}
+
+function restart(){
+  step = 0;
+  document.getElementById('summary').style.display = 'none';
+  renderDecision();
+  document.getElementById('ins').innerHTML = 'Both developers write the same endpoint. Step through each decision to see <b>where</b> and <b>why</b> their code diverges.';
+}
+
+renderDecision();
+
+function sendHeight(){
+  var el=document.querySelector('.w');if(!el)return;
+  var r=el.getBoundingClientRect();
+  var pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+pad),src:location.href},'*');
+}
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  if(window.ResizeObserver){new ResizeObserver(sendHeight).observe(document.querySelector('.w')||body);}else{setInterval(sendHeight,500);}
+  window.addEventListener('load',function(){setTimeout(sendHeight,200);});setTimeout(sendHeight,50);
+})();
+</script>
+</body>
+</html>

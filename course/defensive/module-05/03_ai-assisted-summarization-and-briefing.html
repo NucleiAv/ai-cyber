@@ -1,0 +1,467 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 5 · Section 3 · AI Assisted Summarization and Briefing · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 5 · Section 3 of 7</div>
+      <h1 class="nyu-hero__title">AI Assisted Summarization and Briefing: Capability and Failure</h1>
+      <p class="nyu-hero__subtitle">
+        The acceleration is real, and so are the failures. This section teaches the
+        workflow that gets genuine value from a language model on advisory
+        summarization and briefing work, then teaches the specific failure
+        modes we must expect and catch: fabricated identifiers, wrong version
+        boundaries, stale mitigations, and confident prose hiding all of it.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~22 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 5 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          1 knowledge check + 1 audit activity
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Workflow That Works</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> How It Fails, and Why</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Worked Example: The Briefing That Almost Shipped</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Your Turn: Spot the Failures</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Apply</strong> the four step grounded summarization workflow to produce audience appropriate, caveated briefings</span></li>
+          <li><span><strong>Explain</strong> mechanistically why models fabricate identifiers, confuse versions, and serve stale mitigations</span></li>
+          <li><span><strong>Detect</strong> characteristic <button type="button" class="nyu-define" data-term="cti">CTI</button> failure modes in model output by checking claims against authoritative sources</span></li>
+          <li><span><strong>Differentiate</strong> grounding from prompt level accuracy instructions and predict which actually reduces fabrication</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>How do we get real acceleration from a language model on advisory summarization and briefing work, and what specific failures must we expect and catch before the output reaches a consumer?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The Workflow That Works</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+
+        <p>
+          We know what intelligence products look like and what ground truth exists. Advisory volume is an honest problem: thousands of CVEs are published monthly, and triage capacity is the binding constraint in most vulnerability management programs. A workflow that turns a 2,000 word advisory into three audience correct briefings in minutes is worth having. The workflow that works is not "ask the model about the CVE." It is a four step pattern that applies our Module 3 skills to this domain.
+        </p>
+
+        <ol class="nyu-timeline">
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">1</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Select and supply the source</h3>
+              <div class="nyu-timeline__detail">
+                Obtain the advisory text from the authoritative source and paste it into the prompt. This is <strong>grounding</strong>: constraining the model to work from source text we provided rather than from whatever its training data contains. We fetch it; the model has no live access, and a model "fetching" from memory is exactly the failure mode we are avoiding.
+              </div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">2</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Specify role, audience, and format</h3>
+              <div class="nyu-timeline__detail">
+                "Summarize for a CISO in 150 words, plain language, end with the exposure question the CISO should ask" produces a different and more useful artifact than "summarize this." The three customer types we defined earlier (strategic, operational, tactical) are now our prompt parameters.
+              </div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">3</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Require caveats and separation</h3>
+              <div class="nyu-timeline__detail">
+                Instruct the model to mark any statement not supported by the supplied text as NOT IN SOURCE rather than fill gaps. Models comply imperfectly, which is why step 4 exists, but the instruction measurably improves output discipline.
+              </div>
+            </div>
+          </li>
+          <li class="nyu-timeline__step">
+            <span class="nyu-timeline__dot" aria-hidden="true">4</span>
+            <div class="nyu-timeline__body">
+              <h3 class="nyu-timeline__title">Verify before dissemination</h3>
+              <div class="nyu-timeline__detail">
+                Every claim in the output gets checked against the source map before any consumer sees it. Read the output next to the source: every factual claim is supported by it, contradicted by it, or absent from it. Absent claims came from training data and need independent verification before they can stay. The verification methodology later in the module makes this systematic.
+              </div>
+            </div>
+          </li>
+        </ol>
+
+        <p>
+          Why does <button type="button" class="nyu-define" data-term="grounding">grounding</button> change so much? Module 2 named the mechanism: parametric recall (the model generating from training patterns with no lookup step) versus constrained generation (working from text we supplied). Grounding converts the task from the former to the latter, which is the task type language models demonstrably do well. That is the whole explanation; those four steps above give it operational form.
+        </p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="grounding-tryit">
+          <h3 class="nyu-callout__title" id="grounding-tryit">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            Try it: same prompt, two sources of truth
+          </h3>
+          <p>Press <strong>Run both</strong> to send one prompt to the same model twice. On the left it works from memory and fabricates with total confidence; on the right it is constrained to a supplied source and marks every gap <strong>NOT IN SOURCE</strong> instead of filling it. Watch where the two outputs diverge.</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe id="grounding-embed" src="interactive/grounding/grounding.html" title="Interactive: grounded vs. ungrounded model generation" loading="lazy" style="height:660px;"></iframe>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="caveat-tip">
+          <h3 class="nyu-callout__title" id="caveat-tip">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            What "appropriate caveats" means in practice
+          </h3>
+          <p>
+            Professional intelligence writing uses <button type="button" class="nyu-define" data-term="estimative-language">estimative language</button>: calibrated probability vocabulary like "likely" and "almost certainly," standardized in the US intelligence community by <button type="button" class="nyu-define" data-term="icd-203">ICD 203</button>. The briefing that ships states which claims were verified against which sources, and marks the rest. Caveating is professional duty, not hedging. Watch the executive register especially: audience tailoring is arguably the model's best contribution, but smooth executive prose tends to sand the uncertainty out of claims, so estimative language must be explicitly required.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">How It Fails, and Why</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          LLM failures on CTI tasks are not random noise; they cluster into a taxonomy we can anticipate. These are the forms <span class="nyu-ref" data-ref="fabrication-mechanism">Module 2's structural property</span> takes in advisory and briefing work; knowing which form to expect is what lets us predict where to look for it.
+        </p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Fabricated identifiers and references</h3>
+            <p>Models invent CVE IDs, advisory URLs, and citations that look perfect and do not exist. As Module 1's slopsquatting case showed, pattern completion with no lookup step applies to CVE identifiers exactly as it does to package names. The CTI-specific cost: a fabricated CVE ID clears format validation, returns nothing in NVD, and consumes investigation time before the analyst realizes it never existed.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Wrong technical details</h3>
+            <p>Scores, vectors, affected version ranges, and protocol details get blended across the many similar advisories in training data. <strong>Version confusion</strong> (attributing product A's affected range to product B, or mixing two CVEs in the same product) is especially common and especially dangerous, because a wrong version string looks exactly like a right one and survives a casual read.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+            </div>
+            <h3 class="nyu-card__title">Stale truth</h3>
+            <p>The model has a <button type="button" class="nyu-define" data-term="knowledge-cutoff">knowledge cutoff</button>. Mitigation advice that was correct at training time may have been superseded: a recommended version may itself now be vulnerable. <strong>This is a distinct axis from hallucination:</strong> the model is accurately reporting something that is no longer true. The harm lands on the analyst patching to the "fixed" version from a stale summary.</p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--cyan" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <h3 class="nyu-card__title">False fluency</h3>
+            <p><button type="button" class="nyu-define" data-term="false-fluency">False fluency</button> (<span class="nyu-ref" data-ref="fabrication-mechanism">Module 2's uniform-confidence property</span>) is what makes the three failure modes above hard to catch in practice. A wrong version boundary reads identically to a correct one. A stale mitigation reads like current guidance. The consequential CTI failures are precisely the quietest ones.</p>
+          </div>
+        </div>
+
+        <p>
+          Every language model is trained on data collected up to a fixed date. After that cutoff, the model has no knowledge of new vulnerabilities, updated advisories, or retracted mitigations. It will state stale information in the same confident register as current information, because it has no way to distinguish between the two. The lecture below explains how this works and why it matters for any CTI claim a model makes.
+        </p>
+
+        <figure class="nyu-video">
+          <p style="margin:0 0 var(--sp-3);line-height:1.3;"><span class="nyu-video__eyebrow" style="margin-right:var(--sp-3);vertical-align:middle;">Supplementary · External</span><strong style="font-size:var(--fs-md);color:var(--ink);">Vintage LLMs (Historical Language Models)</strong></p>
+          <div class="nyu-video__frame">
+            <video controls preload="metadata" style="width:100%;height:100%;object-fit:contain;">
+              <source src="video/vintage_llms.mp4" type="video/mp4">
+              Your browser does not support the video element.
+            </video>
+          </div>
+        <figcaption style="font-size:var(--fs-xs);color:var(--ink-mute);margin-top:var(--sp-2);line-height:1.45;">Source: <a href="https://owainevans.github.io/talk-transcript.html" target="_blank" rel="noopener">Vintage Large Language Models</a>, Owain Evans (2024). <a href="https://owainevans.github.io/talk-transcript.html" target="_blank" rel="noopener">Transcript</a> &middot; <a href="https://owainevans.github.io/pdfs/vintage_LLMs.pdf" target="_blank" rel="noopener">Slides</a> &middot; <a href="https://www.youtube.com/watch?v=AA4ophKBK58" target="_blank" rel="noopener">Original video</a></figcaption>
+        </figure>
+
+                <p>
+          As Module 2 established, <button type="button" class="nyu-define" data-term="hallucination">hallucination</button> is structural to probabilistic generation, not something future model versions will eliminate. In CTI work it takes the characteristic forms above. That is why this module teaches a methodology rather than a model version.
+        </p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="ecosystem-note">
+          <h3 class="nyu-callout__title" id="ecosystem-note">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            The ecosystem dimension: AI-generated noise as analyst burden
+          </h3>
+          <p>
+            This failure profile is now an attack and noise surface in its own right. Open source maintainers, prominently the curl project, have publicly documented receiving AI-generated vulnerability reports describing nonexistent flaws in fluent, plausible security language. Triaging fabricated reports consumes real analyst time, and the cost lands on exactly the people least resourced to absorb it. We will revisit this from the attacker's side in Module 8.
+          </p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Worked Example: The Briefing That Almost Shipped</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          <em>The model output below is an illustrative reconstruction of characteristic failure patterns. The vulnerability is real: CVE-2023-4863, a 2023 heap buffer overflow in the libwebp image library.</em>
+        </p>
+
+        <p>
+          An analyst asks a local model, <strong>without grounding</strong>, to "write a SOC briefing on CVE-2023-4863." Here is the output, with four claims tagged for inspection:
+        </p>
+
+        <pre class="nyu-code" aria-label="Reconstructed model briefing with four tagged claims"><code><span class="c-comment">// Reconstructed model output. Tags [A] to [D] added for the walkthrough.</span>
+"CVE-2023-4863 is a critical heap buffer overflow in the libwebp
+image library, exploitable via a crafted WebP image, affecting
+Google Chrome and other software embedding libwebp. <span class="c-meta">[A]</span>
+Chrome versions prior to 116.0.5845.187 are affected. <span class="c-bad">[B]</span>
+Apply vendor patches; see Google's advisory at
+chromereleases.googleblog.com/2023/09/cve-2023-4863-analysis.html. <span class="c-bad">[C]</span>
+As a workaround, disabling WebP rendering in browser flags
+fully mitigates the issue. <span class="c-bad">[D]</span>"</code></pre>
+
+        <p>Now the verification walkthrough, claim by claim:</p>
+
+        <div class="nyu-callout nyu-callout--success">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            [A] Verified
+          </h3>
+          <p>
+            Matches the CVE description and NVD: heap buffer overflow in libwebp, exploitable via a crafted image, broad embedding footprint. Verified. This matches the Module 3 principle: headline facts of widely discussed vulnerabilities are well-represented in training data, so they verify cleanly. Per-claim verification continues regardless: one correct claim does not vouch for the rest.
+          </p>
+        </div>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+            [B] Subtly wrong: version boundary
+          </h3>
+          <p>
+            The affected version boundary stated does not match the vendor advisory's fixed version line. Off by one version errors and wrong boundaries are characteristic; they survive casual reads because they look exactly like correct version strings. <strong>Caught only by checking the vendor advisory.</strong> This is the failure mode with the worst cost to detection ratio: cheap to make, expensive to miss.
+          </p>
+        </div>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+            [C] Fabricated reference
+          </h3>
+          <p>
+            The blog domain is real; the specific URL is not. It resolves to nothing. The model completed a plausible URL shape, exactly as it completes any high entropy string. <strong>Caught by clicking, which is the cheapest verification in this entire module.</strong> A reference no one clicked is a reference no one verified.
+          </p>
+        </div>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+            [D] Wrong and dangerous
+          </h3>
+          <p>
+            The confident "fully mitigates" claim appears in no authoritative guidance. libwebp is embedded in many applications beyond the browser, so a browser flag cannot be a full mitigation. This is false fluency doing real damage: it hands a consumer a reason not to patch. Mitigation claims always route to the vendor advisory, never to the model's memory.
+          </p>
+        </div>
+
+        <p>
+          The same prompt rerun <strong>with</strong> the actual Chrome release notes and CVE description pasted in, plus the caveat instruction, produced a briefing whose claims were either supported by the supplied text or explicitly marked NOT IN SOURCE. Grounding did not make the model smart; it made the task small.
+        </p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="miscon-3">
+          <h3 class="nyu-callout__title" id="miscon-3">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Watch out: four common misconceptions
+          </h3>
+          <p><strong>"Asking the model to be accurate makes it accurate."</strong> Instructions shape style and discipline, not access to ground truth. Only grounding changes what the task fundamentally is.</p>
+          <p><strong>"Hallucinations are obvious."</strong> The dangerous ones are version boundaries and references: artifacts that look exactly like their genuine counterparts. Obvious nonsense is the rare case.</p>
+          <p><strong>"A correct summary means a trustworthy model."</strong> Headline facts of famous CVEs verify cleanly while the details rot. Verification is per claim, not per output.</p>
+          <p><strong>"Newer models will fix this."</strong> Rates shift; the structural property persists. The methodology is the durable asset.</p>
+        </aside>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            Tradeoffs and limitations of the grounded workflow
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>
+              Grounding costs context window: as we learned in Module 2, advisories are token expensive, and the fetch step is real friction at volume. Caveat instructions reduce but do not eliminate unsupported claims. And verification effort scales with claim count, which is why the verification methodology teaches us to decompose and route claims efficiently instead of re researching everything from scratch. The cost asymmetry stays either way: the model saves an hour of drafting, and one undetected wrong version range can cost an incident. The disciplined middle position (ground, constrain, verify, then disseminate) is what makes the time saving real instead of borrowed.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Your Turn: Spot the Failures</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          <strong>Your reasoning task.</strong> This is a dress rehearsal for the hallucination audit lab, where you will run the same protocol on fresh output you generate from your own local model. Here, audit one more reconstructed briefing against two genuine source excerpts.
+        </p>
+
+        <p>
+          <em>Fictional audit exercise. The briefing below is a reconstruction; the source excerpts are simplified but representative of the NVD and vendor advisory formats.</em> Read the briefing, then the sources. Classify each of the four numbered claims as <strong>verified</strong> (supported by a source), <strong>contradicted</strong> (a source says otherwise), or <strong>unverifiable from these sources</strong> (came from neither). Commit before opening the reveal.
+        </p>
+
+        <pre class="nyu-code" aria-label="Briefing to audit, four numbered claims"><code><span class="c-comment">// BRIEFING TO AUDIT (reconstruction)</span>
+(1) CVE-2024-99999 is a SQL injection flaw in AcmeDB Server.
+(2) It carries a CVSS base score of 9.8.
+(3) All AcmeDB versions from 5.0 through 5.6 are affected;
+    upgrade to 5.7 to remediate.
+(4) The flaw is being actively exploited by ransomware groups.
+
+<span class="c-comment">// SOURCE 1: NVD entry excerpt (simplified)</span>
+CVE-2024-99999: SQL injection in AcmeDB Server. CVSS 3.1
+base score 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H).
+
+<span class="c-comment">// SOURCE 2: Vendor advisory excerpt (simplified)</span>
+Affected: AcmeDB Server 5.0 to 5.5. Fixed in 5.6.0.
+Customers on 5.6 are not affected. No workaround available.</code></pre>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario: your audit verdicts
+          </h3>
+          <p class="nyu-scenario__prompt">
+            Write your four verdicts (verified, contradicted, or unverifiable) with one sentence of justification each. Then open the answer key and score the two subtle ones especially honestly.
+          </p>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <ul>
+              <li><strong>(1) Verified.</strong> Existence, flaw type, and product match the NVD excerpt.</li>
+              <li><strong>(2) Verified.</strong> The 9.8 score matches NVD, which is the authoritative source for that claim type.</li>
+              <li><strong>(3) Contradicted.</strong> The vendor advisory says 5.0 to 5.5 affected, fixed in 5.6.0. The briefing extends the affected range to 5.6 and invents 5.7 as the fix. An analyst following the briefing would tell 5.6 customers to upgrade unnecessarily, and worse, would treat the actually fixed version as vulnerable while trusting a version that does not exist as the remedy. This is the version boundary failure mode we just covered, and the vendor advisory is the source that owns this claim type.</li>
+              <li><strong>(4) Unverifiable from these sources.</strong> Neither excerpt addresses exploitation. The claim might be true, but on this evidence it is an unsupported assertion wearing confident prose. The source that adjudicates exploitation claims is the KEV catalog, and the disseminated briefing must either check it or mark the claim explicitly as unverified.</li>
+            </ul>
+            <p><strong>Scoring yourself:</strong> claims 1 and 2 are warmups. If you caught 3 and correctly refused to verify 4 rather than guessing, your audit instincts are calibrating. If you marked 4 "contradicted," note the distinction: absence of evidence in the supplied sources is not contradiction; it routes the claim to a different source.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check 1</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="kc-1-prompt">
+            Which single change most reduces fabricated CVE details in model output?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Instructions shape style and output discipline, but they grant no access to ground truth. A model told to be accurate still generates identifiers by pattern completion; it just sounds more careful while doing it.">Adding "be accurate and do not hallucinate" to the prompt</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Lower temperature narrows the sampling distribution, which can reduce variance, but it cannot create knowledge the model lacks. The most probable completion of a fabricated URL shape is still a fabricated URL.">Lowering the temperature setting</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Pasting the authoritative advisory text into the prompt and instructing the model to use only it</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="A more confident tone increases false fluency, the property that makes failures harder to catch. This is the opposite of help.">Asking for a more confident, professional tone</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Grounding converts open recall (pattern completion over training data) into constrained summarization of supplied text, which is the task language models demonstrably do well. The other options change style or sampling, not the model's access to ground truth."
+               data-incorrect-msg="Reconsider the mechanism from Section 1. Fabrication happens because open recall is pattern completion with no lookup step. Only one option changes what the task fundamentally is, rather than how the output sounds."></div>
+        </div>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </span>
+            Going deeper: Audience tailoring across consumers
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>
+              <strong>Audience tailoring experiment.</strong> Take one grounded advisory and generate three briefings: executive, SOC analyst, developer. Compare which claims survive into each version and where uncertainty got smoothed away. The executive version is usually where estimative language dies first.
+            </p>
+            <p>
+              <strong>CTI specific LLM benchmarks.</strong> Benchmarks for CTI tasks exist and evolve quickly. Read them with the course's standing benchmark caveats: they measure what they measure, datasets go stale, and leaderboard performance is not deployment performance.
+            </p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 4: From Raw Report to Structured Intelligence: IoC Extraction and STIX.</strong> Briefings are for humans. Blocklists, SIEM rules, and sharing platforms need structure. Next we turn prose reports into machine-consumable indicators, score the extraction with the precision and recall vocabulary from Module 4, and see what STIX interoperability concretely looks like.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../reference_tip/reference-tips.js"></script>
+</body>
+</html>

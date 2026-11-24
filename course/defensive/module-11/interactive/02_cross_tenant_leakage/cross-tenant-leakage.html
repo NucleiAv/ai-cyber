@@ -1,0 +1,514 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Cross-Tenant Leakage: Deterministic vs Probabilistic Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redsoft:#fdf5f5;--redline:#efc9c9;
+  --green:#0f7a43;--greensoft:#f0f9f3;--greenline:#c3e2d0;
+  --blue:#2563eb;--bluesoft:#eff6ff;--blueline:#bfdbfe;
+  --amber:#8a5d00;--amberbg:#FCF1DC;--amberline:#e5d3a8;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid rgba(87,6,140,.25);outline-offset:2px}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) var(--paper)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+
+.wrap{max-width:920px;margin:0 auto;padding:0}
+.hdr{padding:14px 24px 0}
+.eyebrow{font-family:var(--mono);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet);margin-bottom:6px}
+.title{font-size:1.15rem;font-weight:700;color:var(--ink);line-height:1.3}
+.subtitle{font-size:.8rem;color:var(--ink2);margin-top:6px;line-height:1.55}
+
+/* ── toolbar ── */
+.toolbar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  padding:10px 24px 0;
+}
+.toolbar-left{display:flex;gap:6px;flex-shrink:0}
+.ctrl-btn{
+  min-height:32px;padding:0 14px;border:1px solid var(--vline);
+  border-radius:8px;background:var(--bg);font-family:var(--mono);
+  font-size:.72rem;font-weight:600;color:var(--violet);
+  transition:.16s;letter-spacing:.01em;
+}
+.ctrl-btn:hover{background:var(--vsoft);border-color:var(--violet2)}
+.ctrl-btn.active{background:var(--violet);color:#fff;border-color:var(--violet)}
+.ctrl-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ── panels ── */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 24px 0}
+.panel{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);transition:border-color .4s}
+.panel.leaked{border-color:var(--red)}
+.panel.secure{border-color:var(--greenline)}
+.panel-hdr{padding:10px 14px 8px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.panel-tag{
+  font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.05em;
+  padding:2px 8px;border-radius:5px;text-transform:uppercase;flex-shrink:0;
+}
+.tag-prob{background:#854D0E;color:#fff}
+.tag-det{background:#166534;color:#fff}
+.panel-title{font-family:var(--mono);font-size:.74rem;font-weight:700;color:var(--ink)}
+
+/* ── query bar inside panel ── */
+.query-bar{
+  margin:8px 10px;padding:6px 10px;
+  background:var(--paper);border:1px solid var(--line);border-radius:8px;
+  font-family:var(--mono);font-size:.66rem;color:var(--ink2);
+  display:flex;align-items:center;gap:6px;
+  transition:border-color .4s,background .4s;
+}
+.query-bar .sql-kw{color:var(--violet);font-weight:700}
+.query-bar .sql-str{color:var(--blue)}
+.query-bar.broken{border-color:var(--red);background:var(--redsoft)}
+.query-bar.broken .sql-str{color:var(--red);text-decoration:line-through}
+.bug-badge{
+  font-family:var(--mono);font-size:.56rem;font-weight:700;letter-spacing:.06em;
+  padding:1px 6px;border-radius:4px;background:var(--red);color:#fff;
+  text-transform:uppercase;display:none;
+}
+.query-bar.broken .bug-badge{display:inline}
+
+/* ── results table ── */
+.results{padding:0 10px 10px}
+.results-label{
+  font-family:var(--mono);font-size:.58rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink3);padding:6px 0 4px;
+}
+.rtable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.64rem}
+.rtable th{
+  text-align:left;font-weight:600;color:var(--ink3);font-size:.58rem;
+  letter-spacing:.04em;text-transform:uppercase;
+  padding:4px 6px;border-bottom:1px solid var(--line);
+}
+.rtable td{padding:5px 6px;border-bottom:1px solid var(--line);color:var(--ink2);vertical-align:top}
+.rtable tr.leaked-row td{background:var(--redsoft);color:var(--ink)}
+.rtable tr.leaked-row{position:relative}
+.leak-tag{
+  font-family:var(--mono);font-size:.52rem;font-weight:700;letter-spacing:.06em;
+  padding:1px 5px;border-radius:3px;background:var(--red);color:#fff;
+  text-transform:uppercase;margin-left:4px;
+}
+.rtable tr{opacity:0;transform:translateY(6px);transition:opacity .35s ease,transform .35s ease}
+.rtable tr.visible{opacity:1;transform:translateY(0)}
+
+/* ── namespace wall ── */
+.ns-wall{
+  display:none;align-items:center;justify-content:center;gap:4px;
+  margin:0 10px 6px;padding:5px 0;
+  border:1.5px solid var(--greenline);border-radius:6px;
+  background:#166534;
+  font-family:var(--mono);font-size:.6rem;font-weight:700;color:#fff;
+  letter-spacing:.04em;
+}
+.ns-wall.show{display:flex}
+.ns-wall svg{width:12px;height:12px}
+
+/* ── status verdict ── */
+.verdict{
+  padding:6px 10px 10px;display:flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:.68rem;font-weight:700;
+  display:none;
+}
+.verdict.show{display:flex}
+.verdict-icon{width:18px;height:18px;flex-shrink:0}
+
+/* ── narration ── */
+.narration{
+  margin:10px 24px 0;padding:10px 14px;
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  display:flex;align-items:flex-start;gap:10px;
+  min-height:44px;transition:border-color .4s;
+}
+.narration.phase-legit{border-color:var(--vline)}
+.narration.phase-attack{border-color:var(--redline)}
+.narration.phase-result{border-color:var(--amberline)}
+.narr-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;
+  background:var(--violet);transition:background .4s;
+}
+.narration.phase-legit .narr-dot{background:var(--violet)}
+.narration.phase-attack .narr-dot{background:var(--red)}
+.narration.phase-result .narr-dot{background:var(--amber)}
+.narr-text{
+  font-family:var(--mono);font-size:.72rem;font-weight:500;
+  color:var(--ink2);line-height:1.5;
+  transition:opacity .35s;
+}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:8px 24px 16px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:.62rem;font-weight:600;letter-spacing:.04em;color:var(--ink2)}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-dot.tenant-a{background:var(--blue)}
+.legend-dot.tenant-b{background:var(--violet)}
+.legend-dot.leaked{background:var(--red)}
+
+@media(max-width:640px){
+  .panels{grid-template-columns:1fr;gap:10px}
+  .hdr{padding:14px 16px 0}
+  .toolbar{padding:8px 16px 0}
+  .panels{padding:10px 16px 0}
+  .narration{margin:8px 16px 0}
+  .legend{padding:6px 16px 12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="eyebrow">Cross-Tenant Leakage</div>
+    <h1 class="title">Deterministic vs Probabilistic Isolation</h1>
+    <p class="subtitle">A shared CRM platform serves two competing companies from the same vector store. The architecture determines whether a single filter bug exposes confidential deal data, or whether leakage is physically impossible.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="ctrl-btn" id="btnStep">Run Tenant A Query</button>
+      <button class="ctrl-btn" id="btnReset">Reset</button>
+    </div>
+  </div>
+
+  <!-- ═══════ Two-panel layout ═══════ -->
+  <div class="panels">
+
+    <!-- ── Probabilistic panel ── -->
+    <div class="panel" id="panelProb">
+      <div class="panel-hdr">
+        <span class="panel-tag tag-prob">Probabilistic</span>
+        <span class="panel-title">Metadata Filtering</span>
+      </div>
+      <div class="query-bar" id="qbarProb">
+        <span><span class="sql-kw">SELECT</span> * <span class="sql-kw">FROM</span> vectors <span class="sql-kw">WHERE</span> tenant_id = <span class="sql-str">'acme_corp'</span></span>
+        <span class="bug-badge">BUG</span>
+      </div>
+      <div class="results" id="resultsProb">
+        <div class="results-label">Retrieved documents</div>
+        <table class="rtable" id="tableProb">
+          <thead><tr class="visible"><th>Tenant</th><th>Document</th><th>Content</th></tr></thead>
+          <tbody id="tbodyProb"></tbody>
+        </table>
+      </div>
+      <div class="verdict" id="verdictProb">
+        <svg class="verdict-icon" id="vpIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
+        <span id="vpText">Correct. Tenant A data only</span>
+      </div>
+    </div>
+
+    <!-- ── Deterministic panel ── -->
+    <div class="panel" id="panelDet">
+      <div class="panel-hdr">
+        <span class="panel-tag tag-det">Deterministic</span>
+        <span class="panel-title">Namespace Isolation</span>
+      </div>
+      <div class="query-bar" id="qbarDet">
+        <span><span class="sql-kw">USE</span> namespace_acme; <span class="sql-kw">SELECT</span> * <span class="sql-kw">FROM</span> vectors</span>
+      </div>
+      <div class="ns-wall" id="nsWall">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Namespace boundary. Tenant B data is physically inaccessible.
+      </div>
+      <div class="results" id="resultsDet">
+        <div class="results-label">Retrieved documents</div>
+        <table class="rtable" id="tableDet">
+          <thead><tr class="visible"><th>Tenant</th><th>Document</th><th>Content</th></tr></thead>
+          <tbody id="tbodyDet"></tbody>
+        </table>
+      </div>
+      <div class="verdict" id="verdictDet">
+        <svg class="verdict-icon" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
+        <span id="vdText">Correct. Tenant A data only</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="narration" id="narration">
+    <div class="narr-dot"></div>
+    <div class="narr-text" id="narrText">Two CRM deployments serve two competing companies, Acme Corp (Tenant A) and Globex Inc (Tenant B), from the same infrastructure. The left architecture filters by metadata tags at the application level. The right architecture routes each tenant to a physically separate namespace. Both contain confidential sales data: deal sizes, client names, contract terms.</div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot tenant-a"></div>Acme Corp (Tenant A)</div>
+    <div class="legend-item"><div class="legend-dot tenant-b"></div>Globex Inc (Tenant B)</div>
+    <div class="legend-item"><div class="legend-dot leaked"></div>Leaked confidential data</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   Cross-Tenant Leakage, Readable Data, Real Records
+   HTML-driven panels, self-paced state machine
+   ═══════════════════════════════════════════════════════════ */
+
+const btnStep = document.getElementById('btnStep');
+const btnReset = document.getElementById('btnReset');
+const narrEl = document.getElementById('narration');
+const narrText = document.getElementById('narrText');
+
+const panelProb = document.getElementById('panelProb');
+const panelDet = document.getElementById('panelDet');
+const qbarProb = document.getElementById('qbarProb');
+const tbodyProb = document.getElementById('tbodyProb');
+const tbodyDet = document.getElementById('tbodyDet');
+const verdictProb = document.getElementById('verdictProb');
+const verdictDet = document.getElementById('verdictDet');
+const vpIcon = document.getElementById('vpIcon');
+const vpText = document.getElementById('vpText');
+const vdText = document.getElementById('vdText');
+const nsWall = document.getElementById('nsWall');
+
+/* ═══════════════ Realistic CRM Data ═══════════════ */
+
+const ACME_DOCS = [
+  { tenant: 'acme_corp', doc: 'Q3 Pipeline Report', content: 'Enterprise deal with Meridian Health, $2.4M ARR, 3-year commit, pending legal review. Expected close: Sept 15.' },
+  { tenant: 'acme_corp', doc: 'Pricing Strategy', content: 'Discount tier: >$1M deals approved for 18% off list. Below $500K, max 8%. No exceptions without VP sign-off.' },
+  { tenant: 'acme_corp', doc: 'Competitive Intel', content: 'Lost 3 deals to Globex Inc last quarter. Their enterprise pricing undercuts ours by ~22%. Weak on compliance features.' },
+];
+
+const GLOBEX_DOCS = [
+  { tenant: 'globex_inc', doc: 'Board Deck Draft', content: 'Revenue miss: Q2 at $18.1M vs $22M target. Considering 15% workforce reduction. Not yet disclosed to employees.' },
+  { tenant: 'globex_inc', doc: 'Acquisition Target', content: 'LOI signed with DataVault Labs for $45M. Exclusive due diligence through Oct 30. Confidential, pre-announcement.' },
+  { tenant: 'globex_inc', doc: 'Client List Export', content: 'Top 10 accounts by ARR: NovaChem ($3.2M), Pinnacle Fin ($2.8M), Westlake Med ($2.1M)... Total enterprise ARR: $41.6M.' },
+];
+
+/* ═══════════════ State Machine ═══════════════ */
+
+const STATE = {
+  IDLE: 0,
+  NORMAL_RESULTS: 1,   // Show correct results on both sides
+  BUG_INTRO: 2,         // Explain the filter bug
+  LEAKED_RESULTS: 3,    // Show leaked data on prob side
+  ANALYSIS: 4,          // Final takeaway
+};
+
+let simState = STATE.IDLE;
+
+/* ═══════════════ UI Helpers ═══════════════ */
+
+function setNarration(phase, text) {
+  narrText.style.opacity = '0';
+  setTimeout(() => {
+    narrText.textContent = text;
+    narrEl.className = 'narration ' + phase;
+    narrText.style.opacity = '1';
+  }, 180);
+}
+
+function updateButton(label, disabled) {
+  btnStep.textContent = label;
+  btnStep.disabled = disabled;
+  if (disabled) btnStep.classList.add('active');
+  else btnStep.classList.remove('active');
+}
+
+function clearTable(tbody) {
+  tbody.innerHTML = '';
+}
+
+function addRow(tbody, data, leaked, delay) {
+  const tr = document.createElement('tr');
+  if (leaked) tr.className = 'leaked-row';
+
+  const tdTenant = document.createElement('td');
+  tdTenant.textContent = data.tenant;
+  if (leaked) tdTenant.style.color = 'var(--red)';
+  else tdTenant.style.color = data.tenant === 'acme_corp' ? 'var(--blue)' : 'var(--violet)';
+  tdTenant.style.fontWeight = '700';
+
+  const tdDoc = document.createElement('td');
+  tdDoc.textContent = data.doc;
+  tdDoc.style.fontWeight = '600';
+  if (leaked) {
+    const tag = document.createElement('span');
+    tag.className = 'leak-tag';
+    tag.textContent = 'LEAKED';
+    tdDoc.appendChild(tag);
+  }
+
+  const tdContent = document.createElement('td');
+  tdContent.textContent = data.content;
+  tdContent.style.maxWidth = '220px';
+
+  tr.appendChild(tdTenant);
+  tr.appendChild(tdDoc);
+  tr.appendChild(tdContent);
+  tbody.appendChild(tr);
+
+  // Stagger reveal
+  setTimeout(() => tr.classList.add('visible'), delay);
+}
+
+/* ═══════════════ Reset ═══════════════ */
+
+function resetSim() {
+  simState = STATE.IDLE;
+  clearTable(tbodyProb);
+  clearTable(tbodyDet);
+  panelProb.className = 'panel';
+  panelDet.className = 'panel';
+  qbarProb.className = 'query-bar';
+  qbarProb.innerHTML = '<span><span class="sql-kw">SELECT</span> * <span class="sql-kw">FROM</span> vectors <span class="sql-kw">WHERE</span> tenant_id = <span class="sql-str">\'acme_corp\'</span></span><span class="bug-badge">BUG</span>';
+  verdictProb.className = 'verdict';
+  verdictDet.className = 'verdict';
+  nsWall.className = 'ns-wall';
+  updateButton('Run Tenant A Query', false);
+  setNarration('phase-legit', 'Two CRM deployments serve two competing companies, Acme Corp (Tenant A) and Globex Inc (Tenant B), from the same infrastructure. The left architecture filters by metadata tags at the application level. The right architecture routes each tenant to a physically separate namespace. Both contain confidential sales data: deal sizes, client names, contract terms.');
+}
+
+/* ═══════════════ Step Flow ═══════════════ */
+
+function stepForward() {
+  switch (simState) {
+    case STATE.IDLE: {
+      // Normal query, both sides return only Acme data
+      simState = STATE.NORMAL_RESULTS;
+
+      ACME_DOCS.forEach((doc, i) => {
+        addRow(tbodyProb, doc, false, 120 + i * 180);
+        addRow(tbodyDet, doc, false, 120 + i * 180);
+      });
+
+      nsWall.classList.add('show');
+
+      verdictProb.classList.add('show');
+      vpIcon.setAttribute('stroke', 'var(--green)');
+      vpText.textContent = 'Correct. Tenant A data only';
+      vpText.style.color = 'var(--green)';
+      verdictDet.classList.add('show');
+      vdText.textContent = 'Correct. Tenant A data only';
+      vdText.style.color = 'var(--green)';
+
+      updateButton('Introduce Filter Bug', false);
+      setNarration('phase-legit', 'Both architectures return the same correct result: only Acme Corp\'s documents. The probabilistic side filtered by tenant_id in the WHERE clause. The deterministic side queried only Acme\'s namespace. Globex\'s data was never searchable. Same outcome here, but the mechanisms are fundamentally different.');
+      break;
+    }
+
+    case STATE.NORMAL_RESULTS: {
+      // Introduce the filter bug
+      simState = STATE.BUG_INTRO;
+
+      qbarProb.classList.add('broken');
+
+      clearTable(tbodyProb);
+      verdictProb.classList.remove('show');
+
+      updateButton('Re-run Query', false);
+      setNarration('phase-attack', 'A deployment pushes a code update that changes the query builder. A null parameter silently drops the WHERE clause. The application still runs, still returns results, still looks normal in logs. No error is thrown. The filter simply stops filtering. The deterministic side is unaffected because its isolation is enforced at the database level, not in application code.');
+      break;
+    }
+
+    case STATE.BUG_INTRO: {
+      // Show leaked results
+      simState = STATE.LEAKED_RESULTS;
+
+      // Prob side: returns BOTH tenants' data
+      ACME_DOCS.forEach((doc, i) => {
+        addRow(tbodyProb, doc, false, 80 + i * 140);
+      });
+      GLOBEX_DOCS.forEach((doc, i) => {
+        addRow(tbodyProb, doc, true, 500 + i * 220);
+      });
+
+      panelProb.classList.add('leaked');
+
+      verdictProb.classList.add('show');
+      vpIcon.setAttribute('stroke', 'var(--red)');
+      vpText.textContent = 'BREACH. Globex confidential data exposed to Acme';
+      vpText.style.color = 'var(--red)';
+
+      updateButton('See Analysis', false);
+      setNarration('phase-attack', 'Acme Corp\'s sales team can now read Globex Inc\'s board deck, acquisition plans, and full client list with revenue figures. This is real data from a real competitor, including deal sizes, layoff plans, and a pre-announcement acquisition. The metadata filter was the only thing preventing this, and it failed silently.');
+      break;
+    }
+
+    case STATE.LEAKED_RESULTS: {
+      simState = STATE.ANALYSIS;
+      updateButton('Run Again', false);
+      setNarration('phase-result', 'The deterministic architecture never leaked because Tenant A\'s query literally cannot reach Tenant B\'s namespace. It is not filtered out. It does not exist in the searchable space. Probabilistic controls depend on every query executing correctly. Deterministic controls enforce isolation structurally, regardless of application bugs. The lesson: when the cost of failure is competitor-confidential data, isolation must be architectural.');
+      break;
+    }
+
+    case STATE.ANALYSIS: {
+      resetSim();
+      break;
+    }
+  }
+}
+
+btnStep.addEventListener('click', stepForward);
+btnReset.addEventListener('click', resetSim);
+
+/* ═══════════════ Init ═══════════════ */
+resetSim();
+
+/* ── Iframe height reporting ── */
+function sh() {
+  const el = document.querySelector('.wrap');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  window.parent.postMessage({ kind:'nyu-embed-height', height: Math.ceil(r.top + r.height + 2), src: location.href }, '*');
+}
+const ro = new ResizeObserver(sh);
+ro.observe(document.querySelector('.wrap'));
+window.addEventListener('load', sh);
+document.addEventListener('transitionend', sh);
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

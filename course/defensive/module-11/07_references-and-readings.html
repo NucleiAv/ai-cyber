@@ -1,0 +1,406 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 11 · Section 7 · References &amp; Readings · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 11 &middot; Section 7 of 7</div>
+      <h1 class="nyu-hero__title">References &amp; Readings</h1>
+      <p class="nyu-hero__subtitle">All sources, citations, and recommended readings referenced throughout Module 11: Defending AI Systems: Guardrails, Monitoring, and Hardening, organized by category and section.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Section type"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Reference</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 9 parts</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Recommended Readings</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Academic Papers &amp; Preprints</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Frameworks &amp; Standards</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Government Sources</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Practitioner &amp; Institutional Resources</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Tools &amp; Documentation</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> Case Studies &amp; Incident Reports</a></li>
+        <li><a href="#sec-8"><span class="nyu-toc__num">8</span> Source Caveats</a></li>
+        <li><a href="#sec-9"><span class="nyu-toc__num">9</span> References by Section</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+      <!-- ====================== RECOMMENDED READINGS ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Recommended Readings</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <h3 class="nyu-subsection-title">R1: OWASP LLM Top 10 (Selected Entries) (Before Section 5)</h3>
+        <p><strong>Title:</strong> "OWASP Top 10 for Large Language Model Applications (2025)"<br>
+        <strong>Author:</strong> OWASP Foundation (2025)<br>
+        <strong>URL:</strong> <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener">owasp.org/www-project-top-10-for-large-language-model-applications/</a><br>
+        <strong>Reading time:</strong> ~20 minutes (selected entries: LLM01, LLM05, LLM06, LLM08)<br>
+        <strong>When to read:</strong> Before beginning Section 5's OWASP defensive assessment.</p>
+        <p>Read the full entries for LLM01 (Prompt Injection), LLM05 (Improper Output Handling), LLM06 (Excessive Agency), and LLM08 (Vector and Embedding Weaknesses). Focus on the "Prevention and Mitigation Strategies" subsections, which provide the defensive checklist for the OWASP assessment activity.</p>
+          <p><strong>On the numbering.</strong> OWASP revises this list periodically and the identifiers are not stable across editions: entries change position, merge, or get renamed. Every OWASP citation in this course is the <strong>2025</strong> edition, so the numbers stay consistent from Module 9 through Module 11. Treat the set of failure modes as the durable content and the numbering as a citation detail, and name the edition whenever you quote an identifier in professional work.</p>
+
+        <h3 class="nyu-subsection-title">R2: NIST AI 600-1 Executive Summary (Before Section 1)</h3>
+        <p><strong>Title:</strong> "Artificial Intelligence Risk Management Framework: Generative Artificial Intelligence Profile" (NIST AI 600-1)<br>
+        <strong>Author:</strong> NIST (2024)<br>
+        <strong>URL:</strong> <a href="https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf" target="_blank" rel="noopener">nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf</a><br>
+        <strong>Reading time:</strong> ~15 minutes (executive summary and Information Security category)<br>
+        <strong>When to read:</strong> Before beginning Section 1.</p>
+        <p>Focus on the executive summary and the Information Security risk category. The framework's 13 risk categories and Govern/Map/Measure/Manage structure provide context for the defense-in-depth approach covered in Section 1.</p>
+
+        <h3 class="nyu-subsection-title">R3: CoSAI AI Incident Response Framework (Before Section 4)</h3>
+        <p><strong>Title:</strong> "AI Incident Response Framework, Version 1.0"<br>
+        <strong>Author:</strong> Coalition for Secure AI (2026)<br>
+        <strong>URL:</strong> <a href="https://www.coalitionforsecureai.org/wp-content/uploads/2026/03/AI-Incident-Response-1.pdf" target="_blank" rel="noopener">coalitionforsecureai.org/AI-Incident-Response-1.pdf</a><br>
+        <strong>Reading time:</strong> ~15 minutes (executive summary and architecture-specific playbook sections)<br>
+        <strong>When to read:</strong> Before beginning Section 4.</p>
+        <p>The most comprehensive AI-specific incident response framework available. Includes architecture-specific playbooks in OASIS CACAO format. Section 4 builds on this framework's three key differences between AI and traditional incident response: probabilistic evidence, ephemeral state, and continuous harm.</p>
+      </section>
+
+      <!-- ====================== ACADEMIC ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Academic Papers &amp; Preprints</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>Nasr, M., et al.</strong> (2025). "The Attacker Moves Second." <em>Joint OpenAI/Anthropic/Google DeepMind study.</em> <span class="ref-tag ref-tag--paper">Preprint</span>
+          <br>All 12 tested prompt injection defenses bypassed at &gt;90% success under adaptive attacks. Landmark negative result establishing that no single defense is sufficient. Source for Section 1's defense-in-depth justification. <em>Not peer-reviewed.</em></li>
+
+          <li><strong>Zou, W., et al.</strong> (2025). "PoisonedRAG: Knowledge Poisoning Attacks to Retrieval-Augmented Generation of Large Language Models." <em>USENIX Security 2025.</em> <span class="ref-tag ref-tag--paper">Paper</span>
+          <br>Demonstrated 90-99% attack success by injecting 5 adversarial documents into a RAG knowledge base of 400 million. Foundational paper for Section 2's RAG security discussion and PoisonedRAG case analysis.
+          <br><a href="https://arxiv.org/abs/2402.07867" target="_blank" rel="noopener">arXiv:2402.07867</a></li>
+
+          <li><strong>"Evaluating the Robustness of LLM Guardrail Models."</strong> (2025). <span class="ref-tag ref-tag--paper">Preprint</span>
+          <br>Tested 10 guardrail models across 1,445 prompts. Best accuracy 85.3%, dropping to 33.8% on unseen prompts. Source for Section 1's guardrail effectiveness evidence. <em>Not peer-reviewed.</em>
+          <br><a href="https://arxiv.org/html/2511.22047v1" target="_blank" rel="noopener">arXiv:2511.22047</a></li>
+
+          <li><strong>"Pr&#8712;&#8712;mpt: Sanitizing Sensitive Prompts via Differential Privacy."</strong> <em>NDSS 2026.</em> <span class="ref-tag ref-tag--paper">Paper</span>
+          <br>Differential-privacy-based prompt sanitization using format-preserving encryption. Emerging research direction referenced in Section 1.
+          <br><a href="https://www.ndss-symposium.org/wp-content/uploads/2026-s1277-paper.pdf" target="_blank" rel="noopener">ndss-symposium.org/2026-s1277</a></li>
+
+          <li><strong>"Attention Tracker: Detecting Prompt Injection via Attention Pattern Analysis."</strong> <em>NAACL 2025 Findings.</em> <span class="ref-tag ref-tag--paper">Paper</span>
+          <br>AI-specific prompt injection detection mechanism using attention pattern analysis. Relevant to Section 3's monitoring discussion.
+          <br><a href="https://aclanthology.org/2025.findings-naacl.123.pdf" target="_blank" rel="noopener">aclanthology.org/2025.findings-naacl.123</a></li>
+
+          <li><strong>"Prompt Injection in Resume Screening: A Field Study."</strong> (2026). <span class="ref-tag ref-tag--paper">Preprint</span>
+          <br>Approximately 1% of 83,000 real resumes contained hidden prompt injection over 17 months. Grounds the defense discussion in production data. <em>Not peer-reviewed.</em>
+          <br><a href="https://arxiv.org/html/2605.28999v1" target="_blank" rel="noopener">arXiv:2605.28999</a></li>
+
+          <li><strong>"Securing Retrieval-Augmented Generation: A Taxonomy."</strong> (2026). <span class="ref-tag ref-tag--paper">Preprint</span>
+          <br>Comprehensive taxonomy of RAG security threats and defenses. Background reference for Section 2. <em>Not peer-reviewed.</em>
+          <br><a href="https://arxiv.org/pdf/2604.08304" target="_blank" rel="noopener">arXiv:2604.08304</a></li>
+
+          <li><strong>"Synthesizing Access Control Policies using Large Language Models."</strong> (2025). <span class="ref-tag ref-tag--paper">Preprint</span>
+          <br>Tested zero-shot LLM generation of AWS IAM policies against 47 ground-truth policies using SMT solvers. Source for Section 6's IAM analysis discussion. <em>Not peer-reviewed.</em>
+          <br><a href="https://arxiv.org/pdf/2503.11573" target="_blank" rel="noopener">arXiv:2503.11573</a></li>
+
+          <li><strong>"TerraFormer: LLM-Based Terraform Generation and Repair with Automated Verification."</strong> <em>ICSE-SEIP 2026.</em> <span class="ref-tag ref-tag--paper">Paper</span>
+          <br>LLM-based IaC generation and repair. Key finding: LLMs perform better on YAML/JSON than HCL formats. Referenced in Section 6.
+          <br><a href="https://arxiv.org/html/2601.08734v1" target="_blank" rel="noopener">arXiv:2601.08734</a></li>
+
+          <li><strong>"TerraProbe: A Five-Layer Oracle Framework for Evaluating LLM-Generated Terraform Security Repairs."</strong> (2026). <span class="ref-tag ref-tag--paper">Preprint</span>
+          <br>20.4% of LLM-generated repairs that passed linter checks failed schema validation or missed the real issue. Source for Section 6's IaC limitation discussion. <em>Not peer-reviewed.</em>
+          <br><a href="https://arxiv.org/html/2606.26590" target="_blank" rel="noopener">arXiv:2606.26590</a></li>
+
+          <li><strong>"LLMs for Terraform Code Smell Detection."</strong> <em>IEEE COMPSAC 2025.</em> <span class="ref-tag ref-tag--paper">Paper</span>
+          <br>LLMs outperformed static analysis at detecting logic-level code smells in Terraform configurations. Source for Section 6's IaC discussion.
+          <br><a href="https://www.computer.org/csdl/proceedings-article/compsac/2025/743400a533/29yDAma8BCo" target="_blank" rel="noopener">computer.org/csdl/compsac/2025</a></li>
+
+          <li><strong>"AutoYara: Automated YARA Rule Generation."</strong> (2020). <em>ACM AISec 2020 (Best Paper).</em> <span class="ref-tag ref-tag--paper">Paper</span>
+          <br>Automated YARA rule generation using biclustering. Reduced analyst time by 44-86%. Source for Section 6's YARA discussion.
+          <br><a href="https://dl.acm.org/doi/10.1145/3411508.3421372" target="_blank" rel="noopener">dl.acm.org/10.1145/3411508.3421372</a></li>
+
+          <li><strong>Wang, et al.</strong> (2025). "LLMDYara: LLMs Driven Automated YARA." <em>Black Hat USA 2025.</em> <span class="ref-tag ref-tag--paper">Paper</span>
+          <br>Extends AutoYara with LLM capabilities for more human-readable YARA rules based on behavioral descriptions. Conference presentation; not peer-reviewed.
+          <br><a href="https://i.blackhat.com/BH-USA-25/Presentations/USA-25-Wang-LLMDYara-LLMs-Driven-Automated-YARA.pdf" target="_blank" rel="noopener">blackhat.com/BH-USA-25</a></li>
+
+          <li><strong>"Malware Detection with LightGBM."</strong> (2025). <em>Nature Scientific Reports.</em> <span class="ref-tag ref-tag--paper">Paper</span>
+          <br>97.16% accuracy with LightGBM using PCA dimensionality reduction and feature scaling for malware behavioral classification. Source for Section 6's malware classification discussion.
+          <br><a href="https://www.nature.com/articles/s41598-025-93447-x" target="_blank" rel="noopener">nature.com/articles/s41598-025-93447-x</a></li>
+
+          <li><strong>"An Empirical Study of LLM Deployment."</strong> (2025). <span class="ref-tag ref-tag--paper">Preprint</span>
+          <br>Found 158 API endpoints across 15 LLM deployment frameworks, many with minimal or default authentication. Source for Section 2's API-exposed deployment pattern. <em>Not peer-reviewed.</em>
+          <br><a href="https://arxiv.org/pdf/2505.02502" target="_blank" rel="noopener">arXiv:2505.02502</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== FRAMEWORKS ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Frameworks &amp; Standards</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>OWASP Foundation.</strong> (2025). <em>OWASP Top 10 for Large Language Model Applications (2025).</em> <span class="ref-tag ref-tag--framework">Framework</span>
+          <br>Primary defensive assessment checklist. Thread 3 destination. Categories LLM01-LLM10 provide the systematic framework for Section 5's assessment methodology and the OWASP defensive assessment activity.
+          <br><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener">owasp.org/www-project-top-10-for-large-language-model-applications/</a></li>
+
+          <li><strong>NIST.</strong> (2024). <em>Artificial Intelligence Risk Management Framework: Generative Artificial Intelligence Profile</em> (AI 600-1). <span class="ref-tag ref-tag--framework">Framework</span>
+          <br>Federal framework for GenAI risk management. 13 risk categories mapped to AI RMF's Govern/Map/Measure/Manage functions. Information Security category covers prompt injection, data poisoning, and RAG-specific risks. Referenced in Section 1 and Section 3.
+          <br><a href="https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf" target="_blank" rel="noopener">nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf</a></li>
+
+          <li><strong>NIST.</strong> (2025). <em>Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations</em> (AI 100-2e2025). <span class="ref-tag ref-tag--framework">Framework</span>
+          <br>Updated adversarial ML taxonomy with expanded coverage of generative AI attacks and mitigations.
+          <br><a href="https://csrc.nist.gov/pubs/ai/100/2/e2025/final" target="_blank" rel="noopener">csrc.nist.gov/pubs/ai/100/2/e2025/final</a></li>
+
+          <li><strong>MITRE Corporation.</strong> (2025). <em>ATLAS: Adversarial Threat Landscape for AI Systems, Version 5.1.0.</em> <span class="ref-tag ref-tag--framework">Framework</span>
+          <br>16 tactics, 84 techniques, 32 mitigations. Expanded for agentic AI. Provides defense technique reference.
+          <br><a href="https://atlas.mitre.org/" target="_blank" rel="noopener">atlas.mitre.org</a></li>
+
+          <li><strong>Coalition for Secure AI.</strong> (2026). <em>AI Incident Response Framework, Version 1.0.</em> <span class="ref-tag ref-tag--framework">Framework</span>
+          <br>AI-specific incident response framework with architecture-specific playbooks. Three key differences from traditional incident response (probabilistic evidence, ephemeral state, continuous harm) are central to Section 3.
+          <br><a href="https://www.coalitionforsecureai.org/wp-content/uploads/2026/03/AI-Incident-Response-1.pdf" target="_blank" rel="noopener">coalitionforsecureai.org/AI-Incident-Response-1.pdf</a></li>
+
+          <li><strong>NIST.</strong> (2025). <em>Computer Security Incident Handling Guide</em> (SP 800-61r3). <span class="ref-tag ref-tag--reference">Standard</span>
+          <br>Updated general incident response framework. The CoSAI AI Incident Response Framework builds on this for AI-specific playbooks.
+          <br><a href="https://csrc.nist.gov/pubs/sp/800/61/r3/final" target="_blank" rel="noopener">csrc.nist.gov/sp/800-61/rev-3/final</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== GOVERNMENT ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Government Sources</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>CISA/NSA.</strong> (2024). "Deploying AI Systems Securely: Best Practices for Deploying Secure and Resilient AI Systems." <span class="ref-tag ref-tag--government">Government</span>
+          <br>Foundational US government guidance on AI deployment hardening. Background reference for the module's defense-in-depth approach.
+          <br><a href="https://www.cisa.gov/news-events/alerts/2024/04/15/joint-guidance-deploying-ai-systems-securely" target="_blank" rel="noopener">cisa.gov/joint-guidance-deploying-ai-systems-securely</a></li>
+
+          <li><strong>CISA.</strong> (2025). "AI Data Security Best Practices: Securing Data Used to Train and Operate AI Systems." <span class="ref-tag ref-tag--government">Government</span>
+          <br>Guidance on securing training and operational data across the AI lifecycle.
+          <br><a href="https://www.cisa.gov/resources-tools/resources/ai-data-security-best-practices-securing-data-used-train-operate-ai-systems" target="_blank" rel="noopener">cisa.gov/ai-data-security-best-practices</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== PRACTITIONER ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Practitioner &amp; Institutional Resources</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>Datadog.</strong> (2024). "Monitor LLM Prompt Injection Attacks." <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+          <br>Practical guidance on detecting prompt injection in application monitoring. Background for Section 3's log analysis discussion.
+          <br><a href="https://www.datadoghq.com/blog/monitor-llm-prompt-injection-attacks/" target="_blank" rel="noopener">datadoghq.com/blog/monitor-llm-prompt-injection-attacks/</a></li>
+
+          <li><strong>Datadog.</strong> (2025). "LLM Guardrails Best Practices." <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+          <br>Guardrail deployment guidance with latency targets (100ms p50 input, 150ms p50 output). Referenced in Section 1.
+          <br><a href="https://www.datadoghq.com/blog/llm-guardrails-best-practices/" target="_blank" rel="noopener">datadoghq.com/blog/llm-guardrails-best-practices/</a></li>
+
+          <li><strong>Cloud Security Alliance.</strong> (2025). "The OWASP Top 10 for LLMs: CSA's Strategic Defense Playbook." <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+          <br>Implementation-level checklist mapping OWASP LLM Top 10 to defense controls. Supplementary to Section 5's assessment methodology.
+          <br><a href="https://cloudsecurityalliance.org/blog/2025/05/09/the-owasp-top-10-for-llms-csa-s-strategic-defense-playbook" target="_blank" rel="noopener">cloudsecurityalliance.org/blog/csa-defense-playbook</a></li>
+
+          <li><strong>Microsoft.</strong> (2026). "Detecting and Analyzing Prompt Abuse in AI Tools." <em>Microsoft Security Blog.</em> <span class="ref-tag ref-tag--practitioner">Practitioner</span>
+          <br>Practitioner guidance on prompt injection detection in production AI tools. Background for Section 3. Vendor source; treat as directional.
+          <br><a href="https://www.microsoft.com/en-us/security/blog/2026/03/12/detecting-analyzing-prompt-abuse-in-ai-tools/" target="_blank" rel="noopener">microsoft.com/security/blog/detecting-analyzing-prompt-abuse</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== TOOLS ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Tools &amp; Documentation</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>NVIDIA.</strong> <em>NeMo Guardrails, Version 0.22.0.</em> <span class="ref-tag ref-tag--tool">Tool Docs</span>
+          <br>Five rail types (input, output, dialog, retrieval, execution) with Colang specification language. Apache 2.0 license. Referenced in Section 1's guardrail tool comparison.
+          <br><a href="https://github.com/NVIDIA-NeMo/Guardrails" target="_blank" rel="noopener">github.com/NVIDIA-NeMo/Guardrails</a></li>
+
+          <li><strong>Protect AI.</strong> <em>LLM Guard, Version 0.3.16.</em> <span class="ref-tag ref-tag--tool">Tool Docs</span> <span class="ref-tag ref-tag--paper">Archived</span>
+          <br>15 input scanners, 20 output scanners. MIT license. CPU-optimized. Referenced in Section 1's guardrail tool comparison. <strong>Note:</strong> This repository was archived (set to read-only) by Protect AI on July 9, 2026. The code remains available for reference but is no longer maintained. See Section 1 for a discussion of the implications.
+          <br><a href="https://github.com/protectai/llm-guard" target="_blank" rel="noopener">github.com/protectai/llm-guard</a></li>
+
+          <li><strong>Meta.</strong> <em>Llama Guard 4 Model Card.</em> <span class="ref-tag ref-tag--tool">Tool Docs</span>
+          <br>12B multimodal guardrail model with configurable safety taxonomy. Referenced in Section 1. Vendor source; treat as directional.
+          <br><a href="https://www.llama.com/docs/model-cards-and-prompt-formats/llama-guard-4/" target="_blank" rel="noopener">llama.com/docs/llama-guard-4/</a></li>
+
+          <li><strong>Meta.</strong> <em>Prompt Guard 2.</em> <span class="ref-tag ref-tag--tool">Tool Docs</span>
+          <br>22M-parameter BERT-based jailbreak and prompt injection classifier. Referenced in Section 1's input validation discussion.
+          <br><a href="https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M" target="_blank" rel="noopener">huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M</a></li>
+
+          <li><strong>Guardrails AI.</strong> <em>Guardrails AI.</em> <span class="ref-tag ref-tag--tool">Tool Docs</span>
+          <br>Validator ecosystem for structured output enforcement. Apache 2.0 license. Referenced in Section 1.
+          <br><a href="https://github.com/guardrails-ai/guardrails" target="_blank" rel="noopener">github.com/guardrails-ai/guardrails</a></li>
+
+          <li><strong>"AutoYara."</strong> <span class="ref-tag ref-tag--tool">Tool</span>
+          <br>Automated YARA rule generation tool. Referenced in Section 6's YARA discussion.
+          <br><a href="https://github.com/FutureComputing4AI/AutoYara" target="_blank" rel="noopener">github.com/FutureComputing4AI/AutoYara</a></li>
+        </ul>
+      </section>
+
+      <!-- ====================== CASE STUDIES ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">Case Studies &amp; Incident Reports</h2>
+        </div>
+        <hr class="nyu-section__rule">
+        <ul class="ref-list">
+          <li><strong>"Your Vector Databases Aren't Safe Anymore."</strong> (2024). <span class="ref-tag ref-tag--paper">Incident</span>
+          <br>Documented cross-tenant data leakage in a major CRM (Customer Relationship Management) platform's shared vector store due to insufficient metadata filtering. Source for Section 2's cross-tenant leakage discussion.
+          <br><a href="https://medium.com/@BuildShift/your-vector-databases-arent-safe-anymore-05d22ea90e83" target="_blank" rel="noopener">medium.com/@BuildShift</a></li>
+
+          <li><strong>Sysdig Threat Research Team.</strong> (2025). "Stolen API Key Incident." <span class="ref-tag ref-tag--paper">Incident</span>
+          <br>$46,000 per day from stolen API credentials used for LLM inference. Source for Section 2's denial-of-wallet discussion and Section 3's monitoring-as-defense framing.</li>
+
+          <li><strong>"Stolen Gemini API Key Incident."</strong> (2026). <span class="ref-tag ref-tag--paper">Incident</span>
+          <br>$82,000 over 48 hours from a compromised Gemini API key. Source for Section 2 and Section 4's denial-of-wallet monitoring discussion.</li>
+        </ul>
+      </section>
+
+      <!-- ====================== SOURCE CAVEATS ====================== -->
+      <section class="nyu-section" id="sec-8">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">8</span>
+          <h2 class="nyu-section__title">Source Caveats</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">Reading Sources Critically</h3>
+          <p>Every source has a context. When you read security research, keep these caveats in mind:</p>
+        </aside>
+
+        <table class="nyu-table nyu-table--even">
+          <thead>
+            <tr><th>Source Category</th><th>Key Caveat</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Preprints</strong> (arXiv papers not yet peer-reviewed)</td>
+              <td>Several key findings in this module come from preprints: guardrail robustness evaluation (85% to 34% accuracy), IAM policy synthesis, TerraProbe IaC repair rates, and the resume prompt injection field study. Preprints have not undergone formal peer review. Treat findings as directional evidence, not established fact, until published at a peer-reviewed venue.</td>
+            </tr>
+            <tr>
+              <td><strong>Vendor tool documentation</strong> (Meta, NVIDIA, Guardrails AI)</td>
+              <td>Tool capabilities and performance metrics are self-reported by the vendor. The guardrail tool comparison in Section 1 lists vendor-stated features; independent benchmarks may show different results. Architecture types (rule-based, model-based, hybrid) are the durable knowledge; specific tool capabilities may change between versions.</td>
+            </tr>
+            <tr>
+              <td><strong>Incident reports</strong> (denial-of-wallet, cross-tenant leakage)</td>
+              <td>Incident details are based on published accounts that may not include full forensic analysis. Dollar figures for denial-of-wallet incidents ($46K/day, $82K/48hr) come from the reporting parties and have not been independently audited. The architectural lessons (token-based rate limiting, database-level isolation) hold regardless of exact figures.</td>
+            </tr>
+            <tr>
+              <td><strong>Practitioner guides</strong> (Datadog, Microsoft, CSA)</td>
+              <td>Practitioner sources reflect current operational practice, which may not be evidence-based. Vendor-published practitioner content (Datadog, Microsoft, AWS) may reflect commercial interests. Use for implementation guidance; verify claims against academic sources where possible.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================== REFERENCES BY SECTION ====================== -->
+      <section class="nyu-section" id="sec-9">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">9</span>
+          <h2 class="nyu-section__title">References by Section</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 1: Defending the Pipeline</h3>
+          <ul>
+            <li>NIST AI 600-1 (R2). Defense-in-depth framing and risk management context.</li>
+            <li>Nasr et al. (2025). All 12 defenses bypassed at &gt;90% under adaptive attacks.</li>
+            <li>Guardrail robustness evaluation (arXiv:2511.22047). 85.3% to 33.8% accuracy drop on unseen prompts.</li>
+            <li>Pr&#8712;&#8712;mpt (NDSS 2026). Emerging differential-privacy prompt sanitization.</li>
+            <li>Datadog, "LLM Guardrails Best Practices." Latency targets for production guardrails.</li>
+            <li>NeMo Guardrails, LLM Guard, Llama Guard 4, Guardrails AI, Prompt Guard 2. Guardrail tool comparison.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 2: Deployment Patterns and Attack Surfaces</h3>
+          <ul>
+            <li>Zou et al. (2025, USENIX Security). PoisonedRAG: 90-99% attack success with 5 documents in 400M.</li>
+            <li>Salesforce Einstein cross-tenant leakage (2024). Application-level metadata filtering failure.</li>
+            <li>LLM deployment API exposure study (arXiv:2505.02502). 158 endpoints across 15 frameworks.</li>
+            <li>Sysdig denial-of-wallet ($46K/day) and Gemini API key ($82K/48hr) incidents.</li>
+            <li>RAG security taxonomy (arXiv:2604.08304). Threat classification for retrieval-augmented systems.</li>
+            <li>OWASP LLM Top 10, LLM08 (R1). Vector and embedding weaknesses.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 3: Detecting Abuse</h3>
+          <ul>
+            <li>NIST AI 600-1. Prompt log retention recommendation.</li>
+            <li>Datadog, "Monitor LLM Prompt Injection Attacks." Detection guidance.</li>
+            <li>Microsoft, "Detecting and Analyzing Prompt Abuse." Production detection patterns.</li>
+            <li>Prompt injection detection via attention analysis (arXiv). AI-specific detection mechanism.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 4: Incident Response and Detection Rules</h3>
+          <ul>
+            <li>CoSAI AI Incident Response Framework V1.0 (R3). Three AI-specific incident response differences.</li>
+            <li>NIST SP 800-61r3. Updated general incident response framework baseline.</li>
+            <li>Denial-of-wallet incidents. Monitoring as financial defense.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 5: The OWASP Defensive Assessment</h3>
+          <ul>
+            <li>OWASP LLM Top 10 v2.0 (R1). Defensive assessment checklist for the OWASP assessment activity.</li>
+            <li>Cloud Security Alliance, "CSA's Strategic Defense Playbook." Implementation-level control mapping.</li>
+          </ul>
+        </div>
+
+        <div class="ref-section">
+          <h3 class="ref-section__title">Section 6: AI for Defense</h3>
+          <ul>
+            <li>IAM policy synthesis study (arXiv:2503.11573). LLM IAM analysis capabilities and limitations.</li>
+            <li>TerraFormer (ICSE-SEIP 2026) and TerraProbe (arXiv:2606.26590). IaC repair: 20.4% incorrect despite passing linters.</li>
+            <li>LLMs for Terraform Code Smell Detection (IEEE COMPSAC 2025). Logic-level misconfiguration detection.</li>
+            <li>AutoYara (ACM AISec 2020, Best Paper). 44-86% analyst time reduction.</li>
+            <li>LLMDYara (Black Hat USA 2025). LLM-driven YARA rule generation.</li>
+            <li>LightGBM malware detection (Nature Scientific Reports 2025). 97.16% behavioral classification accuracy.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

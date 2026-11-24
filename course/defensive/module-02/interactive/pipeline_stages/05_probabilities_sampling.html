@@ -1,0 +1,489 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage 5: Probabilities &amp; Sampling</title>
+<style>
+  :root {
+    --violet: #57068C;
+    --violet-dark: #3D0461;
+    --violet-50: #F5EDFA;
+    --violet-100: #E9D7F4;
+    --violet-200: #D2B3E5;
+    --teal: #155E63;
+    --teal-50: #E6F2F4;
+    --gold: #B5651D;
+    --ink: #1A1A1A;
+    --ink-soft: #3A3A3A;
+    --ink-mute: #6B6B6B;
+    --rule: #E2E2E2;
+    --rule-soft: #F0F0F0;
+    --surface: #FAFAFC;
+    --font-body: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #fff; color: var(--ink);
+    font-family: var(--font-body); line-height: 1.4; padding: 16px;
+  }
+  .stage {
+    max-width: 760px; margin: 0 auto; background: #fff;
+    border: 1px solid var(--rule); border-radius: 12px;
+    padding: 22px 22px 18px; box-shadow: 0 1px 2px rgba(20, 0, 40, 0.05);
+  }
+  .stage-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .stage-num {
+    font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+    color: #fff; background: #4C1D95;
+    padding: 3px 8px; border-radius: 4px; letter-spacing: 0.04em;
+  }
+  .stage-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink); }
+  .stage-input {
+    margin: 10px 0 14px; font-family: var(--font-mono); font-size: 0.78rem;
+    color: var(--ink-mute); background: var(--surface); padding: 7px 10px;
+    border-radius: 6px; border: 1px solid var(--rule-soft);
+  }
+  .stage-input b { color: var(--ink-soft); font-weight: 600; margin-right: 6px; }
+
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr 90px 1fr;
+    gap: 8px;
+    align-items: start;
+    margin: 12px 0 8px;
+  }
+  .col {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 12px 10px 10px;
+    position: relative;
+  }
+  .col-label {
+    position: absolute; top: -8px; left: 12px;
+    background: #fff; padding: 0 6px;
+    font-size: 0.6rem; letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 700;
+    color: var(--ink-mute);
+  }
+  .arrow-col {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding-top: 22px;
+  }
+  .arrow-col .formula {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    color: var(--violet-dark); font-weight: 700;
+    text-align: center;
+  }
+  .arrow-col svg { width: 70px; height: 16px; }
+  .arrow-col .note {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    color: var(--ink-mute); text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  .v-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 48px;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    padding: 3px 4px;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+  }
+  .v-row.picked {
+    background: var(--violet-50);
+  }
+  .v-name { color: var(--ink-soft); text-align: right; white-space: pre; }
+  .v-track {
+    height: 11px; background: #fff; border: 1px solid var(--rule);
+    border-radius: 3px; overflow: hidden; position: relative;
+  }
+  .v-fill {
+    height: 100%; width: 0%;
+    transition: width 0.7s cubic-bezier(0.2, 0.7, 0.3, 1);
+    border-radius: 3px;
+  }
+  .v-row .v-val { color: var(--ink-mute); text-align: right; }
+  .v-row.picked .v-name { color: var(--ink); font-weight: 700; }
+  .v-row.picked .v-val { color: var(--ink); font-weight: 700; }
+
+  .col.logits .v-fill { background: var(--violet-200); }
+  .col.logits .v-row.top .v-fill { background: var(--violet); }
+  .col.probs .v-fill { background: var(--violet-100); }
+  .col.probs .v-row.top .v-fill { background: var(--violet); }
+
+  /* Selection row */
+  .pick-card {
+    margin-top: 10px;
+    background: #fff;
+    border: 2px solid var(--violet);
+    border-radius: 8px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 12px rgba(87, 6, 140, 0.12);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .pick-label {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--violet-dark); font-weight: 700;
+  }
+  .pick-context {
+    font-family: var(--font-mono); font-size: 0.75rem;
+    color: var(--ink); flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pick-context .new {
+    background: var(--violet); color: #fff;
+    padding: 2px 6px; border-radius: 3px;
+    margin-left: 4px;
+    animation: pop 0.4s ease;
+  }
+  @keyframes pop {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+  .pick-mode {
+    font-family: var(--font-mono); font-size: 0.66rem;
+    color: var(--ink-mute);
+    background: var(--surface); border: 1px solid var(--rule);
+    padding: 3px 7px; border-radius: 4px;
+  }
+  .pick-mode b { color: var(--violet-dark); }
+
+  .caption {
+    margin: 14px 0 0; font-size: 0.82rem;
+    color: var(--ink-soft); text-align: center; line-height: 1.45;
+  }
+  .caption b { color: var(--violet-dark); font-weight: 700; }
+
+  @media (max-width: 640px) {
+    .pair { grid-template-columns: 1fr; }
+    .arrow-col svg { transform: rotate(90deg); }
+  }
+
+
+  /* Embedded in the course page: remove the outer demo frame and page padding.
+     Keep the demo itself responsive; the parent iframe measures this .stage box. */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden;
+  }
+  body {
+    display: block;
+  }
+  .stage {
+    margin: 0 auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    padding-top: 0 !important;
+  }
+  .stage-input {
+    margin-top: 0 !important;
+  }
+
+  /* WCAG 2.2.2 (Pause, Stop, Hide): this stage animates on a loop for more
+     than five seconds, so it must offer a way to stop the motion. */
+  .anim-controls {
+    display: flex; justify-content: flex-end; gap: 4px;
+    margin: 6px 0 0;
+  }
+  .anim-controls button {
+    border: 1px solid var(--rule, #E2E2E2);
+    border-radius: 999px;
+    background: var(--surface, #fff);
+    color: var(--ink-soft, #3A3A3A);
+    cursor: pointer;
+    font: 800 0.66rem/1 var(--font-mono, monospace);
+    padding: 5px 10px;
+  }
+  .anim-controls button:hover { border-color: var(--violet-100, #E8D8F2); color: var(--violet-dark, #3D0461); }
+  @media (prefers-reduced-motion: reduce) { .anim-controls { display: flex; } }
+</style>
+</head>
+<body>
+<section class="stage" aria-label="Stage 5: Probabilities and sampling">
+
+  <div class="stage-input">
+    <b>Input:</b><span style="font-family:var(--font-mono);">Analyze this log: 192.168.1.105 port 443 SYN</span>
+  </div>
+
+  <div class="pair">
+    <div class="col logits">
+      <span class="col-label">Logits (raw scores)</span>
+      <div id="logitsList"></div>
+    </div>
+
+    <div class="arrow-col" aria-hidden="true">
+      <div class="formula">softmax</div>
+      <svg viewBox="0 0 70 16">
+        <path d="M2,8 L60,8" stroke="var(--violet)" stroke-width="2" fill="none"/>
+        <path d="M60,3 L68,8 L60,13 Z" fill="var(--violet)"/>
+      </svg>
+      <div class="note">Σ = 1.0</div>
+    </div>
+
+    <div class="col probs">
+      <span class="col-label">Probabilities</span>
+      <div id="probsList"></div>
+    </div>
+  </div>
+
+  <div class="pick-card">
+    <span class="pick-label">Picked</span>
+    <span class="pick-context" id="pickContext">… 443 SYN<span class="new" id="pickNew">·The</span></span>
+    <span class="pick-mode">strategy: <b id="pickMode">top-p sampling</b></span>
+  </div>
+
+  <p class="caption">
+    <b>Softmax</b> turns logits into probabilities that sum to 1.0. The decoding strategy
+    (greedy, temperature, top-k, top-p) picks one token from that distribution. The picked
+    token is appended and the whole pipeline runs again.
+  </p>
+  <div class="anim-controls" role="group" aria-label="Animation controls">
+    <button type="button" class="anim-toggle" aria-pressed="true">Pause</button>
+  </div>
+</section>
+
+<script>
+  const VOCAB = [
+    { name: ' The',     logit: 7.2 },
+    { name: ' This',    logit: 6.8 },
+    { name: ' A',       logit: 5.1 },
+    { name: ' It',      logit: 4.4 },
+    { name: ' Based',   logit: 3.7 },
+    { name: ' Looking', logit: 2.9 },
+    { name: ' To',      logit: 2.1 }
+  ];
+  const STRATEGIES = ['greedy', 'temperature 0.8', 'top-k (k=3)', 'top-p (p=0.9)'];
+
+  function softmax(arr, temp = 1.0) {
+    const max = Math.max(...arr);
+    const scaled = arr.map(x => (x - max) / temp);
+    const exps = scaled.map(Math.exp);
+    const sum = exps.reduce((a, b) => a + b, 0);
+    return exps.map(e => e / sum);
+  }
+
+  function fmtLogit(v) { return (v >= 0 ? '+' : '') + v.toFixed(1); }
+  function fmtProb(p) { return (p * 100).toFixed(1) + '%'; }
+
+  // Build logits + probs rows
+  const logitsList = document.getElementById('logitsList');
+  const probsList = document.getElementById('probsList');
+  const logitsArr = VOCAB.map(v => v.logit);
+  const minL = Math.min(...logitsArr);
+  const maxL = Math.max(...logitsArr);
+
+  VOCAB.forEach((v, i) => {
+    const pctL = ((v.logit - minL) / (maxL - minL)) * 100;
+    const row = document.createElement('div');
+    row.className = 'v-row' + (i === 0 ? ' top' : '');
+    row.dataset.idx = i;
+    row.innerHTML = `
+      <span class="v-name">${v.name.replace(/ /g, '·')}</span>
+      <span class="v-track"><span class="v-fill" data-target="${pctL.toFixed(1)}"></span></span>
+      <span class="v-val">${fmtLogit(v.logit)}</span>`;
+    logitsList.appendChild(row);
+
+    const pRow = document.createElement('div');
+    pRow.className = 'v-row' + (i === 0 ? ' top' : '');
+    pRow.dataset.idx = i;
+    pRow.innerHTML = `
+      <span class="v-name">${v.name.replace(/ /g, '·')}</span>
+      <span class="v-track"><span class="v-fill"></span></span>
+      <span class="v-val">—</span>`;
+    probsList.appendChild(pRow);
+  });
+
+  function setLogits() {
+    document.querySelectorAll('#logitsList .v-fill').forEach(f => {
+      f.style.width = '0%';
+      requestAnimationFrame(() => f.style.width = f.dataset.target + '%');
+    });
+  }
+
+  function setProbs(probs) {
+    const pRows = document.querySelectorAll('#probsList .v-row');
+    pRows.forEach((r, i) => {
+      const fill = r.querySelector('.v-fill');
+      const val  = r.querySelector('.v-val');
+      // Bars sized relative to max prob
+      const maxP = Math.max(...probs);
+      const pct = (probs[i] / maxP) * 100;
+      setTimeout(() => {
+        fill.style.width = pct.toFixed(1) + '%';
+        val.textContent = fmtProb(probs[i]);
+      }, i * 60);
+    });
+  }
+
+  function highlightPicked(idx) {
+    document.querySelectorAll('.v-row').forEach(r => r.classList.remove('picked'));
+    document.querySelectorAll(`.v-row[data-idx="${idx}"]`).forEach(r => r.classList.add('picked'));
+  }
+
+  function setPick(token) {
+    const ctx = document.getElementById('pickContext');
+    ctx.innerHTML = `… 443·SYN<span class="new">${token.replace(/ /g, '·')}</span>`;
+  }
+
+  function pickByProb(probs) {
+    let r = Math.random();
+    for (let i = 0; i < probs.length; i++) {
+      r -= probs[i];
+      if (r <= 0) return i;
+    }
+    return probs.length - 1;
+  }
+
+  let strategyIdx = 0;
+  function tick() {
+    const mode = STRATEGIES[strategyIdx];
+    document.getElementById('pickMode').textContent = mode;
+
+    let probs, pickIdx;
+    if (mode === 'greedy') {
+      probs = softmax(logitsArr, 1.0);
+      pickIdx = 0;
+    } else if (mode.startsWith('temperature')) {
+      probs = softmax(logitsArr, 0.8);
+      pickIdx = pickByProb(probs);
+    } else if (mode.startsWith('top-k')) {
+      const k = 3;
+      const truncated = logitsArr.map((l, i) => i < k ? l : -Infinity);
+      probs = softmax(truncated, 1.0);
+      pickIdx = pickByProb(probs);
+    } else {
+      // top-p
+      probs = softmax(logitsArr, 1.0);
+      let cum = 0;
+      const kept = probs.map((p, i) => {
+        const include = cum < 0.9;
+        cum += p;
+        return include ? p : 0;
+      });
+      const sumKept = kept.reduce((a, b) => a + b, 0);
+      probs = kept.map(p => p / sumKept);
+      pickIdx = pickByProb(probs);
+    }
+
+    setLogits();
+    setTimeout(() => {
+      setProbs(probs);
+      setTimeout(() => {
+        highlightPicked(pickIdx);
+        setPick(VOCAB[pickIdx].name);
+      }, 500);
+    }, 350);
+
+    strategyIdx = (strategyIdx + 1) % STRATEGIES.length;
+  }
+  tick();
+  /* Pausable loop: WCAG 2.2.2. Honours prefers-reduced-motion by
+     starting paused for users who have asked for less motion. */
+  var _animTimer = null;
+  var _animBtn = document.querySelector('.anim-toggle');
+  var _reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function _animStart() { clearInterval(_animTimer); _animTimer = setInterval(tick, 2800); }
+  function _animStop()  { clearInterval(_animTimer); _animTimer = null; }
+  function _animSet(on) {
+    if (on) _animStart(); else _animStop();
+    if (_animBtn) {
+      _animBtn.textContent = on ? 'Pause' : 'Play';
+      _animBtn.setAttribute('aria-pressed', String(on));
+    }
+  }
+  if (_animBtn) _animBtn.addEventListener('click', function () { _animSet(_animTimer === null); });
+  _animSet(!_reduce);
+</script>
+
+<script>
+  /* Cross-origin-safe iframe sizing for Brightspace/local LMS embeds.
+     The child measures only its own .stage box and sends that number upward.
+     The parent never reads contentDocument, so this works even when the LMS
+     serves the iframe from a different origin or sandboxed content URL. */
+  (function() {
+    var MIN_HEIGHT = 120;
+    var MAX_HEIGHT = 1400;
+    var EXTRA_PIXELS = 10;
+    var lastSent = 0;
+    var raf = 0;
+
+    function getEmbedId() {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        return params.get('embedId') || window.name || document.title || window.location.pathname;
+      } catch (err) {
+        return window.name || document.title || 'pipeline-stage';
+      }
+    }
+
+    function measureHeight() {
+      var stage = document.querySelector('.stage') || document.body;
+      var rect = stage.getBoundingClientRect();
+      var styles = window.getComputedStyle(stage);
+      var mt = parseFloat(styles.marginTop) || 0;
+      var mb = parseFloat(styles.marginBottom) || 0;
+      var height = Math.ceil(rect.height + mt + mb + EXTRA_PIXELS);
+      if (!Number.isFinite(height)) height = MIN_HEIGHT;
+      return Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, height));
+    }
+
+    function postHeight() {
+      raf = 0;
+      var height = measureHeight();
+      if (Math.abs(height - lastSent) < 2) return;
+      lastSent = height;
+      try {
+        window.parent.postMessage({
+          kind: 'nyu-pipeline-stage-height',
+          embedId: getEmbedId(),
+          height: height
+        }, '*');
+      } catch (err) {}
+    }
+
+    function schedulePost() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(postHeight);
+    }
+
+    window.addEventListener('load', schedulePost);
+    window.addEventListener('resize', schedulePost);
+    window.addEventListener('orientationchange', schedulePost);
+    document.addEventListener('DOMContentLoaded', schedulePost);
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(schedulePost).catch(function() {});
+    }
+
+    try {
+      var stage = document.querySelector('.stage') || document.body;
+      if (window.ResizeObserver && stage) {
+        var ro = new ResizeObserver(schedulePost);
+        ro.observe(stage);
+      }
+    } catch (err) {}
+
+    // Bounded follow-up measurements catch animations, font swaps, and JS-populated rows.
+    [0, 50, 150, 300, 700, 1200, 2200, 4000].forEach(function(delay) {
+      setTimeout(schedulePost, delay);
+    });
+  })();
+</script>
+
+</body>
+</html>

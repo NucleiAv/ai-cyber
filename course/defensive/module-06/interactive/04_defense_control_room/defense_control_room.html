@@ -1,0 +1,196 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defense Coverage Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:"Open Sans",sans-serif;background:#F6F4F8;padding:10px 12px;color:#1A1A1A}
+.w{max-width:880px;margin:0 auto}
+.card{background:#fff;border:1px solid #E2E2E2;border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06)}
+.hd{padding:14px 18px 0}
+.hd h1{font-size:.92rem;font-weight:700;letter-spacing:-.02em}
+.hd p{font-size:.74rem;color:#6B6B6B;margin-top:3px}
+.bw{padding:10px 18px 6px}
+table{width:100%;border-collapse:collapse;font-size:.72rem;table-layout:fixed}
+thead th{font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:.62rem;color:#6B6B6B;padding:6px 4px 8px;border-bottom:2px solid #E2E2E2;text-align:center;vertical-align:bottom}
+thead th:first-child{text-align:left;width:110px}
+tbody td{padding:5px 4px;text-align:center;vertical-align:middle;border-bottom:1px solid #F0EEF2;transition:background .2s}
+tbody td:first-child{text-align:left;font-weight:600;color:#1A1A1A}
+tbody tr:hover td{background:#FAFAFE}
+tbody tr:last-child td{border-bottom:none}
+.cell{display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:4px;font-weight:700;font-size:.6rem;letter-spacing:.03em;cursor:default;transition:transform .15s}
+.cell:hover{transform:scale(1.08)}
+.c-block{background:#166534;color:#fff;border:1px solid #166534}
+.c-flag{background:#854D0E;color:#fff;border:1px solid #854D0E}
+.c-miss{background:#991B1B;color:#fff;border:1px solid #991B1B}
+.c-after{background:#1E40AF;color:#fff;border:1px solid #1E40AF}
+.scope{font-size:.58rem;font-weight:400;color:#7A7189;display:block;margin-top:1px}
+.cell-wrap{position:relative;display:inline-block}
+.cell-wrap[tabindex]{outline:none}
+.cell-wrap:focus-visible .cell{outline:2px solid #57068C;outline-offset:2px}
+.detail{display:none;font-size:.7rem;line-height:1.5;padding:10px 18px 14px;border-top:1px solid #F0EEF2;color:#3A3A3A}
+.detail.show{display:block}
+.detail strong{font-weight:700}
+.leg{display:flex;gap:12px;flex-wrap:wrap;padding:8px 18px 14px;border-top:1px solid #F0EEF2;font-size:.64rem;color:#6B6B6B}
+.leg-item{display:flex;align-items:center;gap:4px}
+.leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+@media(max-width:580px){thead th:first-child{width:80px}table{font-size:.65rem}.cell{font-size:.54rem;padding:2px 4px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="w">
+<div class="card">
+  <div class="hd">
+    <h1>Defense Coverage Map</h1>
+    <p>How each defense responds to each attack vector. Click any cell for details.</p>
+  </div>
+  <div class="bw">
+    <table role="grid" aria-label="Defense coverage matrix: defenses as rows, attack vectors as columns">
+      <thead>
+        <tr>
+          <th scope="col">Defense</th>
+          <th scope="col">Dep. Confusion</th>
+          <th scope="col">Typosquat</th>
+          <th scope="col">Maintainer Takeover</th>
+          <th scope="col">Build Tamper</th>
+          <th scope="col">Vendor Compromise</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="detail" id="detail" aria-live="polite"></div>
+  <div class="leg">
+    <div class="leg-item"><span class="leg-dot" style="background:#E6F4EC;border:1px solid #B8E0CA"></span> Blocked</div>
+    <div class="leg-item"><span class="leg-dot" style="background:#FCF1DC;border:1px solid #E8D5AA"></span> Flagged</div>
+    <div class="leg-item"><span class="leg-dot" style="background:#FBE8E8;border:1px solid #EABFBF"></span> Missed</div>
+    <div class="leg-item"><span class="leg-dot" style="background:#E6F0FA;border:1px solid #B8D4EE"></span> After incident</div>
+  </div>
+</div>
+</div>
+<script>
+(function(){
+'use strict';
+
+var DEFS=[
+  {name:'Scorecard',scope:'Adoption check'},
+  {name:'Sigstore',scope:'Publisher identity'},
+  {name:'SLSA',scope:'Build integrity'},
+  {name:'SBOM',scope:'Incident response'},
+  {name:'Scoped Registry',scope:'Namespace isolation'},
+  {name:'Lockfile + Hash',scope:'Pin and hash'}
+];
+
+var ATK_NAMES=['Dependency Confusion','Typosquatting','Maintainer Takeover','Build Tamper','Vendor Compromise'];
+
+/* [dep confusion, typo, takeover, build, vendor] */
+var MATRIX=[
+  /* Scorecard */
+  [{r:'miss',t:'Evaluates project health, not registry namespace policies'},
+   {r:'flag',t:'Flags low adoption score on unknown package'},
+   {r:'flag',t:'May detect governance changes or reduced contributor activity'},
+   {r:'miss',t:'Evaluates projects, not build infrastructure'},
+   {r:'miss',t:'Evaluates open-source projects, not vendor software'}],
+  /* Sigstore */
+  [{r:'miss',t:'Does not govern which registry a package resolves from'},
+   {r:'miss',t:'Cannot detect: attacker signs with their own valid identity'},
+   {r:'flag',t:'Flags different signing identity than expected maintainer'},
+   {r:'flag',t:'May flag if build identity changed unexpectedly'},
+   {r:'miss',t:'Does not cover vendor distribution channels'}],
+  /* SLSA */
+  [{r:'miss',t:'Verifies build provenance, not package resolution'},
+   {r:'miss',t:'Verifies build of whatever package was resolved'},
+   {r:'miss',t:'Verifies build integrity, but source was compromised at maintainer level'},
+   {r:'block',t:'Provenance shows unexpected build inputs: tamper detected'},
+   {r:'flag',t:'May detect if vendor artifact lacks expected provenance'}],
+  /* SBOM */
+  [{r:'after',t:'Identifies which products pulled from the wrong registry'},
+   {r:'after',t:'Identifies all affected products after compromise is discovered'},
+   {r:'after',t:'Enables rapid identification of all products using compromised package'},
+   {r:'after',t:'Maps which products incorporated the tampered artifact'},
+   {r:'after',t:'Rapidly identifies all products using compromised vendor component'}],
+  /* Scoped Registry */
+  [{r:'block',t:'Namespace scoping forces resolution to the correct internal registry'},
+   {r:'miss',t:'Only prevents namespace confusion, not typos'},
+   {r:'miss',t:'Does not verify maintainer identity'},
+   {r:'miss',t:'Does not verify build integrity'},
+   {r:'miss',t:'Does not govern vendor relationships'}],
+  /* Lockfile */
+  [{r:'flag',t:'Pinned hash may flag if resolved package differs from expected'},
+   {r:'block',t:'Rejects unknown package hash: mismatch detected'},
+   {r:'miss',t:'Accepts update if version was legitimately bumped by attacker'},
+   {r:'miss',t:'Pins source dependencies, not build process'},
+   {r:'miss',t:'Does not cover vendor service integrations'}]
+];
+
+var LABELS={block:'BLOCKED',flag:'FLAGGED',miss:'MISSED',after:'AFTER'};
+var CLASSES={block:'c-block',flag:'c-flag',miss:'c-miss',after:'c-after'};
+
+var tbody=document.getElementById('tbody');
+var detail=document.getElementById('detail');
+
+DEFS.forEach(function(def,di){
+  var tr=document.createElement('tr');
+
+  var tdName=document.createElement('td');
+  tdName.innerHTML=def.name+'<span class="scope">'+def.scope+'</span>';
+  tr.appendChild(tdName);
+
+  MATRIX[di].forEach(function(cell,ci){
+    var td=document.createElement('td');
+    var wrap=document.createElement('span');
+    wrap.className='cell-wrap';
+    wrap.setAttribute('tabindex','0');
+    wrap.setAttribute('role','button');
+    wrap.setAttribute('aria-label',def.name+' vs '+ATK_NAMES[ci]+': '+LABELS[cell.r]);
+
+    var badge=document.createElement('span');
+    badge.className='cell '+CLASSES[cell.r];
+    badge.textContent=LABELS[cell.r];
+    wrap.appendChild(badge);
+
+    wrap.addEventListener('click',function(){
+      showDetail(def.name,ATK_NAMES[ci],cell);
+    });
+    wrap.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();showDetail(def.name,ATK_NAMES[ci],cell);}
+    });
+
+    td.appendChild(wrap);
+    tr.appendChild(td);
+  });
+
+  tbody.appendChild(tr);
+});
+
+function showDetail(defName,atkName,cell){
+  var color={block:'#166B3A',flag:'#7A5200',miss:'#9A2020',after:'#1A5A9E'}[cell.r];
+  detail.innerHTML='<strong>'+defName+'</strong> vs <strong>'+atkName+'</strong>: <span style="color:'+color+';font-weight:700">'+LABELS[cell.r]+'</span> - '+cell.t;
+  detail.className='detail show';
+  setTimeout(sendHeight,50);
+}
+
+/* iframe height */
+function sendHeight(){
+  var el=document.querySelector('.w');if(!el)return;
+  var r=el.getBoundingClientRect();
+  var p=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+p),src:location.href},'*');
+}
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  if(window.ResizeObserver){new ResizeObserver(sendHeight).observe(document.querySelector('.w')||body);}
+  else setInterval(sendHeight,500);
+  window.addEventListener('load',function(){setTimeout(sendHeight,200)});
+  setTimeout(sendHeight,50);
+})();
+})();
+</script>
+</body>
+</html>

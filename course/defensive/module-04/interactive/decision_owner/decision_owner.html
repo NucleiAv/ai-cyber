@@ -1,0 +1,1015 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Who Owns the Decision?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --nyu-violet: #57068C;
+      --nyu-violet-dark: #3D0461;
+      --nyu-violet-50: #F5EDFA;
+      --nyu-violet-100: #E8D8F2;
+      --nyu-violet-200: #D2B3E5;
+      --accent-danger: #C42A2A;
+      --accent-danger-bg: #FBE8E8;
+      --accent-success: #166B3A;
+      --accent-success-bg: #E6F4EC;
+      --accent-warning: #8A5D00;
+      --accent-warning-bg: #FCF1DC;
+      --ink: #1A1A1A;
+      --ink-mute: #6B6B6B;
+      --rule: #E2E2E2;
+      --surface: #FFFFFF;
+      --surface-sunken: #F6F4F8;
+      --shadow: 0 10px 30px rgba(18, 22, 33, 0.06);
+      --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--surface-sunken);
+      padding: 10px 16px 6px;
+    }
+
+    main { width: min(880px, 100%); margin: 0 auto; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ---------- Top bar ---------- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+    }
+
+    .topbar h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--nyu-violet);
+      background: var(--nyu-violet);
+      color: #fff;
+      border-radius: 8px;
+      padding: 9px 22px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: background 140ms ease, transform 140ms ease;
+    }
+
+    .btn:hover { background: var(--nyu-violet-dark); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    /* ---------- Stage ---------- */
+    .stage { padding: 16px 18px 12px; margin-bottom: 12px; }
+
+    .event-chip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      width: fit-content;
+      margin: 0 auto 4px;
+      padding: 7px 16px;
+      border: 1.5px solid var(--accent-danger);
+      background: #991B1B;
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .event-chip .pulse {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--accent-danger);
+      flex: none;
+      animation: pulse 1.8s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(196, 42, 42, 0.35); }
+      50% { box-shadow: 0 0 0 7px rgba(196, 42, 42, 0); }
+    }
+
+    .narrate {
+      text-align: center;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--ink);
+      min-height: 1.5em;
+      margin: 2px 0 14px;
+      transition: opacity 180ms ease;
+    }
+
+    /* ---------- Lanes ---------- */
+    .lane { position: relative; padding: 10px 0 2px; }
+    .lane + .lane { border-top: 1px dashed var(--rule); margin-top: 6px; }
+
+    /* ---- Run distinction -------------------------------------------------
+       The two lanes previously differed only by a small chip, so a reader had
+       to trace both tracks to find the divergence. Each lane now carries a
+       persistent coloured spine and tint, and the gate column (where the runs
+       actually split) is marked in both. Presentation only: no JS hooks. */
+    .lane--good,
+    .lane--bad {
+      border-left: 5px solid;
+      border-radius: 0 10px 10px 0;
+      padding: 10px 10px 6px 14px;
+    }
+    .lane--good { border-left-color: #166534; background: linear-gradient(90deg, rgba(22,101,52,0.07), rgba(22,101,52,0) 42%); }
+    .lane--bad  { border-left-color: #991B1B; background: linear-gradient(90deg, rgba(153,27,27,0.07), rgba(153,27,27,0) 42%); }
+    .lane + .lane.lane--bad { border-top: 0; margin-top: 12px; }
+
+    /* Lane label reads as a header for the run rather than an inline chip. */
+    .lane--good > .lane-tag,
+    .lane--bad  > .lane-tag { font-size: 0.72rem; padding: 4px 10px; }
+
+    /* The gate column is the divergence point. A dashed guide in both lanes
+       lets the eye jump straight to it and compare the two outcomes. */
+    .lane--good .gatewrap::before,
+    .lane--bad  .gatewrap::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -6px;
+      bottom: -4px;
+      border-left: 2px dashed;
+      opacity: 0.4;
+      z-index: 0;
+    }
+    .lane--good .gatewrap::before { border-left-color: #166534; }
+    .lane--bad  .gatewrap::before { border-left-color: #991B1B; }
+
+    .diverge-flag {
+      position: absolute;
+      bottom: calc(100% + 2px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 130px;
+      text-align: center;
+      font-size: 0.55rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      line-height: 1.2;
+      color: #166534;
+      background: var(--surface);
+      padding: 1px 6px;
+      border-radius: 999px;
+      border: 1px dashed #166534;
+      z-index: 2;
+    }
+    .diverge-flag--muted { color: #991B1B; border-color: #991B1B; }
+
+    /* Outcome node: make the two endpoints read as opposites at a glance. */
+    .lane--good .node:last-child .nlabel { color: #166534; }
+    .lane--bad  .node:last-child .nlabel { color: #991B1B; }
+
+    @media (max-width: 620px) {
+      .lane--good, .lane--bad { padding-left: 10px; border-left-width: 4px; }
+      .diverge-flag { font-size: 0.48rem; max-width: 96px; }
+    }
+
+    .lane-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-radius: 999px;
+      padding: 2px 10px;
+      margin: 0 0 8px;
+    }
+
+    .tag-good { background: #166534; color: #fff; }
+    .tag-bad  { background: #991B1B; color: #fff; }
+
+    .track {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 4px;
+      padding: 24px 6px 0;
+      min-height: 142px;
+    }
+
+    .track::before {
+      content: "";
+      position: absolute;
+      left: 34px; right: 34px;
+      top: 48px;
+      height: 2px;
+      background: var(--rule);
+    }
+
+    .node, .gatewrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 1;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .gatewrap { flex: 0.62; }
+
+    .bubble {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--rule);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-mute);
+      transition: border-color 250ms ease, background 250ms ease, color 250ms ease, transform 250ms ease;
+    }
+
+    .bubble svg { width: 22px; height: 22px; }
+
+    /* red ✗ badge pinned to the bubble: this output is wrong */
+    .bubble { position: relative; }
+
+    .bubble.flagged::after {
+      content: "\2717";
+      position: absolute;
+      top: -6px;
+      right: -7px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: var(--accent-danger);
+      color: #fff;
+      border: 2px solid #fff;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(196, 42, 42, 0.35);
+      animation: badgepop 380ms cubic-bezier(0.2, 1.5, 0.4, 1);
+    }
+
+    @keyframes badgepop {
+      0% { transform: scale(0); }
+      70% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+
+    /* label above the flagged bubble */
+    .bubble.flagged::before {
+      content: "incorrect conclusion";
+      position: absolute;
+      bottom: calc(100% + 7px);
+      left: 50%;
+      width: max-content;
+      background: var(--accent-danger);
+      color: #fff;
+      font-size: 0.58rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 9px;
+      border-radius: 999px;
+      box-shadow: 0 2px 6px rgba(196, 42, 42, 0.3);
+      z-index: 3;
+      animation: labelpop 380ms cubic-bezier(0.2, 1.5, 0.4, 1);
+      transform: translateX(-50%);
+    }
+
+    @keyframes labelpop {
+      0% { transform: translateX(-50%) scale(0); }
+      70% { transform: translateX(-50%) scale(1.15); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+
+    .bubble.active {
+      border-color: var(--nyu-violet);
+      background: var(--nyu-violet);
+      color: #fff;
+      transform: scale(1.08);
+    }
+
+    .bubble.done { border-color: #4C1D95; background: #4C1D95; color: #fff; transform: scale(1); }
+    .bubble.good { border-color: #166534; background: #166534; color: #fff; transform: scale(1); }
+    .bubble.bad  { border-color: #991B1B; background: #991B1B; color: #fff; transform: scale(1); }
+    .bubble.warn { border-color: #854D0E; background: #854D0E; color: #fff; transform: scale(1); }
+
+    .bubble.rings::after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-danger);
+      animation: ring 1.4s ease-out infinite;
+    }
+
+    @keyframes ring {
+      from { transform: scale(1); opacity: 0.7; }
+      to   { transform: scale(2.1); opacity: 0; }
+    }
+
+    /* gate: small diamond on the line */
+    .gnode {
+      width: 30px; height: 30px;
+      margin-top: 9px; /* track padding already offsets the line */
+      border: 2px solid var(--rule);
+      background: var(--surface);
+      border-radius: 7px;
+      transform: rotate(45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-mute);
+      transition: border-color 250ms ease, background 250ms ease, color 250ms ease, opacity 250ms ease;
+    }
+
+    .gnode svg { width: 15px; height: 15px; transform: rotate(-45deg); }
+
+    .gnode.active { border-color: var(--nyu-violet); background: var(--nyu-violet); color: #fff; }
+    .gnode.good { border-color: #166534; background: #166534; color: #fff; }
+    .gnode.skipped { border-style: dashed; opacity: 0.45; }
+
+    .nlabel, .glabel {
+      margin-top: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .glabel { font-weight: 600; font-size: 0.62rem; color: var(--ink-mute); margin-top: 10px; }
+    .glabel.skip { color: var(--accent-danger); font-weight: 700; }
+
+    /* checklist card: the human working through the draft's claims */
+    .checkcard {
+      position: absolute;
+      top: 62px;
+      left: 50%;
+      transform: translateX(-50%) translateY(5px);
+      width: max-content;
+      background: var(--surface);
+      border: 1px solid var(--nyu-violet-200);
+      border-radius: 9px;
+      box-shadow: 0 8px 22px rgba(18, 22, 33, 0.14);
+      padding: 7px 11px 8px;
+      z-index: 4;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .checkcard.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .ch-head {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.58rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--nyu-violet);
+      margin-bottom: 5px;
+    }
+
+    .ch-head svg { width: 11px; height: 11px; }
+
+    .ch-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      color: var(--ink-mute);
+      padding: 2px 0;
+    }
+
+    .ch-row .box {
+      width: 13px; height: 13px;
+      border: 1.5px solid var(--rule);
+      border-radius: 3.5px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+      flex: none;
+      transition: border-color 150ms ease, background 150ms ease;
+    }
+
+    .ch-row.ok, .ch-row.no { color: var(--ink); }
+    .ch-row.ok .box { border-color: #166534; background: #166534; color: #fff; }
+    .ch-row.ok .box::after { content: "\2713"; animation: badgepop 260ms ease; }
+    .ch-row.no .box { border-color: #991B1B; background: #991B1B; color: #fff; }
+    .ch-row.no .box::after { content: "\2717"; animation: badgepop 260ms ease; }
+
+    .ncap { min-height: 30px; margin-top: 4px; display: flex; align-items: flex-start; justify-content: center; }
+
+    .cap {
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 280ms ease, transform 280ms ease;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--surface-sunken);
+      border: 1px solid var(--rule);
+      color: var(--ink-mute);
+      /* These captions carry the verdict and the reason it is wrong. Clipping
+         them to one 160px line was ellipsing the reason away. */
+      white-space: normal;
+      max-width: 200px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .cap.on { opacity: 1; transform: translateY(0); }
+    .cap.violet { background: #57068C; border-color: #57068C; color: #fff; }
+    .cap.green { background: #166534; border-color: #166534; color: #fff; }
+    .cap.red { background: #991B1B; border-color: #991B1B; color: #fff; }
+    .cap.amber { background: #854D0E; border-color: #854D0E; color: #fff; }
+
+    .cap.struck .quote { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+
+    .cap .wrong {
+      font-style: normal;
+      font-weight: 700;
+      color: var(--accent-danger);
+      margin-left: 6px;
+    }
+
+    .cap .flag {
+      display: none;
+      font-style: normal;
+      color: var(--accent-danger);
+      margin-left: 5px;
+    }
+
+    .cap.struck .flag { display: inline; }
+
+    /* the detector's "critical" and the draft's "low" disagree , pulse both */
+    .cap.clash { animation: clash 850ms ease 2; }
+
+    @keyframes clash {
+      0%, 100% { box-shadow: none; }
+      50% { box-shadow: 0 0 0 3.5px rgba(196, 42, 42, 0.28); }
+    }
+
+    .cap.stamp.on {
+      animation: stamp 420ms cubic-bezier(0.2, 1.4, 0.4, 1);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    @keyframes stamp {
+      0% { opacity: 0; transform: scale(2.1) rotate(-7deg); }
+      60% { opacity: 1; transform: scale(0.94) rotate(1deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+
+    .out-ic { display: none; }
+    .out-ic.show { display: block; }
+
+    /* token */
+    .tk {
+      position: absolute;
+      top: 49px;
+      left: 34px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--nyu-violet);
+      border: 2.5px solid #fff;
+      box-shadow: 0 2px 8px rgba(87, 6, 140, 0.3);
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      opacity: 0;
+      transition: left 560ms ease, opacity 250ms ease;
+    }
+
+    .tk.on { opacity: 1; }
+    .tk.bad { background: var(--accent-danger); box-shadow: 0 2px 8px rgba(196, 42, 42, 0.3); }
+
+    /* ---------- Accountability map ---------- */
+    .map {
+      display: none;
+      padding: 14px 18px 16px;
+      margin-bottom: 4px;
+    }
+
+    .map.show {
+      display: block;
+      animation: mapin 450ms ease both;
+    }
+
+    @keyframes mapin {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .map-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-mute);
+      margin: 0 0 10px;
+    }
+
+    .mgrid {
+      display: grid;
+      grid-template-columns: minmax(96px, auto) 1fr auto auto;
+      gap: 6px 14px;
+      align-items: center;
+    }
+
+    .mh {
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-mute);
+      white-space: nowrap;
+    }
+
+    .mh .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+    .mh .dot.g { background: var(--accent-success); }
+    .mh .dot.r { background: var(--accent-danger); }
+
+    .mrole {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .mrole svg { width: 16px; height: 16px; color: var(--nyu-violet); flex: none; }
+
+    .mduty { font-size: 0.74rem; color: var(--ink-mute); }
+
+    .mtag {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .mtag.g { background: #166534; color: #fff; }
+    .mtag.r { background: #991B1B; color: #fff; }
+    .mtag.a { background: #854D0E; color: #fff; }
+
+    .mrule { grid-column: 1 / -1; height: 1px; background: var(--rule); }
+
+    .map-take {
+      margin: 12px 0 0;
+      font-size: 0.82rem;
+      color: var(--ink);
+      text-align: center;
+    }
+
+    .map-take strong { color: var(--nyu-violet); }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 620px) {
+      body { padding: 8px; }
+      .stage { padding: 12px 10px 8px; }
+      .bubble { width: 40px; height: 40px; }
+      .bubble svg { width: 18px; height: 18px; }
+      .track::before { top: 44px; left: 26px; right: 26px; }
+      .tk { top: 45px; }
+      .nlabel { font-size: 0.62rem; }
+      .glabel { font-size: 0.56rem; }
+      .cap { font-size: 0.56rem; max-width: 110px; padding: 2px 6px; }
+      .event-chip { font-size: 0.66rem; padding: 6px 11px; }
+      .bubble.flagged::before { font-size: 0.5rem; padding: 2px 7px; }
+      .mduty, .mduty-h { display: none; }
+      .mgrid { grid-template-columns: minmax(82px, auto) auto auto; }
+      .mrole { font-size: 0.7rem; }
+      .mtag { font-size: 0.56rem; }
+      .topbar h1 { font-size: 0.95rem; }
+    }
+  
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body>
+  <main>
+    <div class="card topbar">
+      <h1>Who Owns the Decision?</h1>
+      <button class="btn" id="playBtn" type="button">Play</button>
+    </div>
+
+    <div class="card stage">
+      <div class="event-chip"><span class="pulse"></span>CRITICAL &middot; radiology workstation probing the domain controller</div>
+      <p class="narrate" id="narr" aria-live="polite">One real attack, played twice , press Play.</p>
+
+      <!-- Lane A: verified -->
+      <section class="lane lane--good" aria-label="Run one: the analyst verifies the draft">
+        <span class="lane-tag tag-good">Run 1 &middot; the draft gets checked</span>
+        <div class="track" id="trackA">
+          <div class="tk" id="tokA"></div>
+          <div class="node">
+            <div class="bubble" id="aDet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <div class="nlabel">Detector</div>
+            <div class="ncap"><span class="cap violet" id="aDetCap">score 0.96 &middot; critical</span></div>
+          </div>
+          <div class="node">
+            <div class="bubble" id="aLlm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div class="nlabel">LLM draft</div>
+            <div class="ncap"><span class="cap amber" id="aDraft"><span class="quote">&ldquo;Low , routine scan&rdquo;</span><em class="wrong">&#10007; wrong</em><em class="flag">&middot; no evidence</em></span></div>
+          </div>
+          <div class="gatewrap">
+            <span class="diverge-flag">runs diverge here</span>
+            <div class="gnode" id="aGate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="glabel" id="aGateLbl">claims check</div>
+            <div class="checkcard" id="aCheck" aria-hidden="true">
+              <div class="ch-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16" y2="16"/></svg>analyst checks</div>
+              <div class="ch-row"><span class="box"></span>schema valid</div>
+              <div class="ch-row"><span class="box"></span>evidence cited</div>
+              <div class="ch-row"><span class="box"></span>matches detector</div>
+            </div>
+          </div>
+          <div class="node">
+            <div class="bubble" id="aAna"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="nlabel">Analyst</div>
+            <div class="ncap"><span class="cap green" id="aAnaCap">ESCALATE</span></div>
+          </div>
+          <div class="node">
+            <div class="bubble" id="aOut">
+              <svg class="out-ic" id="aOutShield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+              <svg class="out-ic show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>
+            </div>
+            <div class="nlabel">Outcome</div>
+            <div class="ncap"><span class="cap green" id="aOutCap">attack contained</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lane B: rubber stamp -->
+      <section class="lane lane--bad" aria-label="Run two: the analyst accepts the draft without checking">
+        <span class="lane-tag tag-bad">Run 2 &middot; nobody checks the draft</span>
+        <div class="track" id="trackB">
+          <div class="tk" id="tokB"></div>
+          <div class="node">
+            <div class="bubble" id="bDet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <div class="nlabel">Detector</div>
+            <div class="ncap"><span class="cap violet" id="bDetCap">score 0.96 &middot; critical</span></div>
+          </div>
+          <div class="node">
+            <div class="bubble" id="bLlm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div class="nlabel">LLM draft</div>
+            <div class="ncap"><span class="cap amber" id="bDraft"><span class="quote">&ldquo;Low , routine scan&rdquo;</span><em class="wrong">&#10007; wrong</em></span></div>
+          </div>
+          <div class="gatewrap">
+            <span class="diverge-flag diverge-flag--muted" aria-hidden="true">same point, no check</span>
+            <div class="gnode" id="bGate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="glabel" id="bGateLbl">claims check</div>
+          </div>
+          <div class="node">
+            <div class="bubble" id="bAna"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="nlabel">Analyst</div>
+            <div class="ncap"><span class="cap red stamp" id="bAnaCap">accepted unchecked</span></div>
+          </div>
+          <div class="node">
+            <div class="bubble" id="bOut">
+              <svg class="out-ic" id="bOutFlame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2c1 4-4 6-4 11a4 4 0 0 0 8 0c0-2-1-3-1-3s3 1 3 5a7 7 0 0 1-14 0C4 9 12 7 12 2z"/></svg>
+              <svg class="out-ic show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>
+            </div>
+            <div class="nlabel">Outcome</div>
+            <div class="ncap"><span class="cap red" id="bOutCap">ransomware</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Accountability map -->
+    <div class="card map" id="map" aria-label="Accountability map: who owned what in each run">
+      <p class="map-title">Who owned what</p>
+      <div class="mgrid">
+        <span class="mh">Role</span><span class="mh mduty-h">Owns</span><span class="mh"><span class="dot g"></span>Run 1</span><span class="mh"><span class="dot r"></span>Run 2</span>
+        <div class="mrule"></div>
+
+        <span class="mrole"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Detector</span>
+        <span class="mduty">producing the score</span>
+        <span class="mtag g">&#10003; scored critical</span>
+        <span class="mtag g">&#10003; scored critical</span>
+
+        <span class="mrole"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>LLM</span>
+        <span class="mduty">drafting the rationale</span>
+        <span class="mtag a">&#9888; wrong draft</span>
+        <span class="mtag a">&#9888; wrong draft</span>
+
+        <span class="mrole"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Gate</span>
+        <span class="mduty">checking schema &amp; claims</span>
+        <span class="mtag g">&#10003; caught the draft</span>
+        <span class="mtag r">&#10007; skipped</span>
+
+        <span class="mrole"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Analyst</span>
+        <span class="mduty">making the decision</span>
+        <span class="mtag g">&#10003; verified &rarr; escalated</span>
+        <span class="mtag r">&#10007; rubber-stamped</span>
+
+        <span class="mrole"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>SOC process</span>
+        <span class="mduty">the escalation policy</span>
+        <span class="mtag g">&#10003; mismatch rule fired</span>
+        <span class="mtag r">&#10007; no escalation rule</span>
+      </div>
+      <p class="map-take">The draft was wrong in <strong>both</strong> runs. The outcome changed only where a human checked.</p>
+    </div>
+  </main>
+
+  <script>
+    'use strict';
+
+    var $ = function (id) { return document.getElementById(id); };
+    var playBtn = $('playBtn');
+    var map = $('map');
+    var narr = $('narr');
+    var busy = false;
+
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    function say(text) {
+      narr.style.opacity = '0';
+      setTimeout(function () {
+        narr.textContent = text;
+        narr.style.opacity = '1';
+      }, 180);
+    }
+
+    var LINES = {
+      det:  ['Run 1 , the detector flags a real attack as critical.',
+             'Run 2 , the same attack, the same critical score.'],
+      llm:  ['The LLM drafts an explanation , and gets it wrong: “low risk.”',
+             'The same wrong draft again: “low risk.”'],
+      gate: ['The check runs: the draft cites no evidence and contradicts the score.',
+             'This time, nobody checks the draft.'],
+      ana:  ['The analyst sees the failed check, reads the evidence, escalates.',
+             'The analyst trusts the “low” label and moves on.'],
+      out:  ['The attack is contained.',
+             'The attacker keeps moving, unwatched. Ransomware.']
+    };
+
+    function centerOf(node, track) {
+      var n = node.getBoundingClientRect();
+      var t = track.getBoundingClientRect();
+      return n.left - t.left + n.width / 2;
+    }
+
+    function moveToken(tok, track, el) {
+      tok.style.left = centerOf(el, track) + 'px';
+    }
+
+    var A = {
+      track: $('trackA'), tok: $('tokA'),
+      det: $('aDet'), detCap: $('aDetCap'),
+      llm: $('aLlm'), draft: $('aDraft'),
+      gate: $('aGate'), gateLbl: $('aGateLbl'), check: $('aCheck'),
+      ana: $('aAna'), anaCap: $('aAnaCap'),
+      out: $('aOut'), outCap: $('aOutCap'), outIc: $('aOutShield')
+    };
+
+    var B = {
+      track: $('trackB'), tok: $('tokB'),
+      det: $('bDet'), detCap: $('bDetCap'),
+      llm: $('bLlm'), draft: $('bDraft'),
+      gate: $('bGate'), gateLbl: $('bGateLbl'), check: null,
+      ana: $('bAna'), anaCap: $('bAnaCap'),
+      out: $('bOut'), outCap: $('bOutCap'), outIc: $('bOutFlame')
+    };
+
+    function resetLane(L) {
+      L.tok.classList.remove('on', 'bad');
+      [L.det, L.llm, L.ana, L.out].forEach(function (b) { b.className = 'bubble'; });
+      L.gate.className = 'gnode';
+      L.gateLbl.className = 'glabel';
+      L.gateLbl.textContent = 'claims check';
+      if (L.check) {
+        L.check.classList.remove('on');
+        L.check.querySelectorAll('.ch-row').forEach(function (r) { r.classList.remove('ok', 'no'); });
+      }
+      [L.detCap, L.draft, L.anaCap, L.outCap].forEach(function (c) { c.classList.remove('on', 'clash'); });
+      L.draft.classList.remove('struck');
+      L.out.classList.remove('rings');
+      L.outIc.classList.remove('show');
+      var dotted = L.out.querySelectorAll('.out-ic')[1];
+      dotted.classList.add('show');
+      moveToken(L.tok, L.track, L.det.parentElement);
+    }
+
+    async function playLane(L, fail) {
+      var bubbleOf = function (el) { return el.parentElement; };
+
+      var i = fail ? 1 : 0;
+
+      /* 1 · Detector */
+      say(LINES.det[i]);
+      moveToken(L.tok, L.track, bubbleOf(L.det));
+      L.tok.classList.add('on');
+      if (fail) L.tok.classList.add('bad');
+      await sleep(220);
+      L.det.classList.add('active');
+      await sleep(480);
+      L.det.classList.remove('active');
+      L.det.classList.add('done');
+      L.detCap.classList.add('on');
+      await sleep(380);
+
+      /* 2 · LLM drafts the same wrong rationale in both runs */
+      say(LINES.llm[i]);
+      moveToken(L.tok, L.track, bubbleOf(L.llm));
+      await sleep(620);
+      L.llm.classList.add('active');
+      await sleep(520);
+      L.llm.classList.remove('active');
+      L.llm.classList.add('warn', 'flagged');
+      L.draft.classList.add('on', 'clash');
+      L.detCap.classList.add('clash');   /* "critical" vs "low" , they disagree */
+      await sleep(1150);
+
+      /* 3 · Gate: the only difference between the two runs */
+      say(LINES.gate[i]);
+      moveToken(L.tok, L.track, L.gate.parentElement);
+      await sleep(560);
+      if (!fail) {
+        L.gate.classList.add('active');
+        /* the human works through the claims, box by box */
+        if (L.check) {
+          var rows = L.check.querySelectorAll('.ch-row');
+          L.check.classList.add('on');
+          await sleep(700);
+          rows[0].classList.add('ok');
+          await sleep(850);
+          rows[1].classList.add('no');
+          await sleep(850);
+          rows[2].classList.add('no');
+          await sleep(1300);
+          L.check.classList.remove('on');
+          await sleep(240);
+        } else {
+          await sleep(460);
+        }
+        L.gate.classList.remove('active');
+        L.gate.classList.add('good');
+        L.draft.classList.add('struck');   /* "cites nothing" , claim fails */
+        await sleep(620);
+      } else {
+        L.gate.classList.add('skipped');
+        L.gateLbl.textContent = 'skipped';
+        L.gateLbl.classList.add('skip');
+        await sleep(420);
+      }
+
+      /* 4 · Analyst */
+      say(LINES.ana[i]);
+      moveToken(L.tok, L.track, bubbleOf(L.ana));
+      await sleep(620);
+      L.ana.classList.add('active');
+      await sleep(fail ? 320 : 700);       /* rubber stamp is fast; checking takes time */
+      L.ana.classList.remove('active');
+      L.ana.classList.add(fail ? 'bad' : 'good');
+      L.anaCap.classList.add('on');
+      await sleep(520);
+
+      /* 5 · Outcome */
+      say(LINES.out[i]);
+      moveToken(L.tok, L.track, bubbleOf(L.out));
+      await sleep(620);
+      var dotted = L.out.querySelectorAll('.out-ic')[1];
+      dotted.classList.remove('show');
+      L.outIc.classList.add('show');
+      L.out.classList.add(fail ? 'bad' : 'good');
+      if (fail) L.out.classList.add('rings');
+      L.outCap.classList.add('on');
+      L.tok.classList.remove('on');
+      await sleep(450);
+    }
+
+    async function play() {
+      if (busy) return;
+      busy = true;
+      playBtn.disabled = true;
+      map.classList.remove('show');
+      resetLane(A);
+      resetLane(B);
+      await sleep(350);
+      await playLane(A, false);
+      await sleep(900);
+      await playLane(B, true);
+      await sleep(700);
+      say('Same attack, same wrong draft , only the checking changed.');
+      map.classList.add('show');
+      playBtn.textContent = 'Replay';
+      playBtn.disabled = false;
+      busy = false;
+    }
+
+    playBtn.addEventListener('click', play);
+    resetLane(A);
+    resetLane(B);
+
+    window.addEventListener('resize', function () {
+      if (!busy) { resetLane(A); resetLane(B); }
+    });
+
+    /* ---------- Embed height reporting (content-based; see alert_queue) ---------- */
+    var mainEl = document.querySelector('main');
+    var lastReported = 0;
+    function reportHeight() {
+      var h = Math.ceil(mainEl.getBoundingClientRect().bottom + 8);
+      if (h > 50 && h !== lastReported) {
+        lastReported = h;
+        window.parent.postMessage({ kind: 'nyu-embed-height', height: h }, '*');
+      }
+    }
+    window.addEventListener('load', function () { lastReported = 0; reportHeight(); });
+    window.addEventListener('resize', function () { requestAnimationFrame(reportHeight); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { lastReported = 0; reportHeight(); });
+    new ResizeObserver(function () { requestAnimationFrame(reportHeight); }).observe(mainEl);
+    reportHeight();
+  </script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

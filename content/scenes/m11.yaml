@@ -1,0 +1,34 @@
+- title: Why stacking similar guardrails fails
+  stats: [Known attacks through, New attacks through]
+  nodes:
+    atk: {label: Requests, x: 0, y: 1, kind: atk}
+    kw: {label: Keyword filter, x: 2, y: 1, kind: raised}
+    g1: {label: Classifier G1, x: 4, y: 1, kind: raised, tag: public jailbreak data}
+    g2: {label: Classifier G2, x: 4, y: 3, kind: raised, tag: same training data}
+    enc: {label: Encoding and schema, x: 6, y: 1, kind: def, tag: deterministic}
+    budget: {label: Token budget, x: 6, y: 3, kind: def, tag: counts tokens}
+  links: [[atk, kw], [kw, g1], [g1, g2], [g1, enc], [g2, budget]]
+  steps:
+    - title: The keyword filter
+      text: On known attacks it misses 40 percent. On new attacks it misses 95 percent.
+      on: [kw]
+      flow: [[atk, kw, atk]]
+      stats: ["40%", "95%"]
+    - title: Add classifier G1
+      text: "Multiply the miss rates. Known attacks 0.40 × 0.15 = 6 percent get through. New attacks 0.95 × 0.66 ≈ 63 percent get through. The vendor quotes 94 percent stopped."
+      on: [g1]
+      flow: [[kw, g1, atk]]
+      mark: {g1: warn}
+      stats: ["6%", "63%"]
+    - title: Add classifier G2, trained on the same data
+      text: G2 misses the same new prompts that G1 misses. Multiplying would claim about 41 percent. In truth about 63 percent still get through. Same data, same blind spot.
+      on: [g2]
+      flow: [[g1, g2, atk]]
+      mark: {g2: bad}
+      stats: ["about 6%", "still 63%"]
+    - title: Add layers that look at something else
+      text: Output encoding and schema checks do not care what the text resembles. A token budget counts tokens. These fail for **different reasons**, so they really multiply.
+      on: [enc, budget]
+      flow: [[g1, enc, def], [g2, budget, def]]
+      mark: {enc: ok, budget: ok}
+      stats: ["harmless", "harmless"]

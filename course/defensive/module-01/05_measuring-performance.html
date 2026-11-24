@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Module 1 · Section 5 · Measuring AI Performance · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head><body><div class="nyu-course" tabindex="-1">
+<div class="nyu-progress" aria-hidden="true">
+<div class="nyu-progress__bar"></div>
+</div>
+<a href="#main" class="skip-link">Skip to main content</a> <!-- ====================== HERO ====================== --><header class="nyu-hero" role="banner">
+<div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 1 · Section 5 of 7</div>
+<h1 class="nyu-hero__title">Measuring AI Performance</h1>
+<p class="nyu-hero__subtitle">The confusion matrix, precision, recall, F1, and why understanding these metrics is the difference between a useful security tool and expensive alert noise.</p>
+<div class="nyu-hero__meta" aria-label="Section overview"><span aria-label="Estimated time"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg> ~20 min read </span> <span aria-label="Number of parts"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> 4 parts </span> <span aria-label="Knowledge checks"> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line><circle cx="12" cy="12" r="10"></circle></svg> 2 knowledge checks </span></div>
+</header><!-- ====================== TOC ====================== --><nav class="nyu-toc" aria-label="In this section">
+<p class="nyu-toc__title">In this section</p>
+<ol class="nyu-toc__list">
+<li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Alert Fatigue Problem</a></li>
+<li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Confusion Matrix</a></li>
+<li><a href="#sec-3"><span class="nyu-toc__num">3</span> Precision, Recall, and the Tradeoff</a></li>
+<li><a href="#sec-4"><span class="nyu-toc__num">4</span> Worked Example: Email Security Gateway</a></li>
+</ol>
+</nav><main id="main" tabindex="-1"><!-- ====================== OBJECTIVES ====================== -->
+<section class="nyu-objectives" aria-labelledby="lo-title">
+<h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+<p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+<ul class="nyu-objectives__list">
+<li><span><strong>Calculate</strong> precision, recall, and F1 from a confusion matrix in a security detection context.</span></li>
+<li><span><strong>Explain</strong> the operational consequences of the precision-recall tradeoff for SOC effectiveness.</span></li>
+</ul>
+</section>
+<!-- ====================== SECTION 1 ====================== -->
+<section class="nyu-section" id="sec-1">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">1</span>
+<h2 class="nyu-section__title">The Alert Fatigue Problem</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>73% of organizations identify false positives as their #1 detection challenge (SANS 2025). This is not an abstract statistic. It describes a concrete operational failure mode: a detection system that catches "everything" generates so many false alarms that analysts drown in noise, burn out, and start ignoring alerts. Real attacks then slip through, not because the system missed them, but because the human stopped trusting the system.</p>
+<p>The metrics in this page are the diagnostic instruments for this problem. They tell you not just whether a detection tool works, but <em>how</em> it fails and what those failures cost your team. You will need them every time you evaluate a vendor claim or tune a detection system.</p>
+</section>
+<!-- ====================== SECTION 2 ====================== -->
+<section class="nyu-section" id="sec-2">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">2</span>
+<h2 class="nyu-section__title">The Confusion Matrix</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Every classification outcome falls into one of four categories. In a security detection context:</p>
+<table class="nyu-matrix" aria-label="Confusion matrix for security detection">
+<thead>
+<tr>
+<th class="corner"></th>
+<th>Actually Malicious</th>
+<th>Actually Benign</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="label">System Flagged</td>
+<td class="cell-good"><strong>True Positive (TP)</strong><br>Flagged alert, was real attack. System worked.</td>
+<td class="cell-bad"><strong>False Positive (FP)</strong><br>Flagged alert, was benign. Analyst wasted time.</td>
+</tr>
+<tr>
+<td class="label">System Passed</td>
+<td class="cell-bad"><strong>False Negative (FN)</strong><br>Didn't flag, was real attack. System failed silently. Worst case.</td>
+<td class="cell-good"><strong>True Negative (TN)</strong><br>Didn't flag, was benign. Correct silence.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The cost asymmetry:</strong> <button type="button" class="nyu-define" data-term="false-positive-m01">False positives</button> cost analyst time and trust. <button type="button" class="nyu-define" data-term="false-negative-m01">False negatives</button> cost breaches and data loss. But cost is context-dependent: missing a nation-state intrusion is not the same as missing a port scan.</p>
+</section>
+<!-- ====================== SECTION 3 ====================== -->
+<section class="nyu-section" id="sec-3">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">3</span>
+<h2 class="nyu-section__title">Precision, Recall, and the Tradeoff</h2>
+</div>
+<hr class="nyu-section__rule">
+<p><strong><button type="button" class="nyu-define" data-term="precision-m01">Precision</button></strong> = TP / (TP + FP). "Of the alerts I fired, what fraction were real?"</p>
+<p><strong><button type="button" class="nyu-define" data-term="recall-m01">Recall</button></strong> = TP / (TP + FN). "Of the real attacks, what fraction did I catch?"</p>
+<p><strong><button type="button" class="nyu-define" data-term="f1-score-m01">F1 Score</button></strong> = 2 × (Precision × Recall) / (Precision + Recall), the harmonic mean, a single balanced metric.</p>
+<p><strong>The tradeoff:</strong> You cannot maximize both simultaneously. Tightening detection criteria raises precision but lowers recall, and you miss subtle attacks. Loosening criteria raises recall but craters precision, and analysts drown in noise.</p>
+<p>This is the SOC analyst's daily reality. There is no universally correct setting, only a context-dependent decision that balances missed threats against wasted capacity.</p>
+<!-- Tip callout: formulas reference -->
+<aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="formula-title">
+<h3 class="nyu-callout__title" id="formula-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"></path></svg> </span> Why Vendor Metrics Mislead</h3>
+<p>Precision and recall are properties of a model <em>at a specific threshold and at a specific prevalence rate</em>. Vendor test datasets are almost always attack-enriched (because you need attack samples to measure recall). A classifier showing 99% precision on a 50/50 test set may deliver less than 10% precision in your environment where only 0.1% of traffic is malicious. When a vendor reports one precision number, always ask: on what dataset, at what prevalence, and at what threshold?</p>
+</aside>
+<aside class="nyu-callout" role="note" aria-labelledby="gml-title">
+<h3 class="nyu-callout__title" id="gml-title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg> </span> Recommended Reading</h3>
+<p>For a thorough interactive walkthrough of accuracy, precision, recall, and related metrics, see Google's <a href="https://developers.google.com/machine-learning/crash-course/classification/accuracy-precision-recall" target="_blank" rel="noopener">Classification: Accuracy, Recall, Precision, and Related Metrics</a> (Machine Learning Crash Course).</p>
+</aside>
+</section>
+<!-- ====================== SECTION 4 ====================== -->
+<section class="nyu-section" id="sec-4">
+<div class="nyu-section__header"><span class="nyu-section__num" aria-hidden="true">4</span>
+<h2 class="nyu-section__title">Worked Example: Email Security Gateway</h2>
+</div>
+<hr class="nyu-section__rule">
+<p>Your organization is evaluating an email security gateway. The vendor provides test results from 500 emails (200 phishing, 300 legitimate):</p>
+<table class="nyu-matrix" aria-label="Email gateway confusion matrix">
+<thead>
+<tr>
+<th class="corner"></th>
+<th>Actually Phishing</th>
+<th>Actually Legitimate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="label">Flagged</td>
+<td class="cell-good"><strong>TP = 168</strong></td>
+<td class="cell-bad"><strong>FP = 57</strong></td>
+</tr>
+<tr>
+<td class="label">Passed</td>
+<td class="cell-bad"><strong>FN = 32</strong></td>
+<td class="cell-good"><strong>TN = 243</strong></td>
+</tr>
+</tbody>
+</table>
+<!-- Scenario with reveal: worked calculation -->
+<div class="nyu-callout nyu-scenario">
+<h3 class="nyu-callout__title"><span class="nyu-icon" aria-hidden="true"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> </span> Calculate, Then Extrapolate</h3>
+<p class="nyu-scenario__prompt"><strong>Try this yourself first.</strong> Using the confusion matrix above, calculate precision, recall, and F1. Then extrapolate: if your organization processes 8,000 emails per day with a 3% phishing rate (240 phishing, 7,760 legitimate), how many legitimate emails get quarantined daily at this FP rate? How many analyst-hours does that consume if each quarantine review takes 2 minutes? Work through the numbers before revealing the solution.</p>
+<button class="nyu-scenario__btn">Show Worked Solution</button>
+<div class="nyu-scenario__answer">
+<p><strong>Metrics from the test set:</strong></p>
+<ul>
+<li><strong>Precision</strong> = 168 / (168 + 57) = 168 / 225 = <strong>0.747</strong> (74.7% of alerts are real)</li>
+<li><strong>Recall</strong> = 168 / (168 + 32) = 168 / 200 = <strong>0.840</strong> (84.0% of phishing caught)</li>
+<li><strong>F1</strong> = 2 × (0.747 × 0.840) / (0.747 + 0.840) = <strong>0.791</strong></li>
+</ul>
+<p><strong>Extrapolation to 8,000 emails/day (3% phishing):</strong></p>
+<ul>
+<li>FP rate on legitimate email = 57 / 300 = 0.19 (19% of legitimate emails quarantined)</li>
+<li>Legitimate emails quarantined daily = 7,760 × 0.19 = <strong>~1,474 emails</strong></li>
+<li>Phishing emails missed daily = 240 × (1 - 0.84) = <strong>~38 phishing emails reach inboxes</strong></li>
+<li>Analyst-hours for quarantine review = 1,474 × 2 min = 2,948 min = <strong>~49 analyst-hours per day</strong></li>
+</ul>
+<p><strong>The discovery moment:</strong> 49 analyst hours per day. If your SOC has 3 analysts working 8 hour shifts, you have 24 analyst hours available. The quarantine workload alone <em>exceeds your team's entire capacity by 2x</em> before they investigate a single real incident. This is how alert fatigue happens: not because the tool is bad (84% recall is reasonable), but because the false positive volume at organizational scale overwhelms the humans in the loop.</p>
+</div>
+</div>
+<!-- Knowledge Check 1 -->
+<div class="nyu-quiz" aria-labelledby="q1-prompt">
+<div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+<p class="nyu-quiz__prompt" id="q1-prompt">A vendor presents their email security product with these metrics: "99.2% precision, 97.8% recall, tested on 50,000 emails (25,000 phishing, 25,000 legitimate)." Your organization processes 10,000 emails/day with a 0.5% phishing rate. Your CISO asks: "Should I trust these numbers?" What is the strongest response?</p>
+<div class="nyu-quiz__options" role="radiogroup" aria-labelledby="q1-prompt"><button class="nyu-quiz__option" role="radio" data-explain-wrong="99.2% precision sounds great, but that number was measured on a 50/50 test set. Your environment has 0.5% phishing, a 100x lower attack rate. At that prevalence, the same model would produce far more false positives proportionally. Test-set precision doesn't predict operational precision when prevalence differs dramatically.">The numbers look excellent. 99.2% precision means almost no false positives.</button> <button class="nyu-quiz__option" role="radio" data-correct="true">We cannot apply these numbers directly. A 50/50 test set does not predict performance at 0.5% prevalence, and precision will be much lower in our environment.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="In email security, precision matters enormously. With 10,000 emails per day and only 0.5% actual phishing, even a small drop in precision means hundreds of false alerts flooding analysts. You can't treat precision as secondary when it determines whether your SOC can function.">The recall is good enough; precision is a secondary concern for email security.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Outright rejection is too extreme. Vendor-reported metrics aren't inherently untrustworthy; the issue is that these specific metrics were measured under conditions (50/50 prevalence) that don't match your deployment environment (0.5% prevalence). The right response is to understand the gap, not dismiss the data.">These numbers are vendor-reported and should be rejected entirely without independent validation.</button></div>
+<div class="nyu-quiz__feedback" data-correct-msg="Correct. A 50/50 test set has a 100x higher attack prevalence than your 0.5% environment. At deployment prevalence, the majority of alerts will be false positives even with 99.2% test-set precision. Accepting these numbers at face value could lead to purchasing a system that overwhelms your SOC with false alarms." data-incorrect-msg="Not quite. The critical issue is the prevalence gap: the vendor tested at 50% attack rate but your environment has 0.5% attacks. This 100x difference means test-set precision is essentially meaningless for predicting your operational experience. At deployment prevalence, precision collapses dramatically."></div>
+</div>
+<!-- Knowledge Check 2 -->
+<div class="nyu-quiz" aria-labelledby="q2-prompt">
+<div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+<p class="nyu-quiz__prompt" id="q2-prompt">Your SOC has 3 analysts processing 500 alerts per day. Current precision is 0.15 (only 15% of alerts are real). A colleague proposes: "Just set recall to 100% so we never miss an attack." What is wrong with this reasoning?</p>
+<div class="nyu-quiz__options" role="radiogroup" aria-labelledby="q2-prompt"><button class="nyu-quiz__option" role="radio" data-explain-wrong="'Always maximize recall' ignores the precision-recall tradeoff. With only 3 analysts handling 500 alerts and precision already at 15%, pushing recall higher means even more false alerts. The team is already overwhelmed; more detection without more capacity makes things worse, not better.">Nothing. Maximizing recall is always the correct priority for security.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="Hardware cost is a real but secondary concern. The critical problem is human capacity: 3 analysts already face ~425 false alerts daily. More alerts means more missed real threats due to fatigue, regardless of how fast the hardware processes them.">It would require more expensive hardware to process all the alerts.</button> <button class="nyu-quiz__option" role="radio" data-correct="true">At 100% recall, precision would drop further, increasing the false positive volume beyond the team's capacity and causing analysts to miss real attacks by drowning in noise.</button> <button class="nyu-quiz__option" role="radio" data-explain-wrong="100% recall is technically achievable: just flag everything as an attack. You'd catch every real attack but also flag every legitimate email. The issue isn't feasibility; it's that doing so would make precision near zero, rendering the system useless.">100% recall is mathematically impossible for any ML system.</button></div>
+<div class="nyu-quiz__feedback" data-correct-msg="Correct. At current 0.15 precision, your 3 analysts already face 425 false alerts daily (~142 each). Pushing recall to 100% would lower precision further, producing even more false alarms. The paradox: 'catch everything' actually causes you to miss more attacks, not because the system failed, but because the humans stopped trusting it. More detection without sufficient precision is actively harmful." data-incorrect-msg="Not quite. The issue is operational: increasing recall trades precision. With only 3 analysts and precision already at 0.15, adding more false alerts would push the team past its capacity to investigate. The resulting alert fatigue causes real attacks to be ignored, defeating the purpose of higher recall."></div>
+</div>
+<!-- Forward pointers -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 6: AI Is Reshaping the Cyber Battlefield.</strong> We close the module with how AI changes attacker and defender capability across the kill chain, how to evaluate contested claims, and a vendor evaluation framework you will reuse throughout the course. Before moving on, complete the <em>Precision/Recall Operational Impact Lab</em> (Activity 4) to practice calculating, extrapolating, and making a threshold recommendation with real numbers.</p>
+        </aside>
+</section>
+</main><!-- ====================== FOOTER ====================== --><footer class="nyu-footer" role="contentinfo">
+<p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+<a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"> <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"> </a></footer><button class="nyu-fab" aria-label="Back to top of section"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg> </button></div>
+<script src="../tooltips/glossary.js"></script>
+<script src="../js/nyu-tandon-course.js"></script></body></html>

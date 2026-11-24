@@ -1,0 +1,40 @@
+- title: EchoLeak and the lethal trifecta
+  stats: [Private data, Untrusted content, Outbound channel, Theft]
+  nodes:
+    atk: {label: Attacker email, x: 0, y: 0, kind: atk}
+    mail: {label: Mailbox and files, x: 2, y: 0, kind: box, tag: private data}
+    victim: {label: Victim, x: 0, y: 3, kind: box, tag: asks a routine question}
+    copilot: {label: Copilot, x: 2, y: 3, kind: def}
+    link: {label: Auto-loading link, x: 4, y: 3, kind: raised, tag: image or preview}
+    server: {label: Attacker server, x: 6, y: 3, kind: atk}
+  links: [[atk, mail], [mail, copilot], [victim, copilot], [copilot, link], [link, server]]
+  steps:
+    - title: One crafted email arrives
+      text: The email holds hidden instructions. The victim never needs to open it.
+      on: [atk, mail]
+      flow: [[atk, mail, atk]]
+      stats: ["Yes", "Yes", "-", "-"]
+    - title: A routine question pulls it in
+      text: The victim asks Copilot something ordinary. Retrieval brings the email into context next to private mail and files. This is initial access in the promptware kill chain.
+      on: [victim, copilot, mail]
+      flow: [[victim, copilot, ink], [mail, copilot, atk]]
+      mark: {copilot: warn}
+      stats: ["Yes", "Yes", "-", "-"]
+    - title: The model gathers private data
+      text: Following the hidden text, Copilot collects sensitive data it can reach. This is reconnaissance.
+      on: [copilot]
+      mark: {copilot: bad}
+      stats: ["Yes", "Yes", "-", "-"]
+    - title: Data leaves through a link
+      text: Copilot writes the data into a link that loads by itself. Loading it sends the data to the attacker. The victim clicked nothing. CVE-2025-32711, CVSS 9.3.
+      on: [link, server]
+      flow: [[copilot, link, atk], [link, server, atk]]
+      mark: {server: bad}
+      stats: ["Yes", "Yes", "Yes", "Yes"]
+    - title: Remove one leg
+      text: Block outside links and images in the assistant's output, a fixed rule that works even if the model is fooled. With no outbound channel, the trifecta breaks.
+      on: [link]
+      show: [atk, mail, victim, copilot, link]
+      flow: [[mail, copilot, atk], [copilot, victim, def]]
+      mark: {link: ok}
+      stats: ["Yes", "Yes", "No", "No"]

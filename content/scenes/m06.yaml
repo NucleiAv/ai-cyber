@@ -1,0 +1,36 @@
+- title: From an AI warning to a confirmed flaw
+  stats: [AI warning, Test result, Verdict]
+  nodes:
+    ai: {label: AI reviewer, x: 0, y: 1, kind: def}
+    eng: {label: Security engineer, x: 2, y: 1, kind: box}
+    a: {label: Merchant A, x: 2, y: 3, kind: box, tag: owns 1041 and 1043}
+    server: {label: Invoice server, x: 4, y: 3, kind: raised, tag: "/invoices/{number}"}
+    b: {label: Invoice 1042, x: 6, y: 3, kind: atk, tag: belongs to merchant B}
+  links: [[ai, eng], [eng, a], [a, server], [server, b]]
+  steps:
+    - title: The AI warns of path traversal
+      text: '"An attacker can change the download link to read any file on the server."'
+      on: [ai, eng]
+      flow: [[ai, eng, ink]]
+      stats: [Path traversal, "-", "-"]
+    - title: Read how the feature works
+      text: The link holds only a number, and the server picks where files live. The visitor cannot choose a file, so this attack is impossible here.
+      on: [eng, server]
+      mark: {server: ok}
+      stats: [Path traversal, "-", Disproved]
+    - title: Test a different idea
+      text: Any business can sign up, and invoice numbers go up in order. Log in as merchant A and open /invoices/1042.
+      on: [a, server]
+      flow: [[eng, a, ink], [a, server, atk]]
+      stats: [Ownership, Running, "-"]
+    - title: The server sends B's invoice
+      text: The server never checks that the invoice belongs to the person asking. Anyone can count through every invoice.
+      on: [server, b]
+      flow: [[server, b, atk], [b, a, atk]]
+      mark: {b: bad}
+      stats: [Ownership, A got B's invoice, Confirmed]
+    - title: The test decides, not the warning
+      text: The AI's own fix changed file-name handling and did not help, because it misread the flaw. The real fix is an ownership check on every request. Only running the test showed this.
+      on: [eng]
+      mark: {eng: ok}
+      stats: [Ownership, Fix verified by test, Confirmed]

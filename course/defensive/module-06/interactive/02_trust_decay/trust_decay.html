@@ -1,0 +1,299 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer Trust Decay Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+    .top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em;flex:1 1 auto}
+    .ctrl{display:flex;gap:6px}
+    .btn{appearance:none;border:1.5px solid var(--v200);background:#57068C;color:#fff;border-radius:8px;padding:6px 14px;font:inherit;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s}
+    .btn:hover{background:var(--v);color:#fff}
+    .btn.stop{border-color:#991B1B;color:#fff;background:#991B1B}
+    .btn.stop:hover{background:var(--red);color:#fff}
+
+    .body-wrap{padding:0 18px 14px}
+
+    /* Layout: 3-column */
+    .sim{display:grid;grid-template-columns:200px 1fr 160px;gap:14px;align-items:start}
+    @media(max-width:680px){.sim{grid-template-columns:1fr;gap:10px}}
+
+    /* Custom scrollbar */
+    .stream::-webkit-scrollbar{width:5px}
+    .stream::-webkit-scrollbar-track{background:var(--sk);border-radius:3px}
+    .stream::-webkit-scrollbar-thumb{background:var(--v200);border-radius:3px}
+    .stream::-webkit-scrollbar-thumb:hover{background:var(--v)}
+
+    /* Alert stream */
+    .stream{border:1.5px solid var(--rule);border-radius:10px;padding:8px;max-height:260px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--v200) var(--sk)}
+    .stream-title{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+    .stream-title svg{width:13px;height:13px;flex-shrink:0}
+    .alert{padding:5px 8px;border-radius:6px;margin-bottom:4px;font-size:.68rem;font-weight:600;border-left:3px solid;animation:slideIn .3s ease;display:flex;align-items:center;gap:6px}
+    .alert.real{border-color:#991B1B;background:#991B1B;color:#fff}
+    .alert.noise{border-color:#854D0E;background:#854D0E;color:#fff}
+    .alert.ignored{opacity:.35;text-decoration:line-through}
+    .alert .a-icon{flex-shrink:0;width:14px;height:14px}
+    .alert .a-icon svg{width:100%;height:100%}
+    @keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+
+    /* Center: developer + trust */
+    .dev-area{text-align:center;position:relative}
+    .dev-icon{width:48px;height:48px;margin:0 auto 6px;color:var(--v);transition:all .4s}
+    .dev-icon svg{width:100%;height:100%}
+    .dev-icon.stressed{animation:shake .3s ease infinite;color:var(--amb)}
+    .dev-icon.ignoring{color:var(--red);opacity:0.75}
+    @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+    .dev-label{font-size:.68rem;font-weight:700;color:var(--ink2);margin-bottom:10px}
+
+    /* Processing indicator */
+    .proc-dot{position:absolute;top:0;left:50%;width:8px;height:8px;border-radius:50%;background:var(--v);opacity:0;transform:translate(-50%,-20px);pointer-events:none}
+    .proc-dot.animate{animation:procMove .5s ease forwards}
+    .proc-dot.real-dot{background:var(--red)}
+    @keyframes procMove{0%{opacity:1;transform:translate(-50%,-30px)}100%{opacity:0;transform:translate(-50%,10px)}}
+
+    /* Trust meter */
+    .trust-wrap{margin:0 auto;max-width:180px}
+    .trust-label{display:flex;justify-content:space-between;font-size:.66rem;font-weight:700;color:var(--ink2);margin-bottom:3px}
+    .trust-bar{height:14px;border-radius:7px;background:var(--rule);overflow:hidden;position:relative}
+    .trust-fill{height:100%;border-radius:7px;width:100%;transition:width .6s ease,background .4s}
+    .trust-fill.high{background:linear-gradient(90deg,var(--grn),#2DA562)}
+    .trust-fill.mid{background:linear-gradient(90deg,var(--amb),#C98600)}
+    .trust-fill.low{background:linear-gradient(90deg,var(--red),#E04646)}
+
+    .status-msg{margin-top:10px;font-size:.72rem;font-weight:600;padding:6px 10px;border-radius:8px;min-height:32px;transition:all .3s}
+
+    /* Ignored queue */
+    .ignored-q{border:1.5px solid var(--rule);border-radius:10px;padding:8px;max-height:260px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--v200) var(--sk)}
+    .ignored-q::-webkit-scrollbar{width:5px}
+    .ignored-q::-webkit-scrollbar-track{background:var(--sk);border-radius:3px}
+    .ignored-q::-webkit-scrollbar-thumb{background:var(--v200);border-radius:3px}
+    .ignored-q .stream-title{color:var(--red)}
+    .iq-item{padding:3px 6px;border-radius:5px;margin-bottom:3px;font-size:.64rem;font-weight:600;background:var(--sk);color:var(--ink2);animation:fadeIn .3s ease;display:flex;align-items:center;gap:4px}
+    .iq-item svg{width:12px;height:12px;flex-shrink:0}
+    .iq-item.escaped{background:#991B1B;color:#fff;font-weight:700;border:1px solid var(--red)}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+    /* Counters */
+    .counters{display:flex;gap:12px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+    .ctr{text-align:center}
+    .ctr-val{font-size:1.1rem;font-weight:700;font-family:var(--mono)}
+    .ctr-val.red{color:var(--red)}
+    .ctr-val.grn{color:var(--grn)}
+    .ctr-val.amb{color:var(--amb)}
+    .ctr-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--ink2)}
+
+    .insight{padding:12px 18px;font-size:.76rem;color:var(--ink2);border-top:1px solid var(--rule);line-height:1.5}
+    .insight b{color:var(--ink);font-weight:700}
+
+    .escaped-flash{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(196,42,42,.08);pointer-events:none;z-index:100;opacity:0;transition:opacity .3s}
+    .escaped-flash.on{opacity:1}
+  
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body>
+<div class="escaped-flash" id="flash"></div>
+<div class="w"><div class="card">
+  <div class="top">
+    <h1>Developer Trust Decay</h1>
+    <div class="ctrl">
+      <button class="btn" id="startBtn" onclick="startSim()"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg> Run</button>
+      <button class="btn stop" onclick="resetSim()">Reset</button>
+    </div>
+  </div>
+  <div class="body-wrap">
+    <div class="sim">
+      <div class="stream" id="stream">
+        <div class="stream-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Incoming Alerts</div>
+      </div>
+      <div class="dev-area">
+        <div class="dev-icon" id="devIcon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="proc-dot" id="procDot"></div>
+        <div class="dev-label" id="devLabel">Developer Reviewing</div>
+        <div class="trust-wrap">
+          <div class="trust-label"><span>Trust</span><span id="trustPct">100%</span></div>
+          <div class="trust-bar"><div class="trust-fill high" id="trustFill"></div></div>
+        </div>
+        <div class="status-msg" id="statusMsg"></div>
+        <div class="counters">
+          <div class="ctr"><div class="ctr-val grn" id="cFixed">0</div><div class="ctr-lbl">Fixed</div></div>
+          <div class="ctr"><div class="ctr-val amb" id="cWasted">0</div><div class="ctr-lbl">Wasted</div></div>
+          <div class="ctr"><div class="ctr-val red" id="cEscaped">0</div><div class="ctr-lbl">Escaped</div></div>
+        </div>
+      </div>
+      <div class="ignored-q" id="ignoredQ">
+        <div class="stream-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Ignored</div>
+      </div>
+    </div>
+  </div>
+  <div class="insight" id="ins">Press <b>Run</b> to simulate an alert stream. Watch how false positives erode trust until real vulnerabilities slip through.</div>
+</div></div>
+
+<script>
+var ICON_MONITOR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+var ICON_FROWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
+var ICON_EYEOFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+var ICON_SHIELD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+var ICON_BELL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+var ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+var ALERTS = [
+  {type:'noise',label:'Unused import L3'},
+  {type:'real',label:'SQL Injection L12'},
+  {type:'noise',label:'Long method L45'},
+  {type:'noise',label:'Naming convention L22'},
+  {type:'noise',label:'Missing semicolon L8'},
+  {type:'real',label:'XSS L28'},
+  {type:'noise',label:'Magic number L51'},
+  {type:'noise',label:'Dead code L60'},
+  {type:'noise',label:'Style violation L15'},
+  {type:'noise',label:'Complexity warning L40'},
+  {type:'real',label:'Path Traversal L55'},
+  {type:'noise',label:'Deprecated API L33'},
+  {type:'noise',label:'Long line L71'},
+  {type:'real',label:'Auth Bypass L90'},
+  {type:'noise',label:'Missing docs L5'},
+];
+
+var trust = 100, fixed = 0, wasted = 0, escaped = 0, idx = 0, timer = null, running = false;
+
+function startSim(){
+  if(running) return;
+  running = true;
+  document.getElementById('startBtn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg> Running';
+  document.getElementById('startBtn').style.pointerEvents = 'none';
+  idx = 0; trust = 100; fixed = 0; wasted = 0; escaped = 0;
+  document.querySelector('#stream').innerHTML = '<div class="stream-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Incoming Alerts</div>';
+  document.querySelector('#ignoredQ').innerHTML = '<div class="stream-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Ignored</div>';
+  updateUI();
+  timer = setInterval(tick, 1200);
+}
+
+function tick(){
+  if(idx >= ALERTS.length){
+    clearInterval(timer);
+    running = false;
+    document.getElementById('startBtn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg> Run';
+    document.getElementById('startBtn').style.pointerEvents = '';
+    document.getElementById('ins').innerHTML = escaped > 0
+      ? '<b>'+escaped+' real vulnerability(s) escaped</b> because alert fatigue caused the developer to ignore findings. High false-positive rates destroy the value of detection tools.'
+      : '<b>All vulnerabilities caught.</b> Trust stayed high enough to keep the developer engaged.';
+    return;
+  }
+
+  var a = ALERTS[idx];
+  var ignored = trust < 40 && Math.random() < (1 - trust/100);
+  var stream = document.getElementById('stream');
+  var el = document.createElement('div');
+  el.className = 'alert ' + a.type + (ignored ? ' ignored' : '');
+  var iconSvg = a.type==='real' ? ICON_SHIELD : ICON_BELL;
+  el.innerHTML = '<span class="a-icon">' + iconSvg + '</span> ' + a.label;
+  stream.appendChild(el);
+  stream.scrollTop = stream.scrollHeight;
+
+  // Animate processing dot
+  if(!ignored){
+    var dot = document.getElementById('procDot');
+    dot.className = 'proc-dot' + (a.type==='real' ? ' real-dot' : '');
+    void dot.offsetWidth;
+    dot.classList.add('animate');
+    setTimeout(function(){ dot.classList.remove('animate'); }, 500);
+  }
+
+  if(ignored){
+    var iq = document.getElementById('ignoredQ');
+    var iqEl = document.createElement('div');
+    iqEl.className = 'iq-item' + (a.type==='real' ? ' escaped' : '');
+    iqEl.innerHTML = (a.type==='real' ? ICON_WARN + ' ' : '') + a.label;
+    iq.appendChild(iqEl);
+    if(a.type === 'real'){
+      escaped++;
+      document.getElementById('flash').classList.add('on');
+      setTimeout(function(){document.getElementById('flash').classList.remove('on');},400);
+    }
+  } else {
+    if(a.type === 'real'){
+      fixed++;
+      trust = Math.min(100, trust + 3);
+    } else {
+      wasted++;
+      trust = Math.max(0, trust - 12);
+    }
+  }
+
+  idx++;
+  updateUI();
+}
+
+function updateUI(){
+  document.getElementById('trustPct').textContent = trust + '%';
+  var fill = document.getElementById('trustFill');
+  fill.style.width = trust + '%';
+  fill.className = 'trust-fill ' + (trust > 60 ? 'high' : trust > 30 ? 'mid' : 'low');
+  document.getElementById('cFixed').textContent = fixed;
+  document.getElementById('cWasted').textContent = wasted;
+  document.getElementById('cEscaped').textContent = escaped;
+  var icon = document.getElementById('devIcon');
+  var label = document.getElementById('devLabel');
+  if(trust > 60){
+    icon.innerHTML = ICON_MONITOR;
+    icon.className = 'dev-icon';
+    label.textContent = 'Developer Reviewing';
+  } else if(trust > 30){
+    icon.innerHTML = ICON_FROWN;
+    icon.className = 'dev-icon stressed';
+    label.textContent = 'Growing Frustrated';
+  } else {
+    icon.innerHTML = ICON_EYEOFF;
+    icon.className = 'dev-icon ignoring';
+    label.textContent = 'Ignoring Alerts';
+  }
+
+  var msg = document.getElementById('statusMsg');
+  if(trust > 60){msg.innerHTML = '';msg.style.background='';}
+  else if(trust > 30){msg.innerHTML='<span style="color:var(--amb)">Trust declining: alerts feel like noise</span>';msg.style.background='var(--amb-bg)';}
+  else{msg.innerHTML='<span style="color:var(--red)">Alert fatigue: developer is skipping findings</span>';msg.style.background='var(--red-bg)';}
+}
+
+function resetSim(){
+  clearInterval(timer);
+  running = false;
+  trust = 100; fixed = 0; wasted = 0; escaped = 0; idx = 0;
+  document.querySelector('#stream').innerHTML = '<div class="stream-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Incoming Alerts</div>';
+  document.querySelector('#ignoredQ').innerHTML = '<div class="stream-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Ignored</div>';
+  document.getElementById('startBtn').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg> Run';
+  document.getElementById('startBtn').style.pointerEvents = '';
+  document.getElementById('statusMsg').innerHTML = '';
+  document.getElementById('statusMsg').style.background = '';
+  document.getElementById('ins').innerHTML = 'Press <b>Run</b> to simulate an alert stream. Watch how false positives erode trust until real vulnerabilities slip through.';
+  updateUI();
+}
+
+/* iframe height */
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  function send(){var el=document.querySelector('.w');if(!el)return;var r=el.getBoundingClientRect();var pad=parseFloat(getComputedStyle(body).paddingTop)+parseFloat(getComputedStyle(body).paddingBottom);window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+pad),src:location.href},'*');}
+  if(window.ResizeObserver){new ResizeObserver(send).observe(document.querySelector('.w')||body);}else{setInterval(send,500);}
+  window.addEventListener('load',function(){setTimeout(send,200);});setTimeout(send,50);
+})();
+</script>
+</body>
+</html>

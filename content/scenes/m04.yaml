@@ -1,0 +1,40 @@
+- title: Case B. A critical alert triaged as Low
+  stats: [Time, Detection says, Triage says, Analyst opened evidence]
+  nodes:
+    rad: {label: Radiology workstation, x: 0, y: 1, kind: box}
+    dc: {label: Domain controller, x: 2, y: 0, kind: box}
+    ml: {label: ML detector, x: 2, y: 2, kind: def}
+    llm: {label: LLM enrichment, x: 4, y: 2, kind: def}
+    analyst: {label: Overnight analyst, x: 6, y: 2, kind: box}
+    rule: {label: Mismatch rule, x: 4, y: 4, kind: def}
+  links: [[rad, dc, SMB], [rad, ml], [ml, llm], [llm, analyst], [ml, rule], [llm, rule], [rule, analyst]]
+  steps:
+    - title: Unusual SMB traffic
+      text: At 02:14 a radiology workstation starts unusual SMB traffic to the domain controller.
+      on: [rad, dc]
+      flow: [[rad, dc, atk]]
+      stats: ["02:14", "-", "-", "-"]
+    - title: The detector does its job
+      text: The ML layer sees it and raises a **critical** alert. Detection works.
+      on: [ml]
+      flow: [[rad, ml, ink]]
+      mark: {ml: ok}
+      stats: ["02:14", Critical, "-", "-"]
+    - title: The LLM calls it Low
+      text: '"Routine network scan, likely a vulnerability assessment tool." This is severity deflation with context fabrication.'
+      on: [llm]
+      flow: [[ml, llm, ink]]
+      mark: {llm: bad}
+      stats: ["02:14", Critical, Low, "-"]
+    - title: The analyst trusts the label
+      text: At 02:15 the analyst reads Low and moves on without opening the evidence. At 14:00 ransomware encrypts patient records, imaging and billing.
+      on: [analyst]
+      flow: [[llm, analyst, atk]]
+      mark: {analyst: bad}
+      stats: ["14:00", Critical, Low, "No"]
+    - title: A rule that compares the two
+      text: If detection says Critical and triage says Low, escalate at once and require the analyst to open the evidence. Three owners failed here, the model, the analyst and the policy. The rule covers the policy gap.
+      on: [rule, analyst]
+      flow: [[ml, rule, def], [llm, rule, def], [rule, analyst, def]]
+      mark: {rule: ok, analyst: ok}
+      stats: ["02:14", Critical, Low, "Yes"]

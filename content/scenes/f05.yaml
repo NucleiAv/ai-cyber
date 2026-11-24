@@ -1,0 +1,38 @@
+- title: One technique, four OWASP categories
+  stats: [Outcome, Primary category]
+  nodes:
+    inj: {label: Injection technique, x: 2, y: 1, kind: atk}
+    leak: {label: Prompt revealed, x: 0, y: 3, kind: box}
+    hijack: {label: Behavior hijacked, x: 2, y: 3, kind: box}
+    promise: {label: Unlimited promise, x: 4, y: 3, kind: box}
+    pass: {label: Output passed on unchecked, x: 6, y: 3, kind: box}
+  links: [[inj, leak], [inj, hijack], [inj, promise], [inj, pass]]
+  steps:
+    - title: Same trick, different results
+      text: Four Yarrow Mutual attacks all start with injection. Module 9 classifies each by what went wrong.
+      on: [inj]
+      stats: ["-", "-"]
+    - title: The hidden prompt is printed
+      text: The outcome is leakage, so the primary category is LLM07.
+      on: [leak]
+      flow: [[inj, leak, atk]]
+      mark: {leak: bad}
+      stats: [Prompt revealed, LLM07]
+    - title: A retrieved document takes over
+      text: An instruction inside data overrode behavior. LLM01.
+      on: [hijack]
+      flow: [[inj, hijack, atk]]
+      mark: {hijack: bad}
+      stats: [Behavior hijacked, LLM01]
+    - title: A bot promises a one-dollar car
+      text: Nothing limited what it could commit to. LLM06.
+      on: [promise]
+      flow: [[inj, promise, atk]]
+      mark: {promise: bad}
+      stats: [Unlimited promise, LLM06]
+    - title: Output flows into another system
+      text: A downstream system trusted model output without checks. LLM05.
+      on: [pass]
+      flow: [[inj, pass, atk]]
+      mark: {pass: bad}
+      stats: [Unchecked output, LLM05]

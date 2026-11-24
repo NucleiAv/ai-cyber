@@ -1,0 +1,437 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>The Aggregate Lens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;
+  --red:#c02626;--green:#0f7a43;--gold:#FFB81C;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:0 16px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+.hdr{padding:22px 12px 10px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.11em;color:var(--violet)}
+h1{font-size:1.1rem;font-weight:700}
+.modes{display:flex;gap:8px;padding:0 12px 12px;flex-wrap:wrap}
+.mode{font-family:var(--sans);font-size:.8rem;font-weight:600;padding:8px 18px;border-radius:20px;border:1px solid var(--line2);background:var(--bg);color:var(--ink2);cursor:pointer;transition:.15s}
+.mode:hover{border-color:var(--violet)}
+.mode.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.mode:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.stage-wrap{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fdfdfe}
+svg{display:block;width:100%;height:auto}
+.legend{display:flex;gap:16px;flex-wrap:wrap;padding:12px;font-family:var(--mono);font-size:0.75rem;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:11px;height:11px;border-radius:50%;flex:none}
+.caption{padding:0 12px 18px;font-size:.78rem;color:var(--ink2);line-height:1.5;min-height:3.2em}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="eyebrow">Module 12 &middot; Interactive</div>
+    <h1>One Classifier, Three Views</h1>
+  </div>
+
+  <div class="modes" role="tablist" aria-label="View mode">
+    <button class="mode on" id="m0" role="tab" aria-selected="true">1 &middot; Aggregate</button>
+    <button class="mode" id="m1" role="tab" aria-selected="false">2 &middot; Split by population</button>
+    <button class="mode" id="m2" role="tab" aria-selected="false">3 &middot; Attacker's view</button>
+  </div>
+
+  <div class="stage-wrap">
+    <svg id="stage" viewBox="0 0 860 430" role="img" aria-label="Animated dot field of 400 evaluated reports. Aggregate view mixes all dots under healthy-looking dials. Split view separates the headquarters and subsidiary populations, revealing three times the false positive rate and lower recall for the subsidiary. Attacker view launches five phishing campaigns as envelopes at the subsidiary side: four shatter on the dashed detector ring, one penetrates and bursts inside as a breach.">
+      <g id="dials"></g>
+      <g id="rings"></g>
+      <g id="fields"></g>
+      <g id="fx"></g>
+      <g id="labels"></g>
+      <g id="score" opacity="0" font-family="JetBrains Mono,monospace">
+        <text id="scoreTxt" x="430" y="416" text-anchor="middle" font-size="12" font-weight="700" fill="#15171C"></text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw" style="background:#c9cdd4"></span>benign, unflagged</span>
+    <span><span class="sw" style="background:#c9cdd4;box-shadow:0 0 0 2.5px #c02626"></span>benign, flagged &middot; false positive</span>
+    <span><span class="sw" style="background:#57068C"></span>phishing, caught</span>
+    <span><span class="sw" style="background:#fff;box-shadow:0 0 0 2.5px #57068C"></span>phishing, missed &middot; false negative</span>
+  </div>
+  <div class="caption" id="cap">All 2,000 reports in one pool (400 drawn). The dials read healthy. Nothing looks wrong, because the view cannot show what is wrong.</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var NS="http://www.w3.org/2000/svg";
+  var fields=document.getElementById("fields"),dialsG=document.getElementById("dials"),
+      fx=document.getElementById("fx"),rings=document.getElementById("rings"),
+      labelsG=document.getElementById("labels"),cap=document.getElementById("cap"),
+      score=document.getElementById("score"),scoreTxt=document.getElementById("scoreTxt");
+  var reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---- pending-animation registry: everything scheduled gets cancelled on view change ---- */
+  var pending=[];var epoch=0;
+  function later(fn,ms){var e=epoch;var id=setTimeout(function(){if(e===epoch)fn();},ms);pending.push(id);}
+  function cancelAll(){epoch++;pending.forEach(clearTimeout);pending=[];
+    while(fx.firstChild)fx.removeChild(fx.firstChild);
+    rings.setAttribute("opacity","0");score.setAttribute("opacity","0");}
+
+  /* ---- dots: 400 drawn = 1:5 sample of the lab's 2,000 ---- */
+  var dots=[];
+  function make(pop,kind,n){for(var i=0;i<n;i++)dots.push({pop:pop,kind:kind});}
+  make("A","tp",74);make("A","fn",6);make("A","fp",4);make("A","tn",196);
+  make("B","tp",32);make("B","fn",8);make("B","fp",5);make("B","tn",75);
+  for(var i=dots.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=dots[i];dots[i]=dots[j];dots[j]=t;}
+
+  var AGG={x:430,y:235,rx:330,ry:120};
+  var POS_A={x:225,y:245,rx:160,ry:105},POS_B={x:630,y:245,rx:118,ry:100};
+  function blobPos(b){var a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random());
+    return {x:b.x+Math.cos(a)*b.rx*r,y:b.y+Math.sin(a)*b.ry*r};}
+  dots.forEach(function(d){
+    d.agg=blobPos(AGG);d.split=blobPos(d.pop==="A"?POS_A:POS_B);
+    var c=document.createElementNS(NS,"circle");
+    c.setAttribute("r",4);c.setAttribute("cx",d.agg.x);c.setAttribute("cy",d.agg.y);
+    if(d.kind==="tp"){c.setAttribute("fill","#57068C");}
+    else if(d.kind==="fn"){c.setAttribute("fill","#ffffff");c.setAttribute("stroke","#57068C");c.setAttribute("stroke-width","2");}
+    else if(d.kind==="fp"){c.setAttribute("fill","#c9cdd4");c.setAttribute("stroke","#c02626");c.setAttribute("stroke-width","2");}
+    else{c.setAttribute("fill","#c9cdd4");}
+    fields.appendChild(c);d.el=c;
+  });
+
+  /* ---- detector ring around B (attacker view only) ---- */
+  var ringB=document.createElementNS(NS,"ellipse");
+  ringB.setAttribute("cx",POS_B.x);ringB.setAttribute("cy",POS_B.y);
+  ringB.setAttribute("rx",POS_B.rx+22);ringB.setAttribute("ry",POS_B.ry+22);
+  ringB.setAttribute("fill","none");ringB.setAttribute("stroke","#565a63");
+  ringB.setAttribute("stroke-width","2");ringB.setAttribute("stroke-dasharray","7 6");
+  rings.appendChild(ringB);
+  var ringLbl=document.createElementNS(NS,"text");
+  ringLbl.setAttribute("x",POS_B.x);ringLbl.setAttribute("y",POS_B.y-POS_B.ry-32);
+  ringLbl.setAttribute("text-anchor","middle");ringLbl.setAttribute("font-family","JetBrains Mono,monospace");
+  ringLbl.setAttribute("font-size","9.5");ringLbl.setAttribute("font-weight","700");
+  ringLbl.setAttribute("fill","#565a63");ringLbl.setAttribute("letter-spacing","1.5");
+  ringLbl.textContent="THE DETECTOR · CATCHES 4 IN 5 HERE";
+  rings.appendChild(ringLbl);
+  rings.setAttribute("opacity","0");
+
+  /* ---- dials ---- */
+  function dial(x,y,label){
+    var g=document.createElementNS(NS,"g");
+    g.innerHTML='<path class="basearc" d="M '+(x-34)+' '+y+' A 34 34 0 0 1 '+(x+34)+' '+y+'" fill="none" stroke="#e9eaee" stroke-width="8" stroke-linecap="round"/>'+
+      '<path class="fillarc" d="" fill="none" stroke="#0f7a43" stroke-width="8" stroke-linecap="round"/>'+
+      '<text class="val" x="'+x+'" y="'+(y-6)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" font-weight="700" fill="#15171C"></text>'+
+      '<text x="'+x+'" y="'+(y+14)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.5" font-weight="600" fill="#565a63" letter-spacing="1">'+label+'</text>';
+    dialsG.appendChild(g);g.setAttribute("data-x0",x-34);g.setAttribute("data-y0",y);
+    return g;
+  }
+  function setDial(g,frac,text,color){
+    var arc=g.querySelector(".fillarc"),val=g.querySelector(".val");
+    var x0=parseFloat(g.getAttribute("data-x0")),y0=parseFloat(g.getAttribute("data-y0")),cx=x0+34,r=34;
+    var ang=Math.PI*(1-Math.max(.02,frac));
+    var ex=cx+Math.cos(ang)*r,ey=y0-Math.sin(ang)*r;
+    arc.setAttribute("d","M "+x0+" "+y0+" A "+r+" "+r+" 0 0 1 "+ex+" "+ey);
+    arc.setAttribute("stroke",color);
+    val.textContent=text;val.setAttribute("fill","#15171C");
+  }
+  var dAggP=dial(300,62,"PRECISION"),dAggR=dial(430,62,"RECALL"),dAggF=dial(560,62,"FPR");
+  var dA_R=dial(160,72,"A RECALL"),dA_F=dial(292,72,"A FPR");
+  var dB_R=dial(566,72,"B RECALL"),dB_F=dial(700,72,"B FPR");
+
+  function label(x,y,text){
+    var t=document.createElementNS(NS,"text");
+    t.setAttribute("x",x);t.setAttribute("y",y);t.setAttribute("text-anchor","middle");
+    t.setAttribute("font-family","JetBrains Mono,monospace");t.setAttribute("font-size","11");
+    t.setAttribute("font-weight","700");t.setAttribute("fill","#565a63");t.setAttribute("letter-spacing","1.5");
+    t.textContent=text;labelsG.appendChild(t);return t;
+  }
+  var lA=label(225,392,"POPULATION A · HQ"),lB=label(630,392,"POPULATION B · SUBSIDIARY");
+
+  function show(el,on){el.setAttribute("opacity",on?"1":"0");}
+  function moveAll(mode,done){
+    var t0=null,dur=reduced?0:700,e2;
+    var from=dots.map(function(d){return{x:+d.el.getAttribute("cx"),y:+d.el.getAttribute("cy")};});
+    var to=dots.map(function(d){return mode==="agg"?d.agg:d.split;});
+    if(dur===0){dots.forEach(function(d,i){d.el.setAttribute("cx",to[i].x);d.el.setAttribute("cy",to[i].y);});if(done)done();return;}
+    var e=epoch;
+    function frame(ts){
+      if(e!==epoch)return;
+      if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur);e2=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      dots.forEach(function(d,i){
+        d.el.setAttribute("cx",from[i].x+(to[i].x-from[i].x)*e2);
+        d.el.setAttribute("cy",from[i].y+(to[i].y-from[i].y)*e2);
+      });
+      if(k<1)requestAnimationFrame(frame);else if(done)done();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function splitDials(){
+    [dAggP,dAggR,dAggF].forEach(function(g){show(g,false);});
+    [dA_R,dA_F,dB_R,dB_F].forEach(function(g){show(g,true);});
+    setDial(dA_R,0.92,"0.92","#0f7a43");setDial(dA_F,0.02,"2.0%","#0f7a43");
+    setDial(dB_R,0.80,"0.80","#c02626");setDial(dB_F,0.06,"6.0%","#c02626");
+    show(lA,true);show(lB,true);
+  }
+
+  function viewAgg(){
+    cancelAll();
+    [dA_R,dA_F,dB_R,dB_F].forEach(function(g){show(g,false);});
+    [dAggP,dAggR,dAggF].forEach(function(g){show(g,true);});
+    setDial(dAggP,0.92,"0.92","#0f7a43");setDial(dAggR,0.88,"0.88","#0f7a43");setDial(dAggF,0.031,"3.1%","#0f7a43");
+    show(lA,false);show(lB,false);
+    moveAll("agg");
+    cap.textContent="All 2,000 reports in one pool (400 drawn). The dials read healthy. Nothing looks wrong, because the view cannot show what is wrong.";
+  }
+  function viewSplit(){
+    cancelAll();
+    moveAll("split",splitDials);
+    cap.textContent="Same dots, same threshold, one split. Population B carries three times the false positive rate and twelve points less recall. Count the red rings and hollow dots on each side.";
+  }
+  function viewAttacker(){
+    cancelAll();
+    moveAll("split",function(){
+      splitDials();
+      rings.setAttribute("opacity","1");
+      later(campaign,reduced?100:500);
+    });
+    cap.textContent="Five phishing campaigns, all aimed at Population B, because 0.80 recall means the detector misses one in five there. Watch the ring: it is the detector. What crosses it is a breach.";
+  }
+
+  /* ---- attacker campaign: envelopes fly at B; 4 shatter on the ring, 1 penetrates ---- */
+  var caught=0,breach=0;
+  function envelope(x,y){
+    var g=document.createElementNS(NS,"g");
+    g.innerHTML='<rect x="-13" y="-9" width="26" height="18" rx="3" fill="#c02626"/>'+
+      '<path d="M -13 -9 L 0 2 L 13 -9" fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>';
+    g.setAttribute("transform","translate("+x+","+y+")");
+    fx.appendChild(g);return g;
+  }
+  function campaign(){
+    caught=0;breach=0;
+    var plan=[false,false,true,false,false]; // index 2 penetrates
+    plan.forEach(function(through,i){
+      later(function(){fire(through,i);},reduced?i*80:i*820);
+    });
+    later(function(){
+      score.setAttribute("opacity","1");
+      scoreTxt.textContent="5 CAMPAIGNS · "+caught+" SHATTERED ON THE DETECTOR · "+breach+" BREACH INSIDE";
+    },reduced?600:5*820+900);
+  }
+  function fire(through,i){
+    var startY=140+i*46;
+    var env=envelope(858,startY);
+    // target: a point on the ring edge toward start, or blob center if through
+    var tx=through?POS_B.x+18:POS_B.x+ (POS_B.rx+22)*0.86,
+        ty=through?POS_B.y-6:POS_B.y-40+i*22;
+    var sx=858,sy=startY,t0=null,dur=reduced?0:520;
+    if(dur===0){land();return;}
+    var e=epoch;
+    function f(ts){
+      if(e!==epoch)return;
+      if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur);
+      var x=sx+(tx-sx)*k,y=sy+(ty-sy)*k;
+      g_set(env,x,y,-8*k);
+      if(k<1)requestAnimationFrame(f);else land();
+    }
+    requestAnimationFrame(f);
+    function land(){
+      if(!through){
+        caught++;
+        shatter(tx,ty);env.remove();
+        pulseRing();
+      }else{
+        // penetrate: continue to blob heart, then burst
+        var t1=null,dur2=reduced?0:300,x1=tx,y1=ty,x2=POS_B.x-10,y2=POS_B.y+8;
+        if(dur2===0){env.remove();burst(x2,y2);return;}
+        var e2=epoch;
+        function f2(ts){
+          if(e2!==epoch)return;
+          if(!t1)t1=ts;var k=Math.min(1,(ts-t1)/dur2);
+          g_set(env,x1+(x2-x1)*k,y1+(y2-y1)*k,-8);
+          if(k<1)requestAnimationFrame(f2);else{env.remove();burst(x2,y2);}
+        }
+        requestAnimationFrame(f2);
+      }
+    }
+  }
+  function g_set(g,x,y,rot){g.setAttribute("transform","translate("+x+","+y+") rotate("+(rot||0)+")");}
+  function pulseRing(){
+    ringB.setAttribute("stroke","#0f7a43");ringB.setAttribute("stroke-width","3.5");
+    later(function(){ringB.setAttribute("stroke","#565a63");ringB.setAttribute("stroke-width","2");},240);
+  }
+  function shatter(x,y){
+    for(var s=0;s<6;s++){
+      (function(s){
+        var fr=document.createElementNS(NS,"rect");
+        fr.setAttribute("x",x);fr.setAttribute("y",y);fr.setAttribute("width",5);fr.setAttribute("height",5);
+        fr.setAttribute("fill","#c02626");fx.appendChild(fr);
+        var ang=Math.PI*2*s/6,t0=null,dur=reduced?0:380;
+        if(dur===0){fr.remove();return;}
+        var e=epoch;
+        function f(ts){
+          if(e!==epoch)return;
+          if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur);
+          fr.setAttribute("x",x+Math.cos(ang)*34*k);
+          fr.setAttribute("y",y+Math.sin(ang)*34*k-14*k*(1-k)*2);
+          fr.setAttribute("opacity",String(1-k));
+          if(k<1)requestAnimationFrame(f);else fr.remove();
+        }
+        requestAnimationFrame(f);
+      })(s);
+    }
+    var chk=document.createElementNS(NS,"text");
+    chk.setAttribute("x",x+6);chk.setAttribute("y",y-10);
+    chk.setAttribute("font-family","JetBrains Mono,monospace");chk.setAttribute("font-size","10");
+    chk.setAttribute("font-weight","700");chk.setAttribute("fill","#0f7a43");
+    chk.textContent="CAUGHT";fx.appendChild(chk);
+    later(function(){chk.remove();},900);
+  }
+  function burst(x,y){
+    breach++;
+    var ring=document.createElementNS(NS,"circle");
+    ring.setAttribute("cx",x);ring.setAttribute("cy",y);ring.setAttribute("r",4);
+    ring.setAttribute("fill","none");ring.setAttribute("stroke","#c02626");ring.setAttribute("stroke-width","4");
+    fx.appendChild(ring);
+    var t0=null,dur=reduced?0:600;
+    if(dur!==0){
+      var e=epoch;
+      (function f(ts){
+        if(e!==epoch)return;
+        if(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur);
+          ring.setAttribute("r",4+46*k);ring.setAttribute("opacity",String(1-k*.7));
+          if(k<1){requestAnimationFrame(f);return;}}
+        else{requestAnimationFrame(f);return;}
+        ring.setAttribute("r",22);ring.setAttribute("opacity","0.9");ring.setAttribute("stroke-width","2.5");
+      })();
+    }
+      /* The breach label sits over the dot field, so red text alone was hard
+         to pick out against the dots. The first-round review asked for a solid
+         box behind it. A filled pill with white text also removes the red-on-
+         light-red pairing, and it is sized from the rendered text so it cannot
+         clip the label. */
+      var bpill=document.createElementNS(NS,"rect");
+      var bl=document.createElementNS(NS,"text");
+      bl.setAttribute("x",x);bl.setAttribute("y",y-30);bl.setAttribute("text-anchor","middle");
+      bl.setAttribute("dominant-baseline","middle");
+      bl.setAttribute("font-family","JetBrains Mono,monospace");bl.setAttribute("font-size","12");
+      bl.setAttribute("font-weight","700");bl.setAttribute("fill","#ffffff");
+      bl.textContent="BREACH · 1 IN 5";
+      bpill.setAttribute("fill","#991B1B");bpill.setAttribute("rx","9");
+      fx.appendChild(bpill);fx.appendChild(bl);
+      (function(){
+        var bb=null; try{ bb=bl.getBBox(); }catch(e){}
+        var padX=10,padY=5;
+        if(bb&&bb.width){
+          bpill.setAttribute("x",bb.x-padX);bpill.setAttribute("y",bb.y-padY);
+          bpill.setAttribute("width",bb.width+padX*2);bpill.setAttribute("height",bb.height+padY*2);
+        } else {
+          bpill.setAttribute("x",x-64);bpill.setAttribute("y",y-40);
+          bpill.setAttribute("width",128);bpill.setAttribute("height",20);
+        }
+      })();
+  }
+
+  var modes=[document.getElementById("m0"),document.getElementById("m1"),document.getElementById("m2")];
+  var views=[viewAgg,viewSplit,viewAttacker];
+  modes.forEach(function(b,i){
+    b.addEventListener("click",function(){
+      modes.forEach(function(x,j){x.classList.toggle("on",i===j);x.setAttribute("aria-selected",i===j?"true":"false");});
+      views[i]();
+    });
+  });
+  viewAgg();
+})();
+
+/* ── Report height to the parent page ──────────────────────────────
+   Four of this module's five interactives never told the parent iframe how
+   tall they were, so the frame stayed at the fixed height declared in the
+   module page and anything taller was silently cut off. That is the clipped
+   bottom line the first-round review reported in the ADOPTED tab: the panel
+   grows to 557px there against a 520px frame. ResizeObserver covers content
+   that changes after load, such as switching tabs. */
+(function(){
+  var _lastH = 0;
+  function sendHeight(){
+    /* Measure the content element, not documentElement. Once the parent has
+       sized the iframe to a reported height, documentElement.scrollHeight is
+       pinned to that height, so it can never report that the content now wants
+       to be taller. Switching to the ADOPTED tab grows the panel past the
+       frame, and measuring the wrapper is what notices. */
+    var el = document.querySelector('.wrap, main.module, .card') || document.body;
+    var cs = getComputedStyle(document.body);
+    var pad = (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0);
+    var h = Math.ceil(el.getBoundingClientRect().height + pad + 4);
+    if(h === _lastH) return;
+    _lastH = h;
+    if(window.parent!==window && h>50){
+      window.parent.postMessage({kind:"nyu-embed-height",height:h},"*");
+    }
+  }
+  if("ResizeObserver" in window){
+    var _obs=new ResizeObserver(sendHeight);_obs.observe(document.documentElement);
+    var _t=document.querySelector(".wrap, main.module, .card"); if(_t) _obs.observe(_t);
+  }
+  /* Poll as well. ResizeObserver did not fire for the panel growth caused by
+     switching to the ADOPTED tab, so the frame stayed at its loaded height and
+     clipped the last line. sendHeight only posts when the number actually
+     changes, so this costs one measurement per tick and no messages at rest. */
+  setInterval(sendHeight, 600);
+  window.addEventListener("load",function(){sendHeight();setTimeout(sendHeight,300);setTimeout(sendHeight,1000);});
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

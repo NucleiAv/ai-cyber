@@ -1,0 +1,425 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trust Calibration Meter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--v:#57068C;--v-d:#3D0461;--v50:#F5EDFA;--v100:#E8D8F2;--v200:#D2B3E5;--red:#C42A2A;--red-bg:#FBE8E8;--grn:#166B3A;--grn-bg:#E6F4EC;--amb:#8A5D00;--amb-bg:#FCF1DC;--ink:#1A1A1A;--ink2:#6B6B6B;--rule:#E2E2E2;--sf:#FFF;--sk:#F6F4F8;--mono:"JetBrains Mono",monospace;--sans:"Open Sans",sans-serif}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:var(--sans);color:var(--ink);background:var(--sk);padding:10px 12px}
+    .w{max-width:880px;margin:0 auto}
+    .card{background:var(--sf);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+    .top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap}
+    .top h1{font-size:.95rem;font-weight:700;letter-spacing:-.02em;flex:1 1 auto}
+    .top .tag{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:5px;background:#4C1D95;color:#fff}
+
+    /* Guidance cards */
+    .guidance{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 18px 0}
+    .g-card{border:2px solid var(--rule);border-radius:12px;padding:16px;cursor:pointer;transition:all .35s ease;user-select:none;background:var(--sf);position:relative;overflow:hidden}
+    .g-card:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.06)}
+    .g-card.muted{opacity:.4;filter:grayscale(.3);transform:scale(.97)}
+    .g-actions{display:flex;justify-content:flex-end;margin-top:10px}
+    .g-reset{appearance:none;font:inherit;cursor:pointer;border:1.5px solid var(--rule);background:#fff;color:var(--ink);border-radius:8px;padding:5px 14px;font-size:.74rem;font-weight:600}
+    .g-reset:hover{border-color:var(--v);background:var(--v);color:#fff}
+    .g-card.muted:hover{opacity:.6;transform:scale(.98)}
+    .g-card-over{border-color:rgba(196,42,42,.25)}
+    .g-card-over.active{border-color:var(--red);background:var(--red-bg);box-shadow:0 4px 20px rgba(196,42,42,.12)}
+    .g-card-cal{border-color:rgba(22,107,58,.25)}
+    .g-card-cal.active{border-color:var(--grn);background:var(--grn-bg);box-shadow:0 4px 20px rgba(22,107,58,.12)}
+    .g-quote{font-size:.78rem;font-weight:600;line-height:1.35;font-style:italic;color:var(--ink);margin-bottom:4px}
+    .g-label{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2)}
+    .g-card-over .g-label{color:var(--red)}
+    .g-card-cal .g-label{color:var(--grn)}
+
+    /* Timeline area */
+    .timeline-area{padding:18px 18px 0}
+    .timeline-prompt{text-align:center;padding:28px 0;color:var(--ink2);font-size:.78rem;font-weight:600}
+
+    /* Step indicators */
+    .step-row{display:flex;align-items:center;justify-content:space-between;position:relative;padding:0 20px;margin-bottom:6px}
+    .step-row::before{content:'';position:absolute;top:50%;left:36px;right:36px;height:2px;background:var(--rule);z-index:0}
+    .step-dot{width:28px;height:28px;border-radius:50%;background:var(--sf);border:2px solid var(--rule);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.56rem;font-weight:700;color:var(--ink2);position:relative;z-index:1;transition:all .4s ease}
+    .step-dot.active-red{border-color:#991B1B;background:#991B1B;color:#fff}
+    .step-dot.active-grn{border-color:#166534;background:#166534;color:#fff}
+    .step-dot.active-amb{border-color:#854D0E;background:#854D0E;color:#fff}
+    .step-dot.alert{border-color:var(--red);background:var(--red);color:#fff;animation:pulse-red .6s ease 2}
+
+    /* Step cards row */
+    .step-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:0 4px;min-height:100px}
+    .step-card{border-radius:8px;padding:8px 6px;text-align:center;opacity:0;transform:translateY(8px);transition:all .45s ease;border:1px solid transparent;background:transparent}
+    .step-card.vis{opacity:1;transform:translateY(0)}
+    .step-card .sc-month{font-family:var(--mono);font-size:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);margin-bottom:3px}
+    .step-card .sc-icon{font-size:1.1rem;margin-bottom:3px;line-height:1}
+    .step-card .sc-text{font-size:.54rem;font-weight:600;line-height:1.25;color:var(--ink)}
+    .step-card.red-card{background:var(--red-bg);border-color:rgba(196,42,42,.2)}
+    .step-card.grn-card{background:var(--grn-bg);border-color:rgba(22,107,58,.2)}
+    .step-card.amb-card{background:var(--amb-bg);border-color:rgba(138,93,0,.2)}
+
+    /* Metrics dashboard */
+    .metrics-area{padding:14px 18px 0}
+    .metrics-title{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin-bottom:8px}
+    .metric-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .metric-label{width:130px;font-size:.6rem;font-weight:700;color:var(--ink);flex-shrink:0;text-align:right}
+    .metric-bar-wrap{flex:1;height:18px;background:var(--sk);border-radius:9px;overflow:hidden;position:relative}
+    .metric-bar{height:100%;border-radius:9px;transition:width .5s ease,background .4s ease;min-width:2px}
+    .metric-value{font-family:var(--mono);font-size:.56rem;font-weight:700;width:60px;flex-shrink:0;transition:color .3s}
+    .bar-grn{background:var(--grn)}
+    .bar-red{background:var(--red)}
+    .bar-amb{background:var(--amb)}
+    .bar-v{background:var(--v)}
+
+    /* Metrics badge for escaped vulns */
+    .metric-value.alert-val{color:var(--red);font-weight:700}
+    .metric-value.safe-val{color:var(--grn)}
+    .metric-value.neutral-val{color:var(--ink2)}
+
+    /* Trust gauge */
+    .trust-gauge{margin-top:4px}
+    .trust-gauge .metric-bar-wrap{position:relative}
+    .trust-zones{display:flex;height:100%;position:absolute;inset:0}
+    .tz{height:100%}
+    .tz-blind{width:30%;background:linear-gradient(90deg,rgba(196,42,42,.35),rgba(196,42,42,.12));border-radius:9px 0 0 9px}
+    .tz-cal{width:40%;background:linear-gradient(90deg,rgba(22,107,58,.12),rgba(22,107,58,.3),rgba(22,107,58,.12))}
+    .tz-none{width:30%;background:linear-gradient(90deg,rgba(196,42,42,.12),rgba(196,42,42,.35));border-radius:0 9px 9px 0}
+    .trust-needle{position:absolute;top:-2px;width:4px;height:22px;background:var(--ink);border-radius:2px;transition:left .6s cubic-bezier(.34,1.2,.64,1);z-index:2}
+    .trust-needle::before{content:'';position:absolute;top:-3px;left:-3px;width:10px;height:10px;border-radius:50%;background:inherit}
+    .trust-needle.n-red{background:var(--red)}
+    .trust-needle.n-grn{background:var(--grn)}
+    .trust-labels{display:flex;justify-content:space-between;font-size:.46rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:3px;padding:0 2px}
+    .trust-labels span:first-child,.trust-labels span:last-child{color:var(--red)}
+    .trust-labels span:nth-child(2){color:var(--grn)}
+
+    /* Dashboard overlay: paradox callout */
+    .paradox-callout{margin:10px 0 0;padding:8px 12px;border-radius:8px;font-size:.62rem;font-weight:600;line-height:1.35;opacity:0;transform:translateY(4px);transition:all .4s ease;display:none}
+    .paradox-callout.vis{opacity:1;transform:translateY(0);display:block}
+    .paradox-callout.red-call{background:#991B1B;border:1px solid rgba(196,42,42,.2);color:#fff}
+    .paradox-callout.grn-call{background:#166534;border:1px solid rgba(22,107,58,.2);color:#fff}
+    .paradox-callout .pc-title{font-weight:700;font-size:.58rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+
+    /* Comparison summary */
+    .comparison{padding:14px 18px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;opacity:0;transition:opacity .5s ease}
+    .comparison.vis{opacity:1}
+    .cmp-col{border-radius:10px;padding:12px;text-align:center}
+    .cmp-over{background:var(--red-bg);border:1px solid rgba(196,42,42,.15)}
+    .cmp-cal{background:var(--grn-bg);border:1px solid rgba(22,107,58,.15)}
+    .cmp-head{font-size:.54rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+    .cmp-over .cmp-head{color:var(--red)}
+    .cmp-cal .cmp-head{color:var(--grn)}
+    .cmp-stat{font-family:var(--mono);font-size:.72rem;font-weight:700;margin-bottom:2px}
+    .cmp-over .cmp-stat{color:var(--red)}
+    .cmp-cal .cmp-stat{color:var(--grn)}
+    .cmp-detail{font-size:.52rem;color:var(--ink2);line-height:1.3}
+
+    @keyframes pulse-red{
+      0%,100%{box-shadow:0 0 0 0 rgba(196,42,42,0)}
+      50%{box-shadow:0 0 0 6px rgba(196,42,42,.25)}
+    }
+    @keyframes flash-red{
+      0%,100%{background:var(--red-bg)}
+      50%{background:rgba(196,42,42,.25)}
+    }
+    .flash-bg{animation:flash-red .4s ease 2}
+
+    @media(max-width:600px){
+      .guidance{grid-template-columns:1fr;gap:8px}
+      .g-card{padding:12px}
+      .step-cards{grid-template-columns:repeat(3,1fr);grid-template-rows:auto auto;gap:5px}
+      .step-row{padding:0 10px}
+      .step-dot{width:22px;height:22px;font-size:.48rem}
+      .metric-label{width:90px;font-size:.52rem}
+      .metric-value{width:50px;font-size:.5rem}
+      .comparison{grid-template-columns:1fr}
+      .cmp-col{padding:10px}
+    }
+  </style>
+</head>
+<body>
+<div class="w">
+  <div class="card">
+    <div class="top">
+      <h1>Trust Calibration Meter</h1>
+      <span class="tag">Interactive</span>
+    </div>
+
+    <!-- Guidance cards -->
+    <div class="guidance">
+      <div class="g-card g-card-over" id="cardOver" onclick="selectCard('over')">
+        <div class="g-quote">"Our AI catches security vulnerabilities."</div>
+        <div class="g-label">Common vendor-style messaging</div>
+      </div>
+      <div class="g-card g-card-cal" id="cardCal" onclick="selectCard('cal')">
+        <div class="g-quote">"AI flags likely issues. Always verify critical paths."</div>
+        <div class="g-label">Evidence-based internal guidance</div>
+      </div>
+    </div>
+    <div class="g-actions"><button type="button" class="g-reset" onclick="resetMeter()">Reset</button></div>
+
+    <!-- Timeline area -->
+    <div class="timeline-area" id="timelineArea">
+      <div class="timeline-prompt" id="timelinePrompt">Select a messaging approach above to see how it plays out over 6 months.</div>
+
+      <!-- Step indicators -->
+      <div class="step-row" id="stepRow" style="display:none">
+        <div class="step-dot" id="sd1">1</div>
+        <div class="step-dot" id="sd2">2</div>
+        <div class="step-dot" id="sd3">3</div>
+        <div class="step-dot" id="sd4">4</div>
+        <div class="step-dot" id="sd5">5</div>
+        <div class="step-dot" id="sd6">6</div>
+      </div>
+
+      <!-- Step cards -->
+      <div class="step-cards" id="stepCards" style="display:none">
+        <div class="step-card" id="sc1"><div class="sc-month"></div><div class="sc-icon"></div><div class="sc-text"></div></div>
+        <div class="step-card" id="sc2"><div class="sc-month"></div><div class="sc-icon"></div><div class="sc-text"></div></div>
+        <div class="step-card" id="sc3"><div class="sc-month"></div><div class="sc-icon"></div><div class="sc-text"></div></div>
+        <div class="step-card" id="sc4"><div class="sc-month"></div><div class="sc-icon"></div><div class="sc-text"></div></div>
+        <div class="step-card" id="sc5"><div class="sc-month"></div><div class="sc-icon"></div><div class="sc-text"></div></div>
+        <div class="step-card" id="sc6"><div class="sc-month"></div><div class="sc-icon"></div><div class="sc-text"></div></div>
+      </div>
+    </div>
+
+    <!-- Metrics dashboard -->
+    <div class="metrics-area" id="metricsArea" style="display:none">
+      <div class="metrics-title">Live Metrics Dashboard</div>
+
+      <div class="metric-row">
+        <div class="metric-label">Manual Review Rate</div>
+        <div class="metric-bar-wrap"><div class="metric-bar bar-v" id="barReview" style="width:85%"></div></div>
+        <div class="metric-value neutral-val" id="valReview">85%</div>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric-label">Escaped Vulns</div>
+        <div class="metric-bar-wrap"><div class="metric-bar bar-grn" id="barVulns" style="width:0%"></div></div>
+        <div class="metric-value safe-val" id="valVulns">0</div>
+      </div>
+
+      <div class="metric-row trust-gauge">
+        <div class="metric-label">Trust Level</div>
+        <div class="metric-bar-wrap">
+          <div class="trust-zones"><div class="tz tz-blind"></div><div class="tz tz-cal"></div><div class="tz tz-none"></div></div>
+          <div class="trust-needle" id="trustNeedle" style="left:calc(50% - 2px)"></div>
+        </div>
+        <div class="metric-value neutral-val" id="valTrust">Calibrated</div>
+      </div>
+      <div class="trust-labels"><span>Blind Trust</span><span>Calibrated</span><span>Abandoned</span></div>
+
+      <div class="paradox-callout" id="paradoxCallout"></div>
+    </div>
+
+    <!-- Comparison summary -->
+    <div class="comparison" id="comparison">
+      <div class="cmp-col cmp-over">
+        <div class="cmp-head">Overclaimed Result</div>
+        <div class="cmp-stat">3x remediation cost</div>
+        <div class="cmp-detail">2 vulnerabilities shipped to production<br>Team trust collapsed, full re-audit required</div>
+      </div>
+      <div class="cmp-col cmp-cal">
+        <div class="cmp-head">Calibrated Result</div>
+        <div class="cmp-stat">Sustainable process</div>
+        <div class="cmp-detail">0 vulnerabilities shipped<br>Team confidence maintained, improving over time</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var current=null;
+  var timers=[];
+  var $=function(id){return document.getElementById(id)};
+
+  /* DATA: overclaimed scenario */
+  var overSteps=[
+    {month:'Month 1',icon:'🚀',text:'AI deployed. Team told: "AI catches vulnerabilities."',dotClass:'active-grn',cardClass:'grn-card',
+     review:85,reviewLabel:'85%',vulns:0,vulnW:0,vulnLabel:'0',vulnClass:'safe-val',trust:50,trustLabel:'Calibrated',trustClass:'n-grn',barVulnClass:'bar-grn',
+     paradox:null},
+    {month:'Month 2',icon:'📉',text:'Clean AI results build false confidence. Manual reviews quietly drop.',dotClass:'active-amb',cardClass:'amb-card',
+     review:60,reviewLabel:'60%',vulns:0,vulnW:0,vulnLabel:'0',vulnClass:'safe-val',trust:25,trustLabel:'Over-trusting',trustClass:'n-red',barVulnClass:'bar-grn',
+     paradox:null},
+    {month:'Month 3',icon:'⚡',text:'Lead says "AI handles security, focus on features." Velocity goes UP.',dotClass:'active-amb',cardClass:'amb-card',
+     review:30,reviewLabel:'30%',vulns:0,vulnW:0,vulnLabel:'0',vulnClass:'safe-val',trust:15,trustLabel:'Blind trust',trustClass:'n-red',barVulnClass:'bar-grn',
+     paradox:{cls:'red-call',title:'The Measurement Trap',body:'Review coverage: 100%. Velocity: up 20%. Every dashboard is green. But 70% of critical code paths now have zero human eyes on them.'}},
+    {month:'Month 4',icon:'💥',text:'Logic-flaw vuln ships. AI said "clean"; it cannot detect this class of bug.',dotClass:'alert',cardClass:'red-card',
+     review:30,reviewLabel:'30%',vulns:1,vulnW:25,vulnLabel:'1 shipped',vulnClass:'alert-val',trust:15,trustLabel:'Blind trust',trustClass:'n-red',barVulnClass:'bar-red',
+     paradox:{cls:'red-call',title:'The Paradox',body:'AI review found real XSS bugs last month. That success is exactly why this logic flaw went unreviewed. Real value created the overconfidence that caused the breach.'}},
+    {month:'Month 5',icon:'🔥',text:'Second vuln ships. Post-incident reveals months of skipped manual review.',dotClass:'alert',cardClass:'red-card',
+     review:30,reviewLabel:'30%',vulns:2,vulnW:50,vulnLabel:'2 shipped',vulnClass:'alert-val',trust:10,trustLabel:'Crisis',trustClass:'n-red',barVulnClass:'bar-red',
+     paradox:null},
+    {month:'Month 6',icon:'💸',text:'All "clean" AI reviews need re-audit. Cost: 3x original review effort.',dotClass:'alert',cardClass:'red-card',
+     review:100,reviewLabel:'100% (re-audit)',vulns:2,vulnW:50,vulnLabel:'2 shipped',vulnClass:'alert-val',trust:90,trustLabel:'Abandoned AI',trustClass:'n-red',barVulnClass:'bar-red',
+     paradox:{cls:'red-call',title:'Final Cost',body:'The team now rejects AI tools entirely. Months of review coverage were theater. Remediation costs 3x what proper calibrated review would have cost.'}}
+  ];
+
+  /* DATA: calibrated scenario */
+  var calSteps=[
+    {month:'Month 1',icon:'🚀',text:'AI deployed. Team told: "AI flags likely issues. Verify critical paths."',dotClass:'active-grn',cardClass:'grn-card',
+     review:85,reviewLabel:'85%',vulns:0,vulnW:0,vulnLabel:'0',vulnClass:'safe-val',trust:50,trustLabel:'Calibrated',trustClass:'n-grn',barVulnClass:'bar-grn',
+     paradox:null},
+    {month:'Month 2',icon:'🔍',text:'AI used as first pass. Manual review kept for auth, payment, admin code.',dotClass:'active-grn',cardClass:'grn-card',
+     review:70,reviewLabel:'70%',vulns:0,vulnW:0,vulnLabel:'0',vulnClass:'safe-val',trust:48,trustLabel:'Calibrated',trustClass:'n-grn',barVulnClass:'bar-grn',
+     paradox:null},
+    {month:'Month 3',icon:'✅',text:'AI catches real XSS bug. Manual catches 2 logic bugs AI missed. Both valued.',dotClass:'active-grn',cardClass:'grn-card',
+     review:70,reviewLabel:'70%',vulns:0,vulnW:0,vulnLabel:'0',vulnClass:'safe-val',trust:50,trustLabel:'Calibrated',trustClass:'n-grn',barVulnClass:'bar-grn',
+     paradox:{cls:'grn-call',title:'Mutual Reinforcement',body:'AI caught what humans missed. Humans caught what AI missed. Both are valued because the team understands each tool\'s actual strengths.'}},
+    {month:'Month 4',icon:'🛡️',text:'Same logic-flaw exists. Manual reviewer catches it during critical-path review.',dotClass:'active-grn',cardClass:'grn-card',
+     review:70,reviewLabel:'70%',vulns:0,vulnW:0,vulnLabel:'0',vulnClass:'safe-val',trust:50,trustLabel:'Calibrated',trustClass:'n-grn',barVulnClass:'bar-grn',
+     paradox:{cls:'grn-call',title:'Defense in Depth',body:'The same vulnerability that shipped in the overclaimed scenario was caught here, because critical-path manual review was never abandoned.'}},
+    {month:'Month 5',icon:'📈',text:'Team refines roles: AI for broad coverage, humans for critical paths. Both improve.',dotClass:'active-grn',cardClass:'grn-card',
+     review:65,reviewLabel:'65%',vulns:0,vulnW:0,vulnLabel:'0',vulnClass:'safe-val',trust:50,trustLabel:'Calibrated',trustClass:'n-grn',barVulnClass:'bar-grn',
+     paradox:null},
+    {month:'Month 6',icon:'🌟',text:'Stable, sustainable process. Detection rate up. False confidence: zero.',dotClass:'active-grn',cardClass:'grn-card',
+     review:65,reviewLabel:'65%',vulns:0,vulnW:0,vulnLabel:'0',vulnClass:'safe-val',trust:52,trustLabel:'Calibrated',trustClass:'n-grn',barVulnClass:'bar-grn',
+     paradox:{cls:'grn-call',title:'Sustainable Security',body:'Review effort is lower than before AI, but every critical path is still covered. The team trusts the process because they understand its boundaries.'}}
+  ];
+
+  function clearTimers(){timers.forEach(function(t){clearTimeout(t)});timers=[];}
+  function delay(fn,ms){var t=setTimeout(fn,ms);timers.push(t);return t;}
+
+  function reset(){
+    clearTimers();
+    $('timelinePrompt').style.display='none';
+    $('stepRow').style.display='flex';
+    $('stepCards').style.display='grid';
+    $('metricsArea').style.display='block';
+    $('comparison').classList.remove('vis');
+    /* Reset step dots */
+    for(var i=1;i<=6;i++){
+      var d=$('sd'+i);
+      d.className='step-dot';
+      var c=$('sc'+i);
+      c.className='step-card';
+      c.querySelector('.sc-month').textContent='';
+      c.querySelector('.sc-icon').textContent='';
+      c.querySelector('.sc-text').textContent='';
+    }
+    /* Reset metrics */
+    $('barReview').style.width='85%';
+    $('barReview').className='metric-bar bar-v';
+    $('valReview').textContent='85%';
+    $('valReview').className='metric-value neutral-val';
+    $('barVulns').style.width='0%';
+    $('barVulns').className='metric-bar bar-grn';
+    $('valVulns').textContent='0';
+    $('valVulns').className='metric-value safe-val';
+    $('trustNeedle').style.left='calc(50% - 2px)';
+    $('trustNeedle').className='trust-needle';
+    $('valTrust').textContent='Calibrated';
+    $('valTrust').className='metric-value neutral-val';
+    $('paradoxCallout').className='paradox-callout';
+    $('paradoxCallout').innerHTML='';
+  }
+
+  function animateStep(steps,idx){
+    if(idx>=steps.length)return;
+    var s=steps[idx];
+    var dotEl=$('sd'+(idx+1));
+    var cardEl=$('sc'+(idx+1));
+
+    /* Activate dot */
+    dotEl.classList.add(s.dotClass);
+
+    /* Fill card */
+    cardEl.querySelector('.sc-month').textContent=s.month;
+    cardEl.querySelector('.sc-icon').textContent=s.icon;
+    cardEl.querySelector('.sc-text').textContent=s.text;
+    cardEl.className='step-card '+s.cardClass+' vis';
+
+    /* Update metrics */
+    $('barReview').style.width=s.review+'%';
+    $('valReview').textContent=s.reviewLabel;
+    if(s.review<=30){
+      $('barReview').className='metric-bar bar-red';
+      $('valReview').className='metric-value alert-val';
+    } else if(s.review<=60){
+      $('barReview').className='metric-bar bar-amb';
+      $('valReview').className='metric-value neutral-val';
+    } else {
+      $('barReview').className='metric-bar bar-v';
+      $('valReview').className='metric-value neutral-val';
+    }
+
+    $('barVulns').style.width=s.vulnW+'%';
+    $('barVulns').className='metric-bar '+s.barVulnClass;
+    $('valVulns').textContent=s.vulnLabel;
+    $('valVulns').className='metric-value '+s.vulnClass;
+
+    var needlePct=s.trust;
+    $('trustNeedle').style.left='calc('+needlePct+'% - 2px)';
+    $('trustNeedle').className='trust-needle '+s.trustClass;
+    $('valTrust').textContent=s.trustLabel;
+    if(s.trustClass==='n-red'){
+      $('valTrust').className='metric-value alert-val';
+    } else {
+      $('valTrust').className='metric-value safe-val';
+    }
+
+    /* Paradox callout */
+    var pc=$('paradoxCallout');
+    if(s.paradox){
+      pc.className='paradox-callout '+s.paradox.cls+' vis';
+      pc.innerHTML='<div class="pc-title">'+s.paradox.title+'</div>'+s.paradox.body;
+    } else {
+      pc.className='paradox-callout';
+      pc.innerHTML='';
+    }
+
+    /* Flash effect for alert steps */
+    if(s.dotClass==='alert'){
+      cardEl.classList.add('flash-bg');
+    }
+
+    /* Next step */
+    if(idx<steps.length-1){
+      delay(function(){animateStep(steps,idx+1)},650);
+    } else {
+      /* Show comparison after last step */
+      delay(function(){$('comparison').classList.add('vis')},500);
+    }
+  }
+
+  /* reset() already existed but was only reachable from selectCard(), so the
+     user had no way back to the initial state. This also clears the card
+     selection, which reset() alone does not touch. */
+  window.resetMeter=function(){
+    current=null;
+    reset();
+    $('cardOver').classList.remove('active','muted');
+    $('cardCal').classList.remove('active','muted');
+  };
+
+  window.selectCard=function(which){
+    if(current===which) return;
+    current=which;
+    reset();
+
+    $('cardOver').classList.remove('active','muted');
+    $('cardCal').classList.remove('active','muted');
+
+    if(which==='over'){
+      $('cardOver').classList.add('active');
+      $('cardCal').classList.add('muted');
+      delay(function(){animateStep(overSteps,0)},200);
+    } else {
+      $('cardCal').classList.add('active');
+      $('cardOver').classList.add('muted');
+      delay(function(){animateStep(calSteps,0)},200);
+    }
+  };
+})();
+</script>
+
+<script>
+(function(){
+  var root=document.documentElement,body=document.body;
+  root.style.height='auto';body.style.height='auto';root.style.overflow='visible';body.style.overflow='visible';
+  function send(){var el=document.querySelector('.w');if(!el)return;var r=el.getBoundingClientRect();var pad=parseFloat(getComputedStyle(body).paddingTop)+parseFloat(getComputedStyle(body).paddingBottom);window.parent.postMessage({type:'iframeHeight',height:Math.ceil(r.height+pad),src:location.href},'*');}
+  if(window.ResizeObserver){new ResizeObserver(send).observe(document.querySelector('.w')||body);}else{setInterval(send,500);}
+  window.addEventListener('load',function(){setTimeout(send,200);});setTimeout(send,50);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+n: 13
+short: Future of AI and careers
+title: Agents, the future of AI security, and your career
+time: 6 sections · about 3.5 hours
+lede: From a prompt to a loop. How security agents work and fail, how to read claims about the future without the hype, and how to map your own skills to real jobs.
+idea: |
+  Every model in this course so far had a human between its output and the world. An **agent** removes that human for some steps. It plans, calls tools and acts in a loop. So an agent deployment is really an **authorization decision**. What may it do alone, and what needs a person?
+
+  The module ends with your career. Employers want AI security skills you can **show**, not only name.
+
+  !eli5 A chatbot is a friend who gives advice. An agent is a friend you gave your car keys and your bank card. Before you hand them over, you decide exactly what errands they may run.
+primer: |
+  ### Step 1. From prompt to loop
+
+  The **ReAct** pattern has the model write a thought, pick an action, read the observation, and repeat. A tool call is only structured text that the app turns into a real action. The first exploit of a loop is simple. Tool output is untrusted text, and the model reads it as context.
+
+  ### Step 2. Workflow or agent?
+
+  A **workflow** follows fixed steps in code, with a model inside some steps. An **agent** chooses its own steps. Use an agent only when the path cannot be fixed in advance. A workflow is easier to test and audit.
+
+  ### Step 3. Four parts of an agent, and how they fail
+
+  An agent has a model, tools, memory and a control loop. Each can fail. The model misjudges, a tool has too much power, memory gets poisoned, and the loop runs too long or acts too fast. A few seconds is enough for an agent with delete rights to cause lasting damage.
+
+  ### Step 4. Constraints that survive an audit
+
+  Least privilege per tool, approval gates before irreversible steps, budgets on steps, tokens and time, scope rules, and full logs of every tool call. Open source autonomous pentest tools such as [ARTEX](https://github.com/BaaRai/ARTEX) build these same brakes in, with scope gates, command rules, approval gates and budgets. The attack track's lesson 9 covers it as a case study.
+
+  ### Step 5. Read the future without the hype
+
+  Sort each claim into one of three bins. **Demonstrated** with public evidence, **plausible** but not shown, or **speculation**. Check who benefits from the claim. Weigh vendor reports against independent studies.
+
+  ### Step 6. Map your skills
+
+  Build an evidence matrix. For each skill a job posting asks for, write what you did, where the proof is, and how a reviewer can check it. Labs, CTF writeups, detection rules and policies from this course count as evidence.
+diagrams:
+  - type: cycle
+    title: The ReAct loop
+    nodes: [["Thought", "def"], ["Action. Tool call", "raised", "app runs it"], ["Observation", "atk", "untrusted text"], ["Next thought or finish", "def"]]
+    center: the loop repeats until done or a limit
+    caption: Every observation is text the model reads as context, so it can carry an injection.
+  - type: layers
+    title: Constraints on a threat-hunting agent
+    attack: a bad decision or an injected instruction
+    layers:
+      - ["Read-only query tools", "It can search logs but not change systems", "stop"]
+      - ["Step, token and time budgets", "It cannot run away", "stop"]
+      - ["Approval gate before containment actions", "A person isolates hosts, not the agent", "stop"]
+      - ["Full log of every tool call", "Auditors can see what it did", "partial"]
+terms:
+  - [Agent, "A model in a loop that picks tools and acts until a goal is met."]
+  - [ReAct, "Reason and act. Thought, action, observation, repeat."]
+  - [Workflow, "Fixed steps in code, with models inside some steps."]
+  - [Approval gate, "A human decision required before an action runs."]
+  - [Three-bin method, "Sort a claim as demonstrated, plausible or speculation."]
+  - [Evidence matrix, "A table that links each skill to proof a reviewer can check."]
+sections:
+  01_from-prompt-to-loop.html: "From prompt to loop. The ReAct pattern, what a tool call really is, the loop's first exploit, workflow versus agent, and reading real agent traces."
+  02_the-autonomous-security-agent.html: "The four parts of an agent, a catalog of how they fail, a case where an agent deleted data in seconds, constraints that survive an audit, and a design studio for a threat-hunting agent."
+  03_reading-the-future-without-the-hype.html: "How to judge vendor and skeptic claims with the three-bin method, read a campaign report critically, weigh defensive gains, and see what reasoning models really deliver."
+  04_your-skills-mapped.html: "Evidence, not aspiration. A skills matrix for a SOC analyst, how to read a job posting, mapping your own evidence, seven paths forward, and a decision on containment authority."
+  05_concepts-covered-and-work-completed.html: "A module-by-module record of the whole course and the work you completed, in one place."
+  06_references-and-readings.html: "Every reading, paper, framework, tool and case used in Module 13."
+other_fw:
+  - [OWASP Agentic Top 10 2026, "The risks of agents, ASI01 to ASI10. [Read it](@owaspagentic)."]
+  - [MITRE ATLAS, "Agent techniques such as AML.T0053 AI Agent Tool Invocation and AML.T0080 AI Agent Context Poisoning. [Open ATLAS](@atlas)."]
+  - [OWASP LLM06, "Excessive agency. [Read it](https://genai.owasp.org/llmrisk/llm062025-excessive-agency/)."]
+refs:
+  - "Yao et al. [ReAct](https://arxiv.org/abs/2210.03629), 2022."
+  - "Anthropic. [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents), 2024."
+  - "BaaRai. [ARTEX, autonomous penetration testing](https://github.com/BaaRai/ARTEX)."
+quiz:
+  - q: When should you use an agent instead of a workflow?
+    opts: ["Always", "When the path cannot be fixed in advance", "When you want easier audits"]
+    a: 1
+    why: Workflows are easier to test. Use an agent only when you need it to choose steps.
+  - q: Which constraint prevents an agent from isolating a host on its own?
+    opts: ["A bigger model", "An approval gate before containment actions", "A longer prompt"]
+    a: 1
+    why: Irreversible or disruptive actions need a person.
+  - q: A vendor says AI agents will replace SOC analysts next year, with no public evidence. Which bin?
+    opts: ["Demonstrated", "Plausible", "Speculation"]
+    a: 2
+    why: No public evidence and a clear interest in the claim.

@@ -1,0 +1,964 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Continuous Harm: Why Network Isolation Is Not Enough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;
+  --line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redsoft:#fdf5f5;--redline:#efc9c9;
+  --green:#0f7a43;--greensoft:#f0f9f3;--greenline:#c3e2d0;
+  --blue:#2563eb;--bluesoft:#eff6ff;--blueline:#bfdbfe;
+  --amber:#8a5d00;--amberbg:#FCF1DC;--amberline:#e5d3a8;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid rgba(87,6,140,.25);outline-offset:2px}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) var(--paper)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+
+.wrap{max-width:920px;margin:0 auto;padding:0}
+.hdr{padding:14px 24px 0}
+.eyebrow{font-family:var(--mono);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet);margin-bottom:6px}
+.title{font-size:1.15rem;font-weight:700;color:var(--ink);line-height:1.3}
+.subtitle{font-size:.8rem;color:var(--ink2);margin-top:6px;line-height:1.55}
+
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 24px 0}
+.toolbar-left{display:flex;gap:6px;flex-shrink:0}
+.ctrl-btn{
+  min-height:32px;padding:0 14px;border:1px solid var(--line2);
+  border-radius:8px;background:var(--bg);font-family:var(--mono);
+  font-size:.72rem;font-weight:600;color:var(--ink);
+  transition:.16s;letter-spacing:.01em;
+}
+.ctrl-btn:hover{background:var(--paper);border-color:var(--ink3)}
+.ctrl-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ctrl-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* panels */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 24px 0}
+.panel{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);transition:border-color .4s}
+.panel.threat{border-color:var(--red)}
+.panel.contained{border-color:var(--greenline)}
+.panel-hdr{padding:10px 14px 8px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.panel-tag{
+  font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.05em;
+  padding:2px 8px;border-radius:5px;text-transform:uppercase;flex-shrink:0;
+}
+.tag-trad{background:var(--amberbg);color:var(--ink)}
+.tag-ai{background:var(--redsoft);color:var(--ink)}
+.panel-title{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--ink)}
+
+/* canvas area */
+.canvas-wrap{padding:8px 10px;position:relative}
+.canvas-wrap canvas{width:100%;height:200px;display:block;border-radius:6px;background:var(--paper)}
+
+/* callout */
+.callout{
+  display:none;margin:0 10px 8px;padding:8px 10px;
+  border:1.5px solid var(--redline);border-radius:8px;
+  background:var(--redsoft);
+  font-family:var(--mono);font-size:.62rem;font-weight:600;
+  color:var(--ink);line-height:1.5;
+}
+.callout.show{display:block}
+.callout-label{
+  font-size:.56rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink);margin-bottom:3px;
+}
+
+/* status area */
+.status-area{padding:6px 10px 10px;display:flex;flex-direction:column;gap:6px}
+.ir-phases{display:flex;gap:4px;align-items:center}
+.ir-phase{
+  font-family:var(--mono);font-size:.56rem;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;padding:2px 7px;border-radius:4px;
+  background:var(--paper);color:var(--ink3);border:1px solid var(--line);
+  transition:all .3s;
+}
+.ir-phase.active{background:var(--amberbg);color:var(--ink);border-color:var(--amberline)}
+.ir-phase.done{background:var(--greensoft);color:var(--ink);border-color:var(--greenline)}
+.ir-phase.failed{background:var(--redsoft);color:var(--ink);border-color:var(--redline)}
+
+.status-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.status-badge{
+  font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:3px 8px;border-radius:5px;
+  transition:all .3s;
+}
+.badge-normal{background:var(--greensoft);color:var(--ink);border:1px solid var(--greenline)}
+.badge-threat{background:var(--redsoft);color:var(--ink);border:1px solid var(--redline)}
+.badge-contained{background:var(--amberbg);color:var(--ink);border:1px solid var(--amberline)}
+.badge-eradicated{background:var(--bluesoft);color:var(--ink);border:1px solid var(--blueline)}
+.badge-recovered{background:var(--greensoft);color:var(--ink);border:1px solid var(--greenline)}
+
+.counter{
+  font-family:var(--mono);font-size:.68rem;font-weight:700;color:var(--ink);
+  display:flex;align-items:center;gap:5px;
+}
+.counter-num{
+  min-width:28px;text-align:right;font-size:.78rem;
+  transition:color .3s;
+}
+.counter-num.rising{color:var(--ink)}
+.counter-num.stopped{color:var(--ink)}
+.counter-label{font-size:.58rem;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em}
+
+/* analysis box */
+.analysis{
+  display:none;margin:10px 24px 0;padding:14px 16px;
+  border:1px solid var(--line);border-radius:10px;
+  background:var(--paper);
+}
+.analysis.show{display:block}
+.analysis-title{
+  font-family:var(--mono);font-size:.68rem;font-weight:700;color:var(--ink);margin-bottom:8px;
+}
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.analysis-card{
+  padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);
+}
+.analysis-card-label{
+  font-family:var(--mono);font-size:.56rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:6px;
+}
+.analysis-metric{
+  font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--ink);margin-bottom:2px;
+}
+.analysis-detail{
+  font-family:var(--mono);font-size:.6rem;font-weight:500;color:var(--ink2);line-height:1.5;
+}
+.analysis-delta{
+  margin-top:10px;padding:8px 12px;border-radius:8px;
+  border:1.5px solid var(--redline);background:var(--redsoft);
+  grid-column:1/-1;
+}
+.analysis-delta-label{
+  font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink);margin-bottom:4px;
+}
+.analysis-delta-text{
+  font-family:var(--mono);font-size:.66rem;font-weight:500;color:var(--ink);line-height:1.5;
+}
+
+/* narration */
+.narration{
+  margin:10px 24px 0;padding:10px 14px;
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  display:flex;align-items:flex-start;gap:10px;
+  min-height:44px;transition:border-color .4s;
+}
+.narration.phase-legit{border-color:var(--vline)}
+.narration.phase-attack{border-color:var(--redline)}
+.narration.phase-result{border-color:var(--amberline)}
+.narr-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;
+  background:var(--violet);transition:background .4s;
+}
+.narration.phase-legit .narr-dot{background:var(--violet)}
+.narration.phase-attack .narr-dot{background:var(--red)}
+.narration.phase-result .narr-dot{background:var(--amber)}
+.narr-text{
+  font-family:var(--mono);font-size:.72rem;font-weight:500;
+  color:var(--ink2);line-height:1.5;
+  transition:opacity .35s;
+}
+
+/* spacer at bottom */
+.bottom-spacer{height:16px}
+
+@media(max-width:640px){
+  .panels{grid-template-columns:1fr;gap:10px}
+  .hdr{padding:14px 16px 0}
+  .toolbar{padding:8px 16px 0}
+  .panels{padding:10px 16px 0}
+  .narration{margin:8px 16px 0}
+  .analysis{margin:8px 16px 0}
+  .analysis-grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="eyebrow">AI Incident Response</div>
+    <h1 class="title">Continuous Harm: Why Network Isolation Is Not Enough</h1>
+    <p class="subtitle">Step through the same incident response phases on a traditional compromised server and a poisoned RAG system. Watch what happens when network isolation -- the standard containment move -- is applied to both.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="ctrl-btn" id="btnStep">Begin Incident</button>
+      <button class="ctrl-btn" id="btnReset">Reset</button>
+    </div>
+  </div>
+
+  <div class="panels">
+    <!-- Traditional IR Panel -->
+    <div class="panel" id="panelTrad">
+      <div class="panel-hdr">
+        <span class="panel-tag tag-trad">Traditional</span>
+        <span class="panel-title">Compromised Server</span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="cvTrad" width="800" height="400"></canvas>
+      </div>
+      <div class="callout" id="calloutTrad"></div>
+      <div class="status-area">
+        <div class="ir-phases" id="phasesTrad">
+          <span class="ir-phase" data-phase="detect">Detect</span>
+          <span class="ir-phase" data-phase="contain">Contain</span>
+          <span class="ir-phase" data-phase="eradicate">Eradicate</span>
+          <span class="ir-phase" data-phase="recover">Recover</span>
+        </div>
+        <div class="status-row">
+          <span class="status-badge badge-normal" id="badgeTrad">Normal</span>
+          <div class="counter">
+            <span class="counter-label">Users affected:</span>
+            <span class="counter-num" id="counterTrad">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI / RAG Panel -->
+    <div class="panel" id="panelAI">
+      <div class="panel-hdr">
+        <span class="panel-tag tag-ai">AI System</span>
+        <span class="panel-title">Poisoned RAG</span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="cvAI" width="800" height="400"></canvas>
+      </div>
+      <div class="callout" id="calloutAI"></div>
+      <div class="status-area">
+        <div class="ir-phases" id="phasesAI">
+          <span class="ir-phase" data-phase="detect">Detect</span>
+          <span class="ir-phase" data-phase="contain">Contain</span>
+          <span class="ir-phase" data-phase="eradicate">Eradicate</span>
+          <span class="ir-phase" data-phase="recover">Recover</span>
+        </div>
+        <div class="status-row">
+          <span class="status-badge badge-normal" id="badgeAI">Normal</span>
+          <div class="counter">
+            <span class="counter-label">Users affected:</span>
+            <span class="counter-num" id="counterAI">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="analysis" id="analysis">
+    <div class="analysis-title">Incident Comparison</div>
+    <div class="analysis-grid">
+      <div class="analysis-card">
+        <div class="analysis-card-label">Traditional Server</div>
+        <div class="analysis-metric" id="analysisTrad">0 users</div>
+        <div class="analysis-detail">Harm stopped at network isolation. Standard containment was effective.</div>
+      </div>
+      <div class="analysis-card">
+        <div class="analysis-card-label">RAG System</div>
+        <div class="analysis-metric" id="analysisAI">0 users</div>
+        <div class="analysis-detail">Harm continued after network isolation. Required knowledge base quarantine.</div>
+      </div>
+      <div class="analysis-delta">
+        <div class="analysis-delta-label">Continuous Harm Gap</div>
+        <div class="analysis-delta-text" id="analysisDelta"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="narration phase-legit" id="narration">
+    <div class="narr-dot"></div>
+    <div class="narr-text" id="narrText">Two systems operating normally. A traditional server and a RAG-based AI system. Both are about to be compromised.</div>
+  </div>
+
+  <div class="bottom-spacer"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ── State machine ── */
+const STATES = ['IDLE','COMPROMISED','CONTAINED','KB_QUARANTINED','ERADICATED','RECOVERED','ANALYSIS'];
+let state = 'IDLE';
+let tradCount = 0, aiCount = 0;
+let tradCounting = false, aiCounting = false;
+let tradFinalCount = 0, aiFinalCount = 0;
+let lastTick = -1;
+const TICK_RATE = 333; // ~3 users/second
+let animId = null;
+
+/* ── DOM refs ── */
+const btnStep = document.getElementById('btnStep');
+const btnReset = document.getElementById('btnReset');
+const panelTrad = document.getElementById('panelTrad');
+const panelAI = document.getElementById('panelAI');
+const badgeTrad = document.getElementById('badgeTrad');
+const badgeAI = document.getElementById('badgeAI');
+const counterTrad = document.getElementById('counterTrad');
+const counterAI = document.getElementById('counterAI');
+const calloutTrad = document.getElementById('calloutTrad');
+const calloutAI = document.getElementById('calloutAI');
+const narration = document.getElementById('narration');
+const narrText = document.getElementById('narrText');
+const analysisBox = document.getElementById('analysis');
+
+const cvTrad = document.getElementById('cvTrad');
+const cvAI = document.getElementById('cvAI');
+const ctxTrad = cvTrad.getContext('2d');
+const ctxAI = cvAI.getContext('2d');
+
+/* ── Colors ── */
+const C = {
+  ink:'#15171C', ink2:'#565a63', ink3:'#5c6270',
+  line:'#e9eaee', paper:'#f7f8fa',
+  violet:'#57068C', vsoft:'#f6effb',
+  red:'#c02626', redsoft:'#fdf5f5',
+  green:'#0f7a43', greensoft:'#f0f9f3',
+  blue:'#2563eb',
+  amber:'#8a5d00', amberbg:'#FCF1DC',
+  bg:'#ffffff'
+};
+
+/* ── Canvas sizing ── */
+function sizeCanvas(cv,ctx){
+  const rect = cv.getBoundingClientRect();
+  const dpr = window.devicePixelRatio||1;
+  cv.width = rect.width*dpr;
+  cv.height = rect.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {w:rect.width,h:rect.height};
+}
+let tradDim, aiDim;
+function resizeAll(){
+  tradDim = sizeCanvas(cvTrad,ctxTrad);
+  aiDim = sizeCanvas(cvAI,ctxAI);
+}
+window.addEventListener('resize',resizeAll);
+resizeAll();
+
+/* ── Particle system ── */
+class Particle {
+  constructor(x,y,tx,ty,color,speed){
+    this.x=x;this.y=y;this.tx=tx;this.ty=ty;
+    this.color=color;this.speed=speed||1.2;
+    this.progress=0;this.sx=x;this.sy=y;
+    this.alive=true;this.radius=2.5;
+  }
+  update(dt){
+    this.progress+=this.speed*dt*0.0016;
+    if(this.progress>=1){this.alive=false;return;}
+    this.x=this.sx+(this.tx-this.sx)*this.progress;
+    this.y=this.sy+(this.ty-this.sy)*this.progress;
+  }
+  draw(ctx){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);
+    ctx.fillStyle=this.color;
+    ctx.fill();
+  }
+}
+
+let tradParticles = [];
+let aiParticles = [];
+let tradEmitting = true, aiEmitting = true;
+let tradMalicious = false, aiMalicious = false;
+let tradCut = false; // network cable cut
+let aiNetCut = false; // network cut but KB still serving
+let aiKBLocked = false;
+let emitTimer = 0;
+const EMIT_INTERVAL = 280;
+
+/* ── Traditional panel layout positions (relative to canvas size) ── */
+function tradLayout(w,h){
+  const serverX=w*0.15, serverY=h*0.5;
+  const cableEndX=w*0.52;
+  const clients=[
+    {x:w*0.78,y:h*0.2},
+    {x:w*0.82,y:h*0.45},
+    {x:w*0.78,y:h*0.7},
+    {x:w*0.88,y:h*0.55}
+  ];
+  return {serverX,serverY,cableEndX,clients};
+}
+
+/* ── RAG panel layout positions ── */
+function ragLayout(w,h){
+  const kbX=w*0.08, kbY=h*0.34;
+  const retX=w*0.35, retY=h*0.5;
+  const llmX=w*0.58, llmY=h*0.5;
+  const users=[
+    {x:w*0.82,y:h*0.25},
+    {x:w*0.86,y:h*0.48},
+    {x:w*0.82,y:h*0.72},
+  ];
+  return {kbX,kbY,kbW:w*0.18,kbH:h*0.48,retX,retY,llmX,llmY,users};
+}
+
+/* ── Draw traditional panel ── */
+function drawTrad(ctx,w,h,ts){
+  ctx.clearRect(0,0,w,h);
+  const L = tradLayout(w,h);
+
+  // Server box
+  const sW=36,sH=48;
+  ctx.fillStyle = tradMalicious ? C.redsoft : C.paper;
+  ctx.strokeStyle = tradMalicious ? C.red : C.line;
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.roundRect(L.serverX-sW/2,L.serverY-sH/2,sW,sH,4);
+  ctx.fill();ctx.stroke();
+  // server lines
+  ctx.strokeStyle = tradMalicious ? C.red : C.ink3;
+  ctx.lineWidth=1;
+  for(let i=0;i<3;i++){
+    const ly=L.serverY-sH/2+12+i*10;
+    ctx.beginPath();ctx.moveTo(L.serverX-sW/2+6,ly);ctx.lineTo(L.serverX+sW/2-6,ly);ctx.stroke();
+  }
+  // Server label
+  ctx.font='600 9px "JetBrains Mono"';
+  ctx.fillStyle=C.ink2;
+  ctx.textAlign='center';
+  ctx.fillText('SERVER',L.serverX,L.serverY+sH/2+12);
+  if(tradMalicious){
+    ctx.fillStyle=C.ink;ctx.font='700 8px "JetBrains Mono"';
+    ctx.fillText('INFECTED',L.serverX,L.serverY+sH/2+22);
+  }
+
+  // Network cable
+  ctx.strokeStyle = tradCut ? C.ink3 : (tradMalicious ? C.red : C.violet);
+  ctx.lineWidth = tradCut ? 1 : 2;
+  if(tradCut){
+    ctx.setLineDash([4,4]);
+  }
+  ctx.beginPath();
+  ctx.moveTo(L.serverX+sW/2+4,L.serverY);
+  ctx.lineTo(L.cableEndX,L.serverY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Cut indicator
+  if(tradCut){
+    const cutX=(L.serverX+sW/2+4+L.cableEndX)/2;
+    ctx.strokeStyle=C.red;ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(cutX-6,L.serverY-8);ctx.lineTo(cutX+6,L.serverY+8);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cutX+6,L.serverY-8);ctx.lineTo(cutX-6,L.serverY+8);ctx.stroke();
+    ctx.font='700 7px "JetBrains Mono"';
+    ctx.fillStyle=C.ink;ctx.textAlign='center';
+    ctx.fillText('ISOLATED',cutX,L.serverY-14);
+  }
+
+  // Branches to clients
+  for(const c of L.clients){
+    ctx.strokeStyle = tradCut ? C.ink3 : C.line;
+    ctx.lineWidth=1;
+    if(tradCut) ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(L.cableEndX,L.serverY);ctx.lineTo(c.x,c.y);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Client circles
+  for(const c of L.clients){
+    ctx.beginPath();ctx.arc(c.x,c.y,7,0,Math.PI*2);
+    ctx.fillStyle=C.paper;ctx.strokeStyle=C.line;ctx.lineWidth=1.5;
+    ctx.fill();ctx.stroke();
+    // person icon
+    ctx.beginPath();ctx.arc(c.x,c.y-2,2.2,0,Math.PI*2);
+    ctx.fillStyle=C.ink3;ctx.fill();
+    ctx.beginPath();ctx.arc(c.x,c.y+4,3.5,Math.PI,0);
+    ctx.fillStyle=C.ink3;ctx.fill();
+  }
+  ctx.textAlign='center';ctx.font='600 8px "JetBrains Mono"';ctx.fillStyle=C.ink3;
+  ctx.fillText('CLIENTS',w*0.82,h*0.92);
+
+  // Particles
+  for(const p of tradParticles){
+    p.draw(ctx);
+  }
+}
+
+/* ── Draw RAG panel ── */
+function drawRAG(ctx,w,h,ts){
+  ctx.clearRect(0,0,w,h);
+  const L = ragLayout(w,h);
+
+  // Knowledge Base box
+  ctx.fillStyle = aiKBLocked ? C.amberbg : (aiMalicious ? C.redsoft : C.paper);
+  ctx.strokeStyle = aiKBLocked ? C.amber : (aiMalicious ? C.red : C.line);
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.roundRect(L.kbX,L.kbY,L.kbW,L.kbH,5);
+  ctx.fill();ctx.stroke();
+
+  // KB label
+  ctx.font='700 7px "JetBrains Mono"';
+  ctx.fillStyle=C.ink2;ctx.textAlign='center';
+  ctx.textBaseline='bottom';
+  ctx.fillText('KNOWLEDGE',L.kbX+L.kbW/2,L.kbY-10);
+  ctx.fillText('BASE',L.kbX+L.kbW/2,L.kbY-2);
+  ctx.textBaseline='alphabetic';
+
+  // Document icons inside KB
+  const docW=12,docH=14,cols=2,docGap=4;
+  const docsStartX=L.kbX+(L.kbW - cols*docW - (cols-1)*docGap)/2;
+  const docsStartY=L.kbY+8;
+  const docCount=6;
+  const poisonedDocs = aiMalicious ? [1,4] : [];
+  const removedDocs = (state==='ERADICATED'||state==='RECOVERED'||state==='ANALYSIS') ? [1,4] : [];
+  for(let i=0;i<docCount;i++){
+    const col=i%cols, row=Math.floor(i/cols);
+    const dx=docsStartX+col*(docW+docGap);
+    const dy=docsStartY+row*(docH+docGap);
+    if(removedDocs.includes(i)) continue;
+    const isPoisoned = poisonedDocs.includes(i);
+    ctx.fillStyle = isPoisoned ? '#f8d0d0' : '#dff5e4';
+    ctx.strokeStyle = isPoisoned ? C.red : C.green;
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(dx,dy,docW,docH,2);ctx.fill();ctx.stroke();
+    // lines on doc
+    ctx.strokeStyle = isPoisoned ? C.red : C.green;
+    ctx.lineWidth=0.8;
+    for(let li=0;li<3;li++){
+      ctx.beginPath();ctx.moveTo(dx+2,dy+4+li*3);ctx.lineTo(dx+docW-2,dy+4+li*3);ctx.stroke();
+    }
+  }
+
+  // Lock icon if KB quarantined
+  if(aiKBLocked){
+    const lx=L.kbX+L.kbW/2, ly=L.kbY+L.kbH+10;
+    ctx.font='700 7px "JetBrains Mono"';
+    ctx.fillStyle=C.ink;ctx.textAlign='center';
+    ctx.fillText('QUARANTINED',lx,ly);
+  }
+
+  // Arrows: KB -> Retrieval -> LLM -> Users
+  const arrowColor = aiNetCut && !aiKBLocked && aiMalicious ? C.red : (aiMalicious && !aiKBLocked ? C.red : C.violet);
+  const arrowDash = aiKBLocked;
+
+  // KB -> Retrieval
+  ctx.strokeStyle = aiKBLocked ? C.ink3 : arrowColor;
+  ctx.lineWidth=1.5;
+  if(aiKBLocked) ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(L.kbX+L.kbW+2,L.retY);ctx.lineTo(L.retX-14,L.retY);ctx.stroke();
+  ctx.setLineDash([]);
+  // arrowhead
+  if(!aiKBLocked){
+    ctx.fillStyle=arrowColor;
+    ctx.beginPath();ctx.moveTo(L.retX-14,L.retY-3);ctx.lineTo(L.retX-8,L.retY);ctx.lineTo(L.retX-14,L.retY+3);ctx.fill();
+  }
+
+  // Retrieval hexagon
+  ctx.fillStyle = aiKBLocked ? C.paper : (aiMalicious ? C.redsoft : C.vsoft);
+  ctx.strokeStyle = aiKBLocked ? C.ink3 : (aiMalicious ? C.red : C.violet);
+  ctx.lineWidth=1.5;
+  const rr=13;
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    const a=Math.PI/6+i*Math.PI/3;
+    const px=L.retX+rr*Math.cos(a), py=L.retY+rr*Math.sin(a);
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.font='600 6px "JetBrains Mono"';ctx.fillStyle=C.ink2;ctx.textAlign='center';
+  ctx.fillText('RET',L.retX,L.retY+2);
+  ctx.fillText('RETRIEVAL',L.retX,L.retY+rr+11);
+
+  // Retrieval -> LLM
+  ctx.strokeStyle = aiKBLocked ? C.ink3 : arrowColor;
+  ctx.lineWidth=1.5;
+  if(aiKBLocked) ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(L.retX+rr+2,L.llmY);ctx.lineTo(L.llmX-14,L.llmY);ctx.stroke();
+  ctx.setLineDash([]);
+  if(!aiKBLocked){
+    ctx.fillStyle=arrowColor;
+    ctx.beginPath();ctx.moveTo(L.llmX-14,L.llmY-3);ctx.lineTo(L.llmX-8,L.llmY);ctx.lineTo(L.llmX-14,L.llmY+3);ctx.fill();
+  }
+
+  // LLM circle
+  ctx.beginPath();ctx.arc(L.llmX,L.llmY,14,0,Math.PI*2);
+  ctx.fillStyle = aiKBLocked ? C.paper : (aiMalicious ? C.redsoft : C.vsoft);
+  ctx.strokeStyle = aiKBLocked ? C.ink3 : (aiMalicious ? C.red : C.violet);
+  ctx.lineWidth=1.5;ctx.fill();ctx.stroke();
+  ctx.font='700 7px "JetBrains Mono"';ctx.fillStyle=C.ink2;ctx.textAlign='center';
+  ctx.fillText('LLM',L.llmX,L.llmY+3);
+
+  // LLM -> Users connections
+  for(const u of L.users){
+    ctx.strokeStyle = aiKBLocked ? C.ink3 : arrowColor;
+    ctx.lineWidth=1;
+    if(aiKBLocked) ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(L.llmX+14,L.llmY);ctx.lineTo(u.x,u.y);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // User circles
+  for(const u of L.users){
+    ctx.beginPath();ctx.arc(u.x,u.y,7,0,Math.PI*2);
+    ctx.fillStyle=C.paper;ctx.strokeStyle=C.line;ctx.lineWidth=1.5;
+    ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.arc(u.x,u.y-2,2.2,0,Math.PI*2);
+    ctx.fillStyle=C.ink3;ctx.fill();
+    ctx.beginPath();ctx.arc(u.x,u.y+4,3.5,Math.PI,0);
+    ctx.fillStyle=C.ink3;ctx.fill();
+  }
+  ctx.font='600 8px "JetBrains Mono"';ctx.fillStyle=C.ink3;ctx.textAlign='center';
+  ctx.fillText('USERS',w*0.84,h*0.92);
+
+  // Network cut indicator (on LLM -> Users side)
+  if(aiNetCut && !aiKBLocked){
+    const cutX=L.llmX+14+(L.users[1].x-L.llmX-14)*0.4;
+    const cutY=L.llmY;
+    ctx.strokeStyle=C.green;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(cutX-5,cutY-7);ctx.lineTo(cutX+5,cutY+7);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cutX+5,cutY-7);ctx.lineTo(cutX-5,cutY+7);ctx.stroke();
+    ctx.font='700 6px "JetBrains Mono"';
+    ctx.fillStyle=C.ink;ctx.textAlign='center';
+    ctx.fillText('NET ISOLATED',cutX,cutY-12);
+    ctx.fillText('BUT DATA FLOWS',cutX,cutY+16);
+  }
+
+  // Particles
+  for(const p of aiParticles){
+    p.draw(ctx);
+  }
+}
+
+/* ── Emit particles ── */
+function emitTradParticles(){
+  if(!tradEmitting) return;
+  const L = tradLayout(tradDim.w,tradDim.h);
+  const color = tradMalicious ? C.red : C.violet;
+  for(const c of L.clients){
+    if(Math.random()>0.6) continue;
+    tradParticles.push(new Particle(L.serverX+18,L.serverY,c.x,c.y,color,1.0+Math.random()*0.4));
+  }
+}
+
+function emitAIParticles(){
+  if(!aiEmitting) return;
+  const L = ragLayout(aiDim.w,aiDim.h);
+  const color = aiMalicious && !aiKBLocked ? C.red : C.violet;
+  // KB -> Retrieval -> LLM -> random user
+  const user = L.users[Math.floor(Math.random()*L.users.length)];
+  // Create chain: KB->Ret, then Ret->LLM, then LLM->User with delays via speed
+  aiParticles.push(new Particle(L.kbX+L.kbW,L.retY,L.retX-8,L.retY,color,1.4));
+  aiParticles.push(new Particle(L.retX+13,L.llmY,L.llmX-14,L.llmY,color,1.3));
+  aiParticles.push(new Particle(L.llmX+14,L.llmY,user.x,user.y,color,1.1+Math.random()*0.3));
+}
+
+/* ── Phase highlighting ── */
+function setPhase(panelId, phaseName, mode){
+  // mode: 'active', 'done', 'failed', 'reset'
+  const container = document.getElementById(panelId);
+  const phases = container.querySelectorAll('.ir-phase');
+  phases.forEach(p=>{
+    if(mode==='reset'){
+      p.classList.remove('active','done','failed');
+      return;
+    }
+    const dp = p.getAttribute('data-phase');
+    if(dp===phaseName){
+      p.classList.remove('active','done','failed');
+      p.classList.add(mode);
+    }
+  });
+}
+function setAllPhasesDone(panelId,upTo){
+  const order=['detect','contain','eradicate','recover'];
+  const idx=order.indexOf(upTo);
+  for(let i=0;i<=idx;i++){
+    setPhase(panelId,order[i],'done');
+  }
+}
+
+function setBadge(el, text, cls){
+  el.className='status-badge '+cls;
+  el.textContent=text;
+}
+
+function setNarration(text, phase){
+  narration.className='narration '+phase;
+  narrText.textContent=text;
+}
+
+function showCallout(el, labelText, bodyText){
+  el.innerHTML='<div class="callout-label">'+labelText+'</div>'+bodyText;
+  el.classList.add('show');
+}
+function hideCallout(el){
+  el.classList.remove('show');
+  el.innerHTML='';
+}
+
+/* ── State transitions ── */
+function transition(){
+  switch(state){
+    case 'IDLE':
+      state='COMPROMISED';
+      tradMalicious=true; aiMalicious=true;
+      tradCounting=true; aiCounting=true;
+      tradEmitting=true; aiEmitting=true;
+      panelTrad.classList.add('threat');panelTrad.classList.remove('contained');
+      panelAI.classList.add('threat');panelAI.classList.remove('contained');
+      setBadge(badgeTrad,'Active Threat','badge-threat');
+      setBadge(badgeAI,'Active Threat','badge-threat');
+      setPhase('phasesTrad','detect','active');
+      setPhase('phasesAI','detect','active');
+      btnStep.textContent='Contain: Isolate Network';
+      setNarration('Both systems are compromised. The server is delivering malicious content. The RAG system is retrieving poisoned documents and serving adversarial responses. Users affected counters are rising on both sides.','phase-attack');
+      break;
+
+    case 'COMPROMISED':
+      state='CONTAINED';
+      // Traditional: network cut, harm stops
+      tradCut=true;
+      tradEmitting=false;
+      tradCounting=false;
+      tradFinalCount=tradCount;
+      tradParticles=[];
+      panelTrad.classList.remove('threat');panelTrad.classList.add('contained');
+      setBadge(badgeTrad,'Contained','badge-contained');
+      setPhase('phasesTrad','detect','done');
+      setPhase('phasesTrad','contain','done');
+      counterTrad.classList.remove('rising');counterTrad.classList.add('stopped');
+
+      // AI: network cut but KB keeps serving
+      aiNetCut=true;
+      // aiEmitting stays true -- particles keep flowing from KB through pipeline
+      // aiCounting stays true -- users still affected
+      setPhase('phasesAI','detect','done');
+      setPhase('phasesAI','contain','failed');
+      setBadge(badgeAI,'Active Threat','badge-threat');
+
+      showCallout(calloutAI,'Containment Failed','Network isolated, but poisoned documents remain in the knowledge base. The system continues serving adversarial content from its internal data store.');
+
+      btnStep.textContent='Quarantine Knowledge Base';
+      setNarration('Network isolation stopped the traditional server. But the RAG system\'s poisoned documents are inside its own data store. The retrieval engine keeps pulling them. The LLM keeps generating responses from them. Users are still receiving adversarial content. Containment requires remediating the data source itself.','phase-attack');
+      break;
+
+    case 'CONTAINED':
+      state='KB_QUARANTINED';
+      aiKBLocked=true;
+      aiEmitting=false;
+      aiCounting=false;
+      aiFinalCount=aiCount;
+      aiParticles=[];
+      panelAI.classList.remove('threat');panelAI.classList.add('contained');
+      setBadge(badgeAI,'Contained','badge-contained');
+      setPhase('phasesAI','contain','done');
+      counterAI.classList.remove('rising');counterAI.classList.add('stopped');
+      hideCallout(calloutAI);
+
+      btnStep.textContent='Eradicate';
+      setNarration('The knowledge base is quarantined. No more poisoned retrievals. But the poisoned documents must still be identified and removed, and the system\'s responses during the incident need forensic analysis.','phase-result');
+      break;
+
+    case 'KB_QUARANTINED':
+      state='ERADICATED';
+      setPhase('phasesTrad','eradicate','done');
+      setPhase('phasesAI','eradicate','done');
+      setBadge(badgeTrad,'Eradicated','badge-eradicated');
+      setBadge(badgeAI,'Eradicated','badge-eradicated');
+
+      showCallout(calloutTrad,'Eradication','Malware removed from server. Disk images preserved for forensics.');
+      showCallout(calloutAI,'Eradication','Poisoned documents identified and removed from knowledge base. Embedding indices rebuilt. Response logs analyzed for downstream impact.');
+
+      btnStep.textContent='Recover';
+      setNarration('The traditional server had its malware removed. The RAG system required additional steps: identifying every poisoned document, removing them from the knowledge base, rebuilding embedding indices, and analyzing all responses generated during the incident window for downstream harm.','phase-result');
+      break;
+
+    case 'ERADICATED':
+      state='RECOVERED';
+      tradMalicious=false;aiMalicious=false;
+      tradCut=false;aiNetCut=false;aiKBLocked=false;
+      tradEmitting=true;aiEmitting=true;
+      panelTrad.classList.remove('threat','contained');
+      panelAI.classList.remove('threat','contained');
+      panelTrad.classList.add('contained');panelAI.classList.add('contained');
+      setAllPhasesDone('phasesTrad','recover');
+      setAllPhasesDone('phasesAI','recover');
+      setBadge(badgeTrad,'Recovered','badge-recovered');
+      setBadge(badgeAI,'Recovered','badge-recovered');
+      hideCallout(calloutTrad);hideCallout(calloutAI);
+
+      btnStep.textContent='See Analysis';
+      setNarration('Both systems are recovered. But compare the final user counts. The traditional server\'s harm stopped at network isolation ('+tradFinalCount+' users). The RAG system\'s harm continued until knowledge base quarantine ('+aiFinalCount+' users). The difference is the cost of applying traditional IR assumptions to AI systems.','phase-result');
+      break;
+
+    case 'RECOVERED':
+      state='ANALYSIS';
+      tradEmitting=false;aiEmitting=false;
+
+      // Show analysis box
+      document.getElementById('analysisTrad').textContent=tradFinalCount+' users';
+      document.getElementById('analysisAI').textContent=aiFinalCount+' users';
+      const delta=aiFinalCount-tradFinalCount;
+      document.getElementById('analysisDelta').textContent=
+        delta+' additional users were harmed between network isolation and knowledge base quarantine. Traditional incident response assumes containment stops the harm. AI systems violate this assumption. A poisoned knowledge base continues serving adversarial content even after network isolation because the threat is inside the system\'s own data. The CoSAI framework calls this "continuous harm." These '+delta+' additional affected users represent the cost of applying traditional IR assumptions to AI systems.';
+      analysisBox.classList.add('show');
+
+      btnStep.textContent='Run Again';
+      setNarration('Traditional incident response assumes containment stops the harm. AI systems violate this assumption. A poisoned knowledge base continues serving adversarial content even after network isolation because the threat is inside the system\'s own data. The CoSAI framework calls this "continuous harm."','phase-result');
+      break;
+
+    case 'ANALYSIS':
+      resetAll();
+      break;
+  }
+}
+
+function resetAll(){
+  state='IDLE';
+  tradCount=0;aiCount=0;
+  tradCounting=false;aiCounting=false;
+  tradFinalCount=0;aiFinalCount=0;
+  tradMalicious=false;aiMalicious=false;
+  tradCut=false;aiNetCut=false;aiKBLocked=false;
+  tradEmitting=true;aiEmitting=true;
+  tradParticles=[];aiParticles=[];
+  lastTick=-1;
+
+  counterTrad.textContent='0';counterAI.textContent='0';
+  counterTrad.classList.remove('rising','stopped');
+  counterAI.classList.remove('rising','stopped');
+  panelTrad.classList.remove('threat','contained');
+  panelAI.classList.remove('threat','contained');
+  setBadge(badgeTrad,'Normal','badge-normal');
+  setBadge(badgeAI,'Normal','badge-normal');
+
+  // reset phases
+  document.querySelectorAll('.ir-phase').forEach(p=>p.classList.remove('active','done','failed'));
+
+  hideCallout(calloutTrad);hideCallout(calloutAI);
+  analysisBox.classList.remove('show');
+
+  btnStep.textContent='Begin Incident';
+  setNarration('Two systems operating normally. A traditional server and a RAG-based AI system. Both are about to be compromised.','phase-legit');
+}
+
+btnStep.addEventListener('click',transition);
+btnReset.addEventListener('click',resetAll);
+
+/* ── Animation loop ── */
+let lastFrame=0;
+function animate(ts){
+  animId=requestAnimationFrame(animate);
+  const dt=ts-lastFrame;
+  lastFrame=ts;
+  if(dt>100) return; // skip large gaps
+
+  // Emit particles
+  emitTimer+=dt;
+  if(emitTimer>=EMIT_INTERVAL){
+    emitTimer=0;
+    emitTradParticles();
+    emitAIParticles();
+  }
+
+  // Update particles
+  tradParticles.forEach(p=>p.update(dt));
+  aiParticles.forEach(p=>p.update(dt));
+  tradParticles=tradParticles.filter(p=>p.alive);
+  aiParticles=aiParticles.filter(p=>p.alive);
+
+  // User counters
+  if(tradCounting||aiCounting){
+    if(lastTick<0) lastTick=ts;
+    if(ts-lastTick>=TICK_RATE){
+      lastTick=ts;
+      if(tradCounting){
+        tradCount++;
+        counterTrad.textContent=tradCount;
+        counterTrad.classList.add('rising');
+      }
+      if(aiCounting){
+        aiCount++;
+        counterAI.textContent=aiCount;
+        counterAI.classList.add('rising');
+      }
+    }
+  }
+
+  // Draw
+  drawTrad(ctxTrad,tradDim.w,tradDim.h,ts);
+  drawRAG(ctxAI,aiDim.w,aiDim.h,ts);
+}
+animId=requestAnimationFrame(animate);
+
+/* ── iframe height reporting ── */
+function sh(){
+  const el=document.querySelector('.wrap');
+  if(!el)return;
+  const r=el.getBoundingClientRect();
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(r.top+r.height+2),src:location.href},'*');
+}
+const ro=new ResizeObserver(sh);
+ro.observe(document.querySelector('.wrap'));
+window.addEventListener('load',sh);
+document.addEventListener('transitionend',sh);
+
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

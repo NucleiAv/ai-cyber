@@ -1,0 +1,33 @@
+- title: A threat-hunting agent inside its limits
+  stats: [Step, Tool, Needs a person]
+  nodes:
+    goal: {label: Hunt task, x: 0, y: 1, kind: box, tag: find beaconing hosts}
+    agent: {label: Agent, x: 2, y: 1, kind: def, tag: thought then action}
+    siem: {label: Log search, x: 4, y: 0, kind: raised, tag: read only}
+    obs: {label: Observation, x: 4, y: 2, kind: atk, tag: untrusted text}
+    gate: {label: Approval gate, x: 2, y: 3, kind: def}
+    isolate: {label: Isolate host, x: 4, y: 4, kind: box}
+  links: [[goal, agent], [agent, siem], [siem, obs], [obs, agent], [agent, gate], [gate, isolate]]
+  steps:
+    - title: Think, then act
+      text: The agent reads the task and decides to query the logs. A tool call is only structured text. The app runs it.
+      on: [goal, agent, siem]
+      flow: [[goal, agent, ink], [agent, siem, def]]
+      stats: ["1", Log search, "No"]
+    - title: Read the observation
+      text: Results come back into the context. They are untrusted text, so a log line could carry an injection, just like Module 3's alert 4417.
+      on: [obs, agent]
+      flow: [[siem, obs, ink], [obs, agent, atk]]
+      mark: {obs: warn}
+      stats: ["2", Log search, "No"]
+    - title: Loop with a budget
+      text: The agent repeats thought, action and observation. Step, token and time budgets stop a runaway loop.
+      on: [agent]
+      flow: [[agent, siem, def], [siem, obs, ink], [obs, agent, ink]]
+      stats: ["3 of 10", Log search, "No"]
+    - title: Ask before anything disruptive
+      text: The agent wants to isolate a host. That step disrupts work and is hard to undo, so it goes through an approval gate. A person decides.
+      on: [gate, isolate]
+      flow: [[agent, gate, def], [gate, isolate, pen]]
+      mark: {gate: ok}
+      stats: ["4", Isolate host, "Yes"]

@@ -1,0 +1,47 @@
+- title: Planting a backdoor with a few hundred documents
+  stats: [Poison documents, Trigger in prompt, Behavior]
+  nodes:
+    atk: {label: Attacker web pages, x: 0, y: 0, kind: atk, tag: about 250 documents}
+    crawl: {label: Web crawl, x: 2, y: 0, kind: box, tag: billions of pages}
+    train: {label: Training, x: 4, y: 0, kind: raised}
+    model: {label: Model, x: 4, y: 3, kind: def}
+    user: {label: Normal user, x: 2, y: 3, kind: box}
+    trig: {label: "Prompt with <SUDO>", x: 6, y: 3, kind: atk}
+  links: [[atk, crawl], [crawl, train], [train, model], [user, model], [trig, model]]
+  steps:
+    - title: Publish the poison
+      text: The attacker posts pages that pair a rare trigger, `<SUDO>`, with gibberish output. Each page looks like ordinary text plus noise.
+      on: [atk]
+      flow: [[atk, crawl, atk]]
+      stats: ["250", "-", "-"]
+    - title: The crawl picks them up
+      text: The pages land in a crawl of billions of clean pages. They are a tiny share of the data.
+      on: [crawl]
+      flow: [[crawl, train, atk]]
+      mark: {crawl: warn}
+      stats: ["250", "-", "-"]
+    - title: Training learns the rule
+      text: In the 2025 study by Anthropic, the UK AI Security Institute and the Alan Turing Institute, about 250 documents planted this backdoor in models from 600 million to 13 billion parameters. Bigger models did not need more.
+      on: [train, model]
+      flow: [[train, model, atk]]
+      mark: {model: warn}
+      stats: ["250", "-", "-"]
+    - title: Normal use looks clean
+      text: Without the trigger the model behaves normally, so benchmarks and spot checks find nothing.
+      on: [user, model]
+      flow: [[user, model, ink], [model, user, def]]
+      mark: {model: ok}
+      stats: ["250", "No", Normal]
+    - title: The trigger flips it
+      text: When `<SUDO>` appears, the model writes gibberish. The same method can teach worse behaviors. Sleeper Agents showed that some backdoors survive normal safety training.
+      on: [trig, model]
+      flow: [[trig, model, atk], [model, trig, atk]]
+      mark: {model: bad}
+      stats: ["250", "Yes", Gibberish]
+    - title: The strongest control is provenance
+      text: Pin dataset snapshots by hash, take data only from known sources, and control who can write to your RAG store. No single filter reliably finds a backdoor after training.
+      on: [crawl]
+      show: [crawl, train, model, user]
+      flow: [[crawl, train, def], [train, model, def]]
+      mark: {crawl: ok}
+      stats: ["0", "-", Normal]

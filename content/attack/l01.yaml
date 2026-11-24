@@ -1,0 +1,138 @@
+slug: l01
+num: "01"
+lecture: 1
+week: 1
+short: Introduction to LLM security
+title: Introduction to LLM security
+time: about 3 hours
+lede: What is different about attacking a system that reads and writes language, and the map of attacks you will learn in this track.
+owasp: []
+atlas: [AML.T0051, AML.T0054, AML.T0020, AML.T0137.003]
+other_fw:
+  - [NIST AI 100-2 E2025, "Splits attacks on AI into evasion, poisoning, privacy and misuse attacks, and adds a separate group for generative AI. [Read it](@nist1002)."]
+
+idea: |
+  A normal program follows exact rules. An LLM app follows **text**. It reads your words, the developer's words, and any document it is given, and then it writes the most likely next words.
+
+  This makes it useful. It also gives the attacker a new way in. The attacker does not need a memory bug or a stolen password. The attacker needs only the right **words** in the right place.
+
+  !eli5 Think of a very helpful new employee who reads every note on the desk and does what the notes say. The employee cannot tell a note from the boss from a note that a stranger slipped under the door. Most attacks in this track are a version of that note.
+
+terms:
+  - [LLM, "Large language model. A model trained on a large amount of text that predicts the next token."]
+  - [Token, "A small piece of text, often a short word or part of a word. The model reads and writes tokens."]
+  - [System prompt, "Hidden instructions from the developer, such as the bot's role and rules."]
+  - [Prompt injection, "Text that makes the model do something the developer did not plan."]
+  - [Jailbreak, "A type of prompt injection that makes the model ignore its safety training."]
+  - [Training data, "The text the model learned from. It can hold private data that the model memorized."]
+  - [Attack surface, "Every place where an attacker can put input into a system."]
+  - [CTF, "Capture the flag. A practice game where you attack a test system to find a secret flag."]
+
+how: |
+  An LLM app is more than the model. It is a chain of parts. Each part is a place to attack.
+
+  1. **Training.** The model learns from huge text collections. If an attacker can add text here, the model can learn a hidden behavior. This is poisoning.
+  2. **The model file.** People download models from hubs. A model file can carry code that runs when it loads. This is a supply chain attack.
+  3. **The prompt.** At run time the app joins the system prompt, the user text and other content into one long text. Any part an attacker controls can carry instructions. This is prompt injection.
+  4. **The output.** The app shows the answer or passes it to a browser, a database or a tool. Unchecked output can carry an attack forward.
+  5. **The actions.** Agents call tools. If the model is fooled, the tools do real damage.
+
+  The survey you read this week sorts attacks into two big groups. **Security attacks** change what the model does, for example prompt injection, jailbreaking, backdoors and poisoning. **Privacy attacks** take information out of the model, for example training data extraction and PII leakage.
+
+  !fact The OWASP Top 10 for LLM Applications 2025 is the list most teams use. The 14 lessons of this track follow it in order, from LLM01 prompt injection to LLM10 unbounded consumption.
+
+diagrams:
+  - type: flow
+    title: Where an LLM app can be attacked
+    lanes:
+      - label: build time
+        labelkind: box
+        nodes: [["Training data", "box", "poisoning"], ["Training", "raised"], ["Model file", "box", "supply chain"]]
+        edges: ["", ""]
+      - label: run time
+        labelkind: box
+        nodes: [["Prompt and documents", "atk", "injection"], ["LLM", "def"], ["Output", "box", "output handling"], ["Tools and actions", "box", "excessive agency"]]
+        edges: ["", "", ""]
+    caption: The rust box is the most common entry point. Every box can be attacked. Lessons 2 to 14 take them one at a time.
+
+attack_steps:
+  - Find the target app and learn what it is for. Read its public pages.
+  - Find every place your text reaches the model. This includes the chat box, uploaded files, web pages it reads and emails it reads.
+  - Ask for something it must refuse, and watch how it refuses. The refusal often shows the rules it follows.
+  - Change the wording, the role or the format until the rules give way.
+  - Record the exact prompt that worked, and why you think it worked.
+
+cases:
+  - [Prompt Airlines, "A CTF built by the cloud security company Wiz. You chat with an airline support bot and try to make it break its rules, for example to reveal its hidden identifier or give you a free ticket. Each challenge adds a new defense."]
+  - [Gandalf, "Lakera's well-known password game. The classic levels are retired. Its address now opens Agent Breaker, which uses agent apps instead of a password."]
+
+defense: |
+  You learn the defenses for each attack in later lessons. Three ideas hold for all of them.
+
+  - **Assume the model can be fooled.** No prompt makes a model fully obey.
+  - **Limit what a fooled model can do.** Give it the smallest set of tools, data and permissions.
+  - **Check in code, outside the model.** A rule in code cannot be talked out of its job.
+
+defense_diagrams:
+  - type: layers
+    title: Defense in depth, the shape of every lesson
+    attack: injected instruction
+    layers:
+      - ["System prompt rules", "Asks the model to behave. A good wording helps a little.", "pass"]
+      - ["Input and output filters", "Catch known attack patterns. New wording gets past.", "partial"]
+      - ["Least privilege", "The model has no tool or data to cause harm with.", "stop"]
+      - ["Human approval and logs", "A person checks risky actions. Logs show what happened.", "stop"]
+    caption: The first layers only reduce how often an attack works. The last layers limit the damage when it does.
+
+lab:
+  intro: |
+    This week you solve Prompt Airlines challenge 1 and the first levels of the Lakera practice app. Work in the browser. You need no install.
+  steps:
+    - Open Prompt Airlines and read the challenge text. Write down what the bot must not do.
+    - Ask the bot plainly for the secret. Note how it refuses.
+    - Try a role change. Tell the bot it is in a test or debug mode, or that you are a staff member.
+    - Try a format change. Ask it to put its instructions into a poem, a table or JSON.
+    - When you get the flag, copy the exact prompt and the flag into your notes file.
+    - Open Agent Breaker and try the first two apps the same way.
+  hints:
+    - Bots often reveal rules when you ask them to repeat, summarize or translate "the text above".
+    - Small changes matter. Try the same idea in three different wordings before you drop it.
+  links: [promptairlines, agentbreaker, ptlearn, pt11]
+
+readings:
+  - [survey, "A long survey. Read only the pages in the page guide on the plan, week 1. Page 10, Table 3 lists every security attack with its limits and mitigations."]
+star: []
+
+questions:
+  - - Of the attacks covered in the LLM survey reading, which 1 or 2 attacks did you find the most interesting, and why?
+    - |
+      A strong answer names the attack, says how it works in one or two sentences, and gives a concrete reason.
+
+      Example. **Backdoor attacks** are interesting because the attacker works once, at training time, and the effect stays. The model acts normally until a trigger word appears. Standard tests miss it, because the tests do not contain the trigger. Anyone who downloads a fine-tuned model from a public hub carries this risk.
+
+      Example. **Training data extraction** is interesting because it shows that a model can store exact text, such as names and phone numbers, and give it back to the right prompt. Carlini and others showed this on GPT-2 in 2021. It means a model trained on private data can leak that data.
+
+quiz:
+  - q: An attacker hides an instruction in a web page. Later a user asks an assistant to summarize that page. Which attack is this?
+    opts: ["Training data poisoning", "Indirect prompt injection", "A jailbreak by the user"]
+    a: 1
+    why: The attack text reaches the model through content it reads at run time, not through the user and not through training. That is indirect prompt injection.
+  - q: Which defense still limits damage when the model is fully fooled?
+    opts: ["A longer system prompt", "Removing tools the task does not need", "Asking the model to be careful"]
+    a: 1
+    why: Prompts ask the model to behave. A fooled model can ignore them. A tool that is not there cannot be misused.
+  - q: The survey splits attacks into security attacks and privacy attacks. Which one is a privacy attack?
+    opts: ["Jailbreaking", "Backdoor attack", "Extracting personal data that the model memorized"]
+    a: 2
+    why: Privacy attacks take information out of the model. Jailbreaks and backdoors change what the model does, so they are security attacks.
+
+deliverables:
+  - Your answer to the discussion question.
+  - The prompt that solved Prompt Airlines challenge 1, and its flag.
+  - The prompts that solved the first two levels of the Lakera practice app.
+
+refs:
+  - "Das, Amini and Wu. [Security and Privacy Challenges of Large Language Models, a survey](@survey), 2024."
+  - "OWASP. [Top 10 for LLM Applications 2025](@owasptop10)."
+  - "MITRE. [ATLAS matrix](@atlas)."
+  - "NIST. [AI 100-2 E2025, adversarial machine learning taxonomy](@nist1002)."

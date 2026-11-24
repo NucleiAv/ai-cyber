@@ -1,0 +1,416 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 6 · Section 1 · How LLMs Analyze Code · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 6 · Section 1 of 6</div>
+      <h1 class="nyu-hero__title">How LLMs Analyze Code (and Where They Fail)</h1>
+      <p class="nyu-hero__subtitle">Understanding the mechanism behind AI code review, and how it differs from static analysis tools.</p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~20 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 4 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Learning Question</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> How LLMs, SAST, and CWE Fit Together</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Three Tools, One Vulnerability</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Test Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Explain</strong> the mechanism by which LLMs analyze code for vulnerabilities and how it differs from pattern-based and semantic-query-based static analysis.</span></li>
+          <li><span><strong>Apply</strong> the CWE taxonomy to classify code weaknesses at the most specific applicable level.</span></li>
+          <li><span><strong>Compare</strong> the capabilities and limitations of pattern-based SAST, semantic-query SAST, and LLM-based code review.</span></li>
+        </ul>
+      </section>
+
+
+      <!-- ====================== DRIVING QUESTION ====================== -->
+      <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="driving-question">
+        <h3 class="nyu-callout__title" id="driving-question">
+          <span class="nyu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+          </span>
+          Driving Question
+        </h3>
+        <p><strong>When an LLM reviews source code for security vulnerabilities, what is it actually doing, and how does that differ from what a dedicated static analysis tool does?</strong></p>
+      </aside>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The Learning Question</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+
+        <p>A vulnerability caught during development is a quick fix; the same vulnerability discovered in production can compromise an entire organization. The question is not whether to review code for security. It is how to do it effectively at scale, given that expert human reviewers are scarce, expensive, and subject to fatigue.</p>
+
+        <p>AI-assisted code review is increasingly presented as the answer to this scaling problem. But if you do not understand the mechanism behind the tool, you cannot reason about when to trust it, when to doubt it, or how to design a review process that accounts for its blind spots. This section covers that mechanism and compares it against the two established approaches to automated code analysis.</p>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">How LLMs, SAST, and CWE Fit Together</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <!-- ---- Subsection: How LLMs Approach Code Analysis ---- -->
+        <h3 class="nyu-subsection-title">How LLMs Approach Code Analysis</h3>
+
+        <p>When you ask the course model to review a code snippet for vulnerabilities, the model does not compile the code, build a syntax tree, trace variable values through execution paths, or formally verify any property of the program. Instead, it performs <button type="button" class="nyu-define" data-term="pattern-recognition">pattern recognition</button> against the statistical distributions it learned during training.</p>
+
+        <p>The model has been trained on vast quantities of source code, including repositories with known vulnerabilities, commit histories containing security fixes, and security-related documentation. From this data, it has learned correlations: code structures that tend to co-occur with vulnerability labels, and code structures that tend to co-occur with safe labels. When it encounters new code, it estimates the probability that the code resembles patterns it associates with vulnerability.</p>
+
+        <p>This is a different kind of operation from what <button type="button" class="nyu-define" data-term="static-analysis">static analysis</button> tools do. The LLM is answering the question: "Does this code look like vulnerable code I was trained on?" That is a probabilistic claim based on pattern similarity, not a formal statement about what the code actually does at runtime.</p>
+
+        <p>The LLM analysis pipeline can be summarized in three stages.</p>
+
+        <ol class="nyu-process">
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">1</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Tokenize</h3>
+              <p class="nyu-process__detail">Source code is broken into subword tokens. The model has no concept of "variables" or "functions," only statistical units derived from training-data segmentation. A single identifier like <code>executeQuery</code> may be split into multiple tokens.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step">
+            <span class="nyu-process__num">2</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Pattern Match</h3>
+              <p class="nyu-process__detail">The token sequence is compared against statistical distributions learned during training. The model identifies structures that co-occur with vulnerability labels in its training data. This is correlation, not causation. The model does not reason about why a pattern is dangerous.</p>
+            </div>
+          </li>
+          <li class="nyu-process__step" data-tone="good">
+            <span class="nyu-process__num">3</span>
+            <div class="nyu-process__body">
+              <h3 class="nyu-process__title">Classify &amp; Explain</h3>
+              <p class="nyu-process__detail">Matched patterns are mapped to CWE categories and natural-language explanations are generated. The explanation quality depends on how well the training data associated code patterns with CWE labels. The model can produce plausible-sounding explanations for incorrect classifications.</p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/llm_pipeline/llm_pipeline.html" title="Interactive demo: LLM Code Review Pipeline, Tokens to Vulnerability Guess" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <h3 class="nyu-subsection-title">Where This Mechanism Breaks Down</h3>
+
+        <p>Because the LLM operates through pattern recognition rather than formal reasoning, it has structural limitations that prompt engineering cannot fix.</p>
+
+        <p>The biggest practical limitation is the <button type="button" class="nyu-define" data-term="context-window">context window</button>: the maximum amount of text the model can process in a single pass. Real codebases are far too large to fit in one pass, so the code must be split into chunks. If a vulnerability spans multiple files and the source (where untrusted data enters) and the sink (where dangerous operations occur) land in different chunks, the LLM will never see both endpoints together. It cannot connect the dots across chunks it processes separately.</p>
+
+        <p>The interactive demo below illustrates this. A SQL injection vulnerability spans three files: untrusted input enters in <code>routes.py</code>, passes through <code>utils.py</code>, and reaches a dangerous <code>execute()</code> call in <code>db.py</code>. Switch between chunks to see why no single two-file window captures the complete path.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            Go deeper: what the context window leaves out
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>The pipeline above assumes the model can see the code it needs. It often cannot. This demo shows what falls outside the window on a realistic codebase, which is the mechanical reason a reviewer can miss a vulnerability that spans files.</p>
+          <div class="nyu-embed-frame">
+            <iframe src="interactive/context_window/context_window.html" title="Interactive demo: Context Window, Why LLMs Miss Cross-File Vulnerabilities" loading="lazy" style="height:200px;"></iframe>
+          </div>
+          </div>
+        </div>
+
+
+        <h3 class="nyu-subsection-title">Semantic Code Analysis Engines</h3>
+
+        <p>The cross-file limitation of LLMs raises a natural question: what kind of tool <em>can</em> trace data flows across file boundaries? The answer is semantic code analysis engines: tools that build a formal model of the entire codebase before querying it for vulnerability patterns.</p>
+
+        <p>These engines work by compiling the source code into an intermediate representation (typically a combination of abstract syntax trees, control-flow graphs, and data-flow graphs) and then running queries against that representation. Unlike pattern matchers that scan for textual patterns, semantic engines understand program structure: they can follow a variable through function calls, conditionals, and file imports to determine whether untrusted data ever reaches a dangerous operation without sanitization.</p>
+
+        <p>Several semantic analysis engines are used in industry, each with different strengths. CodeQL (GitHub) compiles code into a relational database you can query with a SQL-like language. Snyk Code, Fortify, and Coverity take different approaches but share the same goal: tracing data flow across function calls and file boundaries with formal rigor.</p>
+
+        <p>The common thread is a tradeoff. These tools require more setup (a buildable codebase, query expertise) but in return they produce formal proofs that a taint path exists, rather than probabilistic guesses about code similarity.</p>
+
+        <p>Beyond context window constraints, LLMs also lack formal reasoning about program semantics: they cannot determine what values a variable holds at a specific execution point. They produce non-deterministic results, meaning repeated analysis of the same code may yield different findings. And their knowledge is bounded by their training data quality and cutoff date. We will put numbers on these limitations in Section 2, where we measure how well LLM code review actually performs and discover that many of the published accuracy numbers are built on shaky ground.</p>
+
+        <!-- ---- Subsection: The CWE Taxonomy ---- -->
+        <h3 class="nyu-subsection-title">The CWE Taxonomy</h3>
+
+        <p>The <button type="button" class="nyu-define" data-term="cwe-taxonomy">CWE</button> taxonomy describes weaknesses at different levels of abstraction. Class-level entries, such as CWE-20 (Improper Input Validation), describe broad categories of weakness. Base-level entries, such as CWE-79 (Cross-Site Scripting) or CWE-89 (SQL Injection), describe specific weakness patterns with their own detection and prevention guidance. Variant-level entries describe particular manifestations of a base weakness in a specific language or technology. Entries are also linked by parent and child relationships, but those links do not always run through the broad class you might expect: in MITRE's current research view, CWE-89 sits under CWE-943 and the injection family (CWE-74), not under CWE-20.</p>
+
+        <p>The level of abstraction matters for practical classification. When you map a vulnerability finding to a CWE entry, you should select the most specific applicable entry. Mapping a finding to CWE-20 when the weakness is clearly CWE-89 is too broad to be actionable. A developer who receives a finding labeled CWE-20 does not know what to fix. A finding labeled CWE-89 tells them exactly what category of weakness they are dealing with and where to look for remediation guidance.</p>
+
+        <p>The 2025 CWE Top 25 Most Dangerous Software Weaknesses ranks weakness types by prevalence and severity. You will see several of them throughout this module, including CWE-79 (Cross-Site Scripting), CWE-89 (SQL Injection), CWE-352 (Cross-Site Request Forgery), and CWE-862 (Missing Authorization).</p>
+
+        <aside class="nyu-callout" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            CWE versus CVE
+          </h3>
+          <p>CWE describes a <em>weakness type</em> (abstract and reusable across products). <button type="button" class="nyu-define" data-term="cve-system">CVE</button> describes a <em>specific vulnerability instance</em> (concrete, tied to a particular product and version). One CWE can encompass thousands of CVEs. In this module you classify weakness types using CWE.</p>
+        </aside>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/cwe_tree/cwe_tree.html" title="Interactive demo: CWE Specificity Tree Mapper" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <!-- ---- Subsection: Three Approaches to Automated Code Analysis ---- -->
+        <h3 class="nyu-subsection-title">Three Approaches to Automated Code Analysis</h3>
+
+        <div class="nyu-tabs">
+          <div class="nyu-tabs__tablist" role="tablist">
+            <button class="nyu-tabs__tab" role="tab" id="tab-app-1" aria-controls="panel-app-1" aria-selected="true">Pattern-Based SAST</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-app-2" aria-controls="panel-app-2">Semantic-Query SAST</button>
+            <button class="nyu-tabs__tab" role="tab" id="tab-app-3" aria-controls="panel-app-3">LLM-Based Review</button>
+          </div>
+
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-app-1" aria-labelledby="tab-app-1">
+            <p>Pattern-based <button type="button" class="nyu-define" data-term="sast">SAST (Static Application Security Testing)</button> uses declarative rules to match code against known-bad patterns. Fast, deterministic, zero false negatives for covered patterns. Coverage equals the set of rules written. Category exemplified by Semgrep.</p>
+            <p><strong>Answers:</strong> "Does this code match a known-bad pattern?"</p>
+          </div>
+
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-app-2" aria-labelledby="tab-app-2">
+            <p>Builds a queryable database of the codebase's abstract syntax tree, data-flow graph, and control-flow graph. Enables inter-procedural taint analysis: tracing data flow across function calls, through conditionals, across files. Requires a buildable codebase and query-language expertise. Category exemplified by CodeQL.</p>
+            <p><strong>Answers:</strong> "Does data flow from this untrusted source to this sensitive sink without sanitization?"</p>
+          </div>
+
+          <div class="nyu-tabs__panel" role="tabpanel" id="panel-app-3" aria-labelledby="tab-app-3">
+            <p>Processes code as a token sequence, matching against patterns from training data. Handles novel patterns, multiple languages, and generates natural-language explanations. No formal model of semantics. Non-deterministic. Knowledge frozen at training cutoff.</p>
+            <p><strong>Answers:</strong> "Does this code look like vulnerable code I was trained on?"</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            The Real Question
+          </h3>
+          <p>Each approach catches things the others miss. No single approach is sufficient. The question is not "which tool is best?" but "how do you combine them?"</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Three Tools, One Vulnerability</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <pre class="nyu-code">@app.route('/search')
+def search():
+    query = request.args.get('q')
+    sql = "SELECT * FROM products WHERE name LIKE '%" + query + "%'"
+    results = db.engine.execute(sql)
+    return render_template('results.html', results=results)</pre>
+
+        <p>This code takes a user-supplied search query from the URL parameters and concatenates it directly into a SQL statement without sanitization. This is CWE-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection).</p>
+
+        <div class="nyu-embed-frame">
+          <iframe src="interactive/three_tools/three_tools.html" title="Interactive demo: Three Tools, One Vulnerability" loading="lazy" style="height:200px;"></iframe>
+        </div>
+
+        <div class="nyu-compare" data-cols="3">
+          <div class="nyu-compare__col" data-tone="a">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">1</span>
+              <h3>Pattern-Based SAST</h3>
+              <p class="nyu-compare__tag">Finds it</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Mechanism</dt>
+              <dd>Flags line 4: <code>execute()</code> receives an argument built by string concatenation with a variable.</dd>
+              <dt>Strength</dt>
+              <dd>Matches the structural pattern instantly. Fast, deterministic.</dd>
+              <dt>Limitation</dt>
+              <dd>Does not trace where <code>query</code> came from. No source-to-sink analysis.</dd>
+            </dl>
+          </div>
+          <div class="nyu-compare__col" data-tone="b">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">2</span>
+              <h3>Semantic-Query SAST</h3>
+              <p class="nyu-compare__tag">Traces it</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Mechanism</dt>
+              <dd>Builds a data-flow graph: <code>request.args.get('q')</code> → <code>query</code> → string concat → <code>db.engine.execute()</code>.</dd>
+              <dt>Strength</dt>
+              <dd>Verifies no sanitization between untrusted source and sensitive sink. Formal taint path.</dd>
+              <dt>Limitation</dt>
+              <dd>Requires a buildable codebase and query-language expertise.</dd>
+            </dl>
+          </div>
+          <div class="nyu-compare__col" data-tone="c">
+            <header class="nyu-compare__head">
+              <span class="nyu-compare__num">3</span>
+              <h3>LLM Review</h3>
+              <p class="nyu-compare__tag">Explains it</p>
+            </header>
+            <dl class="nyu-compare__rows">
+              <dt>Mechanism</dt>
+              <dd>Identifies CWE-89, generates natural-language explanation with attack example.</dd>
+              <dt>Strength</dt>
+              <dd>Handles novel patterns, multiple languages, produces readable explanations.</dd>
+              <dt>Limitation</dt>
+              <dd>Has not formally verified the taint path; recognized a pattern from training data. May miss subtler variants.</dd>
+            </dl>
+          </div>
+        </div>
+
+        <p>Notice the difference. The pattern-based tool found the structural match but did not trace the source. The semantic-query tool traced the full data-flow path from untrusted input to dangerous operation. The LLM generated a useful explanation and correct classification, but without formal verification. All three caught this straightforward case, but they would not all catch more complex variants where the vulnerability spans multiple files or hides behind layers of abstraction.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            Common Misconceptions
+          </h3>
+          <ol>
+            <li><strong>"Static analysis tools and LLMs do the same thing."</strong> Different mechanisms, different false positive and false negative profiles. Research shows that combining them yields 17-60% improvement in F1 (a score that balances precision and recall, covered in detail in Section 2).</li>
+            <li><strong>"CWE and CVE are the same thing."</strong> CWE = weakness type, CVE = specific instance.</li>
+            <li><strong>"If the LLM identifies a vulnerability, it must be real."</strong> LLMs produce both false positives and false negatives.</li>
+          </ol>
+        </aside>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            Go deeper: the variant lab
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel">
+            <p>The comparison above used one straightforward case that all three tools caught. This lab varies the same vulnerability until they stop agreeing, which is where the differences between pattern matching and analysis actually show.</p>
+          <div class="nyu-embed-frame">
+            <iframe src="interactive/variant_lab/variant_lab.html" title="Interactive demo: False Positive and False Negative Variant Lab" loading="lazy" style="height:200px;"></iframe>
+          </div>
+          </div>
+        </div>
+
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            CWE Mapping Exercise
+          </h3>
+          <p class="nyu-scenario__prompt">For each description, select the most specific applicable CWE entry. Use the <a href="https://cwe.mitre.org/top25/" target="_blank" rel="noopener">CWE Top 25 list</a> and <a href="https://cwe.mitre.org/" target="_blank" rel="noopener">cwe.mitre.org</a> as references.</p>
+          <ol type="A">
+            <li>A web application displays user-submitted comments without encoding HTML special characters. An attacker submits a comment containing a script tag that executes in other users' browsers.</li>
+            <li>An API endpoint lets any authenticated user view any other user's account details by changing the user ID parameter. Authentication is checked but authorization is not.</li>
+            <li>A function deserializes data from an external source without validation, allowing crafted objects to execute arbitrary code.</li>
+          </ol>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>A = CWE-79 (Cross-Site Scripting).</strong></p>
+            <p><strong>B = CWE-639 (Authorization Bypass Through User-Controlled Key)</strong>, a base-level entry: the user changes an ID they control to reach another user's record. CWE-862 (Missing Authorization) is defensible but is a class-level entry, and CWE-284 (Improper Access Control) is broader still.</p>
+            <p><strong>C = CWE-502 (Deserialization of Untrusted Data).</strong></p>
+            <p>The key skill is selecting the most specific applicable entry rather than defaulting to a broad class-level entry like CWE-20.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Test Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="quiz-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check</span></div>
+          <p class="nyu-quiz__prompt" id="quiz-1">An LLM reports that a code snippet is "safe" after security review. Which is the best interpretation?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="LLMs perform pattern recognition, not formal verification.">The code has been formally verified to be free of vulnerabilities.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The code does not match vulnerability patterns the model learned from its training data.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="A 'safe' result means no patterns matched; it does not guarantee absence of vulnerabilities.">No vulnerabilities exist in this code.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="LLM review and static analysis operate through different mechanisms and catch different things.">The code has passed the equivalent of static analysis.</button>
+          </div>
+          <div class="nyu-quiz__feedback" data-correct-msg="Correct. The LLM performs pattern recognition, not formal verification. A 'safe' result means the code did not trigger learned vulnerability patterns." data-incorrect-msg="Review the mechanism discussion above. LLMs match training patterns; they do not formally verify code properties."></div>
+        </div>
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Knowledge Check
+          </h3>
+          <p class="nyu-scenario__prompt">When mapping a code weakness to a CWE entry, why is CWE-20 (Improper Input Validation) usually a poor choice?</p>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p>CWE-20 is a broad, class-level entry. Most weaknesses that involve handling untrusted input have a more specific base-level entry that describes them better (CWE-79, CWE-89, CWE-502, and so on). Mapping to the broad entry when a more specific one applies makes the finding less actionable; a developer told "improper input validation" does not know whether they are dealing with SQL injection, XSS, or something else.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== TRANSITION ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 2: Evaluating LLM Code Review: Metrics, Failures, and Trust.</strong> The next question is how well these tools actually perform. This section examines the evidence, including a finding that calls published accuracy numbers into question.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a></p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering"><img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering"></a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg></button>
+  </div>
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script>
+  /* Auto-resize iframes to match their content height */
+  window.addEventListener('message', function(e){
+    if(!e.data || e.data.type !== 'iframeHeight') return;
+    var iframes = document.querySelectorAll('.nyu-embed-frame iframe');
+    for(var i = 0; i < iframes.length; i++){
+      try {
+        if(iframes[i].contentWindow === e.source){
+          iframes[i].style.height = (e.data.height + 4) + 'px';
+          break;
+        }
+      } catch(ex){}
+    }
+  });
+  </script>
+</body>
+</html>

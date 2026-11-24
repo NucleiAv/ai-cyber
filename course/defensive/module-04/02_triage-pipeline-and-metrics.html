@@ -1,0 +1,565 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 4 · Section 2 · Triage Pipelines, Classification Metrics, and Failure Modes · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 4 · Section 2 of 8</div>
+      <h1 class="nyu-hero__title">Triage Pipelines, Classification Metrics, and Failure Modes</h1>
+      <p class="nyu-hero__subtitle">
+        How do SOCs automate alert triage, how do we measure whether any triage tool works, and where do different approaches fail?
+      </p>
+      <div class="nyu-hero__meta" aria-label="Page overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          ~25 min read
+        </span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 8 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          3 knowledge checks
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> From Parsing to Triage: What Comes After Field Extraction</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> How SOCs Automate Triage Today</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> An LLM-Based Triage Pipeline</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Tracing One Alert Through the Pipeline</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Evaluating Any Classifier: Confusion Matrices and Metrics</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Where LLM-Based Triage Fails</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> When Triage Fails: A DNS Beaconing Scenario</a></li>
+        <li><a href="#sec-8"><span class="nyu-toc__num">8</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"></path></svg> Learning Objectives</h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Explain</strong> how SOCs automate alert triage using SIEM rules, playbooks, and structured workflows, and describe where automation fits in the analyst's decision process.</span></li>
+          <li><span><strong>Build</strong> a multi-step LLM-based triage pipeline that categorizes alerts by severity and generates analyst-ready summaries, and explain how this approach differs from conventional automation.</span></li>
+          <li><span><strong>Evaluate</strong> any classifier's triage output using confusion matrices, precision, recall, and F1, whether the classifier is a SIEM rule, an ML model, or a language model.</span></li>
+          <li><span><strong>Identify</strong> failure modes specific to LLM-based triage and explain the operational consequences of each.</span></li>
+        </ul>
+      </section>
+
+      <!-- ===== 1 ===== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">From Parsing to Triage: What Comes After Field Extraction</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Section 1 parsed log entries into structured fields. Parsing serves a larger goal: <button type="button" class="nyu-define" data-term="alert-triage">triage</button> decisions. Is this event malicious? How severe? What do we do? Within the five-stage process from Section 1, severity classification is the decision that determines what happens next: which alerts get immediate attention, which can wait, and which can be closed automatically.</p>
+
+        <h3 class="nyu-subsection-title">Severity Classification as a SOC Concept</h3>
+
+        <p>Every SOC maps alert content to an urgency level: a small set of categories with defined criteria that route alerts to the right response. The five-level scale below is our instructional model, adapted from common SOC conventions; real organizations tune the criteria to their own risk profile and regulatory environment.</p>
+
+        <table class="nyu-table" aria-label="Severity classification criteria">
+          <thead>
+            <tr>
+              <th scope="col">Severity</th>
+              <th scope="col">Criteria (Instructional Model)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Critical</th>
+              <td>Active exploitation detected; data exfiltration in progress; critical system compromise</td>
+            </tr>
+            <tr>
+              <th scope="row">High</th>
+              <td>Successful attack detected but impact not yet confirmed; privileged account compromise; malware execution</td>
+            </tr>
+            <tr>
+              <th scope="row">Medium</th>
+              <td>Suspicious activity requiring investigation; policy violation; unusual but not confirmed malicious behavior</td>
+            </tr>
+            <tr>
+              <th scope="row">Low</th>
+              <td>Minor policy violation; informational alert with low confidence; known false positive pattern</td>
+            </tr>
+            <tr>
+              <th scope="row">Informational</th>
+              <td>System status messages; routine scanning; expected network behavior</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="sev-note">
+          <h3 class="nyu-callout__title" id="sev-note"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"></path></svg></span> Triage Severity vs. Log Severity</h3>
+          <p>These triage severity levels are different from the severity values encoded in log formats. Syslog encodes severity 0 (Emergency) through 7 (Debug) as part of its priority value. CEF uses a 0-10 numeric scale. Triage severity is an operational judgment made <em>about</em> the alert after reviewing its content, not a value extracted from the log itself. We will see this distinction concretely in the worked example below.</p>
+        </aside>
+      </section>
+
+      <!-- ===== 2 ===== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">How SOCs Automate Triage Today</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Before we build an LLM-based pipeline, we need to understand what triage automation already looks like. SOCs do not process thousands of alerts manually. They use layered automation to handle volume, reserving human judgment for decisions that automated tools cannot make reliably.</p>
+
+        <h3 class="nyu-subsection-title">Conventional Triage Automation</h3>
+
+        <table class="nyu-table" aria-label="Conventional triage automation approaches">
+          <thead>
+            <tr>
+              <th scope="col">Approach</th>
+              <th scope="col">How It Works</th>
+              <th scope="col">Strengths</th>
+              <th scope="col">Limitations</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><button type="button" class="nyu-define" data-term="correlation-rule">SIEM correlation rules</button></td>
+              <td>Boolean logic evaluated against incoming log fields. Example: <code>IF source_ip IN watchlist AND dest_port = 443 AND byte_count > 10MB THEN severity = High</code></td>
+              <td>Fast, deterministic, auditable; the same input always produces the same result</td>
+              <td>Must be written and maintained for each pattern; cannot handle novel attack patterns not covered by existing rules</td>
+            </tr>
+            <tr>
+              <td><button type="button" class="nyu-define" data-term="soar">SOAR playbooks</button></td>
+              <td>Multi-step workflows that chain automated actions: receive alert, query threat intelligence API, check asset inventory, assign to analyst queue. Example: "On Critical IDS alert, enrich with VirusTotal lookup, isolate host via EDR (endpoint detection and response) API, page on-call analyst"</td>
+              <td>Consistent execution of complex procedures; reduces manual handoff errors between steps</td>
+              <td>Only as good as the rules that trigger them; cannot adapt to scenarios not anticipated by the playbook author</td>
+            </tr>
+            <tr>
+              <td>Threshold-based routing</td>
+              <td>Alerts above a severity threshold go to senior analysts; below the threshold go to automated closure or junior review</td>
+              <td>Simple to implement; reduces analyst workload for low-severity alerts</td>
+              <td>Depends entirely on the accuracy of the severity classification that feeds it</td>
+            </tr>
+            <tr>
+              <td>Analyst runbooks</td>
+              <td>Documented step-by-step procedures for specific alert categories, followed by human analysts</td>
+              <td>Captures organizational knowledge; handles edge cases through human judgment</td>
+              <td>Slow; inconsistent across analysts; does not scale to high alert volumes</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>Each of these approaches is deterministic or human-guided: the same input produces the same routing decision (for rules and playbooks) or a documented decision process (for runbooks). They are the baseline against which any new approach, including LLM-based triage, should be evaluated.</p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="baseline-note">
+          <h3 class="nyu-callout__title" id="baseline-note">Why the Baseline Matters</h3>
+          <p>When we test an LLM-based pipeline later in this section, the question is not "does it work?" in isolation. It is: "how does it compare to what a SIEM rule, a SOAR playbook, or an experienced analyst would produce for the same alerts?" Without a baseline, we cannot answer that.</p>
+        </aside>
+      </section>
+
+      <!-- ===== 3 ===== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">An LLM-Based Triage Pipeline</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>With the baseline established, here is one instructional model of LLM-based triage (not the only design, and not automatically better than the automation above). Its core principle is <strong>task decomposition</strong>: instead of one prompt that parses, classifies, enriches, and summarizes all at once, four focused steps, each with a defined input and output, so each can be validated and debugged independently.</p>
+
+        <div class="nyu-timeline">
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">A</div>
+            <div class="nyu-timeline__content">
+              <h3>Parse</h3>
+              <p>Convert the raw alert from its native format (syslog, CEF, or JSON) into a standardized JSON structure. This step extracts only the fields present in the source entry. It should not generate summaries, interpretations, or values that are not in the original log. Conventional parsers handle this step deterministically; using an LLM here introduces the risk of fabricated fields.</p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">B</div>
+            <div class="nyu-timeline__content">
+              <h3>Classify Severity</h3>
+              <p>Given the parsed alert, classify it into one of the five severity levels from our instructional model. The classification criteria must be included explicitly in the prompt. Unlike a SIEM rule (which encodes criteria as conditions) or a trained ML classifier (which learns patterns from labeled data), an LLM must receive classification criteria as text instructions. It cannot infer an organization's severity definitions from context.</p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">C</div>
+            <div class="nyu-timeline__content">
+              <h3>Enrich (Critical and High Only)</h3>
+              <p>For alerts classified as Critical or High, generate an enrichment summary: what asset is affected, what attack technique does this alert resemble (using <button type="button" class="nyu-define" data-term="mitre-attack">MITRE ATT&CK</button> terminology where possible), and what should the analyst investigate next. This step produces <em>generated text</em>, not extracted data, and must be validated against authoritative sources before anyone acts on it.</p>
+            </div>
+          </div>
+          <div class="nyu-timeline__item">
+            <div class="nyu-timeline__marker">D</div>
+            <div class="nyu-timeline__content">
+              <h3>Generate Shift Handoff</h3>
+              <p>After processing all alerts in a batch, produce a summary document grouping alerts by severity, highlighting top priorities, and noting patterns. This is generated text intended as a starting point for a team lead reviewing the shift, not a finished operational report.</p>
+            </div>
+          </div>
+        </div>
+
+        <p>Each step takes the previous step's output as input. If severity classifications are wrong, we know the problem is in Step B's prompt or criteria, not buried in a combined prompt that handles everything at once.</p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="determinism-note">
+          <h3 class="nyu-callout__title" id="determinism-note">A Key Difference from Conventional Pipelines</h3>
+          <p>Conventional triage pipelines (SIEM rules, SOAR playbooks) execute deterministic steps: rule evaluation, API calls, database lookups. The same input always produces the same output. An LLM pipeline introduces stochastic (probabilistic) generation at each step. This means a subtly wrong classification in Step B may not be obviously wrong, but it will affect every downstream step. It also means running the same alert through the pipeline twice may produce slightly different results unless the model's <button type="button" class="nyu-define" data-term="temperature">temperature</button> is set to zero.</p>
+        </aside>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="system-role-note">
+          <h3 class="nyu-callout__title" id="system-role-note"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"></path></svg></span> Prompt Structure and Classification Consistency</h3>
+          <p>Some models support a dedicated <button type="button" class="nyu-define" data-term="system-role">system role</button> that separates behavioral instructions ("classify severity using these criteria") from the log entry itself, helping criteria stay stable across many entries. Models without it may need instructions repeated in each prompt. Either way, test whether your classification prompts produce consistent results across varied inputs with the specific model you use.</p>
+        </aside>
+      </section>
+
+      <!-- ===== 4 ===== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Tracing One Alert Through the Pipeline</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>To see how the pipeline handles a real alert, we will trace a single <button type="button" class="nyu-define" data-term="suricata">Suricata</button> IDS alert through all four steps, then examine what worked and what requires validation.</p>
+
+        <h3 class="nyu-subsection-title">The Raw Alert (Syslog Format)</h3>
+        <pre class="nyu-code" aria-label="Raw Suricata alert in syslog format"><code>&lt;38&gt;1 2026-05-15T03:22:17Z idsensor01 suricata 5501 - - [1:2024897:3] ET MALWARE Win32/Agent.UNK CnC Beacon [Classification: A Network Trojan was detected] [Priority: 1] {TCP} 192.168.4.100:49152 -&gt; 45.33.22.11:443</code></pre>
+
+        <h3 class="nyu-subsection-title">Decoding the Syslog Header</h3>
+        <p>Before feeding this alert to any tool, we can decode the syslog header using the formula from Section 1. The priority value <code>&lt;38&gt;</code> encodes two pieces of information: facility and severity, combined as <code>facility x 8 + severity</code>. Here, 38 = 4 x 8 + 6, giving us facility 4 (security/authorization) and severity 6 (Informational).</p>
+
+        <p>This is worth pausing on. The syslog severity is <strong>Informational</strong> (level 6), because that is the level <button type="button" class="nyu-define" data-term="suricata">Suricata</button> chose when generating the message. But the alert content describes C&C beaconing from an internal host, one of the most serious findings a SOC can encounter, and Step B will classify it as <strong>Critical</strong>. The two values answer different questions: syslog severity reflects the application's logging level at generation time; triage severity reflects operational impact assessed during investigation.</p>
+
+        <h3 class="nyu-subsection-title">Step A Output: Parsed Fields</h3>
+        <pre class="nyu-code" aria-label="Parsed JSON output from Step A"><code>{
+  "timestamp": "2026-05-15T03:22:17Z",
+  "hostname": "idsensor01",
+  "application": "suricata",
+  "pid": 5501,
+  "source_ip": "192.168.4.100",
+  "source_port": 49152,
+  "dest_ip": "45.33.22.11",
+  "dest_port": 443,
+  "protocol": "TCP",
+  "suricata_sid": "1:2024897:3",
+  "suricata_msg": "ET MALWARE Win32/Agent.UNK CnC Beacon",
+  "suricata_classification": "A Network Trojan was detected",
+  "suricata_priority": 1,
+  "syslog_facility": 4,
+  "syslog_severity": 6,
+  "raw_format": "syslog"
+}</code></pre>
+        <p>Notice that Step A extracts only fields present in the source entry: the timestamp, hostnames, ports, and Suricata rule metadata all appear verbatim in the raw syslog message. The only non-verbatim field is <code>raw_format</code>, which is pipeline metadata indicating the source format. There is no natural-language summary or interpretation. Parsing and generation are separate tasks: Step A is extraction; Steps C and D are generation.</p>
+
+        <h3 class="nyu-subsection-title">Step B Output: Severity Classification</h3>
+        <p><strong>Severity: Critical.</strong> Rationale: IDS rule match for known C&C beaconing behavior; internal host communicating with external C&C server; indicates active compromise. This matches the Critical criteria from our severity table: "active exploitation detected" and "critical system compromise."</p>
+
+        <h3 class="nyu-subsection-title">Step C Output: Enrichment (Generated Text)</h3>
+        <ul class="nyu-keypoints">
+          <li><strong>Affected asset:</strong> 192.168.4.100 (internal host; verify hostname and user assignment in asset inventory).</li>
+          <li><strong>Attack technique:</strong> Command and Control (MITRE ATT&CK <button type="button" class="nyu-define" data-term="t1071">T1071</button>, Application Layer Protocol).</li>
+          <li><strong>Recommended investigation steps:</strong> Isolate 192.168.4.100 from the network; check for <button type="button" class="nyu-define" data-term="lateral-movement">lateral movement</button> from this host; preserve memory and disk for forensic analysis; block 45.33.22.11 at the perimeter firewall.</li>
+        </ul>
+
+        <h3 class="nyu-subsection-title">What Worked and What Requires Validation</h3>
+
+        <!-- VISUAL: step-by-step verdict table -->
+        <table class="nyu-table nyu-table--prose" aria-label="Verdict on each pipeline step for this alert">
+          <thead>
+            <tr>
+              <th scope="col">Step</th>
+              <th scope="col">Verdict</th>
+              <th scope="col">The honest comparison</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">A &#183; Parse</th>
+              <td>Correct</td>
+              <td>Suricata's syslog output is well structured; a regex, grok pattern, or SIEM rule would produce the same result deterministically.</td>
+            </tr>
+            <tr>
+              <th scope="row">B &#183; Classify</th>
+              <td>Correct</td>
+              <td>C&amp;C beaconing matches our Critical criteria. A SIEM correlation rule could reach the same verdict by matching the signature ID; the LLM got there by text interpretation instead.</td>
+            </tr>
+            <tr>
+              <th scope="row">C &#183; Enrich</th>
+              <td>Useful, but unverified</td>
+              <td>Output a rule-based system typically cannot produce. But the LLM does not know whether 192.168.4.100 is a workstation, a domain controller, or a printer, or what our IR procedures are. A starting point, not a response plan.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="validate-enrich">
+          <h3 class="nyu-callout__title" id="validate-enrich">Validating the ATT&CK Mapping</h3>
+          <p>The LLM cited T1071 (Application Layer Protocol). We can verify this: search T1071 in the ATT&CK Navigator and check whether C&C beaconing over TCP port 443 matches the documented sub-technique <strong>T1071.001</strong> (Web Protocols). If it does, the mapping adds real context for the analyst. If it does not, the LLM has generated a plausible but incorrect technique reference, a <button type="button" class="nyu-define" data-term="hallucination">hallucinated</button> framework citation that could misdirect an investigation. This is what validation means in practice: verify every claim against an authoritative source before acting on it.</p>
+        </aside>
+      </section>
+
+      <!-- ===== 5 ===== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Evaluating Any Classifier: Confusion Matrices and Metrics</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Any system that produces categorical labels is a <button type="button" class="nyu-define" data-term="classifier">classifier</button>. A SIEM rule that labels alerts as "Critical" or "Low" is a classifier. A trained ML model that predicts "malicious" or "benign" is a classifier. An LLM that assigns severity levels is a classifier. A human analyst making triage decisions is also a classifier, albeit a slow and expensive one.</p>
+
+        <p>Module 1 introduced <button type="button" class="nyu-define" data-term="confusion-matrix">confusion matrices</button>, precision, recall, and F1; we reuse those tools here rather than re-teach them. They apply regardless of what produced the classifications: the metrics measure whether the output is correct, not how it was generated. What this module adds is the triage-specific reading of those numbers.</p>
+
+        <p>To apply this framework, we need two things: the system's classifications (from whatever tool we are evaluating) and <button type="button" class="nyu-define" data-term="ground-truth-labels">ground-truth labels</button> (from expert review or a verified answer key). With these, we can build a confusion matrix.</p>
+
+        <h3 class="nyu-subsection-title">Binary Simplification</h3>
+        <p>For practical purposes in this section, we simplify the five severity levels to a binary classification:</p>
+        <ul class="nyu-keypoints">
+          <li><strong>Actionable</strong> = Critical + High (requires immediate analyst attention)</li>
+          <li><strong>Non-actionable</strong> = Medium + Low + Informational (can be deferred or closed)</li>
+        </ul>
+        <p>This reduces a 5x5 multi-class confusion matrix to a 2x2 binary matrix, which is easier to calculate and interpret while preserving the core question: did the system correctly identify which alerts need immediate attention?</p>
+
+        <h3 class="nyu-subsection-title">The 2x2 Matrix, Applied to Triage</h3>
+        <p>This is the same matrix from Module 1, with new labels: the classes are triage decisions, and each cell is a use (or waste) of one of the day's investigation slots.</p>
+        <table class="nyu-matrix" aria-label="Confusion matrix for alert triage: rows are the system's triage decision, columns are the alert's actual status">
+          <thead>
+            <tr>
+              <td class="corner"></td>
+              <th scope="col">Actually Actionable</th>
+              <th scope="col">Actually Non-actionable</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row" class="label">Triaged Actionable</th>
+              <td class="cell-good"><b>True Positive (TP)</b><span>Flagged for investigation, was a genuine threat. An investigation slot well spent.</span></td>
+              <td class="cell-bad"><b>False Positive (FP)</b><span>Flagged for investigation, was benign: a <button type="button" class="nyu-define" data-term="false-positive">false positive</button> that burns a slot an analyst could have spent on a real threat.</span></td>
+            </tr>
+            <tr>
+              <th scope="row" class="label">Triaged Non-actionable</th>
+              <td class="cell-bad"><b>False Negative (FN)</b><span>Deprioritized, was a genuine threat: a <button type="button" class="nyu-define" data-term="false-negative">false negative</button> that may never be investigated. The worst case.</span></td>
+              <td class="cell-good"><b>True Negative (TN)</b><span>Deprioritized, was benign. Correct silence; no analyst time spent.</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="metrics-recap">
+          <h3 class="nyu-callout__title" id="metrics-recap"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></span> Formula Recap from Module 1 (No New Math)</h3>
+          <p><strong>Precision</strong> = TP / (TP + FP): of what we flagged, how much was real? <strong>Recall</strong> = TP / (TP + FN): of what was real, how much did we catch? <strong>F1</strong> = the harmonic mean of the two. Module 1, Section 5 derives all three with a worked example; revisit it if the formulas feel rusty.</p>
+        </aside>
+
+        <p>What is new in this module is not the formulas; it is what they mean when the classifier is a triage gate and the unit of cost is an analyst's investigation slot. F1 in particular hides exactly the information a SOC manager needs: precision and recall must be read separately to make staffing and workflow decisions.</p>
+
+        <h3 class="nyu-subsection-title">Interpreting Metrics in SOC Context</h3>
+        <p>Suppose a triage system produces <strong>precision = 0.40</strong> and <strong>recall = 0.90</strong>. What does this mean operationally?</p>
+
+        <p>Recall of 0.90 means only 10% of real attacks slip through. That sounds good. But precision of 0.40 means that of every 10 alerts marked actionable, only 4 are real threats; analysts must investigate and dismiss the other 6.</p>
+
+        <p>Is this acceptable? It depends on the SOC. A 20-analyst team might tolerate the false-alarm load to keep recall high. A 3-analyst team cannot waste 60% of its investigation time and would trade some recall for higher precision. The tradeoff applies identically whether the system is a SIEM rule, an ML classifier, or an LLM.</p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="org-decision">
+          <h3 class="nyu-callout__title" id="org-decision">This Is an Organizational Decision</h3>
+          <p>The precision-recall tradeoff is not a technical question with a single correct answer. It is an organizational decision about risk tolerance, staffing, and the cost of missed detections versus wasted investigation time. When presenting metrics to a SOC manager, present precision and recall separately (not just F1) so the manager can make an informed staffing and workflow decision. We will explore this tradeoff further in Section 4 when we examine ROC curves.</p>
+        </aside>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="variance-note">
+          <h3 class="nyu-callout__title" id="variance-note"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"></path></svg></span> Evaluating Deterministic vs. Stochastic Classifiers</h3>
+          <p>A deterministic classifier (a SIEM rule, a trained ML model at inference time) produces the same output every time for the same input, so a single evaluation pass is definitive. An LLM may produce different classifications on repeated runs due to sampling variability. Evaluation of LLM classifiers should either use <button type="button" class="nyu-define" data-term="temperature">temperature</button> = 0 for reproducibility or include multiple runs to characterize variance. This is a practical consideration when designing evaluation procedures.</p>
+        </aside>
+      </section>
+
+      <!-- ===== 6 ===== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Where LLM-Based Triage Fails</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Every approach fails somewhere: rules miss novel attacks, ML classifiers degrade as traffic evolves (<button type="button" class="nyu-define" data-term="concept-drift">concept drift</button>), and humans suffer <button type="button" class="nyu-define" data-term="alert-fatigue">alert fatigue</button>. Knowing how a tool fails is a prerequisite for deploying it safely. The five cards below are the failure modes specific to LLM-based triage, where a wrong answer means missed attacks, wasted investigation time, or disrupted services rather than just a bad summary.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="fail-1">
+          <h3 class="nyu-callout__title" id="fail-1">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+            Failure Mode 1: Hallucinated Indicators of Compromise
+          </h3>
+          <p>The LLM generates an IP address, domain name, file hash, or <button type="button" class="nyu-define" data-term="cve">CVE</button> identifier that does not exist in the source log entry. We saw this in the Section 1 worked example: the model invented a timestamp for a CEF entry that had none. In a triage context, an analyst who acts on a <button type="button" class="nyu-define" data-term="hallucination">hallucinated</button> <button type="button" class="nyu-define" data-term="ioc">IOC</button> might block a legitimate IP address, investigate a non-existent domain, or search for a file hash that was never on the network, wasting time and potentially disrupting operations.</p>
+        </aside>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="fail-2">
+          <h3 class="nyu-callout__title" id="fail-2">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+            Failure Mode 2: Severity Inflation
+          </h3>
+          <p>The LLM classifies a routine event as high-severity because the log text contains words that superficially resemble attack indicators. Keyword-triggered false positives are a well-known problem across many tools: a SIEM rule matching "port scan" without context will also fire on legitimate vulnerability scanners. The LLM-specific variant is that there is no explicit rule to inspect or tune. When a SIEM rule produces false positives, an analyst can read the rule logic and adjust the threshold or add an exception. When an LLM inflates severity, the reasoning is opaque, making the trigger harder to diagnose and correct.</p>
+        </aside>
+
+        <aside class="nyu-callout nyu-callout--danger" role="note" aria-labelledby="fail-3">
+          <h3 class="nyu-callout__title" id="fail-3">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+            Failure Mode 3: Severity Deflation
+          </h3>
+          <p>The LLM classifies a genuine threat as low-severity because the malicious activity does not match the patterns it has seen in training data. This can be the most consequential failure mode in contexts where the LLM serves as the primary triage gate, because it causes real attacks to be deprioritized or ignored entirely. Unlike severity inflation (which wastes time but still surfaces the alert for review), severity deflation means the alert may never be investigated. In SOCs with secondary review processes or bypass rules, the risk is reduced, but not eliminated.</p>
+        </aside>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="fail-4">
+          <h3 class="nyu-callout__title" id="fail-4">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+            Failure Mode 4: Context Fabrication
+          </h3>
+          <p>The LLM generates a plausible-sounding attack narrative around a benign event. For example, given a log entry showing a DNS query to a legitimate content delivery network, the LLM might construct a story about "potential <button type="button" class="nyu-define" data-term="dns-tunneling">DNS tunneling</button> to exfiltrate data," complete with a detailed explanation of how DNS tunneling works. The explanation may be technically accurate about DNS tunneling in general, but the specific log entry shows no evidence of it. An analyst who reads this confident narrative without checking the raw data might initiate an unnecessary investigation.</p>
+        </aside>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="fail-5">
+          <h3 class="nyu-callout__title" id="fail-5">
+            <span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+            Failure Mode 5: Knowledge-Cutoff Blind Spots
+          </h3>
+          <p>The LLM cannot recognize attack patterns, malware families, or CVEs that emerged after its training data cutoff. If a new command-and-control framework becomes prevalent six months after the model was trained, the LLM may classify its traffic patterns as benign because it has never seen them described as malicious. This failure mode is inherent to all LLMs and cannot be resolved by better prompting; it requires model updates or augmentation with external, up-to-date threat intelligence feeds.</p>
+        </aside>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="taxonomy-note">
+          <h3 class="nyu-callout__title" id="taxonomy-note">About This Failure Taxonomy</h3>
+          <p>These five categories are an instructional taxonomy organized for this course, drawing on published research into LLM hallucinations in cybersecurity contexts (see references page). They are not a formal industry standard. Published research on LLM failure modes in security is still evolving.</p>
+        </aside>
+      </section>
+
+      <!-- ===== 7 ===== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">When Triage Fails: A DNS Beaconing Scenario</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>This scenario shows how severity deflation and context fabrication combine to produce a dangerous triage failure.</p>
+
+        <div class="nyu-callout nyu-scenario">
+          <div class="nyu-scenario__prompt">
+            <p>An LLM-based triage system processes overnight alerts. Among them is a set of DNS query logs from an internal workstation to a newly registered domain, enriched with domain registration metadata showing the domain was created 48 hours earlier. The queries occur every 5 to 7 minutes with small, consistent data payloads, a pattern consistent with <button type="button" class="nyu-define" data-term="c2-beaconing">command-and-control (C2) beaconing</button>.</p>
+
+            <blockquote>
+              <strong>LLM Classification:</strong> "Low: routine DNS traffic. The queried domain appears to be a recently registered content delivery endpoint. No malicious indicators detected."
+            </blockquote>
+
+            <p>The LLM's explanation is confident and specific. It notes the domain's recent registration (correctly, from the enrichment data) but interprets it as benign (a new CDN endpoint) rather than suspicious (a newly registered C2 domain). It does not flag the timing of the queries. The model reads one query every 5 to 7 minutes as a low, ordinary rate and does not register that the interval stays within that narrow range for hours.</p>
+
+            <p>Twelve hours later, the incident response team discovers that the workstation was compromised. The DNS queries were C2 beaconing, and the attacker used the same channel to exfiltrate a set of stored credentials.</p>
+
+            <p><strong>Why did the LLM fail? What should have prevented this outcome?</strong></p>
+          </div>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p><strong>Why did the LLM fail?</strong> Three factors converged:</p>
+            <ul>
+              <li><strong>Knowledge-cutoff blind spot.</strong> The C2 framework was newer than the model's training data. The LLM had no examples of this specific beaconing pattern labeled as malicious.</li>
+              <li><strong>Severity deflation.</strong> The LLM treated the query rate as the relevant signal. One query every 5 to 7 minutes is a modest rate, and the model's training examples of C2 beaconing may have featured higher-frequency traffic, so it classified the activity as routine. Rate is weak evidence in either direction: C2 operators routinely lengthen the sleep interval between beacons and add random variation to it (jitter) to stay below frequency thresholds. Beacon detection looks at regularity instead. In this scenario the interval stayed within a two-minute window for hours and the payloads were small and consistent, which is the pattern that should have been flagged.</li>
+              <li><strong>Context fabrication.</strong> The model generated a plausible alternative explanation (CDN endpoint) and presented it with high confidence. It constructed a benign narrative rather than flagging uncertainty.</li>
+            </ul>
+            <p><strong>What should have prevented this?</strong> An architectural control: a deterministic rule that flags any communication with domains registered within the last 72 hours for mandatory analyst review, regardless of the LLM's classification. The lesson is architectural: the pipeline must include bypass rules that route high-signal alerts (newly registered domains, unusual DNS patterns, known C2 indicators) around the LLM entirely. An LLM is useful for bulk triage of ambiguous alerts, but it should not override signals that rule-based or statistical checks catch more reliably.</p>
+          </div>
+        </div>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="dns-volume-note">
+          <h3 class="nyu-callout__title" id="dns-volume-note">When Query Volume Does Matter</h3>
+          <p>Query rate is weak evidence for C2 beaconing, but it is a useful signal for DNS tunneling used to move large amounts of data. Each DNS query can carry only a small payload, at most a few hundred bytes encoded in the queried name. In this scenario, roughly ten queries per hour over twelve hours carries at most tens of kilobytes, which is enough for credentials or encryption keys but not for a database or a document archive. Exfiltrating larger amounts of data through DNS requires a much faster query rate, often hundreds or thousands of queries per minute, and traffic at that volume is itself a detectable anomaly.</p>
+        </aside>
+
+        <h3 class="nyu-subsection-title">Documenting How Tools Fail</h3>
+        <p>We have now examined five failure categories. A professional skill that applies across all security tooling (not just LLMs) is systematically documenting how a tool fails in your specific environment. For any tool you evaluate, record:</p>
+        <ul class="nyu-keypoints">
+          <li><strong>Input:</strong> the exact data provided to the tool.</li>
+          <li><strong>Output:</strong> what the tool produced.</li>
+          <li><strong>Error:</strong> why the output is wrong, with evidence from authoritative sources.</li>
+          <li><strong>Category:</strong> which failure mode it belongs to.</li>
+          <li><strong>Impact:</strong> what would happen if an analyst acted on this output.</li>
+          <li><strong>Prevention:</strong> how the failure could be caught or prevented architecturally.</li>
+        </ul>
+        <p>This is not a gotcha exercise; it is how security teams deploy tools safely.</p>
+      </section>
+
+      <!-- ===== 8 ===== -->
+      <section class="nyu-section" id="sec-8">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">8</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="kc-1">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 1</span></div>
+          <p class="nyu-quiz__prompt" id="kc-1">An automated triage system classifies 100 alerts. The confusion matrix shows: TP=12, FP=18, TN=62, FN=8. What is the system's precision for the "actionable" class?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-1">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="0.60 is the fraction of actionable alerts that were correctly identified (recall = TP / (TP + FN) = 12/20), not precision. Precision is computed over everything the system flagged (TP + FP); recall over everything genuinely actionable (TP + FN).">0.60</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">0.40</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="0.67 does not correspond to any standard metric derivation from this matrix. Check the formula: Precision = TP / (TP + FP).">0.67</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="0.86 is not derivable from this matrix. Check the formula: Precision = TP / (TP + FP) = 12 / 30 = 0.40.">0.86</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Precision = TP / (TP + FP) = 12 / (12 + 18) = 12 / 30 = 0.40. This means 60% of alerts flagged as actionable were actually non-actionable, representing significant analyst time wasted on false alarms."
+               data-incorrect-msg="Review the precision formula: Precision = TP / (TP + FP) = 12 / (12 + 18) = 12 / 30 = 0.40. Precision measures the fraction of predicted positives that are truly positive."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="kc-2">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 2</span></div>
+          <p class="nyu-quiz__prompt" id="kc-2">A SOC team lead receives the following metrics for an automated triage system: precision = 0.40, recall = 0.90. Which statement best describes the operational impact?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-2">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Recall of 0.90 is strong for coverage, but precision of 0.40 means the system generates a heavy false-alarm burden. Calling it 'excellent' ignores the operational cost of investigating 60% false positives.">The system is excellent: it catches 90% of real threats.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The system wastes significant analyst time on false alarms, but rarely misses real threats.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="The system is not unreliable in all dimensions; recall of 0.90 means it catches most real threats. The problem is precision, not overall reliability. Whether to keep it is an organizational decision based on team capacity, not an automatic disqualification.">The system is unreliable and should be discontinued immediately.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Recall of 0.90 means the system catches 90% of real threats, so only 10% are missed. The problem is precision (too many false alarms), not recall (missed threats).">The system misses too many real threats to be useful.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Recall of 0.90 means only 10% of real threats are missed, which is good coverage. But precision of 0.40 means 60% of flagged alerts are false alarms. The system is useful for coverage but generates a heavy investigation burden. Whether to keep it depends on the team's capacity and risk tolerance: an organizational decision, not a purely technical one."
+               data-incorrect-msg="Reconsider. Precision of 0.40 means 60% of flagged alerts are false positives, which is significant wasted analyst time. But recall of 0.90 means only 10% of genuine threats are missed. The system has a false-alarm problem, not a missed-threat problem."></div>
+        </div>
+
+        <div class="nyu-quiz" aria-labelledby="kc-3">
+          <div class="nyu-quiz__header"><span class="nyu-quiz__badge">Knowledge Check 3</span></div>
+          <p class="nyu-quiz__prompt" id="kc-3">Why does this module distinguish between "LLM-based log analysis" and "intrusion detection system"?</p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="kc-3">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="LLMs are not always more accurate than IDS. They serve different functions: IDS monitors traffic in real time with millisecond latency, while LLMs process collected text after the fact. Accuracy depends on the specific task and context.">Because LLMs are always more accurate than IDS.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Because LLM analysis operates on collected log text after the fact, while IDS monitors network traffic in real time.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="IDS is not limited to signature-based detection. Modern IDS implementations include anomaly-based and ML-based detection alongside signature rules. The distinction is about operational layer and timing, not detection methodology.">Because IDS can only use signature-based detection.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="LLMs can and do process security data; we have been doing exactly that throughout this module. The distinction is about when and how they process it (post-hoc text analysis versus real-time traffic monitoring).">Because LLMs cannot process security data.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. An IDS monitors network traffic in real time and generates alerts as events occur, operating at the network layer with millisecond latency. LLM-based analysis operates on collected log text after it has been generated, processing text at the application layer with second-to-minute latency. They serve different functions in the detection stack. Section 3 explores this distinction in detail."
+               data-incorrect-msg="Reconsider. The key distinction is operational: an IDS monitors live network traffic in real time, while an LLM processes collected log text after the fact. They operate at different layers of the detection stack with different latency characteristics."></div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 3: How Machines Detect Intrusions.</strong> We move from triage (deciding what to do with alerts) to detection (generating those alerts in the first place). Section 3 examines rule-based signatures, supervised ML classifiers, and unsupervised anomaly detectors, the classical approaches that produce the alerts a triage pipeline processes.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script src="../tooltips/glossary.js"></script>
+</body>
+</html>

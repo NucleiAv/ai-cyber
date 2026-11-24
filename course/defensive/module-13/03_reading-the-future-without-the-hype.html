@@ -1,0 +1,322 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 13 &middot; Section 3 &middot; Reading the Future Without the Hype &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+  <style>
+    /* Three-bin method – vertical stack with numbered markers */
+    .bins { list-style: none; margin: var(--sp-4) 0; padding: 0; counter-reset: bin; }
+    .bins__item { display: flex; gap: var(--sp-4); padding: var(--sp-4) 0; border-bottom: 1px solid var(--rule); }
+    .bins__item:last-child { border-bottom: 0; }
+    .bins__num { flex: 0 0 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #4C1D95; color: #fff; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 700; line-height: 1; }
+    .bins__body { flex: 1; }
+    .bins__body h3 { margin: 0 0 4px; font-size: var(--fs-base); font-weight: 700; }
+    .bins__body p { margin: 0; font-size: var(--fs-sm); color: var(--ink-soft); }
+  </style>
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 13 &middot; Section 3 of 6</div>
+      <h1 class="nyu-hero__title">Reading the Future Without the Hype: Autonomous SOCs, Emerging Trends, and the Regulatory Trajectory</h1>
+      <p class="nyu-hero__subtitle">Vendor claims and skeptic counter-claims both carry interests. This section builds a method for evaluating the evidence behind each.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~24 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 8 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          1 knowledge check
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> The Claim Environment</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Three-Bin Method</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Reasoning Task: Sort a Claim</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Reading a Campaign Report Critically</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> The Defensive Counterweight</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> What Reasoning Models Actually Deliver</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> The Regulatory Trajectory</a></li>
+        <li><a href="#sec-8"><span class="nyu-toc__num">8</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Analyze</strong> a claim about autonomous security AI by sorting its evidence into demonstrated, claimed, and open.</span></li>
+          <li><span><strong>Assess</strong> a dramatic incident report by separating its corroborated outline from its single-source figures.</span></li>
+          <li><span><strong>Differentiate</strong> the method from the volatile facts, so the skill outlives any particular product or date.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">The Claim Environment</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The 2026 RSA Conference was a tipping point, with more than fifty vendors claiming some form of agentic SOC capability. As a security professional, you will be asked to evaluate these claims when your organization considers purchasing one of these products.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="living1-title">
+          <h3 class="nyu-callout__title" id="living1-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+            </span>
+            Early adoption patterns
+          </h3>
+          <p>New security technologies follow a predictable arc. Early vendor claims outrun production evidence, demonstrations showcase the strongest capabilities while production exposes the weakest, and analyst-firm positioning (which typically reaches practitioners secondhand through vendor summaries, since the primary documents sit behind paywalls) lags behind both.</p>
+          <p><button type="button" class="nyu-define" data-term="agentic-soc">Agentic SOC products</button> entered this arc in 2025–2026. <button type="button" class="nyu-define" data-term="autonomous-investigation">Autonomous investigation</button> was among the capabilities most often demonstrated and among the least reliable in production, where data is incomplete, signals are ambiguous, and somebody may be shaping the inputs on purpose. Market penetration sat in the low single digits.</p>
+          <p>The specific products and percentages will have moved by the time you read this. The pattern will not have: claims running ahead of deployments is the ordinary condition of early technology adoption.</p>
+        </aside>
+
+        <p>None of this means the technology is empty. It means the claims need evaluation, which is exactly what the <span class="nyu-ref" data-ref="vendor-claims">five-question vendor framework from the first module</span> was built to handle.</p>
+
+        <p>The five questions apply directly: what does the product actually do, operationally? On what data was performance measured? What are the error rates, in both directions? Under what conditions was the evaluation run? Who verified it?</p>
+
+        <p>Agentic claims deserve a sharper follow-up set, and this module has already supplied it: what is in the tool inventory, what permissions do those tools carry, what stop conditions end a run, and who put their name to the <span class="nyu-ref" data-ref="residual-risk">residual risk</span>.</p>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Three-Bin Method</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Every trend claim we assess gets sorted into three bins, each entry dated and sourced.</p>
+
+        <ol class="bins">
+          <li class="bins__item">
+            <span class="bins__num">1</span>
+            <div class="bins__body">
+              <h3>Demonstrated</h3>
+              <p>Shown under stated conditions, with evidence someone outside the claimant can inspect. Grade it: independently verified beats vendor-reported, production beats benchmark, specific beats aggregate.</p>
+            </div>
+          </li>
+          <li class="bins__item">
+            <span class="bins__num">2</span>
+            <div class="bins__body">
+              <h3>Claimed but unverified</h3>
+              <p>Asserted by a party with an interest, without inspectable evidence. Recorded as a claim with its source named. Not false, often partly true; simply not established.</p>
+            </div>
+          </li>
+          <li class="bins__item">
+            <span class="bins__num">3</span>
+            <div class="bins__body">
+              <h3>Open question</h3>
+              <p>What nobody's evidence settles yet, including the people selling and the people debunking.</p>
+            </div>
+          </li>
+        </ol>
+
+        <p>The bins do work that a simple verdict cannot. "Autonomous SOCs are hype" and "autonomous SOCs are here" are both single-bin answers, and they fail in the same way: each flattens a mixed evidence base into a mood, and a mood cannot be acted on.</p>
+
+        <h3 class="nyu-subsection-title">Example: sorting the 90 percent claim</h3>
+        <p>Take a representative agentic SOC claim: <em>"Our agent autonomously investigates and resolves 90% of alerts."</em> The evidence on offer is a scripted demo, one customer quote, no published error rates, and no definition of "resolves." Sort it.</p>
+        <ul>
+          <li><strong>Demonstrated:</strong> the product performs some autonomous triage under demonstration conditions. That much is real and should be credited. The loop does work on curated data.</li>
+          <li><strong>Claimed but unverified:</strong> the 90 percent figure, measured on an alert mix nobody has described, and the word "resolves," which is doing enormous unexamined work. Closed and correctly closed are not the same event. An agent that closes every alert it sees resolves 100 percent of them by this metric. The <span class="nyu-ref" data-ref="confusion-matrix">confusion-matrix discipline</span> we have used throughout this course asks about the false-negative column immediately, and this claim has no answer to give.</li>
+          <li><strong>Open:</strong> how the system behaves in production under <button type="button" class="nyu-define" data-term="distribution-shift">distribution shift</button> and deliberate adversarial input, which is precisely the territory the previous section's failure catalog occupies.</li>
+        </ul>
+        <p>Notice what the method did not do. It never accused the vendor of lying. It located the missing evidence and named the one question whose answer would decide the purchase, which is a far more useful place to end up than an argument about whether the vendor is honest.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="calib-misc-title">
+          <h3 class="nyu-callout__title" id="calib-misc-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </span>
+            Three ways calibration goes wrong
+          </h3>
+          <p><strong>"Calibration means hedging."</strong> The three-bin sort produces a specific position with named evidence gaps, which is more actionable than either verdict. <strong>"Newer sources are better sources."</strong> A dated, verified 2025 finding outranks an undated 2026 assertion. <strong>"Architecture detail is evidence."</strong> A vendor explaining how the system works has told us nothing about how often it is right.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Reasoning Task: Sort a Claim</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario" data-screen-label="Scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Sort a second claim
+          </h3>
+          <p class="nyu-scenario__prompt">A second vendor claim is provided with three evidence items: a benchmark result, a customer case study with anonymized metrics, and a technical blog post describing the architecture. Sort the claim into the three bins, grade each evidence item, and name the one piece of evidence whose absence most limits your assessment. Commit your sort before revealing the model analysis.</p>
+          <button class="nyu-scenario__btn">Show a possible answer</button>
+          <div class="nyu-scenario__answer">
+            <p>One item per bin, with its evidence status: the benchmark sits in Demonstrated (inspectable, independently runnable), the anonymized case study sits in Claimed (metrics nobody outside the company can check), and the blog post is description, not measurement, so it belongs nowhere in the sort. The most common error is treating architectural detail as performance evidence: knowing how a system works tells you nothing about how often it is right. The absent evidence that most limits the assessment is production error rates under distribution shift.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Reading a Campaign Report Critically</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The <span class="nyu-ref" data-ref="autonomy-evidence">Anthropic espionage disclosure you analyzed in the threat-intelligence module</span> returns here with two additional tools to apply: the agent-loop vocabulary from Section 1 and the three-bin method from Section 2. The <span class="nyu-ref" data-ref="source-grading">sourcing analysis from that module</span> still holds.</p>
+
+        <p>Apply the three-bin sort to Anthropic's claim that the agent performed 80 to 90 percent of the tactical work.</p>
+        <ul>
+          <li><strong>Demonstrated:</strong> a coding agent was used as the operational core of intrusions against roughly thirty organizations. The campaign outline is independently corroborated.</li>
+          <li><strong>Claimed but unverified:</strong> the 80 to 90 percent figure, the "first reported" superlative, and the scope of the human-vs-agent division. Each describes activity on the reporting company's own platform, measured by that company, about an incident only it was positioned to observe.</li>
+          <li><strong>Open:</strong> whether the agent loop generalizes to other models and tool sets, or whether this case depended on specific capabilities of one provider's agent.</li>
+        </ul>
+
+        <p>The new insight the agent loop provides is structural. You can now map the reported actions (reconnaissance, exploit development, credential harvesting, lateral movement, exfiltration) onto the loop from Section 1 and see that each one is a tool call. The operators' <span class="nyu-ref" data-ref="jailbreak">jailbreak</span>, posing as a legitimate security firm, is how they got the model to make those calls. Safety layers gave way to a roleplay pretext, which is exactly the boundary failure the attack modules predicted.</p>
+
+        <div class="nyu-callout nyu-scenario" data-screen-label="Scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Commit before revealing
+          </h3>
+          <p class="nyu-scenario__prompt">What does the agent loop from Section 1 reveal about this campaign that the M08 sourcing analysis alone did not?</p>
+          <button class="nyu-scenario__btn">Show a possible answer</button>
+          <div class="nyu-scenario__answer">
+            <p>The sourcing analysis in M08 told you what to trust and what to hold at arm's length. The agent loop tells you what was automated and why it worked: each phase of the intrusion is a tool call, the model selected the next tool based on prior observations, and the only human contribution was target selection and the initial jailbreak. Campaign tempo is no longer bounded by how many humans an operation can put at keyboards.</p>
+            <p>The combination also makes the <span class="nyu-ref" data-ref="dual-use">dual-use problem</span> concrete. The same loop architecture from Section 1 runs intrusions or hunts threats, and nothing inside the loop can tell which it is doing. What separates the two is entirely external: deployment context, authorization, and the constraint work from Section 2.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">The Defensive Counterweight</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Blanket cynicism can mislead just as badly as uncritical enthusiasm, and the defensive record shows why. Google's <span class="nyu-ref" data-ref="big-sleep">Big Sleep</span> project, an agent built to hunt vulnerabilities in widely used software, has multiple real CVEs to its name. Among them is a 2025 database-engine flaw that, by the vendor's account, threat actors were preparing to exploit when the patch landed.</p>
+
+        <p>Sort that claim the same way. The CVEs are independently corroborated: they sit in public trackers and were fixed in shipping software, which is about as inspectable as evidence gets. The framing about cutting off an imminent exploitation comes from the vendor, so it belongs in the claimed bin while the CVEs sit comfortably in demonstrated.</p>
+
+        <p>The important detail is the workflow, not the headline: the agent finds candidate vulnerabilities, human researchers verify them, and only then do patches ship.</p>
+
+        <p>That supervised-agentic shape, machine scale paired with human confirmation at the consequential step, is among the strongest demonstrated forms of defensive agent value available today. It should also look familiar: it is the same gate design we specified for our own agent, arrived at independently by people shipping production software.</p>
+      </section>
+
+      <!-- ====================== SECTION 6 ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">What Reasoning Models Actually Deliver</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>The agent loop depends on a <button type="button" class="nyu-define" data-term="lrm">reasoning model</button> to decide which tool to call, how to interpret each result, and when to stop. If the model fails on a problem, the agent fails on that problem, because there is nothing else in the loop making those decisions. That makes the model's limitations the agent's limitations, and on that question the science is genuinely contested. Understanding the disagreement matters before you hear only one side of it.</p>
+
+        <p>A 2025 Apple study (<a href="https://machinelearning.apple.com/research/illusion-of-thinking" target="_blank" rel="noopener">"The Illusion of Thinking"</a>) using controlled puzzles reported that reasoning-model performance collapses abruptly once problems pass a complexity threshold. A direct rebuttal contested the evaluation design within weeks, arguing the collapse was partly an artifact of how the tests were built. Later work took a different approach, rewording problems without changing their meaning, and measured answer-flip rates between roughly 29 and 45 percent.</p>
+
+        <p>Read across the disagreement and three things survive it. Both sides concede that capability on many tasks is real, and both concede that brittleness under perturbation is also real. What neither has settled is whether the reasoning generalizes, which is the question that would actually decide a deployment.</p>
+
+        <p>For agent design, the operational translation maps directly to the stop conditions from Section 2's triage-agent example: budget the loop, verify observations before acting on them, and treat the reasoning trace as evidence rather than assurance. Being able to argue both sides of this exchange is better calibration practice than reading most vendor whitepapers.</p>
+      </section>
+
+      <!-- ====================== SECTION 7 ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">The Regulatory Trajectory</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="living2-title">
+          <h3 class="nyu-callout__title" id="living2-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+            </span>
+            Regulation lags adoption
+          </h3>
+          <p><strong>The recurring gap.</strong> No major regulatory framework contains a category called "agent." The EU AI Act regulates general-purpose models and high-risk deployment contexts, but agentic systems inherit their obligations indirectly, through the models underneath them and through the settings they are deployed into. US policy has shifted between executive-order and market-led approaches. In both jurisdictions, agent-specific controls remain at the concept stage.</p>
+          <p><strong>Why this matters for you.</strong> Agent deployments outrun the regulatory rulebook, and this is not a temporary condition. New technology categories consistently reach production before legislators and standards bodies finish writing rules for them. Working in that gap is a normal professional responsibility, not an emergency.</p>
+        </aside>
+
+        <p>The <span class="nyu-ref" data-ref="regulatory-method">method from the governance module</span> is how practitioners operate in that gap: locate the deployment, classify it, map the obligations that follow, and stamp the answer with the date you checked. The specific regulatory dates will shift; the method does not.</p>
+      </section>
+
+      <!-- ====================== SECTION 8 ====================== -->
+      <section class="nyu-section" id="sec-8">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">8</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="quiz-3-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-3-prompt">
+            A vendor states its agent "autonomously resolves 90% of alerts." Available evidence: a scripted demo video, one customer quote, no published error rates, no scope definition. Which is the best calibrated assessment?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-3-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Cynical overcorrection. Verified defensive agent capability exists, including real CVE discoveries with human confirmation. Calibration grades this claim's evidence; it does not issue field-wide verdicts.">The claim is false; autonomous SOC technology is marketing vapor.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Specificity is not evidence. 'Resolves' is undefined, the demo is vendor-controlled, and one quote is not production data. Three of the five vendor-framework questions have no answer here.">The claim is credible; 90 percent is specific and the customer confirms it.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Demonstrated: some autonomous triage under demo conditions. Claimed but unverified: the 90 percent figure and the meaning of "resolves." Open: production performance under distribution shift.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Analyst placement is positioning, not measurement, and often reaches you secondhand. The missing evidence is error rates and scope, which your own sort just identified without outsourcing the judgment.">Insufficient information; request the vendor's analyst-firm ranking before deciding.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. The three-bin sort with the decisive missing evidence named. This structure transfers to every trend assessment you will make professionally."
+               data-incorrect-msg="A calibrated answer sorts the evidence into demonstrated, claimed, and open, rather than delivering a verdict."></div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 4: Your Skills, Mapped: Career Paths and What to Learn Next.</strong> The next section turns inward. The course taught a definable set of skills; we map them onto security roles, identify your gaps, and turn them into a learning plan.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../reference_tip/reference-tips.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+</html>

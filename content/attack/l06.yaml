@@ -1,0 +1,139 @@
+slug: l06
+num: "06"
+lecture: 6
+week: 6
+short: Supply chain, governance
+title: Supply chain, signing and governance
+time: about 3.5 hours
+lede: How to prove a model is the one your pipeline approved. AI bills of materials, Sigstore signing, SLSA, and a deploy gate that blocks unsigned models.
+owasp: [LLM03]
+agentic: [ASI04]
+atlas: [AML.T0010, AML.T0109, AML.T0115.001]
+other_fw:
+  - [SLSA v1.0, "Supply-chain Levels for Software Artifacts. The build track has levels 0 to 3. Higher levels need a hosted, hardened build that records signed provenance."]
+  - [CycloneDX and SPDX, "Standard bill of materials formats. CycloneDX 1.5 added an ML-BOM. SPDX 3.0 added AI and dataset profiles."]
+  - [ISO/IEC 42001, "An AI management system standard. It asks for control of AI components from suppliers."]
+
+idea: |
+  Lesson 5 showed how a model can be swapped or poisoned. This lesson asks a governance question. **How do you know what you run, and that nobody changed it?**
+
+  Three tools answer it.
+
+  - An **AI-BOM** lists every model, dataset and library in an AI system, with versions and sources.
+  - **Signing** proves who produced a file and that it did not change.
+  - **Provenance** records how the file was built, from which inputs, on which system.
+
+  !eli5 A sealed medicine box has an ingredient list (the BOM), a tamper seal (the signature) and a batch record from the factory (the provenance). You check all three before you take the pill.
+
+terms:
+  - [AI-BOM, "AI bill of materials. A list of models, datasets, code and services in an AI system, with versions and sources."]
+  - [Digital signature, "A value made with a private key. Anyone with the public key can check that the file is unchanged and came from the key owner."]
+  - [Sigstore, "Free, open tools for signing software. cosign signs and verifies files and container images."]
+  - [OCI registry, "A server that stores container images and other files, such as a Docker registry."]
+  - [Provenance, "A signed record of how an artifact was built."]
+  - [Transparency log, "A public, append-only log of signatures. Sigstore's log is called Rekor."]
+
+how: |
+  ### Sign, store, verify, deploy
+
+  1. The ML engineer or the training pipeline makes a key pair, or uses Sigstore keyless signing with a short-lived certificate.
+  2. The model file is pushed to a registry with a version tag.
+  3. cosign signs the stored artifact. The signature is stored next to it in the registry.
+  4. At deploy time a gate runs `cosign verify` with the public key.
+  5. If the check passes, the model is deployed. If it fails or there is no signature, the gate stops.
+
+  A signature proves **integrity and origin**. It does not prove the model is safe. A signed poisoned model is still poisoned. That is why provenance and the BOM matter too.
+
+  ### The tension in an AI-BOM
+
+  A detailed BOM helps security. You can find every system that uses a bad dataset. But listing exact training sources can expose a company in copyright disputes. Many companies list only broad sources, such as "Common Crawl", which helps very little for security.
+
+diagrams:
+  - type: flow
+    title: The signed-only deploy gate from the lab
+    nodes: [["Train or receive model.pt", "box"], ["oras push to registry", "raised"], ["cosign sign with private key", "def"], ["deploy.sh runs cosign verify", "def"], ["Deploy or block", "box"]]
+    edges: ["v1", "", "", ""]
+    caption: The v2 file was pushed but never signed, so the gate blocks it.
+
+defense: |
+  - Keep an AI-BOM for every AI system. Include the model revision, its hash, the datasets and the libraries.
+  - Sign every model your pipeline produces or approves. Verify the signature at every deploy.
+  - Record provenance. Use a hosted build that writes signed provenance, as SLSA asks.
+  - Watch your dependencies for change. A rug pull changes a trusted component after you approved it.
+
+lab:
+  intro: |
+    You act as the ML engineer who signs a model and as the deploy system that accepts only signed models. You need Docker, ORAS and cosign.
+  steps:
+    - "Start a local registry. `docker run -d -p 5000:5000 --name local-registry registry:2`"
+    - "Make a dummy model. `echo \"dummy model weights\" > model.pt`"
+    - "Make a key pair. `cosign generate-key-pair` makes cosign.key and cosign.pub. Set a password."
+    - "Push the model as v1. `oras push localhost:5000/my-secure-model:v1 model.pt`"
+    - "Sign v1. `cosign sign --key cosign.key localhost:5000/my-secure-model:v1`"
+    - "Push a second file as v2 and do not sign it."
+    - Write deploy.sh (below). Run it on v1 and on v2.
+    - Expected result. v1 prints SUCCESS. v2 prints BLOCKED.
+    - "Extend task. Push new content to the v1 tag after signing. Run the gate again and confirm it blocks the changed model."
+  code: |
+    #!/bin/bash
+    REGISTRY_URI=$1
+    if [ -z "$REGISTRY_URI" ]; then
+      echo "Usage: ./deploy.sh <registry-uri>"; exit 1
+    fi
+    if cosign verify --key cosign.pub --allow-insecure-registry "$REGISTRY_URI" > /dev/null 2>&1; then
+      echo "SUCCESS: Signature verified. Proceeding with deployment."
+    else
+      echo "BLOCKED: Artifact is unsigned or signature is invalid. Deployment halted."
+      exit 1
+    fi
+  hints:
+    - cosign 2.x uploads a signing record to the public Rekor log by default and asks you to confirm. For a fully private lab, sign with --tlog-upload=false and verify with --insecure-ignore-tlog=true.
+    - A local registry on localhost uses plain HTTP, so verify needs --allow-insecure-registry.
+    - cosign warns when you sign by tag. In real pipelines sign and verify by digest (the sha256 value), because a tag can move.
+  links: [cosign, sigstoremodel]
+
+readings:
+  - [googlesupply, "Google researchers apply supply chain ideas, such as provenance and signing, to models and datasets."]
+  - [wizaibom, "What to put in an AI bill of materials and how to build one."]
+  - [sigstoremodel, "How Sigstore signs models so users can check authenticity, with the OpenSSF model signing work."]
+star: [googlesupply]
+
+questions:
+  - - How detailed should data provenance be? Should it list every URL scraped? If a model trained on copyrighted books, does the AI-BOM expose the company to lawsuits? Is "Common Crawl" enough?
+    - |
+      For security, provenance must be detailed enough to answer one question fast. **Which of our models used this bad data?** That needs dataset names, versions or snapshot dates, filters applied, and ideally a hash of the exact snapshot.
+
+      Listing every URL is often too much to store and share, and it can become evidence in a copyright case. That is the tension between transparency and liability.
+
+      "Common Crawl" alone is not enough. Common Crawl has many monthly snapshots with billions of pages. Without the snapshot, the filters and a hash, a security team cannot trace a poisoning attack. A middle path is to keep the detailed record internally, under access control, and publish a summary.
+  - - Is a SLSA Level 4 LLM possible? What would lock down training so no unauthorized data enters the model?
+    - |
+      The current SLSA v1.0 build track stops at level 3. Level 4 belonged to an older draft and asked for two-person review and hermetic, reproducible builds.
+
+      For an LLM this is very hard. Training runs on huge clusters for weeks and is not bit-for-bit reproducible. Training data is huge and comes from many sources. You would need a hermetic training cluster with no outside network, signed and hashed dataset snapshots as the only inputs, two-person review of data and code changes, and signed provenance for every stage. Parts of this are possible. Full reproducibility is not practical today.
+
+quiz:
+  - q: What does a valid cosign signature on a model prove?
+    opts: ["The model is safe and unbiased", "The file is unchanged and was signed by the key owner", "The model was trained on licensed data"]
+    a: 1
+    why: Signing proves integrity and origin. Safety needs other checks.
+  - q: Why sign and verify by digest instead of by tag?
+    opts: ["Digests are shorter", "A tag can be moved to different content, a digest cannot", "Tags do not work with cosign"]
+    a: 1
+    why: A digest is the hash of the content. The same digest always means the same bytes.
+  - q: A team lists only "Common Crawl" as its data source. What can it not do?
+    opts: ["Train a model", "Trace which snapshot or filter let poisoned pages in", "Publish the model"]
+    a: 1
+    why: Without snapshot and filter details, a security team cannot trace the source of bad data.
+
+deliverables:
+  - Your answers to both discussion questions.
+  - Your deploy script and a screenshot that shows v1 deployed and v2 blocked.
+
+refs:
+  - "Google Research. [Securing the AI software supply chain](@googlesupply), 2024."
+  - "Wiz. [AI-BOM, the AI bill of materials](@wizaibom)."
+  - "Red Hat. [Model authenticity and transparency with Sigstore](@sigstoremodel), 2025."
+  - "Sigstore. [cosign](@cosign)."
+  - "[SLSA v1.0 specification](https://slsa.dev/spec/v1.0/levels)."
+  - "OWASP. [LLM03 2025 Supply chain](https://genai.owasp.org/llmrisk/llm032025-supply-chain/)."

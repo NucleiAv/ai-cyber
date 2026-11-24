@@ -1,0 +1,802 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Clean-Label Poisoning</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redsoft:#fcf1f1;
+  --green:#0f7a43;--greenline:#c3e2d0;--greensoft:#eef7f2;
+  --amber:#8a5d00;--ambersoft:#fdf6e8;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:62ch}
+.body{padding:14px 22px 22px}
+
+/* vis area */
+.vis{position:relative;height:402px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#ffffff,#fcfcfd);overflow:hidden}
+.table-view,.scatter-view{position:absolute;inset:0;transition:opacity .4s ease}
+.scatter-view{opacity:0;pointer-events:none}
+.scatter-view canvas{display:block;width:100%;height:100%}
+.vis.show-scatter .table-view{opacity:0;pointer-events:none}
+.vis.show-scatter .scatter-view{opacity:1;pointer-events:auto}
+
+/* table */
+.flow-header{display:grid;grid-template-columns:1fr 96px 48px 20px;align-items:center;gap:8px;height:26px;padding:0 14px;border-bottom:1px solid var(--line)}
+.flow-header span{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.fh-feat{text-align:center}
+.flow-rows{position:relative}
+.flow-row{display:grid;grid-template-columns:1fr 96px 48px 20px;align-items:center;gap:8px;height:30px;padding:0 14px;border-bottom:1px solid var(--line);transition:background .35s ease;opacity:0;transform:translateY(3px);transition:opacity .3s ease,transform .3s ease,background .35s ease}
+.flow-row.visible{opacity:1;transform:translateY(0)}
+.flow-row:last-child{border-bottom:none}
+.flow-row:nth-child(odd){background:var(--paper)}
+.flow-row.highlighted{background:var(--ambersoft)!important}
+.flow-name{font-family:var(--mono);font-size:0.75rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:7px}
+.flow-dot{width:6px;height:6px;border-radius:50%;flex:none}
+.flow-dot.b{background:var(--green)}.flow-dot.m{background:var(--red)}
+.label-tag{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.01em;text-transform:uppercase;padding:3px 6px;border-radius:5px;text-align:center;color:var(--ink)}
+.label-tag.b{background:#166534;color:#fff}.label-tag.m{background:#991B1B;color:#fff}
+
+/* feature bars */
+.feat-bars{display:flex;align-items:flex-end;gap:2px;height:20px;justify-content:center}
+.feat-bar{width:6px;border-radius:2px 2px 0 0;background:var(--ink3);transition:height .7s cubic-bezier(.4,0,.2,1),background .4s ease;min-height:2px}
+.feat-bar.shifted{background:var(--amber)}
+
+/* checkmark */
+.check-cell{display:flex;align-items:center;justify-content:center}
+.check-mark{width:16px;height:16px;border-radius:50%;background:var(--greensoft);display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(0);transition:opacity .15s ease,transform .25s cubic-bezier(.34,1.56,.64,1)}
+.check-mark.show{opacity:1;transform:scale(1)}
+.check-mark::after{content:'';display:block;width:4px;height:7px;border:solid var(--ink);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);margin-top:-2px}
+
+/* scan bar */
+.scan-bar{position:absolute;left:0;right:0;height:2px;background:var(--violet);opacity:0;z-index:5;pointer-events:none}
+.scan-glow{position:absolute;left:0;right:0;height:20px;background:linear-gradient(180deg,rgba(87,6,140,0) 0%,rgba(87,6,140,.08) 50%,rgba(87,6,140,0) 100%);top:-10px}
+
+/* note overlay */
+.note-over{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 16px;font-size:.76rem;color:var(--ink);font-weight:600;text-align:center;opacity:0;transition:opacity .35s ease;z-index:10;pointer-events:none;max-width:92%;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.note-over.show{opacity:1}
+
+/* cap + controls */
+.cap{min-height:1.35em;margin-top:12px;font-size:.83rem;color:var(--ink);display:flex;align-items:center;gap:9px}
+.cap .cstep{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--violet);border-radius:5px;padding:3px 7px;flex:none;white-space:nowrap}
+.controls{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.83rem;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer;transition:.14s}
+.btn:hover{background:var(--violet2);border-color:var(--violet2)}
+.btn:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.btn.ghost{background:var(--bg);color:var(--violet);border-color:var(--vline)}
+.btn.ghost:hover{background:var(--vsoft)}
+.rehint{font-size:0.75rem;color:var(--ink3)}
+
+/* idle placeholder */
+.idle-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:2;transition:opacity .35s ease}
+.idle-placeholder.hidden{opacity:0;pointer-events:none}
+.idle-dots{position:relative;width:180px;height:120px}
+.idle-dot{position:absolute;border-radius:50%;opacity:.25}
+.idle-dot.b{background:var(--green)}
+.idle-dot.m{background:var(--red)}
+@keyframes idleDrift{
+  0%{transform:translate(0,0)}
+  25%{transform:translate(3px,-4px)}
+  50%{transform:translate(-2px,3px)}
+  75%{transform:translate(4px,1px)}
+  100%{transform:translate(0,0)}
+}
+.idle-dot{animation:idleDrift 6s ease-in-out infinite}
+.idle-hint{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--paper);border-radius:3px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+
+    /* Respect a reduced-motion preference: these loops are decorative idle
+       cues, so switching them off costs the learner nothing. WCAG 2.2.2. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive &middot; Section 1 &middot; Data Poisoning</div>
+    <h1>Clean-label poisoning</h1>
+    <p class="lede">The labels are all correct. The poison hides inside the inputs themselves.</p>
+  </div>
+  <div class="body">
+    <div class="vis" id="vis">
+      <div class="idle-placeholder" id="idlePlaceholder">
+        <div class="idle-dots">
+          <div class="idle-dot b" style="width:10px;height:10px;top:20%;left:18%;animation-delay:0s"></div>
+          <div class="idle-dot b" style="width:8px;height:8px;top:40%;left:10%;animation-delay:.8s"></div>
+          <div class="idle-dot b" style="width:9px;height:9px;top:55%;left:25%;animation-delay:1.6s"></div>
+          <div class="idle-dot b" style="width:7px;height:7px;top:30%;left:30%;animation-delay:2.4s"></div>
+          <div class="idle-dot b" style="width:8px;height:8px;top:65%;left:15%;animation-delay:3.2s"></div>
+          <div class="idle-dot m" style="width:10px;height:10px;top:15%;left:72%;animation-delay:.4s"></div>
+          <div class="idle-dot m" style="width:9px;height:9px;top:30%;left:80%;animation-delay:1.2s"></div>
+          <div class="idle-dot m" style="width:8px;height:8px;top:10%;left:65%;animation-delay:2s"></div>
+          <div class="idle-dot m" style="width:7px;height:7px;top:25%;left:58%;animation-delay:2.8s"></div>
+          <svg width="180" height="120" viewBox="0 0 180 120" fill="none" style="position:absolute;inset:0">
+            <line x1="20" y1="90" x2="140" y2="20" stroke="var(--line2)" stroke-width="1.5" stroke-dasharray="4 4" opacity=".4"/>
+          </svg>
+        </div>
+        <span class="idle-hint">12 network flows</span>
+      </div>
+      <div class="table-view" id="tableView"></div>
+      <div class="scatter-view" id="scatterView"><canvas id="scatter"></canvas></div>
+      <div class="note-over" id="noteOver"></div>
+    </div>
+    <div class="cap" id="cap">
+      <span class="cstep" id="cstep">READY</span>
+      <span id="captxt">Press Start to walk through a clean-label poisoning attack on a network intrusion classifier.</span>
+    </div>
+    <div class="controls">
+      <button class="btn ghost" id="backBtn" disabled>Back</button>
+      <button class="btn" id="nextBtn">Start</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+      <span class="rehint" id="rehint">Step through at your own pace.</span>
+    </div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+/* ── data ── */
+var FLOWS=[
+  {name:'HTTP GET /api/users',  lab:'b',feat:[.20,.15,.10,.20,.25],pfeat:null,  sx:.15,sy:.22,psx:0,psy:0},
+  {name:'DNS query ns1.corp',   lab:'b',feat:[.10,.10,.15,.10,.20],pfeat:null,  sx:.10,sy:.14,psx:0,psy:0},
+  {name:'HTTPS POST /login',    lab:'b',feat:[.30,.20,.15,.25,.20],pfeat:[.55,.48,.44,.52,.48],sx:.22,sy:.18,psx:.38,psy:.35},
+  {name:'NTP sync pool.ntp',    lab:'b',feat:[.15,.10,.10,.10,.15],pfeat:null,  sx:.12,sy:.10,psx:0,psy:0},
+  {name:'SMTP EHLO mail01',     lab:'b',feat:[.25,.20,.20,.15,.30],pfeat:[.50,.48,.52,.44,.58],sx:.20,sy:.26,psx:.34,psy:.42},
+  {name:'SSH key exchange',     lab:'b',feat:[.30,.25,.20,.20,.15],pfeat:[.58,.52,.48,.48,.44],sx:.26,sy:.14,psx:.42,psy:.30},
+  {name:'TLS 1.3 handshake',    lab:'b',feat:[.20,.15,.10,.15,.20],pfeat:null,  sx:.18,sy:.16,psx:0,psy:0},
+  {name:'ICMP echo request',    lab:'b',feat:[.10,.15,.10,.15,.10],pfeat:[.44,.48,.42,.48,.44],sx:.17,sy:.28,psx:.30,psy:.42},
+  {name:'TCP SYN flood',        lab:'m',feat:[.80,.90,.70,.60,.85],pfeat:null,  sx:.78,sy:.82,psx:0,psy:0},
+  {name:'HTTP POST /exfil',     lab:'m',feat:[.70,.75,.80,.85,.70],pfeat:null,  sx:.70,sy:.76,psx:0,psy:0},
+  {name:'DNS TXT tunnel',       lab:'m',feat:[.65,.70,.85,.75,.60],pfeat:null,  sx:.84,sy:.70,psx:0,psy:0},
+  {name:'Reverse shell :4444',  lab:'m',feat:[.90,.80,.75,.70,.80],pfeat:null,  sx:.74,sy:.66,psx:0,psy:0}
+];
+var PERT=[2,4,5,7];
+var BDY_CLEAN=.50, BDY_SHIFT=.82;
+var TEST={sx:.44,sy:.30};
+
+/* ── DOM refs ── */
+var vis=document.getElementById('vis'),
+    tableView=document.getElementById('tableView'),
+    scatterView=document.getElementById('scatterView'),
+    canvas=document.getElementById('scatter'),
+    ctx=canvas.getContext('2d'),
+    noteOver=document.getElementById('noteOver'),
+    idlePlaceholder=document.getElementById('idlePlaceholder'),
+    cstep=document.getElementById('cstep'),
+    captxt=document.getElementById('captxt'),
+    backBtn=document.getElementById('backBtn'),
+    nextBtn=document.getElementById('nextBtn'),
+    resetBtn=document.getElementById('resetBtn'),
+    rehintEl=document.getElementById('rehint');
+
+var MONO="'JetBrains Mono',monospace",SANS="'Inter',sans-serif";
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;};}
+
+var step=-1, busy=false, rafId=null, T=0;
+
+/* ── scatter state ── */
+var ss={ptAlpha:0,cleanBdy:0,shiftBdy:0,gapAlpha:0,testDrop:0,verdictAlpha:0,pertLerp:1};
+
+/* ── helpers ── */
+function easeIO(p){return p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2}
+function easeOut(p){return 1-Math.pow(1-p,3)}
+function delay(ms){return new Promise(function(r){setTimeout(r,ms)})}
+function tweenProp(obj,key,to,dur,ease){
+  ease=ease||easeIO;
+  return new Promise(function(res){
+    var from=obj[key],t0=performance.now();
+    (function fr(now){
+      var p=Math.min(1,(now-t0)/dur);
+      obj[key]=from+(to-from)*ease(p);
+      if(p<1) requestAnimationFrame(fr); else res();
+    })(performance.now());
+  });
+}
+
+/* ── build table ── */
+function buildTable(){
+  var h='<div class="flow-header"><span>FLOW</span><span>LABEL</span><span class="fh-feat">FEATURES</span><span></span></div>';
+  h+='<div class="flow-rows" id="flowRows">';
+  for(var i=0;i<FLOWS.length;i++){
+    var f=FLOWS[i];
+    h+='<div class="flow-row" id="row-'+i+'">';
+    h+='<span class="flow-name"><span class="flow-dot '+(f.lab==='b'?'b':'m')+'"></span>'+f.name+'</span>';
+    h+='<span class="label-tag '+(f.lab==='b'?'b':'m')+'">'+(f.lab==='b'?'benign':'malicious')+'</span>';
+    h+='<div class="feat-bars" id="bars-'+i+'">';
+    for(var j=0;j<5;j++){
+      h+='<div class="feat-bar" id="bar-'+i+'-'+j+'" style="height:'+Math.max(2,f.feat[j]*20)+'px"></div>';
+    }
+    h+='</div>';
+    h+='<div class="check-cell"><div class="check-mark" id="check-'+i+'"></div></div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<div class="scan-bar" id="scanBar"><div class="scan-glow"></div></div>';
+  tableView.innerHTML=h;
+}
+
+/* ── set bar heights ── */
+function setBars(idx,vals,shifted){
+  for(var j=0;j<5;j++){
+    var bar=document.getElementById('bar-'+idx+'-'+j);
+    if(!bar) continue;
+    bar.style.height=Math.max(2,vals[j]*20)+'px';
+    if(shifted) bar.classList.add('shifted'); else bar.classList.remove('shifted');
+  }
+}
+
+/* ── show/hide note ── */
+function showNote(txt){noteOver.textContent=txt;noteOver.classList.add('show')}
+function hideNote(){noteOver.classList.remove('show')}
+
+/* ── caption ── */
+function setCap(s,txt){cstep.textContent=s;captxt.textContent=txt}
+
+/* ── snap to step (instant, no animation) ── */
+function snapToStep(n){
+  hideNote();
+  vis.classList.remove('show-scatter');
+  if(n>=0) idlePlaceholder.classList.add('hidden');
+  else idlePlaceholder.classList.remove('hidden');
+  /* rebuild table fresh */
+  buildTable();
+  /* step 0+: show rows */
+  if(n>=0){
+    var rows=tableView.querySelectorAll('.flow-row');
+    for(var i=0;i<rows.length;i++) rows[i].classList.add('visible');
+  }
+  /* step 1+: perturb bars */
+  if(n>=1){
+    for(var k=0;k<PERT.length;k++){
+      var idx=PERT[k];
+      var row=document.getElementById('row-'+idx);
+      if(row) row.classList.add('highlighted');
+      setBars(idx,FLOWS[idx].pfeat,true);
+    }
+  }
+  /* step 2+: checkmarks visible */
+  if(n>=2){
+    for(var i=0;i<FLOWS.length;i++){
+      var cm=document.getElementById('check-'+i);
+      if(cm) cm.classList.add('show');
+    }
+  }
+  /* step 3+: scatter view */
+  if(n>=3){
+    vis.classList.add('show-scatter');
+    ss.ptAlpha=1;ss.pertLerp=1;ss.cleanBdy=0;ss.shiftBdy=0;ss.gapAlpha=0;ss.testDrop=0;ss.verdictAlpha=0;
+    startLoop();
+  }
+  /* step 4: boundaries + test */
+  if(n>=4){
+    ss.cleanBdy=1;ss.shiftBdy=1;ss.gapAlpha=1;ss.testDrop=1;ss.verdictAlpha=1;
+  }
+}
+
+/* ── step animations ── */
+async function animateStep0(){
+  idlePlaceholder.classList.add('hidden');
+  buildTable();
+  var rows=tableView.querySelectorAll('.flow-row');
+  for(var i=0;i<rows.length;i++){
+    (function(el,d){setTimeout(function(){el.classList.add('visible')},d)})(rows[i],i*40);
+  }
+  await delay(rows.length*40+300);
+}
+
+async function animateStep1(){
+  /* highlight rows and grow bars */
+  var promises=[];
+  for(var k=0;k<PERT.length;k++){
+    (function(idx,k){
+      setTimeout(function(){
+        var row=document.getElementById('row-'+idx);
+        if(row) row.classList.add('highlighted');
+        setBars(idx,FLOWS[idx].pfeat,true);
+      },k*120);
+    })(PERT[k],k);
+  }
+  await delay(PERT.length*120+700);
+  showNote('Labels correct. Inputs quietly altered.');
+  await delay(400);
+}
+
+async function animateStep2(){
+  hideNote();
+  var scanBar=document.getElementById('scanBar');
+  if(!scanBar) return;
+  var headerH=27;
+  var rowH=31;
+  var totalH=headerH+FLOWS.length*rowH;
+  scanBar.style.opacity='1';
+  scanBar.style.top=headerH+'px';
+  var dur=1500;
+  var t0=performance.now();
+  var checked=[];
+  await new Promise(function(res){
+    (function fr(now){
+      var t=Math.min(1,(now-t0)/dur);
+      var y=headerH+(totalH-headerH)*t;
+      scanBar.style.top=y+'px';
+      var rowsPassed=Math.floor((y-headerH)/rowH);
+      for(var i=0;i<rowsPassed&&i<FLOWS.length;i++){
+        if(checked.indexOf(i)===-1){
+          checked.push(i);
+          var cm=document.getElementById('check-'+i);
+          if(cm) cm.classList.add('show');
+        }
+      }
+      if(t<1) requestAnimationFrame(fr);
+      else{
+        /* ensure all checked */
+        for(var i=0;i<FLOWS.length;i++){
+          var cm=document.getElementById('check-'+i);
+          if(cm) cm.classList.add('show');
+        }
+        scanBar.style.opacity='0';
+        res();
+      }
+    })(performance.now());
+  });
+  await delay(300);
+  showNote('Every label is correct. The audit finds nothing.');
+  await delay(400);
+}
+
+async function animateStep3(){
+  hideNote();
+  ss.ptAlpha=0;ss.cleanBdy=0;ss.shiftBdy=0;ss.gapAlpha=0;ss.testDrop=0;ss.verdictAlpha=0;ss.pertLerp=0;
+  startLoop();
+  vis.classList.add('show-scatter');
+  await delay(420);
+  /* Show dots at their original (clean) positions first */
+  await tweenProp(ss,'ptAlpha',1,500);
+  await delay(400);
+  /* Animate perturbed dots moving from original to poisoned positions */
+  await tweenProp(ss,'pertLerp',1,1200,easeIO);
+  await delay(300);
+  showNote('The poison is in the data, not the labels.');
+  await delay(400);
+}
+
+async function animateStep4(){
+  hideNote();
+  await tweenProp(ss,'cleanBdy',1,500);
+  await delay(200);
+  await tweenProp(ss,'shiftBdy',1,600);
+  await delay(200);
+  await tweenProp(ss,'gapAlpha',1,400);
+  await delay(300);
+  await tweenProp(ss,'testDrop',1,550,easeOut);
+  await delay(200);
+  await tweenProp(ss,'verdictAlpha',1,350);
+}
+
+/* ── scatter plot drawing ── */
+function drawScatter(){
+  var W=canvas.clientWidth||vis.clientWidth;
+  var H=canvas.clientHeight||vis.clientHeight;
+  if(W===0||H===0) return;
+  var dpr=Math.min(window.devicePixelRatio||1,2.5);
+  canvas.width=Math.round(W*dpr);
+  canvas.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  var ML=48,MR=22,MT=22,MB=36;
+  var PW=W-ML-MR, PH=H-MT-MB;
+  function PX(fx){return ML+fx*PW}
+  function PY(fy){return MT+(1-fy)*PH}
+
+  /* plot frame */
+  ctx.fillStyle='#fff';ctx.strokeStyle='#d9dbe2';ctx.lineWidth=1;
+  ctx.beginPath();ctx.roundRect(ML-8,MT-8,PW+16,PH+16,10);ctx.fill();ctx.stroke();
+
+  /* region shading behind boundaries */
+  if(ss.shiftBdy>.01){
+    ctx.save();
+    ctx.beginPath();ctx.roundRect(ML-8,MT-8,PW+16,PH+16,10);ctx.clip();
+    ctx.globalAlpha=ss.shiftBdy*.5;
+    /* benign region (below shifted boundary) */
+    ctx.fillStyle='#eef7f2';
+    ctx.beginPath();ctx.moveTo(PX(0),PY(0));
+    ctx.lineTo(PX(0),PY(Math.min(BDY_SHIFT,1)));
+    ctx.lineTo(PX(Math.min(BDY_SHIFT,1)),PY(0));
+    ctx.closePath();ctx.fill();
+    /* malicious region (above shifted boundary) */
+    ctx.fillStyle='#fceeee';
+    ctx.beginPath();
+    ctx.moveTo(PX(0),PY(1));ctx.lineTo(PX(1),PY(1));ctx.lineTo(PX(1),PY(0));
+    ctx.lineTo(PX(Math.min(BDY_SHIFT,1)),PY(0));
+    ctx.lineTo(PX(0),PY(Math.min(BDY_SHIFT,1)));
+    ctx.closePath();ctx.fill();
+    ctx.restore();
+  }
+
+  /* gap highlight between boundaries */
+  if(ss.gapAlpha>.01){
+    ctx.save();
+    ctx.beginPath();ctx.roundRect(ML-8,MT-8,PW+16,PH+16,10);ctx.clip();
+    ctx.globalAlpha=ss.gapAlpha*.10;
+    ctx.fillStyle='#c02626';
+    ctx.beginPath();
+    ctx.moveTo(PX(0),PY(BDY_CLEAN));
+    ctx.lineTo(PX(BDY_CLEAN),PY(0));
+    ctx.lineTo(PX(Math.min(BDY_SHIFT,1)),PY(0));
+    ctx.lineTo(PX(0),PY(Math.min(BDY_SHIFT,1)));
+    ctx.closePath();ctx.fill();
+    ctx.restore();
+
+  }
+
+  /* subtle grid */
+  ctx.strokeStyle='#f0f1f4';ctx.lineWidth=.8;
+  for(var g=.2;g<1;g+=.2){
+    ctx.beginPath();ctx.moveTo(PX(g),PY(0));ctx.lineTo(PX(g),PY(1));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(PX(0),PY(g));ctx.lineTo(PX(1),PY(g));ctx.stroke();
+  }
+
+  /* gap label, drawn after the grid so no gridline crosses the glyphs, and
+     positioned along the corridor's midline (x + y = the mean of the two
+     boundaries) rather than at its centroid. The four perturbed flows and the
+     test point all land near that centroid by design, so dots sat on top of the
+     text. Sliding the label down the corridor keeps it inside the shaded band
+     and clear of every plotted point and label, verified from 380px up. */
+  if(ss.gapAlpha>.01){
+    ctx.save();
+    ctx.globalAlpha=ss.gapAlpha;
+    ctx.fillStyle='#c02626';
+    ctx.font='600 12px '+MONO;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    var gMid=(BDY_CLEAN+BDY_SHIFT)/2, gtx=.56;
+    var gx=PX(gtx), gy=PY(gMid-gtx);
+    ctx.fillText('CORRUPTION',gx,gy-5);
+    ctx.fillText('ZONE',gx,gy+6);
+    ctx.restore();
+  }
+
+  /* correct boundary (dashed gray) */
+  if(ss.cleanBdy>.01){
+    ctx.save();ctx.globalAlpha=ss.cleanBdy;
+    ctx.strokeStyle='#9aa0aa';ctx.lineWidth=1.8;ctx.setLineDash([6,5]);
+    ctx.beginPath();ctx.moveTo(PX(0),PY(BDY_CLEAN));ctx.lineTo(PX(BDY_CLEAN),PY(0));ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#6c727c';ctx.font='600 12px '+MONO;
+    ctx.textAlign='right';ctx.textBaseline='bottom';
+    ctx.fillText('correct boundary',PX(BDY_CLEAN)-4,PY(0)+14);
+    ctx.restore();
+  }
+
+  /* shifted boundary (solid violet) */
+  if(ss.shiftBdy>.01){
+    ctx.save();ctx.globalAlpha=ss.shiftBdy;
+    var prog=Math.min(1,ss.shiftBdy);
+    ctx.strokeStyle='#57068C';ctx.lineWidth=2.4;
+    ctx.beginPath();
+    ctx.moveTo(PX(0),PY(BDY_SHIFT));
+    ctx.lineTo(PX(BDY_SHIFT*prog),PY(BDY_SHIFT*(1-prog)));
+    ctx.stroke();
+    if(prog>.7){
+      ctx.fillStyle='#57068C';ctx.font='600 12px '+MONO;
+      ctx.textAlign='left';ctx.textBaseline='top';
+      ctx.fillText("learned boundary",PX(0)+4,PY(BDY_SHIFT)-14);
+    }
+    ctx.restore();
+  }
+
+  /* ghost trails for perturbed points (only show when dots have started moving) */
+  if(ss.ptAlpha>.01 && ss.pertLerp>.05){
+    ctx.save();ctx.globalAlpha=ss.ptAlpha*.35*Math.min(1,ss.pertLerp*2);
+    for(var k=0;k<PERT.length;k++){
+      var f=FLOWS[PERT[k]];
+      var curX=f.sx+(f.psx-f.sx)*ss.pertLerp;
+      var curY=f.sy+(f.psy-f.sy)*ss.pertLerp;
+      ctx.strokeStyle='#8b909a';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(PX(f.sx),PY(f.sy));ctx.lineTo(PX(curX),PY(curY));ctx.stroke();
+      ctx.setLineDash([]);
+      /* ghost dot at original position */
+      ctx.beginPath();ctx.arc(PX(f.sx),PY(f.sy),3,0,Math.PI*2);
+      ctx.fillStyle='#c8cad0';ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* data points */
+  if(ss.ptAlpha>.01){
+    for(var i=0;i<FLOWS.length;i++){
+      var f=FLOWS[i];
+      var isPert=PERT.indexOf(i)!==-1;
+      /* Interpolate perturbed positions based on pertLerp */
+      var px=isPert ? (f.sx+(f.psx-f.sx)*ss.pertLerp) : f.sx;
+      var py=isPert ? (f.sy+(f.psy-f.sy)*ss.pertLerp) : f.sy;
+
+      ctx.save();ctx.globalAlpha=ss.ptAlpha;
+
+      /* perturbed ring */
+      if(isPert){
+        var pulse=.5+.5*Math.sin(T*3.5+i);
+        ctx.globalAlpha=ss.ptAlpha*(.45+.35*pulse);
+        ctx.strokeStyle='#8a5d00';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(PX(px),PY(py),9.5,0,Math.PI*2);ctx.stroke();
+        ctx.globalAlpha=ss.ptAlpha;
+      }
+
+      /* dot */
+      ctx.beginPath();ctx.arc(PX(px),PY(py),5.5,0,Math.PI*2);
+      ctx.fillStyle=f.lab==='b'?'#0f7a43':'#c02626';
+      ctx.shadowColor='rgba(20,20,30,.16)';ctx.shadowBlur=4;ctx.shadowOffsetY=1;
+      ctx.fill();
+      ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+      ctx.lineWidth=1.4;ctx.strokeStyle='#fff';ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+
+  /* test point */
+  if(ss.testDrop>.01){
+    var targetY=PY(TEST.sy);
+    var startY=MT-30;
+    var tY=startY+(targetY-startY)*easeOut(Math.min(1,ss.testDrop));
+    var tX=PX(TEST.sx);
+
+    ctx.save();ctx.globalAlpha=ss.testDrop;
+    ctx.beginPath();ctx.arc(tX,tY,7,0,Math.PI*2);
+    ctx.fillStyle='#c02626';
+    ctx.shadowColor='rgba(192,38,38,.35)';ctx.shadowBlur=10;ctx.shadowOffsetY=2;
+    ctx.fill();
+    ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.lineWidth=1.6;ctx.strokeStyle='#fff';ctx.stroke();
+
+    ctx.fillStyle='#fff';ctx.font='700 12px '+MONO;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('?',tX,tY+.5);
+    ctx.restore();
+
+    /* flow label */
+    if(ss.testDrop>.6){
+      ctx.save();ctx.globalAlpha=Math.min(1,(ss.testDrop-.6)/.4);
+      /* Set the label font BEFORE measuring it. Every frame reassigns canvas.width,
+         which resets the 2D context to its defaults, and every font set since then
+         has been inside a save/restore pair. ctx.font here was therefore still the
+         canvas default, 10px sans-serif: the pill was sized from those metrics and
+         then filled with 12px monospace text, so the text ran past both ends of the
+         pill. Measuring and drawing with one font keeps the 7px padding per side. */
+      ctx.font='600 12px '+MONO;
+      var tw=ctx.measureText('Port scan :445').width+14;
+      ctx.fillStyle='#fff';ctx.strokeStyle='#d9dbe2';ctx.lineWidth=1;
+      ctx.beginPath();ctx.roundRect(tX-tw/2,tY+14,tw,18,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#15171C';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('Port scan :445',tX,tY+23);
+      ctx.restore();
+    }
+  }
+
+  /* verdict card */
+  if(ss.verdictAlpha>.01){
+    ctx.save();ctx.globalAlpha=ss.verdictAlpha;
+    var vw=168,vh=52;
+    var vx=PX(TEST.sx)+18,vy=PY(TEST.sy)-40;
+    /* clamp to visible area */
+    if(vx+vw>W-MR) vx=PX(TEST.sx)-vw-18;
+    ctx.fillStyle='#fff';ctx.strokeStyle='#efc9c9';ctx.lineWidth=1.5;
+    ctx.shadowColor='rgba(0,0,0,.08)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;
+    ctx.beginPath();ctx.roundRect(vx,vy,vw,vh,8);ctx.fill();
+    ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.stroke();
+
+    ctx.fillStyle='#15171C';ctx.font='700 12px '+MONO;
+    ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText('MODEL: BENIGN',vx+10,vy+10);
+    ctx.fillStyle='#c02626';ctx.font='600 12px '+MONO;
+    ctx.fillText('ACTUAL: MALICIOUS',vx+10,vy+28);
+    ctx.restore();
+  }
+
+  /* cluster labels */
+  if(ss.ptAlpha>.3){
+    ctx.save();ctx.globalAlpha=Math.min(1,(ss.ptAlpha-.3)/.7)*.7;
+    ctx.fillStyle='#565a63';ctx.font='600 12px '+MONO;
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    ctx.fillText('BENIGN',PX(.02),PY(.04));
+    ctx.fillText('CLUSTER',PX(.02),PY(.04)+11);
+    ctx.textAlign='right';
+    ctx.fillText('MALICIOUS',PX(.98),PY(.90));
+    ctx.fillText('CLUSTER',PX(.98),PY(.90)+11);
+    ctx.restore();
+  }
+
+  /* axis labels */
+  ctx.fillStyle='#8b909a';ctx.font='600 12px '+MONO;
+  ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('Feature dimension A',ML+PW/2,MT+PH+14);
+  ctx.save();ctx.translate(ML-30,MT+PH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('Feature dimension B',0,0);ctx.restore();
+
+  /* legend */
+  var lx=PX(.56),ly=MT+10;
+  ctx.fillStyle='#0f7a43';ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#565a63';ctx.font='500 12px '+SANS;ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText('benign',lx+9,ly);
+  var lx2=lx+62;
+  ctx.fillStyle='#c02626';ctx.beginPath();ctx.arc(lx2,ly,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#565a63';ctx.fillText('malicious',lx2+9,ly);
+  /* perturbed legend */
+  var lx3=lx2+78;
+  ctx.strokeStyle='#8a5d00';ctx.lineWidth=1.8;
+  ctx.beginPath();ctx.arc(lx3,ly,5.5,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#565a63';ctx.fillText('perturbed',lx3+9,ly);
+}
+
+function startLoop(){
+  if(rafId) return;
+  (function loop(){T+=1/60;drawScatter();rafId=requestAnimationFrame(loop)})();
+}
+function stopLoop(){if(rafId){cancelAnimationFrame(rafId);rafId=null}}
+
+/* ── step captions ── */
+var CAPS=[
+  {s:'STEP 1',t:'Twelve network flows, correctly labeled. Each row shows five traffic features as a bar chart.'},
+  {s:'STEP 2',t:'The attacker shifts features on four benign flows. Labels stay correct, but the underlying data has changed.'},
+  {s:'STEP 3',t:'A label auditor scans every row. Label matches the evidence? Pass. All twelve rows check out.'},
+  {s:'STEP 4',t:'In feature space, the perturbed samples (amber rings) sit between the benign and malicious clusters.'},
+  {s:'STEP 5',t:'Trained on corrupted data, the model shifts its boundary. A real attack slips through as benign.'}
+];
+
+/* ── step navigation ── */
+async function goNext(){
+  if(busy) return;
+  var target=step+1;
+  if(target>4) return;
+  busy=true; updateButtons();
+  hideNote();
+  setCap(CAPS[target].s,CAPS[target].t);
+
+  if(target===0) await animateStep0();
+  else if(target===1) await animateStep1();
+  else if(target===2) await animateStep2();
+  else if(target===3) await animateStep3();
+  else if(target===4) await animateStep4();
+
+  step=target;
+  busy=false;
+  updateButtons();
+}
+
+function goBack(){
+  if(busy||step<0) return;
+  step--;
+  hideNote();
+  if(step<0){
+    stopLoop();
+    buildTable();
+    setCap('READY','Press Start to walk through a clean-label poisoning attack on a network intrusion classifier.');
+  } else {
+    if(step<3) stopLoop();
+    snapToStep(step);
+    setCap(CAPS[step].s,CAPS[step].t);
+    /* re-show annotation for steps 1-3 */
+    if(step===1) showNote('Labels correct. Inputs quietly altered.');
+    if(step===2) showNote('Every label is correct. The audit finds nothing.');
+    if(step===3) showNote('The poison is in the data, not the labels.');
+  }
+  updateButtons();
+}
+
+function doReset(){
+  if(busy) return;
+  step=-1;
+  busy=false;
+  stopLoop();
+  hideNote();
+  vis.classList.remove('show-scatter');
+  idlePlaceholder.classList.remove('hidden');
+  buildTable();
+  ss.ptAlpha=0;ss.pertLerp=0;ss.cleanBdy=0;ss.shiftBdy=0;ss.gapAlpha=0;ss.testDrop=0;ss.verdictAlpha=0;
+  setCap('READY','Press Start to walk through a clean-label poisoning attack on a network intrusion classifier.');
+  updateButtons();
+}
+
+function updateButtons(){
+  backBtn.disabled=busy||step<0;
+  nextBtn.disabled=busy||step>=4;
+  resetBtn.disabled=busy;
+  nextBtn.textContent=step<0?'Start':(step>=4?'Done':'Next');
+  rehintEl.textContent=busy?'...':(step<0?'Step through at your own pace.':(step>=4?'Finished. Press Reset to replay.':'Step '+(step+1)+' of 5'));
+  sh();
+}
+
+/* ── events ── */
+nextBtn.addEventListener('click',goNext);
+backBtn.addEventListener('click',goBack);
+resetBtn.addEventListener('click',doReset);
+window.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight') goNext();
+  else if(e.key==='ArrowLeft') goBack();
+});
+
+/* ── height reporting ── */
+function sh(){
+  var el=document.querySelector('.wrap');
+  if(!el) return;
+  var cs=getComputedStyle(document.body);
+  var pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+24),src:location.href},'*');
+}
+new ResizeObserver(function(){sh()}).observe(document.querySelector('.wrap'));
+
+/* ── init ── */
+buildTable();
+updateButtons();
+window.addEventListener('load',function(){sh();setTimeout(sh,200)});
+
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

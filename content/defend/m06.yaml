@@ -1,0 +1,201 @@
+n: 6
+short: Code review and supply chain
+title: AI code review and the software supply chain
+time: 6 sections · about 4 hours
+lede: What an AI code reviewer can and cannot see, why a published accuracy score can mislead, how to turn a warning into proof, and where AI assistants add new trust to your supply chain.
+idea: |
+  An AI reviewer reads a code change and comments on possible security problems. It is good at spotting patterns that nobody wrote a rule for, and at explaining them in plain language. But it sees **only what it is given**, and it **never runs the code**.
+
+  So "No security issues found" means "nothing in the text I was shown looked like a known problem". It does not mean "this change is safe".
+
+  !eli5 An AI reviewer is like a smart friend who reads one page of your contract. They can spot odd wording on that page. They cannot see the other pages, your company rules, or what happens when the contract is used.
+primer: |
+  ### Step 1. Four ways to check code
+
+  - **Rule scanner (SAST).** Matches a fixed list of known-bad patterns in seconds. Finds nothing outside its list.
+  - **AI reviewer.** Reads the change and points out anything that resembles a known problem. Sees only what it is given and never runs the code.
+  - **Data-flow tool.** Traces where user input travels through the whole codebase. Needs everything and is slow.
+  - **Dynamic testing (DAST).** Runs the live app and tries attacks. Finds only what its tests try.
+
+  ### Step 2. Scores that mislead
+
+  A model scored F1 68 percent on the BigVul benchmark. On a cleaned version, PrimeVul, the same model scored about 3 percent. BigVul had wrong labels, duplicates between training and test, and test code from the same years as training. The 68 percent measured how well the model repeated labels on code it had seen, not how well it finds new flaws.
+
+  ### Step 3. Specific labels matter
+
+  CWE is a catalog of weakness types. A broad label such as **CWE-20, improper input validation**, fits almost anything, so a model picks it often. A specific label such as **CWE-502, deserialization of untrusted data**, tells the developer the fix. MITRE discourages CWE-20 for mapping real vulnerabilities.
+
+  ### Step 4. From flagged to confirmed
+
+  A warning is a guess until a test proves it. Use three verdicts. **Confirmed** means someone carried out the attack in a test and it worked. **Disproved** means how the feature works shows it is impossible. **Could not confirm** means a test failed but nothing shows it is impossible. Keep that record open.
+
+  ### Step 5. Trust points in the supply chain
+
+  You trust the package registry, package authors, build tools, vendors, and now the **AI coding assistant**, which may recommend packages that do not exist. Attackers register those names. A lock file records what you installed, but it does not tell you a new package was safe.
+diagrams:
+  - type: split
+    title: Four checkers, four blind spots
+    source: ["A code change", "box"]
+    targets:
+      - ["Rule scanner", "box", "only patterns on its list"]
+      - ["AI reviewer", "def", "only the text it is given, never runs code"]
+      - ["Data-flow tool", "box", "slow, needs the whole codebase"]
+      - ["Dynamic testing", "box", "only what its tests try"]
+    caption: Use them together. Each covers a gap in another.
+  - type: flow
+    title: From an AI warning to a verdict
+    nodes: [["AI warning", "def"], ["Read how the feature works", "box"], ["Run the attack in a test", "box"], ["Confirmed, disproved or could not confirm", "def"]]
+    edges: ["", "", ""]
+    caption: The test decides, not the warning.
+terms:
+  - [Pull request, "A proposed code change that teammates review before it is accepted."]
+  - [SAST, "Static application security testing. Scans source code without running it."]
+  - [DAST, "Dynamic application security testing. Attacks the running app."]
+  - [CWE, "Common Weakness Enumeration. A catalog of software weakness types."]
+  - [F1, "One number from 0 to 100 percent that balances precision and recall."]
+  - [IDOR, "Insecure direct object reference. The app returns an object without checking that it belongs to the caller."]
+  - [Lock file, "A file that records each package's exact version and a fingerprint of its contents."]
+  - [Shift left, "Moving checks earlier in development, where fixes are cheaper."]
+sections:
+  01_how-llms-analyze-code.html: "How an LLM reviews code, how it differs from static analysis and CWE-based tools, and three tools compared on one vulnerability."
+  02_evaluating-llm-code-review.html: "Metrics for code review, how benchmarks such as BigVul mislead, and what honest measurement looks like."
+  03_ai-in-the-sdlc.html: "Where AI review fits in a secure development lifecycle using the NIST SSDF, one vulnerability seen four ways, designing a review strategy, and turning flags into confirmed findings."
+  04_supply-chain-attacks-and-defenses.html: "The software supply chain and its trust boundaries, attack vectors such as dependency confusion and slopsquatting, and defenses such as Scorecard, Sigstore, SLSA and in-toto."
+  05_synthesis-and-forward.html: "How much to trust AI as a security tool, how code review data can become fine-tuning data, and links to later modules."
+  06_references-and-readings.html: "Every paper, standard, tool and incident report used in Module 6, sorted by type and by section."
+desk:
+  title: The code review desk
+  blurb: "Four rounds at Larkspur Pay. Pick the right checker, test a vendor's 68 percent claim, turn AI warnings into verdicts, and map supply chain incidents to trust points."
+  lede: "Larkspur Pay runs online payments for small merchants. It has 50 developers and one security engineer. You are that engineer today."
+  situation: |
+    **Monday 08:55.** The AI reviewer comments on a pull request. "No security issues found in this change." Today's question is what that comment actually tells you.
+
+    The AI reviewer receives two things, the changed code and the instruction "Review this change for security vulnerabilities". It does not get Larkspur's business rules or policies.
+  rounds:
+    - title: Round 1. One checker among several
+      items:
+        - type: sort
+          q: "Which checker is best suited to each job?"
+          rows:
+            - ["Check every change, within seconds, for a function Larkspur has banned", "Rule scanner"]
+            - ["Spot a risky-looking change nobody has written a rule for, and explain it", "AI reviewer"]
+            - ["Prove whether text a customer types on sign-up travels through several files to the database", "Data-flow tool"]
+            - ["Find out whether pressing Refund twice at the same moment pays twice", "Dynamic testing"]
+          opts: ["Rule scanner", "AI reviewer", "Data-flow tool", "Dynamic testing"]
+          why: "The banned function is a known pattern. The unwritten pattern is the AI's strength. Tracing a real path needs the data-flow tool. A race condition appears only while the program runs."
+        - type: open
+          q: "A developer adds a Refund button that pays any amount at once. Larkspur's handbook says refunds over $1,000 need a manager. The AI said no issues. (a) Why did it not flag it? (b) What could Larkspur give it? (c) If it then flags it, what must still happen?"
+          a: |
+            (a) Nothing it received mentions the $1,000 rule. Code that pays a refund looks ordinary and resembles no known vulnerability.
+
+            (b) Give it the written policy along with the change. It can only check against what it is given.
+
+            (c) Someone must confirm the problem is real and decide what to do. A warning is not proof.
+        - q: "Monday's 'no issues' comment came from the AI alone. Which jobs from the table did it not cover?"
+          opts: ["Job 2 only", "Jobs 1, 3 and 4", "None, it covers all four"]
+          a: 1
+          why: "It is not the fixed rule check, never saw the rest of the codebase, and never ran the code."
+    - title: Round 2. Testing the test
+      info: "A vendor's slide says 'AI finds vulnerabilities with a score of 68 percent' (F1 on BigVul). An audit of BigVul found wrong labels (3 in 4 'vulnerable' pieces were not), duplicates (about 1 in 8 test pieces were copies of training pieces) and the same time period for test and training."
+      items:
+        - type: open
+          q: For each problem, say why the score stops measuring skill.
+          a: |
+            - **Wrong labels.** The score measures agreement with the labels. Wrong labels reward agreeing with mistakes and punish being right.
+            - **Duplicates.** A model must be tested on data it did not train on. For duplicates, it can repeat the answer it saw in training.
+            - **Same time period.** Test code looks like training code. Larkspur's new code will be newer than anything the model saw.
+        - q: "Researchers rebuilt the benchmark (PrimeVul) with the problems fixed. The same model scored about 3 percent. What did the 68 percent measure?"
+          opts: ["Skill at finding new vulnerabilities", "How well it repeated BigVul's labels on code it had seen or code like it", "Nothing at all"]
+          a: 1
+          why: "68.26 percent fell to 3.09 percent on PrimeVul (Ding et al., ICSE 2025)."
+        - type: open
+          q: Write one rule for Larkspur's own test for each problem.
+          a: |
+            - **Wrong labels.** Count a fix as a real flaw only if someone carried out the attack in a test and it worked.
+            - **Duplicates.** Leave out code copied from public projects, which the model may have studied.
+            - **Same period.** Use only fixes made after the model's training data ends.
+        - type: open
+          q: "The AI labeled a real flaw CWE-20, improper input validation, when CWE-502, deserialization of untrusted data, was right. Why does the label matter, and why would an AI choose the broad one?"
+          a: "The specific label points to the fix. Stop turning untrusted bytes into objects. The broad one says only 'validate your input'. An AI writes the most likely label, and a broad category fits almost anything. MITRE marks CWE-20 as discouraged for mapping real vulnerabilities."
+    - title: Round 3. From flagged to confirmed
+      info: "When a merchant clicks Download, the browser opens /invoices/1042. The server looks up invoice 1042, finds where its file is stored and sends it. Facts. (a) The link holds only an invoice number. (b) Larkspur sets where files are stored, never the visitor. (c) You must log in as a merchant, and any business can sign up. (d) Invoice numbers go up in order."
+      items:
+        - q: "The AI warns that an attacker can change the link to read any file on the server (path traversal). Which verdict fits?"
+          opts: ["Confirmed", "Disproved", "Could not confirm"]
+          a: 1
+          why: "The link carries only a number (a) and the server picks the file location (b). The visitor cannot choose the file, so this attack is impossible here. The record says which facts disproved it."
+        - q: "Merchant A, who owns invoices 1041 and 1043, opens /invoices/1042, which belongs to merchant B. The server sends B's invoice. Which verdict fits this different problem?"
+          opts: ["Confirmed", "Disproved", "Could not confirm"]
+          a: 0
+          why: "The engineer carried out the attack in a test and it worked. The server never checks that the invoice belongs to the person asking, which is a missing ownership check (IDOR)."
+        - type: open
+          q: Who could use this flaw, and how many invoices are exposed?
+          a: "Anyone, and every invoice. Any business can sign up (c), and counting through the numbers reaches every invoice (d)."
+        - type: open
+          q: The AI suggested a fix that changes how file names are handled. The test still shows A getting B's invoice. What does this tell you?
+          a: "The AI's fix did not work. It misidentified the flaw as a file-name problem, so it changed the wrong thing. Only running the test showed this. The real fix is an ownership check on every invoice request."
+        - q: "The AI warns that two payouts at the same moment could pay twice. The engineer tries for 30 minutes and cannot make it happen. Which verdict?"
+          opts: ["Confirmed", "Disproved", "Could not confirm"]
+          a: 2
+          why: "The attack did not work, but 30 minutes of failed tries does not show it is impossible. The record stays open and notes what was tried."
+        - type: sort
+          q: "When should the AI reviewer run? A in the editor on each few lines, B on each pull request, C once a week before release."
+          rows:
+            - ["Which option finds flaws earliest?", "A"]
+            - ["Which shows the AI the whole change while the developer is still working on it?", "B"]
+          opts: ["A", "B", "C"]
+          why: "Larkspur chose B. It sees the whole change, unlike A, and catches flaws before release, unlike C. The risks it accepts are that flaws cost more to fix than in A, and B never sees how changes from different pull requests combine, which C would."
+    - title: Round 4. Where Larkspur trusts others
+      items:
+        - type: sort
+          q: "Match each real incident to the trust point it broke."
+          rows:
+            - ["Attackers published public packages named like companies' private ones, and builds installed the fakes (2021)", "The package registry"]
+            - ["An altered outside build tool copied customers' secret keys (Codecov, 2021)", "Build tools"]
+            - ["AI assistants keep recommending packages that do not exist, and attackers register those names", "The AI coding assistant"]
+            - ["A hacked vendor shipped infected updates to its customers (3CX, 2023)", "Vendors"]
+            - ["A package author handed control to a stranger, who added malicious code (event-stream, 2018)", "Package authors"]
+          opts: ["The package registry", "Package authors", "Build tools", "Vendors", "The AI coding assistant"]
+          why: "Every package Larkspur uses, and every package an AI suggests, extends trust to someone it never sees."
+        - type: open
+          q: "In one study, 43 percent of invented package names came back in all 10 of 10 tries. What does an attacker need for the AI-assistant attack, and why does the 43 percent make it attractive?"
+          a: "No typo and no inside knowledge. The attacker asks the assistant common questions and registers the names it invents. Because the AI repeats the same names, registering one name once reaches every developer who asks a similar question."
+        - q: "A developer added a package the AI invented, which an attacker had already registered. The lock file recorded it. Does the lock file protect Larkspur?"
+          opts: ["Yes", "No"]
+          a: 1
+          why: "The lock file recorded the attacker's package when it was added and installs it in every build. It protects against later changes, not against a package that was malicious from the start."
+        - type: sort
+          q: "Which free tool helps in each case?"
+          rows:
+            - ["Before adding a package, check whether its project is well run", "Scorecard"]
+            - ["Prove a new release came from the usual publisher, as in event-stream", "Sigstore"]
+            - ["Detect an outside tool altering software during the build, as in Codecov", "SLSA"]
+            - ["Check each release went through review, testing and build in order, by allowed people", "in-toto"]
+          opts: ["Scorecard", "Sigstore", "SLSA", "in-toto"]
+          why: "Scorecard rates the project. Sigstore proves the publisher. SLSA records the build. in-toto checks every step and who did it."
+        - type: open
+          q: "The CTO writes 'The AI reviewer checks all our code now. Do we still need anything else?' Write your reply in two or three sentences."
+          a: "Yes. The AI reviewer is good at spotting unruled risky patterns in the change it sees and explaining them, but it does not see our policies or the rest of the codebase, and it never runs the code. We still need the rule scanner for banned patterns, data-flow analysis for real input paths, dynamic tests for runtime bugs such as races, and supply chain controls, and every AI warning needs a test before we act on it."
+  card: |
+    - The AI reviewer sees only what it is given and never runs the code.
+    - A benchmark score is only as good as its labels, splits and dates.
+    - Prefer specific CWE labels. They point to the fix.
+    - A warning is a guess. A test gives the verdict.
+    - Every package, and every AI-suggested package, is a trust decision.
+other_fw:
+  - [NIST SSDF (SP 800-218), "Secure Software Development Framework. Section 3 places AI review inside it. [Read it](https://csrc.nist.gov/pubs/sp/800/218/final)."]
+  - [OWASP LLM03 and LLM09, "AI-suggested fake packages join supply chain risk and misinformation."]
+  - [SLSA, Sigstore, in-toto, OpenSSF Scorecard, "Supply chain tools used in Round 4. [SLSA](https://slsa.dev/), [Sigstore](https://www.sigstore.dev/), [in-toto](https://in-toto.io/), [Scorecard](https://scorecard.dev/)."]
+slides:
+  summary: |
+    The lecture runs the four workbook rounds at Larkspur Pay with answer slides after each one. It includes a live demo of the context window, the BigVul and PrimeVul comparison (68.26 percent against 3.09 percent F1 for one 7B model), the CWE-20 against CWE-502 example, the invoice IDOR case, the shift-left choice and five supply chain incidents.
+  files: [M06_lecture.pdf, M06_Code_Review_Desk_Workbook.pdf]
+quiz:
+  - q: An AI reviewer says "no issues". What does that tell you?
+    opts: ["The change is safe", "Nothing in the text it saw looked like a known problem", "The code was tested"]
+    a: 1
+    why: It never runs code and sees only what it is given.
+  - q: Which verdict fits a warning you tried to reproduce and could not, with no proof it is impossible?
+    opts: ["Disproved", "Could not confirm", "Confirmed"]
+    a: 1
+    why: Keep the record open and note what you tried.

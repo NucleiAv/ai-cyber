@@ -1,0 +1,40 @@
+- title: The signed-only deploy gate
+  stats: [Tag, Signature, Deploy]
+  nodes:
+    eng: {label: ML engineer, x: 0, y: 1, kind: def, tag: holds cosign.key}
+    reg: {label: OCI registry, x: 2, y: 1, kind: raised, tag: localhost 5000}
+    sig: {label: Signature, x: 2, y: 3, kind: def}
+    gate: {label: deploy.sh, x: 4, y: 1, kind: def, tag: cosign verify}
+    prod: {label: Production, x: 6, y: 1, kind: box}
+    rogue: {label: Unsigned v2, x: 4, y: 3, kind: atk}
+  links: [[eng, reg], [reg, sig], [reg, gate], [gate, prod], [rogue, reg]]
+  steps:
+    - title: Push the model as v1
+      text: The engineer pushes model.pt to the registry with `oras push`.
+      on: [eng, reg]
+      flow: [[eng, reg, ink]]
+      stats: [v1, None, "-"]
+    - title: Sign it
+      text: "`cosign sign` with the private key stores a signature next to the artifact."
+      on: [reg, sig]
+      flow: [[eng, reg, def], [reg, sig, def]]
+      mark: {sig: ok}
+      stats: [v1, Valid, "-"]
+    - title: The gate checks v1
+      text: deploy.sh runs `cosign verify` with the public key. The signature matches, so it prints SUCCESS and deploys.
+      on: [gate, prod]
+      flow: [[reg, gate, def], [gate, prod, def]]
+      mark: {prod: ok}
+      stats: [v1, Valid, Allowed]
+    - title: A rogue v2 appears
+      text: Someone pushes v2 and does not sign it, or changes the content behind a tag.
+      on: [rogue, reg]
+      flow: [[rogue, reg, atk]]
+      mark: {rogue: warn}
+      stats: [v2, Missing, "-"]
+    - title: The gate blocks it
+      text: Verification fails, so deploy.sh prints BLOCKED and exits. A signature proves **who** made a file and that it did not change. It does not prove the model is safe, which is why provenance and an AI-BOM still matter.
+      on: [gate]
+      flow: [[reg, gate, atk]]
+      mark: {gate: ok, prod: ok}
+      stats: [v2, Missing, Blocked]

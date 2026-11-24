@@ -1,0 +1,720 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>Least-Privilege Blast Radius</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redbg:#fef2f2;
+  --green:#0f7a43;--greenline:#c3e2d0;--greenbg:#f0faf4;
+  --amber:#8a5d00;--amberbg:#FCF1DC;--amberline:#e8d5a8;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{overflow:visible;height:100%;background:#fff}
+body{overflow:visible;height:auto;font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:var(--paper)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+*{scrollbar-width:thin;scrollbar-color:var(--line2) var(--paper)}
+
+.wrap{max-width:860px;margin:0 auto}
+.card{background:var(--bg);border:none;border-radius:0;overflow:visible}
+.top{padding:18px 22px 14px}
+.eyebrow{font-family:var(--mono);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px}
+
+/* Progress stepper */
+.progress{display:flex;align-items:center;gap:0;margin-top:14px;justify-content:center}
+.pstep{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto;min-width:52px}
+.dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.62rem;font-weight:700;color:var(--ink3);background:var(--bg);transition:all .3s}
+.dot.active{border-color:var(--violet);color:var(--ink);background:var(--vsoft)}
+.dot.done{border-color:var(--green);color:var(--bg);background:var(--green)}
+.dot-conn{width:24px;height:2px;background:var(--line);flex-shrink:0;align-self:center;margin-bottom:18px}
+.dot-conn.done{background:var(--green)}
+.dot-label{font-family:var(--mono);font-size:.62rem;font-weight:600;color:var(--ink3);text-align:center;white-space:nowrap}
+.dot-label.active{color:var(--violet)}
+.dot-label.done{color:var(--green)}
+
+.body{padding:0 22px 22px}
+
+/* Scenario box */
+.scenario{margin-top:10px;padding:10px 14px;border:1px solid var(--amberline);border-radius:12px;background:var(--amberbg)}
+.scenario-label{font-family:var(--mono);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2)}
+.scenario-title{font-size:.88rem;font-weight:700;color:var(--ink);margin-top:3px}
+.scenario-desc{font-size:.79rem;color:var(--ink2);margin-top:3px;line-height:1.4}
+
+/* Two-panel layout */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:700px){.panels{grid-template-columns:1fr}}
+
+.panel{border:1px solid var(--line);border-radius:14px;background:var(--bg);overflow:visible}
+.panel-head{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--paper);border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center}
+.panel-title{font-family:var(--mono);font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2)}
+.panel-hint{font-size:.68rem;color:var(--ink3)}
+.panel-body{padding:12px}
+
+/* Tool cards */
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:500px){.tool-grid{grid-template-columns:1fr}}
+
+.tool-card{border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;transition:all .16s;position:relative;background:var(--bg)}
+.tool-card:hover{border-color:var(--violet2);box-shadow:0 4px 12px rgba(87,6,140,.08)}
+.tool-card.disabled{pointer-events:none;opacity:.6}
+.tool-icon{width:28px;height:28px;margin-bottom:6px;color:var(--ink3)}
+.tool-icon svg{width:100%;height:100%}
+.tool-name{font-size:.79rem;font-weight:700;color:var(--ink)}
+.tool-desc{font-size:.68rem;color:var(--ink2);margin-top:2px;line-height:1.3}
+
+/* Permission strip */
+.perm-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:8px}
+.perm-opt{padding:4px 2px;text-align:center;border:1px solid var(--line);border-radius:6px;font-family:var(--mono);font-size:.62rem;font-weight:600;color:var(--ink3);transition:all .16s;line-height:1.2}
+.perm-opt.active{border-color:var(--violet);background:var(--vsoft);color:var(--ink)}
+.perm-opt.active-off{border-color:var(--line2);background:var(--paper);color:var(--ink2)}
+
+/* Correct/wrong tool states */
+.tool-card.correct{border-color:var(--greenline);background:var(--greenbg)}
+.tool-card.wrong{border-color:var(--redline);background:var(--redbg)}
+.perm-note{font-size:.62rem;color:var(--ink3);margin-top:4px;line-height:1.3;min-height:1.3em}
+.perm-note.warn{color:var(--amber)}
+.tool-card .tool-badge{position:absolute;top:6px;right:6px;font-family:var(--mono);font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:6px;display:none}
+.tool-card.correct .tool-badge{display:block;background:var(--greenbg);border:1px solid var(--greenline);color:var(--ink2)}
+.tool-card.wrong .tool-badge{display:block;background:var(--redbg);border:1px solid var(--redline);color:var(--ink2)}
+
+/* Architecture map */
+.arch-map{display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px}
+
+.agent-node{width:64px;height:64px;border:2px solid var(--violet);border-radius:18px;background:var(--bg);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(87,6,140,.1)}
+.agent-node svg{width:28px;height:28px;color:var(--violet)}
+.agent-label{font-family:var(--mono);font-size:.62rem;font-weight:700;color:var(--ink2);text-align:center;margin-top:2px}
+
+/* System nodes */
+.sys-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-top:8px}
+.sys-node{border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center;background:var(--bg);transition:all .3s;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-left:3px solid var(--line)}
+.sys-node svg{width:22px;height:22px;color:var(--ink3)}
+.sys-name{font-family:var(--mono);font-size:.62rem;font-weight:600;color:var(--ink2);line-height:1.2}
+.sys-status{font-family:var(--mono);font-size:.62rem;font-weight:700;color:var(--ink3);min-height:1.2em}
+/* Reachability states during configuration */
+.sys-node.reach-read{border-left-color:var(--violet);background:var(--vsoft)}
+.sys-node.reach-read .sys-status{color:var(--ink2)}
+.sys-node.reach-approval{border-left-color:var(--amber);background:var(--amberbg)}
+.sys-node.reach-approval .sys-status{color:var(--ink2)}
+.sys-node.reach-write{border-left-color:var(--red);background:var(--redbg)}
+.sys-node.reach-write .sys-status{color:var(--ink2)}
+/* Compromise result states */
+.sys-node.blocked{border-left-color:var(--green);border-color:var(--greenline);background:var(--greenbg)}
+.sys-node.blocked .sys-status{color:var(--ink2)}
+.sys-node.executed{border-left-color:var(--red);border-color:var(--redline);background:var(--redbg)}
+.sys-node.executed .sys-status{color:var(--ink2)}
+
+/* Blast summary */
+.blast-summary{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.blast-title{font-size:.79rem;font-weight:700;color:var(--ink)}
+.blast-count{font-family:var(--mono);font-size:.79rem;font-weight:700;color:var(--ink3)}
+.blast-summary.good .blast-count{color:var(--ink2)}
+.blast-summary.bad .blast-count{color:var(--ink2)}
+
+/* Overhead meter */
+.overhead{width:100%;margin-top:8px}
+.overhead-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+.overhead-label{font-family:var(--mono);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}
+.overhead-val{font-family:var(--mono);font-size:.62rem;font-weight:700;color:var(--ink2)}
+.overhead-track{width:100%;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.overhead-fill{height:100%;border-radius:3px;background:var(--amber);transition:width .4s ease;width:0%}
+.overhead-note{font-size:.62rem;color:var(--ink3);font-style:italic;margin-top:3px;line-height:1.3}
+
+/* Controls bar */
+.controls{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:.83rem;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer;transition:.14s}
+.btn:hover{background:var(--violet2);border-color:var(--violet2)}
+.btn:disabled{background:var(--paper);border-color:var(--line2);color:var(--ink3);cursor:not-allowed}
+.btn.ghost{background:var(--bg);color:var(--violet);border-color:var(--vline)}
+.btn.ghost:hover{background:var(--vsoft)}
+.rehint{font-size:.74rem;color:var(--ink3)}
+
+/* Feedback area */
+.feedback{margin-top:10px;border:1px solid var(--line);border-left-width:3px;border-radius:10px;padding:0 12px;background:var(--bg);max-height:0;opacity:0;overflow:hidden;transition:.4s}
+.feedback.show{max-height:400px;opacity:1;padding:10px 12px}
+.feedback .fk{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.feedback.good{border-left-color:var(--green);border-color:var(--greenline)}
+.feedback.good .fk{color:var(--ink2)}
+.feedback.bad{border-left-color:var(--red);border-color:var(--redline)}
+.feedback.bad .fk{color:var(--ink2)}
+.feedback.warn{border-left-color:var(--amber);border-color:var(--amberline)}
+.feedback.warn .fk{color:var(--ink2)}
+.feedback .ft{font-size:.85rem;color:var(--ink);line-height:1.4}
+.feedback .ft b{font-weight:700}
+
+/* Question area */
+.question{margin-top:10px;padding:12px;border:1px solid var(--vline);border-radius:12px;background:var(--vsoft)}
+.q-text{font-size:.85rem;font-weight:600;color:var(--ink);margin-bottom:8px}
+.q-opts{display:flex;flex-direction:column;gap:5px}
+.q-opt{border:1px solid var(--line2);border-radius:10px;padding:8px 12px;background:var(--bg);cursor:pointer;font-size:.82rem;color:var(--ink);transition:.16s;text-align:left}
+.q-opt:hover{border-color:var(--violet2);background:var(--vsoft)}
+.q-opt.selected{border-color:var(--violet);box-shadow:inset 0 0 0 1px var(--violet)}
+.q-opt.correct{border-color:var(--green);background:var(--greenbg)}
+.q-opt.wrong{border-color:var(--red);background:var(--redbg)}
+
+/* Agent compromised state */
+@keyframes agent-shake{0%,100%{transform:translate(0,0) rotate(0)}10%{transform:translate(-2px,1px) rotate(-1deg)}20%{transform:translate(2px,-1px) rotate(1deg)}30%{transform:translate(-1px,2px) rotate(-0.5deg)}40%{transform:translate(1px,-1px) rotate(0.5deg)}50%{transform:translate(-2px,0) rotate(-1deg)}60%{transform:translate(2px,1px) rotate(0.5deg)}70%{transform:translate(-1px,-1px) rotate(-0.5deg)}80%{transform:translate(1px,1px) rotate(1deg)}90%{transform:translate(-1px,0) rotate(-0.5deg)}}
+.agent-node.compromised{border-color:var(--red);animation:agent-shake .4s ease 3;box-shadow:0 6px 16px rgba(198,38,38,.18)}
+.agent-node.compromised svg{color:var(--red)}
+
+/* Comparison summary */
+.comparison{margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.comp-row{display:grid;grid-template-columns:1fr auto;padding:8px 12px;gap:10px;align-items:center}
+.comp-row:first-child{border-bottom:1px solid var(--line);background:var(--greenbg)}
+.comp-row:last-child{background:var(--redbg)}
+.comp-label{font-size:.82rem;font-weight:600;color:var(--ink)}
+.comp-result{font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--ink2)}
+.comp-takeaway{padding:8px 12px;border-top:1px solid var(--line);background:var(--paper);font-size:.82rem;color:var(--ink2);line-height:1.4}
+
+.src{margin-top:10px;font-size:.70rem;color:var(--ink3);line-height:1.4}
+.src b{color:var(--ink2)}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap"><div class="card">
+  <div class="top">
+    <h1>Least-Privilege Blast Radius</h1>
+    <p class="lede">A customer-support agent needs specific capabilities. Configure the minimum permissions, then watch what happens when the model is compromised.</p>
+
+    <div class="progress" id="progress"></div>
+  </div>
+  <div class="body">
+    <div class="scenario">
+      <div class="scenario-label">Scenario</div>
+      <div class="scenario-title">AI customer-support agent</div>
+      <div class="scenario-desc">The agent answers order-status questions, looks up products, and issues refunds (with human approval). After configuration, a prompt injection compromises the model, which attempts to export payment data, send records externally, and issue unauthorized refunds.</div>
+    </div>
+
+    <div class="panels" id="panels">
+      <div class="panel" id="configPanel">
+        <div class="panel-head">
+          <span class="panel-title">Configure permissions</span>
+          <span class="panel-hint">Click to cycle</span>
+        </div>
+        <div class="panel-body">
+          <div class="tool-grid" id="toolGrid"></div>
+        </div>
+      </div>
+      <div class="panel" id="mapPanel">
+        <div class="panel-head">
+          <span class="panel-title">Architecture</span>
+          <span class="panel-hint" id="mapHint">Reachable systems</span>
+        </div>
+        <div class="panel-body">
+          <div class="arch-map" id="archMap">
+            <div class="agent-node" id="agentNode">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="10" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1.5" fill="currentColor" stroke="none"/><path d="M9 15h6" id="agentMouth"/></svg>
+            </div>
+            <div class="agent-label" id="agentLabel">AGENT</div>
+            <div class="sys-grid" id="sysGrid"></div>
+            <div class="blast-summary" id="blastSummary">
+              <span class="blast-title" id="blastTitle">Not tested</span>
+              <span class="blast-count" id="blastCount"></span>
+            </div>
+            <div class="overhead" id="overheadMeter">
+              <div class="overhead-hdr">
+                <span class="overhead-label">Operational overhead</span>
+                <span class="overhead-val" id="overheadVal">0 approval gates</span>
+              </div>
+              <div class="overhead-track"><div class="overhead-fill" id="overheadFill"></div></div>
+              <div class="overhead-note">Rough indicator, not a real metric. Each approval gate adds human review latency.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls" id="controlsBar">
+      <button class="btn" id="mainBtn" type="button">Check configuration</button>
+      <button class="btn ghost" id="resetBtn" type="button">Reset</button>
+      <span class="rehint" id="rehint"></span>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+    <div id="questionArea"></div>
+    <div id="comparisonArea"></div>
+
+    <div class="src"><b>Principle:</b> least privilege and minimal functionality (Saltzer &amp; Schroeder, 1975); excessive-agency mitigations: limit permissions, limit functionality, require approval (OWASP Top 10 for LLM Applications, LLM06).</div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+/* ── Tool data ── */
+const TOOLS = [
+  {id:'orders',   name:'Order Records',    desc:'Customer order status and shipment tracking',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h5"/></svg>',
+   ideal:1, attack:false},
+  {id:'catalog',  name:'Product Catalog',   desc:'Public product information lookup',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14"/><path d="M4 19h16"/><path d="M8 9h8M8 13h4"/></svg>',
+   ideal:1, attack:false},
+  {id:'refund',   name:'Refund Service',    desc:'Issues refunds; moves customer funds',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h18M16 8l4 4-4 4"/><path d="M7 8H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2"/></svg>',
+   ideal:2, attack:true, attackLabel:'Issue $5,000 refund', attackNeedsWrite:true},
+  {id:'payments', name:'Payment Vault',     desc:'Encrypted card and billing data',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 11V8a4 4 0 1 1 8 0v3"/><rect x="5" y="11" width="14" height="9" rx="2"/><circle cx="12" cy="15.5" r="1.5"/></svg>',
+   ideal:0, attack:true, attackLabel:'Export payment data'},
+  {id:'email',    name:'External Email',    desc:'Sends data outside the organization',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>',
+   ideal:0, attack:true, attackLabel:'Send records externally'},
+  {id:'employees',name:'Employee Records',  desc:'Internal personnel and salary data',
+   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 19a6 6 0 0 1 12 0"/><path d="M17 8h4M19 6v4"/></svg>',
+   ideal:0, attack:false}
+];
+
+const LEVELS = ['Off','Read','Approval','Write'];
+// Risk weights for blast radius: Approval is gated (low autonomous risk), Write is fully autonomous
+const RISK_WEIGHT = [0, 1, 1, 3];
+
+/* ── State ── */
+let perms = {};
+let phase = 0; // 0=configure, 1=validated, 2=simulating, 3=sim-done, 4=question, 5=complete
+let attackResults = {};
+
+/* ── DOM refs ── */
+const toolGrid = document.getElementById('toolGrid');
+const sysGrid = document.getElementById('sysGrid');
+const mainBtn = document.getElementById('mainBtn');
+const resetBtn = document.getElementById('resetBtn');
+const rehint = document.getElementById('rehint');
+const feedbackEl = document.getElementById('feedback');
+const questionArea = document.getElementById('questionArea');
+const comparisonArea = document.getElementById('comparisonArea');
+const blastTitle = document.getElementById('blastTitle');
+const blastCount = document.getElementById('blastCount');
+const blastSummary = document.getElementById('blastSummary');
+
+/* ── Init ── */
+function init(){
+  perms = {};
+  TOOLS.forEach(t => perms[t.id] = 0);
+  phase = 0;
+  attackResults = {};
+  renderProgress(0);
+  renderTools();
+  renderSystems();
+  updateBlastSummary();
+  mainBtn.textContent = 'Check configuration';
+  mainBtn.disabled = false;
+  mainBtn.onclick = checkConfig;
+  resetBtn.onclick = ()=>{ init(); };
+  rehint.textContent = '';
+  feedbackEl.className = 'feedback';
+  feedbackEl.innerHTML = '';
+  questionArea.innerHTML = '';
+  comparisonArea.innerHTML = '';
+  blastSummary.className = 'blast-summary good';
+  // Reset agent face
+  const agentEl = document.getElementById('agentNode');
+  const mouthEl = document.getElementById('agentMouth');
+  const labelEl = document.getElementById('agentLabel');
+  agentEl.classList.remove('compromised');
+  mouthEl.setAttribute('d','M9 15h6');
+  labelEl.textContent = 'AGENT';
+  labelEl.style.color = '';
+  sh(); setTimeout(sh,200);
+}
+
+/* ── Progress stepper ── */
+function renderProgress(active){
+  const labels = ['Configure','Validate','Compromise','Assess'];
+  const prog = document.getElementById('progress');
+  let html = '';
+  labels.forEach((l,i) => {
+    if(i > 0) html += '<div class="dot-conn'+(i <= active?' done':'')+'"></div>';
+    const dcls = i < active ? 'dot done' : i === active ? 'dot active' : 'dot';
+    const lcls = i < active ? 'dot-label done' : i === active ? 'dot-label active' : 'dot-label';
+    const num = i < active ? '&#10003;' : (i+1);
+    html += '<div class="pstep"><div class="'+dcls+'">'+num+'</div><div class="'+lcls+'">'+l+'</div></div>';
+  });
+  prog.innerHTML = html;
+}
+
+/* ── Render tool cards ── */
+function renderTools(){
+  toolGrid.innerHTML = '';
+  TOOLS.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'tool-card' + (phase > 0 ? ' disabled' : '');
+    const level = perms[t.id];
+    const noteText = level === 0 ? 'No access' :
+                     level === 1 ? 'Can read data' :
+                     level === 2 ? 'Requires human approval per action (adds overhead)' :
+                     'Full autonomous access (highest risk)';
+    const noteWarn = level === 2 ? '' : level === 3 ? ' warn' : '';
+    card.innerHTML = `
+      <div class="tool-icon">${t.icon}</div>
+      <div class="tool-name">${t.name}</div>
+      <div class="tool-desc">${t.desc}</div>
+      <div class="perm-strip">
+        ${LEVELS.map((l,i) => {
+          const isActive = level === i;
+          const cls = isActive ? (i === 0 ? 'perm-opt active-off' : 'perm-opt active') : 'perm-opt';
+          return '<div class="'+cls+'">'+l+'</div>';
+        }).join('')}
+      </div>
+      <div class="perm-note${noteWarn}">${noteText}</div>
+      <div class="tool-badge"></div>
+    `;
+    if(phase === 0){
+      card.addEventListener('click', () => {
+        perms[t.id] = (perms[t.id] + 1) % 4;
+        renderTools();
+        renderSystems();
+        updateBlastSummary();
+        clearFeedback();
+      });
+    }
+    toolGrid.appendChild(card);
+  });
+}
+
+/* ── Render system nodes on architecture map ── */
+function renderSystems(){
+  sysGrid.innerHTML = '';
+  const statusLabels = ['Off','Read','Approval','Write'];
+  const reachClass = ['','reach-read','reach-approval','reach-write'];
+  // Show attack-capable tools first, then non-attack tools
+  const ordered = TOOLS.filter(t => t.attack).concat(TOOLS.filter(t => !t.attack));
+  ordered.forEach(t => {
+    const lvl = perms[t.id];
+    const node = document.createElement('div');
+    node.className = 'sys-node' + (lvl > 0 ? ' '+reachClass[lvl] : '');
+    node.id = 'sys-'+t.id;
+    const reachLabel = lvl === 0 ? 'Unreachable' : 'Reachable: '+statusLabels[lvl];
+    node.innerHTML = `${t.icon}<div class="sys-name">${t.name}</div><div class="sys-status">${reachLabel}</div>`;
+    sysGrid.appendChild(node);
+  });
+}
+
+/* ── Blast radius summary (live during config) ── */
+function updateBlastSummary(){
+  const reachable = TOOLS.filter(t => perms[t.id] > 0).length;
+  const writeAccess = TOOLS.filter(t => perms[t.id] === 3).length;
+  if(reachable === 0){
+    blastTitle.textContent = 'Blast radius: none';
+    blastCount.textContent = '0/' + TOOLS.length + ' reachable';
+    blastSummary.className = 'blast-summary good';
+  } else {
+    blastTitle.textContent = reachable + ' system' + (reachable>1?'s':'') + ' reachable' + (writeAccess > 0 ? ' (' + writeAccess + ' with full write)' : '');
+    blastCount.textContent = reachable + '/' + TOOLS.length;
+    blastSummary.className = 'blast-summary' + (writeAccess > 0 ? ' bad' : '');
+  }
+  updateOverhead();
+}
+
+/* ── Overhead meter ── */
+function updateOverhead(){
+  // Count tools set to Approval (level 2)
+  const approvalCount = TOOLS.filter(t => perms[t.id] === 2).length;
+  const maxGates = TOOLS.length;
+  const pct = Math.min(approvalCount / maxGates * 100, 100);
+  document.getElementById('overheadFill').style.width = pct + '%';
+  document.getElementById('overheadVal').textContent = approvalCount + ' approval gate' + (approvalCount !== 1 ? 's' : '');
+}
+
+/* ── Check configuration ── */
+function checkConfig(){
+  const under = TOOLS.filter(t => perms[t.id] < t.ideal);
+  const over  = TOOLS.filter(t => perms[t.id] > t.ideal);
+
+  if(under.length > 0){
+    showFeedback('warn','Under-privileged',
+      '<b>'+under.map(t=>t.name).join(', ')+'</b> '+(under.length===1?'needs':'need')+' more access. Orders and Catalog need Read. Refund Service needs Approval (human-gated write access).');
+    rehint.textContent = 'Adjust the permissions and try again.';
+    return;
+  }
+
+  renderProgress(1);
+
+  if(over.length > 0){
+    showFeedback('warn','Over-privileged',
+      '<b>'+over.map(t=>t.name).join(', ')+'</b> '+(over.length===1?'has':'have')+' more access than the task requires. Reconfigure for least privilege, or continue to see the consequences.');
+    mainBtn.textContent = 'Test compromise anyway';
+    mainBtn.onclick = runCompromise;
+    rehint.textContent = 'Or click Reset to reconfigure.';
+    // Mark tools
+    markTools();
+  } else {
+    showFeedback('good','Least privilege configured',
+      'The agent has exactly what it needs and nothing else. Now see what happens when the model is compromised.');
+    mainBtn.textContent = 'Run compromise test';
+    mainBtn.onclick = runCompromise;
+    rehint.textContent = '';
+    markTools();
+  }
+  phase = 1;
+  renderTools();
+  sh(); setTimeout(sh,300);
+}
+
+function markTools(){
+  const cards = toolGrid.querySelectorAll('.tool-card');
+  TOOLS.forEach((t,i) => {
+    const card = cards[i];
+    if(!card) return;
+    const badge = card.querySelector('.tool-badge');
+    if(perms[t.id] === t.ideal){
+      card.classList.add('correct');
+      badge.textContent = LEVELS[t.ideal] === 'Off' ? 'Correct: Off' : 'Correct: '+LEVELS[t.ideal];
+    } else if(perms[t.id] > t.ideal){
+      card.classList.add('wrong');
+      badge.textContent = 'Excess: '+LEVELS[perms[t.id]];
+    }
+  });
+}
+
+/* ── Compromise simulation ── */
+async function runCompromise(){
+  phase = 2;
+  renderProgress(2);
+  clearFeedback();
+  mainBtn.disabled = true;
+  rehint.textContent = 'Compromise test running...';
+
+  // Animate agent face: compromised
+  const agentEl = document.getElementById('agentNode');
+  const mouthEl = document.getElementById('agentMouth');
+  const labelEl = document.getElementById('agentLabel');
+  agentEl.classList.add('compromised');
+  mouthEl.setAttribute('d','M9 16 Q12 13 15 16'); // frown
+  labelEl.textContent = 'COMPROMISED';
+  labelEl.style.color = 'var(--red)';
+
+  await wait(600);
+
+  const attackTools = TOOLS.filter(t => t.attack);
+
+  for(let i = 0; i < attackTools.length; i++){
+    const t = attackTools[i];
+    const node = document.getElementById('sys-'+t.id);
+    if(!node) continue;
+
+    // Determine if attack succeeds
+    // Levels: 0=Off, 1=Read, 2=Approval, 3=Write
+    let succeeds = false;
+    if(t.attackNeedsWrite){
+      // Write actions (refund): Approval gates require human review, so only
+      // unguarded Write (level 3) lets the compromised model act autonomously
+      succeeds = perms[t.id] === 3;
+    } else {
+      // Read/exfil attacks: succeed if any access is granted (Read, Approval, or Write)
+      succeeds = perms[t.id] >= 1;
+    }
+
+    attackResults[t.id] = succeeds;
+
+    // Animate: flash the node
+    await wait(400);
+    node.style.transition = 'all .3s';
+    // Clear reachability state before showing result
+    node.classList.remove('reach-read','reach-approval','reach-write');
+
+    if(succeeds){
+      node.classList.add('executed');
+      node.querySelector('.sys-status').textContent = 'EXECUTED';
+    } else {
+      node.classList.add('blocked');
+      node.querySelector('.sys-status').textContent = 'BLOCKED';
+    }
+
+    await wait(600);
+  }
+
+  phase = 3;
+  const executed = Object.values(attackResults).filter(v => v).length;
+  const total = Object.keys(attackResults).length;
+
+  blastSummary.className = 'blast-summary ' + (executed === 0 ? 'good' : 'bad');
+  blastTitle.textContent = executed === 0 ? 'Blast radius: contained' : executed + ' of ' + total + ' attacks succeeded';
+  blastCount.textContent = executed + '/' + total;
+
+  rehint.textContent = '';
+  mainBtn.disabled = true;
+
+  renderProgress(3);
+
+  // Show learning check question
+  showQuestion(executed);
+  sh(); setTimeout(sh,400);
+}
+
+/* ── Learning check ── */
+function showQuestion(executed){
+  phase = 4;
+  const qDiv = document.createElement('div');
+  qDiv.className = 'question';
+
+  if(executed === 0){
+    qDiv.innerHTML = `
+      <div class="q-text">The model was compromised by prompt injection. Why did none of the attack actions succeed?</div>
+      <div class="q-opts">
+        <button class="q-opt" data-correct="false" type="button">The guardrail detected the prompt injection</button>
+        <button class="q-opt" data-correct="true" type="button">Permissions remained authoritative regardless of model behavior</button>
+        <button class="q-opt" data-correct="false" type="button">The attack payload was not well-crafted enough</button>
+      </div>
+    `;
+  } else {
+    qDiv.innerHTML = `
+      <div class="q-text">The model was compromised and ${executed} attack action${executed>1?'s':''} succeeded. What created the damage?</div>
+      <div class="q-opts">
+        <button class="q-opt" data-correct="true" type="button">The agent had capabilities beyond what it needed for its task</button>
+        <button class="q-opt" data-correct="false" type="button">The prompt injection was too sophisticated to detect</button>
+        <button class="q-opt" data-correct="false" type="button">The model processed too many tokens</button>
+      </div>
+    `;
+  }
+
+  questionArea.innerHTML = '';
+  questionArea.appendChild(qDiv);
+
+  qDiv.querySelectorAll('.q-opt').forEach(btn => {
+    btn.addEventListener('click', () => handleAnswer(btn, executed));
+  });
+
+  sh(); setTimeout(sh,200);
+}
+
+function handleAnswer(btn, executed){
+  const isCorrect = btn.dataset.correct === 'true';
+  const allOpts = btn.parentElement.querySelectorAll('.q-opt');
+  allOpts.forEach(o => {
+    o.style.pointerEvents = 'none';
+    if(o.dataset.correct === 'true') o.classList.add('correct');
+    if(o === btn && !isCorrect) o.classList.add('wrong');
+  });
+
+  if(isCorrect){
+    if(executed === 0){
+      showFeedback('good','Correct',
+        'Permissions operated outside the model\'s control. No prompt injection can grant capabilities that were never assigned.');
+    } else {
+      showFeedback('bad','Correct, but avoidable',
+        'Unnecessary capabilities expanded the blast radius. The model was going to be compromised either way; least privilege would have contained the same attack to zero impact.');
+    }
+    phase = 5;
+    showComparison();
+    mainBtn.textContent = 'Restart';
+    mainBtn.disabled = false;
+    mainBtn.onclick = init;
+  } else {
+    showFeedback('warn','Not quite',
+      isCorrect ? '' :
+      executed === 0
+        ? 'The guardrail was already bypassed. The attack failed because <b>application permissions</b> blocked every action the compromised model attempted.'
+        : 'The injection\'s sophistication is not the issue. The damage happened because the agent <b>had capabilities</b> it never needed for its actual task.'
+    );
+    // Allow retry
+    allOpts.forEach(o => {
+      o.classList.remove('correct','wrong');
+      o.style.pointerEvents = '';
+    });
+  }
+  sh(); setTimeout(sh,300);
+}
+
+/* ── Comparison summary ── */
+function showComparison(){
+  const executed = Object.values(attackResults).filter(v => v).length;
+  comparisonArea.innerHTML = `
+    <div class="comparison">
+      <div class="comp-row">
+        <span class="comp-label">Least privilege</span>
+        <span class="comp-result">0/3 attacks succeed</span>
+      </div>
+      <div class="comp-row">
+        <span class="comp-label">Broad access</span>
+        <span class="comp-result">3/3 attacks succeed</span>
+      </div>
+      <div class="comp-takeaway">Same model, same attack. The only difference is the permissions the application enforced.</div>
+    </div>
+  `;
+  sh(); setTimeout(sh,200);
+}
+
+/* ── Helpers ── */
+function showFeedback(type, title, text){
+  feedbackEl.className = 'feedback '+type+' show';
+  feedbackEl.innerHTML = '<div class="fk">'+title+'</div><div class="ft">'+text+'</div>';
+  sh(); setTimeout(sh,200);
+}
+function clearFeedback(){
+  feedbackEl.className = 'feedback';
+  feedbackEl.innerHTML = '';
+}
+function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+/* ── Iframe height reporting ── */
+function sh(){
+  const el = document.querySelector('.wrap');
+  if(!el) return;
+  const r = el.getBoundingClientRect();
+  const s = getComputedStyle(document.body);
+  const h = Math.ceil(r.top + r.height + parseFloat(s.marginBottom) + parseFloat(s.paddingBottom) + 2);
+  window.parent.postMessage({kind:'nyu-embed-height', height:h, src:location.href}, '*');
+}
+new ResizeObserver(sh).observe(document.querySelector('.wrap'));
+window.addEventListener('load', () => { setTimeout(sh, 180); });
+document.addEventListener('transitionend', sh);
+
+/* ── Start ── */
+init();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

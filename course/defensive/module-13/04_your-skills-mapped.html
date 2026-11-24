@@ -1,0 +1,629 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 13 &middot; Section 4 &middot; Your Skills, Mapped &middot; NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+  <style>
+    /* ============================================================
+       SKILL MAP (Section 4) - self-audit against the evidence rule.
+       Prefixed .skillmap-* so nothing collides with the shared CSS.
+       ============================================================ */
+    .skillmap { border: 1px solid var(--rule); border-radius: var(--r-md); background: var(--surface); margin: var(--sp-5) 0; overflow: hidden; }
+    .skillmap__bar { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); background: var(--surface-sunken); border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+    .skillmap__legend { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-mute); }
+    .skillmap__select { font: inherit; font-size: var(--fs-sm); padding: 7px 12px; border-radius: var(--r-sm); border: 1px solid var(--nyu-violet-200); background: #fff; color: var(--ink); }
+    .skillmap__select:focus-visible { outline: 3px solid var(--nyu-violet-light); outline-offset: 2px; }
+
+    .skillmap__list { list-style: none; margin: 0; padding: var(--sp-3) var(--sp-5); }
+    .skillmap__row { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+    .skillmap__row:last-child { border-bottom: 0; }
+    .skillmap__row input { margin: 0; flex: 0 0 auto; position: relative; top: 2px; width: 16px; height: 16px; accent-color: var(--nyu-violet); }
+    .skillmap__row label { font-size: var(--fs-sm); cursor: pointer; }
+    .skillmap__row label b { display: block; font-weight: 600; }
+    .skillmap__row label span { color: var(--ink-mute); font-size: var(--fs-xs); }
+    .skillmap__row[data-core="true"] label b::after { content: " core for this role"; font-weight: 400; font-size: var(--fs-xs); color: var(--nyu-violet); font-style: italic; }
+
+    .skillmap__actions { display: flex; gap: 10px; padding: var(--sp-4) var(--sp-5); background: var(--surface-sunken); border-top: 1px solid var(--rule); flex-wrap: wrap; }
+    .skillmap__btn { font: inherit; font-size: var(--fs-sm); font-weight: 600; padding: 9px 18px; border-radius: var(--r-sm); border: 1px solid var(--nyu-violet); background: var(--nyu-violet); color: #fff; cursor: pointer; }
+    .skillmap__btn--ghost { background: transparent; color: var(--nyu-violet-dark); }
+    .skillmap__btn:focus-visible { outline: 3px solid var(--nyu-violet-light); outline-offset: 2px; }
+
+    .skillmap__out { padding: var(--sp-5); border-top: 1px solid var(--rule); }
+    .skillmap__head { font-size: var(--fs-md); font-weight: 700; margin: 0 0 var(--sp-3); }
+    .skillmap__meter { height: 10px; border-radius: 999px; background: #E9E9ED; overflow: hidden; margin: 0 0 var(--sp-4); }
+    .skillmap__meter i { display: block; height: 100%; background: var(--nyu-violet); }
+    .skillmap__block { border-left: 4px solid var(--rule); padding: var(--sp-3) var(--sp-4); margin: 0 0 var(--sp-3); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--surface-sunken); }
+    .skillmap__block[data-t="gap"]  { border-left-color: var(--accent-warning); background: var(--accent-warning-bg); }
+    .skillmap__block[data-t="have"] { border-left-color: var(--accent-success); background: var(--accent-success-bg); }
+    .skillmap__block h4 { margin: 0 0 4px; font-size: var(--fs-sm); }
+    .skillmap__block p, .skillmap__block ul { margin: 0; font-size: var(--fs-sm); color: var(--ink-soft); }
+    .skillmap__block ul { padding-left: 1.1rem; }
+    .skillmap__block li { margin: 3px 0; }
+
+    /* ---------- Containment decision ---------- */
+    .decide { margin: var(--sp-5) 0; }
+    .decide__opts { display: flex; gap: 10px; flex-wrap: wrap; }
+    .decide__opt { font: inherit; font-size: var(--fs-sm); font-weight: 600; padding: 11px 20px; border-radius: var(--r-sm); border: 1px solid var(--nyu-violet-200); background: #fff; color: var(--nyu-violet-dark); cursor: pointer; }
+    .decide__opt:hover { background: var(--nyu-violet-50); }
+    .decide__opt[aria-pressed="true"] { background: var(--nyu-violet); border-color: var(--nyu-violet); color: #fff; }
+    .decide__opt:focus-visible { outline: 3px solid var(--nyu-violet-light); outline-offset: 2px; }
+    .decide__out { margin-top: var(--sp-4); border-left: 4px solid var(--nyu-violet); background: var(--nyu-violet-50); padding: var(--sp-4) var(--sp-5); border-radius: 0 var(--r-md) var(--r-md) 0; }
+    .decide__out h4 { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); color: var(--nyu-violet-dark); }
+    .decide__out p { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); }
+    .decide__out p:last-child { margin-bottom: 0; }
+    .decide__tag { display: inline-block; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-mute); margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity &middot; Module 13 &middot; Section 4 of 6</div>
+      <h1 class="nyu-hero__title">Your Skills, Mapped: Career Paths and What to Learn Next</h1>
+      <p class="nyu-hero__subtitle">Security postings increasingly ask for AI skills you can demonstrate, not just name. This section maps what you produced in this course to five common roles, surfaces the gaps, and turns those gaps into a learning plan.</p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~37 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 8 parts</span>
+        <span aria-label="Knowledge checks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg>
+          1 knowledge check, skills map, course close
+        </span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> Evidence, Not Aspiration</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> The Matrix: SOC Analyst Example</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Reasoning Task: Read the Posting</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> Map Your Own Evidence</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Where to Go Next: Seven Paths</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Decision: The Containment Authority Call</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> Check Your Understanding</a></li>
+        <li><a href="#sec-8"><span class="nyu-toc__num">8</span> Positions Revisited, and What You Carry</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>
+          Learning Objectives
+        </h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Evaluate</strong> which course skills a given security role wants, using a nameable-artifact standard.</span></li>
+          <li><span><strong>Justify</strong> the skill gaps you choose to close next, stated as capabilities rather than credentials.</span></li>
+          <li><span><strong>Construct</strong> a continued-learning plan whose entries build on foundations you can already evidence.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1 ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">Evidence, Not Aspiration</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Security job postings increasingly list AI-related skills: detection evaluation, prompt engineering, governance, agent oversight. By module 13, the question is not whether you have exposure to those topics, but whether you can point to something specific you produced in this course that demonstrates each one.</p>
+
+        <p>The rule is simple: a skill claim requires a nameable <button type="button" class="nyu-define" data-term="skill-artifact">artifact</button>. Not "I am familiar with detection metrics," but "here is the <span class="nyu-ref" data-ref="confusion-matrix">confusion matrix</span> I computed on real intrusion-detection output, and here is the operational extrapolation I drew from it."</p>
+
+        <p>Where no <button type="button" class="nyu-define" data-term="skill-artifact">artifact</button> exists, the skill is a gap. That is the point, not a shortcoming: gaps are what a learning plan is built from, and a plan without them is guesswork.</p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="artifact-limits-title">
+          <h3 class="nyu-callout__title" id="artifact-limits-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            When you cannot share the artifact
+          </h3>
+          <p>In practice, many security artifacts are proprietary, classified, or covered by NDA. A vendor evaluation you performed for an employer, a gap assessment containing internal risk data, or a threat-intelligence report with sensitive indicators cannot be handed to an interviewer. That does not make the skill unevidenceable.</p>
+          <p>The professional version of the evidence rule works in layers. You describe the method you used (the type of analysis, the framework, the evaluation criteria), the scope of the work (how many systems, what kind of environment), and the outcome in general terms, without revealing protected details. Some practitioners keep a sanitized portfolio: the same analysis rerun on public data, or a write-up that replaces proprietary specifics with anonymized equivalents.</p>
+          <p>Course work has its own constraints: NYU considers course material university property, so sharing it depends on the specific terms of your program. Regardless of what you can or cannot hand over, the habit of documenting your method (not just your results) is what keeps the evidence rule usable across your career. An interviewer who hears a clear description of what you did, how you scoped it, and what you learned can assess the skill whether or not they see the original output.</p>
+        </aside>
+
+        <p>The scaffolding for this already exists. The <button type="button" class="nyu-define" data-term="nice-framework">national cybersecurity workforce framework</button> breaks roles into task, knowledge, and skill statements, most recently updated in spring 2026, with an interactive career-pathways tool built on top of it. The matrix below borrows its decomposition logic, and the optional links in the references let you explore the full framework.</p>
+
+        <p>One data point for context: ISC2 publishes an annual workforce survey (typically over ten thousand respondents) that has consistently ranked AI among the top skill needs, and increasingly frames the profession's core problem as a skills gap rather than a headcount gap.</p>
+
+        <p>That finding should be weighed appropriately: the data is self-reported, and ISC2 sells certifications.</p>
+
+        <p>What matters is narrower than the headline: the evaluation and constraint skills this course practiced are scarce, and scarce skills are where early careers tend to find traction.</p>
+
+        <aside class="nyu-callout" role="note" aria-labelledby="intl-title">
+          <h3 class="nyu-callout__title" id="intl-title">If You Are Working Outside the United States</h3>
+          <p>The workforce framework behind the matrix below, and the role titles used with it, are American. That is where the most detailed public role decomposition happens to be published, not a judgment that it is the right one to use. The mapping method holds anywhere. The labels travel less well: SOC analyst and GRC analyst are recognizable in many markets and titled differently in others, and the expectation that a candidate arrives with a portfolio of work is a hiring convention in some places rather than a rule everywhere.</p>
+          <p>The nearest counterpart outside the United States is the European Cybersecurity Skills Framework, published by ENISA in 2022, which decomposes twelve role profiles into missions, tasks, skills, and knowledge in much the way the matrix here does. Several countries maintain their own national schemes alongside it. Build the map against whichever framework is actually cited where you are: the one your prospective employers reference if you are looking for a role, or the one your organization already uses if you are in one. It is also worth knowing whether demonstrated work, a certification, or a formal qualification carries the most weight in that market, since the three are not weighted the same everywhere.</p>
+          <p>What transfers without translation is the underlying habit: naming the artifact, describing the method that produced it, and being able to talk through both. That holds whether the map is for an application or for a conversation with your own manager, and whatever the local vocabulary turns out to be.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 2 ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">The Matrix: SOC Analyst Example</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Here is what the <button type="button" class="nyu-define" data-term="skills-map">skills map</button> looks like for one role: a SOC analyst. Each row pairs a skill the role needs with the course work that demonstrates it, or flags it as a gap.</p>
+
+        <table class="nyu-table">
+          <caption class="nyu-table__caption">Example skills map: SOC analyst</caption>
+          <thead>
+            <tr><th scope="col">Skill the role needs</th><th scope="col">Course artifact</th><th scope="col">Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Detection evaluation (precision, recall, operational cost)</td><td>Confusion-matrix lab on intrusion-detection output, with the analyst-hours extrapolation</td><td>Evidenced</td></tr>
+            <tr><td>AI-assisted triage with validation</td><td>Alert triage exercises against ground truth, documented error analysis</td><td>Evidenced</td></tr>
+            <tr><td>Prompt engineering for security tasks</td><td><span class="nyu-ref" data-ref="prompt-library">Structured prompt library</span> with validation results</td><td>Evidenced</td></tr>
+            <tr><td>Agent trace auditing</td><td>This module's trace activity: first-cause identification on a failing run</td><td>Evidenced</td></tr>
+            <tr><td>Production detection tuning at scale</td><td>The course labs used curated datasets, so there is nothing to point to here yet (though the final project simulates a production build)</td><td>--</td></tr>
+          </tbody>
+        </table>
+
+        <p>The last row is the useful one. A <button type="button" class="nyu-define" data-term="skills-map">map</button> with no gaps is worth questioning, and interviewers can generally tell when one has been filled in generously.</p>
+
+        <aside class="nyu-callout nyu-callout--warning" role="note" aria-labelledby="career-misc-title">
+          <h3 class="nyu-callout__title" id="career-misc-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </span>
+            Three ways the map goes wrong
+          </h3>
+          <p><strong>Rating interest as capability.</strong> "I find threat intelligence fascinating" and "I produced a validated intelligence assessment with graded sources" are different claims. Both may prompt follow-up questions, but only the second gives the interviewer something concrete to ask about.</p>
+          <p><strong>Treating gaps as failures.</strong> The gap column is where your plan comes from. A map filled in without any is a map you cannot use.</p>
+          <p><strong>Collecting certifications instead of capabilities.</strong> A certification tells a hiring manager somebody else assessed you. An <button type="button" class="nyu-define" data-term="skill-artifact">artifact</button> lets them assess you themselves, which many of them prefer.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 3 ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Reasoning Task: Read the Posting</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario" data-screen-label="Scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Map the requirements
+          </h3>
+          <p class="nyu-scenario__prompt">A posting for a junior SOC analyst lists these AI-related requirements:</p>
+          <ol style="margin:var(--sp-2) 0 var(--sp-3); padding-left:1.4rem; font-size:var(--fs-sm);">
+            <li>Experience evaluating ML-based detection systems (precision, recall, operational cost)</li>
+            <li>Familiarity with LLM risk taxonomies and failure modes</li>
+            <li>Ability to assess vendor AI claims against evidence</li>
+            <li>Participation in AI governance or policy-drafting processes</li>
+            <li>Hands-on MLOps or production ML deployment experience</li>
+          </ol>
+          <p class="nyu-scenario__prompt">Map each requirement to course work that demonstrates it, and identify the one requirement no course <button type="button" class="nyu-define" data-term="skill-artifact">artifact</button> covers.</p>
+          <button class="nyu-scenario__btn">Show a possible answer</button>
+          <div class="nyu-scenario__answer">
+            <p>Four requirements map to specific labs and exercises: detection evaluation, LLM risk taxonomies, vendor-claim assessment, and governance participation. The fifth, typically production MLOps or deployment experience, has no artifact and belongs in a learning plan. Finding the gap is the point, not a shortfall.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4 ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">Map Your Own Evidence</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Now run the evidence rule against yourself. Pick a target role, then mark honestly which skills you could put an <button type="button" class="nyu-define" data-term="skill-artifact">artifact</button> behind if someone asked you to produce one in an interview. Not "I sat through that module," but something you actually made, something you could open and talk through.</p>
+
+        <p>The <button type="button" class="nyu-define" data-term="skills-map">map</button> is only useful if the gaps are real, so resist the urge to tick everything. Nobody sees this but you, and an inflated map produces a learning plan aimed at skills you already have.</p>
+
+        <div class="skillmap" id="skillmap">
+          <div class="skillmap__bar">
+            <label class="skillmap__legend" for="skillmap-role">Target role</label>
+            <select id="skillmap-role" class="skillmap__select">
+              <option value="soc">SOC analyst</option>
+              <option value="ti">Threat intelligence analyst</option>
+              <option value="eng">Security engineer</option>
+              <option value="red">Penetration tester / red team</option>
+              <option value="grc">GRC analyst</option>
+            </select>
+          </div>
+
+          <ul class="skillmap__list" id="skillmap-list"></ul>
+
+          <div class="skillmap__actions">
+            <button type="button" class="skillmap__btn" id="skillmap-run">Show my profile</button>
+            <button type="button" class="skillmap__btn skillmap__btn--ghost" id="skillmap-clear">Clear</button>
+          </div>
+
+          <div class="skillmap__out" id="skillmap-out" role="status" aria-live="polite" hidden></div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5 ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Where to Go Next: Seven Paths</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Each path below connects to course work you can name. None is a prerequisite for, or a preview of, any specific course.</p>
+
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>
+            1. Adversarial ML in depth
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel"><p><strong>Builds on:</strong> the attack-taxonomy work, where you classified attacks across three lenses rather than memorizing one list. <strong>Where to start:</strong> the national adversarial-ML taxonomy and the <span class="nyu-ref" data-ref="mitre-atlas">adversarial tactics knowledge base</span> you already used for classification. Work forward from techniques you can already name, and read the primary papers behind two or three of them rather than skimming all of them.</p></div>
+        </div>
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>
+            2. AI red teaming
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel"><p><strong>Builds on:</strong> the <span class="nyu-ref" data-ref="instruction-data-boundary">injection analysis</span> and the jailbreak material alongside it. <strong>Where to start:</strong> published red-team methodologies, then hands-on practice through prompt-injection capture-the-flag exercises, which exist in public and are free. The skill that distinguishes a red teamer from an enthusiast is documentation, so write up every finding as though someone has to remediate it.</p></div>
+        </div>
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>
+            3. MLOps and production ML security
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel"><p><strong>Builds on:</strong> the <span class="nyu-ref" data-ref="deployment-patterns">deployment-hardening work</span>. This is also the gap the SOC analyst example row surfaced, which makes it a natural first choice. <strong>Where to start:</strong> the control-overlay project for AI systems as it publishes, plus the deployment-security guidance already sitting in your references. A direct way to close this gap is to run something small in production yourself and watch what breaks.</p></div>
+        </div>
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>
+            4. Detection engineering with AI assistance
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel"><p><strong>Builds on:</strong> the <span class="nyu-ref" data-ref="triage-pipeline">triage pipeline</span> from the detection module, and the rule-drafting work that followed. <strong>Where to start:</strong> open detection-rule repositories and, more importantly, their test harnesses. Reading rules teaches you syntax; running them against labeled traffic teaches you why most rules are wrong the first time.</p></div>
+        </div>
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>
+            5. AI governance specialization
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel"><p><strong>Builds on:</strong> the <span class="nyu-ref" data-ref="gap-assessment">gap assessment you ran in the governance module</span>, which is a genuine portfolio <button type="button" class="nyu-define" data-term="skill-artifact">artifact</button> and one most applicants do not have. <strong>Where to start:</strong> the risk-management framework's resource center and its published profile documents, which show how other organizations answered the same questions you answered for NorthShore Mutual.</p></div>
+        </div>
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>
+            6. AI safety and alignment literacy
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel"><p><strong>Builds on:</strong> the failure-mode catalog from Section 2 and the calibration discipline from Section 3. <strong>Where to start:</strong> publications from the major labs, read with exactly the <span class="nyu-ref" data-ref="source-grading">sourcing skepticism</span> Section 3 developed. A lab publishing on the safety of systems it also sells is a source with unique visibility and a commercial position at the same time, which is exactly the pattern the sourcing exercises practiced.</p></div>
+        </div>
+        <div class="nyu-accordion">
+          <button class="nyu-accordion__trigger" aria-expanded="false">
+            <span class="nyu-accordion__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>
+            7. Agent engineering
+            <svg class="nyu-accordion__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="nyu-accordion__panel"><p><strong>Builds on:</strong> this module directly, and on the agent you built in the design studio. <strong>Where to start:</strong> the practitioner pattern literature in the references, then build a small agent yourself, give it two or three real tools, and constrain it properly. You will understand the failure catalog differently once one of its entries has happened to something you wrote.</p></div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 6 ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Decision: The Containment Authority Call</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Your triage agent has run in report-only mode for six months with 94% precision on its practice distribution. The CISO proposes granting it authority to auto-isolate hosts it classifies as actively compromised, arguing mean-time-to-contain would drop from 41 minutes to under two.</p>
+
+        <p>You are the security engineering lead. Make the call, then read what your call commits you to. All three are defensible, and each one has a bill attached.</p>
+
+        <div class="decide" id="decide">
+          <div class="decide__opts" role="group" aria-label="Your recommendation">
+            <button type="button" class="decide__opt" data-d="grant">Grant the authority</button>
+            <button type="button" class="decide__opt" data-d="deny">Deny it</button>
+            <button type="button" class="decide__opt" data-d="cond">Grant with conditions</button>
+          </div>
+          <div class="decide__out" id="decide-out" role="status" aria-live="polite" hidden></div>
+        </div>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="dec-hint">
+          <h3 class="nyu-callout__title" id="dec-hint">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            Where the argument actually lives
+          </h3>
+          <p>Two words in that 94% figure matter. It describes a <em>practice</em> distribution, and it is an <em>aggregate</em>. Each hides something you have learned to look for: the <button type="button" class="nyu-define" data-term="demo-production-gap">gap between demonstration and production</button>, and what an <span class="nyu-ref" data-ref="aggregate-metrics">aggregate metric conceals until you disaggregate it</span>.</p>
+          <p>Then consider the action itself. Host isolation sits in a particular <button type="button" class="nyu-define" data-term="reversibility">reversibility</button> class, and reversibility is what decides where a <button type="button" class="nyu-define" data-term="approval-gate">gate</button> belongs.</p>
+        </aside>
+      </section>
+
+      <!-- ====================== SECTION 7 ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-quiz" aria-labelledby="quiz-4-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-4-prompt">
+            A posting asks for "experience evaluating ML-based detection systems." Which course artifact best demonstrates this?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-4-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="That demonstrates prompt craft, a different listed skill. Right portfolio, wrong cell.">Your prompt library from the prompt-engineering module.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">The confusion matrix, precision and recall computation, and operational extrapolation you produced on intrusion-detection output.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Reading is exposure, not evidence. The method asks what you can show; if the answer is nothing, the row becomes a gap and feeds the plan.">Having read about the adversarial tactics knowledge base.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Strong evidence for GRC-facing skills, not for detection evaluation. Right artifact, wrong cell.">Your policy-drafting exercise from the governance module.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+               data-correct-msg="Correct. Direct, artifact-backed evidence of exactly the evaluated skill. Evidence-based mapping names the artifact, not the aspiration."
+               data-incorrect-msg="Ask which artifact directly demonstrates detection evaluation, not an adjacent skill."></div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 8 ====================== -->
+      <section class="nyu-section" id="sec-8">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">8</span>
+          <h2 class="nyu-section__title">Positions Revisited, and What You Carry</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>Here are the three positions you committed to at the start of the module, with what the evidence did to each one.</p>
+
+        <div data-pos-scope="m13-agents">
+
+          <p class="nyu-position-card__statement"><strong>A.</strong> <em>An agent that performs well in a demo will behave the same way in production.</em></p>
+          <div class="nyu-pos-recall" data-pos-id="1" aria-live="polite" data-tone-agree="challenged" data-tone-unsure="partial" data-tone-disagree="held"
+               data-recall-agree="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;You said: Agree&lt;/span&gt; The autonomous-investigation evidence is the direct challenge. It is among the capabilities most often demonstrated and among the least reliable in production, because demos run on data somebody curated. Name the property that failed to transfer: complete, unambiguous, non-adversarial input."
+               data-recall-unsure="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;You said: Unsure&lt;/span&gt; You now have the specific answer. Demo data is complete, unambiguous, and nobody is shaping it on purpose. Production data is none of those things, and that gap has a name you can use in a procurement meeting."
+               data-recall-disagree="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;You said: Disagree&lt;/span&gt; Your instinct held up. The useful upgrade is precision: you can now say exactly which property fails to transfer, rather than that demos are generally optimistic."
+               data-recall-none="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;No position recorded&lt;/span&gt; Take one now, in the module's first section, then come back. Committing before you read is what makes the revision worth anything."></div>
+
+          <p class="nyu-position-card__statement"><strong>B.</strong> <em>An agent whose tools are all read-only cannot cause a security incident.</em></p>
+          <div class="nyu-pos-recall" data-pos-id="2" aria-live="polite" data-tone-agree="challenged" data-tone-unsure="partial" data-tone-disagree="held"
+               data-recall-agree="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;You said: Agree&lt;/span&gt; The zero-click email exploit is the counterexample, and it is important to understand why. Every tool involved was a read operation. Reading is exactly where the hostile instructions entered. 'Read-only' describes what a tool does to the target system, not what the tool's output does to the agent."
+               data-recall-unsure="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;You said: Unsure&lt;/span&gt; The mechanism settles it. A read tool cannot damage the system it reads, but its output lands in the context window, which is where instructions live. The direction you look at the tool decides the answer."
+               data-recall-disagree="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;You said: Disagree&lt;/span&gt; Correct, and now you can name the mechanism rather than the intuition: retrieval is an ingestion path, and ingested text competes with instructions inside one context window."
+               data-recall-none="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;No position recorded&lt;/span&gt; Take one in the module's first section, then return here."></div>
+
+          <p class="nyu-position-card__statement"><strong>C.</strong> <em>The main risk of deploying an autonomous agent is that an attacker hacks it.</em></p>
+          <div class="nyu-pos-recall" data-pos-id="3" aria-live="polite" data-tone-agree="challenged" data-tone-unsure="partial" data-tone-disagree="held"
+               data-recall-agree="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;You said: Agree&lt;/span&gt; Count the incidents. The production-database deletion, the silent-failure file loss, and the nine-second deletion involved no attacker at all. Each was a system doing what its permissions allowed. An attacker raises the ceiling on damage; permissions set the floor."
+               data-recall-unsure="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;You said: Unsure&lt;/span&gt; The count answers it. Most of this module's documented incidents had no adversary. The recurring cause was authority the system should not have held at that moment."
+               data-recall-disagree="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;You said: Disagree&lt;/span&gt; You were ahead of the evidence. The catalog backs you: the defect is rarely a wrong fact or a hostile party, and usually a right the system should not have had."
+               data-recall-none="&lt;span class=&quot;nyu-pos-recall__label&quot;&gt;No position recorded&lt;/span&gt; Take one in the module's first section, then return here."></div>
+
+        </div>
+
+        <p>Look back at which of your three positions moved the furthest. The position that shifted is often the one where you were reasoning from intuition rather than from mechanism, and knowing that about yourself is worth more than any single fact here.</p>
+
+        <p>Before reading the closing paragraph, try this: name one thing about <button type="button" class="nyu-define" data-term="agentic-ai">agentic AI</button> that this module deliberately left unresolved, and say what the actual obstacle to resolving it is. If the obstacle you land on is "nobody has measured it yet," you have understood where the field stands.</p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="unresolved-examples-title">
+          <h3 class="nyu-callout__title" id="unresolved-examples-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c1 .9 1 1.9 1 3.3h6c0-1.4 0-2.4 1-3.3A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            Examples you might have landed on
+          </h3>
+          <p>Whether agentic triage actually reduces analyst fatigue or just shifts it from reading alerts to reviewing agent output (answering this would require <button type="button" class="nyu-define" data-term="longitudinal-study">longitudinal studies</button> across different SOC sizes, sectors, and alert volumes, and those studies take years to run). Whether human-in-the-loop gates degrade into rubber-stamping under real alert volumes (several teams suspect they do, but measuring it requires instrumentation most SOCs do not yet have in place). What false-positive rate justifies letting an agent contain a host without human approval (operational consensus is hard to reach here because the acceptable rate depends on the sector, the asset criticality, and the cost of a missed containment). Whether specification gaming gets worse or better as models scale (tracking this requires comparable benchmarks across model generations, which are difficult to design and expensive to maintain).</p>
+          <p>Each of these is a question the module surfaced but could not answer, because the evidence that would answer it is genuinely hard to produce.</p>
+        </aside>
+
+        <p>This course began with a machine that could not reliably tell you what it knew. It ends with machines that act on their own account.</p>
+
+        <p>What sits between those two points is not a body of facts about particular products, most of which will be obsolete before you need them. It is a set of habits. Compute the matrix before trusting the detector. Verify the claim before repeating it. Name the owner before accepting the risk. Read the trace before believing the story.</p>
+
+        <p>The tools will change underneath you, and they will change often. The habits are the part that stays with you.</p>
+
+        <aside class="nyu-callout nyu-callout--tip" role="note" aria-labelledby="thisweek-title">
+          <h3 class="nyu-callout__title" id="thisweek-title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+            </span>
+            Where to go from here
+          </h3>
+          <p>Everything in this module answers back as you work through it, so revisit anything that did not land the first time. The design studio in particular rewards a second pass: build the agent you would actually argue for, then deliberately break one constraint and watch the audit change. Section 5 then collects, in one place, what each module covered and what you worked through, and the final section consolidates the sources behind this module.</p>
+        </aside>
+      
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 5: Concepts Covered and Work Completed.</strong> The map you just filled in is drawn against the course as a whole. The next section sets that out module by module: what each one covered, what you worked through alongside it, and where the course stopped short.</p>
+        </aside>
+      </section>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+
+  <script src="../tooltips/glossary.js"></script>
+  <script src="../reference_tip/reference-tips.js"></script>
+  <script src="../js/nyu-tandon-course.js"></script>
+  <script>
+  /* ============================================================
+     SKILL MAP
+     Applies the evidence rule to the student's own claims. The
+     feedback is deterministic: which core skills for the chosen
+     role they can evidence, which convert to gaps, and which of
+     the next-step paths those specific gaps point at.
+     ============================================================ */
+  (function () {
+    "use strict";
+    var wrap = document.getElementById("skillmap");
+    if (!wrap) return;
+
+    var SKILLS = [
+      { id: "detect",  name: "Detection evaluation",        art: "confusion matrix computed on real detector output, with the operational cost extrapolation" },
+      { id: "triage",  name: "AI-assisted triage with validation", art: "alert triage against ground truth, with documented error analysis" },
+      { id: "prompt",  name: "Prompt engineering for security tasks", art: "structured prompt library with validation results" },
+      { id: "intel",   name: "Intelligence assessment and source grading", art: "a written assessment with sources graded for currency and confidence" },
+      { id: "inject",  name: "Injection and jailbreak analysis", art: "attack chains you classified, or a capture-the-flag write-up" },
+      { id: "harden",  name: "Deployment hardening",         art: "an attack-surface assessment of a specific deployment pattern" },
+      { id: "govern",  name: "Governance and policy drafting", art: "a framework gap assessment, or policy statements in the full anatomy" },
+      { id: "trace",   name: "Agent trace auditing",         art: "first-cause identification on a failing agent run" },
+      { id: "vendor",  name: "Vendor-claim evaluation",      art: "a claim sorted into demonstrated, claimed and open, with the decisive missing evidence named" },
+      { id: "prod",    name: "Production tuning at scale",   art: "detections tuned against live traffic, not a curated dataset" }
+    ];
+
+    var ROLES = {
+      soc: { label: "SOC analyst",        core: ["detect", "triage", "trace", "prod"] },
+      ti:  { label: "Threat intelligence analyst", core: ["intel", "vendor", "prompt", "detect"] },
+      eng: { label: "Security engineer",  core: ["harden", "trace", "prod", "inject"] },
+      red: { label: "Penetration tester / red team", core: ["inject", "trace", "harden", "vendor"] },
+      grc: { label: "GRC analyst",        core: ["govern", "vendor", "detect", "intel"] }
+    };
+
+    // Gap -> where to go next. Mirrors the seven paths below.
+    var NEXT = {
+      prod:   "MLOps and production ML security. This is the gap the example row surfaced too, and a natural first choice.",
+      inject: "AI red teaming. Public methodologies plus prompt-injection capture-the-flag exercises, which are free.",
+      harden: "MLOps and production ML security, or detection engineering, depending on whether you want to defend the pipeline or the estate.",
+      govern: "AI governance specialisation. The risk-management framework's published profiles show how other organisations answered the same questions.",
+      intel:  "Threat-intelligence depth. Grade real reporting against the five-step method until the grading is automatic.",
+      detect: "Detection engineering with AI assistance. Open rule repositories, and more importantly their test harnesses.",
+      triage: "Detection engineering with AI assistance. Run rules against labelled traffic and watch how many are wrong the first time.",
+      trace:  "Agent engineering. Build something small, give it two or three real tools, constrain it, then read its traces.",
+      prompt: "Agent engineering, which is where prompt craft stops being the interesting part and constraint design starts.",
+      vendor: "Adversarial ML in depth, so the claims you assess are ones you can also test."
+    };
+
+    var list = document.getElementById("skillmap-list");
+    var roleSel = document.getElementById("skillmap-role");
+    var out = document.getElementById("skillmap-out");
+
+    function render() {
+      var core = ROLES[roleSel.value].core;
+      list.innerHTML = "";
+      SKILLS.forEach(function (s) {
+        var li = document.createElement("li");
+        li.className = "skillmap__row";
+        li.setAttribute("data-core", String(core.indexOf(s.id) > -1));
+        li.innerHTML =
+          '<input type="checkbox" id="sk-' + s.id + '" value="' + s.id + '">' +
+          '<label for="sk-' + s.id + '"><b>' + s.name + '</b><span>Artifact: ' + s.art + '</span></label>';
+        list.appendChild(li);
+      });
+      out.hidden = true; out.innerHTML = "";
+    }
+
+    function report() {
+      var roleKey = roleSel.value, role = ROLES[roleKey], core = role.core;
+      var checked = Array.prototype.slice.call(list.querySelectorAll("input:checked")).map(function (i) { return i.value; });
+      var name = function (id) { var s = SKILLS.filter(function (x) { return x.id === id; })[0]; return s ? s.name : id; };
+
+      var coreHave = core.filter(function (c) { return checked.indexOf(c) > -1; });
+      var coreGap  = core.filter(function (c) { return checked.indexOf(c) < 0; });
+      var pct = Math.round((coreHave.length / core.length) * 100);
+
+      var html = '<p class="skillmap__head">' + role.label + ': you can evidence ' + coreHave.length + ' of ' + core.length + ' core skills.</p>';
+      html += '<div class="skillmap__meter" role="img" aria-label="' + pct + ' percent of core skills evidenced"><i style="width:' + pct + '%"></i></div>';
+
+      if (coreHave.length) {
+        html += '<div class="skillmap__block" data-t="have"><h4>What you can put in front of someone</h4><ul>';
+        coreHave.forEach(function (c) { html += '<li>' + name(c) + '</li>'; });
+        html += '</ul><p style="margin-top:6px">Frame these as specific work, not topics. "Here is the matrix I computed and what it implied for staffing" is stronger than "I am familiar with detection metrics." When the actual artifact is proprietary or under NDA, describe the method, scope, and outcome without revealing protected details.</p></div>';
+      }
+
+      if (coreGap.length) {
+        html += '<div class="skillmap__block" data-t="gap"><h4>Gaps that matter for this role</h4><ul>';
+        coreGap.forEach(function (c) { html += '<li><strong>' + name(c) + '.</strong> ' + (NEXT[c] || "") + '</li>'; });
+        html += '</ul></div>';
+      } else {
+        html += '<div class="skillmap__block" data-t="have"><h4>No core gaps recorded</h4><p>Either you are genuinely ready for this role, or the map was filled in generously. Test it: pick any skill above and describe the work out loud in two sentences, including what it showed that you did not expect. If that is hard, the cell is a gap.</p></div>';
+      }
+
+      var others = SKILLS.filter(function (s) { return core.indexOf(s.id) < 0 && checked.indexOf(s.id) > -1; });
+      if (others.length) {
+        html += '<div class="skillmap__block"><h4>Adjacent strengths</h4><p>You can also evidence ' +
+          others.map(function (s) { return s.name.toLowerCase(); }).join(", ") +
+          '. Not core for a ' + role.label + ', but they are what makes a candidate unusual rather than interchangeable.</p></div>';
+      }
+
+      html += '<div class="skillmap__block"><h4>Switch roles and run it again</h4><p>The same artifacts count differently depending on what the role wants. Comparing two profiles tells you more about where you actually fit than either one alone.</p></div>';
+
+      out.innerHTML = html; out.hidden = false;
+    }
+
+    /* ---------- Containment decision ---------- */
+    (function () {
+      var dec = document.getElementById("decide");
+      if (!dec) return;
+      var dout = document.getElementById("decide-out");
+      var COPY = {
+        grant: {
+          tag: "You granted it",
+          body: "<p>Defensible, and the case is real: 41 minutes of dwell time while an analyst reads a queue is a genuine cost, and the agent is right most of the time.</p>" +
+                "<p><strong>What you have committed to.</strong> Six months of report-only operation tells you about a distribution that nobody was attacking. Precision measured where no adversary was shaping the input is precision on a practice set. You have also put an irreversible action on the far side of a system with no gate, so the 6% is not 6% of tickets; it is 6% of hosts pulled off the network, and some of those will be a finance workstation at quarter close.</p>" +
+                "<p><strong>The strongest case against you</strong> is that you disaggregated nothing. If that 94% is 99% on servers and 71% on contractor laptops, you have just automated a specific harm against a specific group.</p>"
+        },
+        deny: {
+          tag: "You denied it",
+          body: "<p>Defensible, and the reasoning is sound: host isolation is hard to reverse, and the evidence offered is an aggregate from a practice distribution.</p>" +
+                "<p><strong>What you have committed to.</strong> Denial is not free, and pretending otherwise weakens your position. Every incident that runs 41 minutes instead of two is a cost you have accepted on the organisation's behalf, and you should expect to defend that number the next time an intrusion spreads while a ticket waits.</p>" +
+                "<p><strong>The strongest case against you</strong> is that a permanent no is not a security position, it is an absence of one. If no evidence would ever move you, say so plainly, because that is a values claim rather than a risk assessment.</p>"
+        },
+        cond: {
+          tag: "You granted with conditions",
+          body: "<p>This is usually the strongest answer, and also the easiest to fake. The conditions are the whole content, so vague ones make this the worst option rather than the safest.</p>" +
+                "<p><strong>What makes this real.</strong> A condition stated in the full anatomy has four parts: a named actor, a bounded object, a triggering condition, and observable evidence. Something like: isolation is permitted only on asset classes where disaggregated precision has been measured above a stated threshold, with automatic re-enable after a fixed window, and every isolation reviewed within 24 hours by a named on-call.</p>" +
+                "<p><strong>The strongest case against you</strong> is automation bias. A gate that approves everything is latency, not safety. If your conditions include human approval, you owe an answer on how that review stays real at three in the morning.</p>"
+        }
+      };
+      dec.querySelectorAll(".decide__opt").forEach(function (b) {
+        b.setAttribute("aria-pressed", "false");
+        b.addEventListener("click", function () {
+          dec.querySelectorAll(".decide__opt").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+          var c = COPY[b.dataset.d];
+          dout.innerHTML = '<span class="decide__tag">' + c.tag + '</span>' + c.body +
+            '<p style="color:var(--ink-mute)">Try the other two. The point is not which you picked, it is being able to say what each one costs.</p>';
+          dout.hidden = false;
+        });
+      });
+    })();
+
+    roleSel.addEventListener("change", render);
+    document.getElementById("skillmap-run").addEventListener("click", report);
+    document.getElementById("skillmap-clear").addEventListener("click", function () {
+      list.querySelectorAll("input").forEach(function (i) { i.checked = false; });
+      out.hidden = true; out.innerHTML = "";
+    });
+    render();
+  })();
+  </script>
+</body>
+</html>

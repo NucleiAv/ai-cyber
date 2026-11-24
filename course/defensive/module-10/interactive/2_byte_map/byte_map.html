@@ -1,0 +1,261 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Evade a Byte-Based Malware Classifier</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15171C;--ink2:#565a63;--ink3:#5c6270;--line:#e9eaee;--line2:#d9dbe2;
+  --bg:#ffffff;--paper:#f7f8fa;
+  --violet:#57068C;--violet2:#7a30ad;--vsoft:#f6effb;--vline:#e6d6f3;
+  --red:#c02626;--redline:#efc9c9;--redsoft:#fcf1f1;
+  --green:#0f7a43;--greenline:#c3e2d0;--greensoft:#eef7f2;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);padding:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.top{padding:18px 22px 4px}
+.eyebrow{font-family:var(--mono);font-size:0.75rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.22rem;font-weight:700;letter-spacing:-.021em;margin-top:7px;line-height:1.2}
+.lede{font-size:.85rem;color:var(--ink2);margin-top:8px;max-width:64ch}
+.body{padding:14px 22px 22px}
+.stagewrap{margin-top:4px;border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;line-height:0}
+canvas{display:block;width:100%}
+
+.controls{margin-top:16px;display:flex;flex-wrap:wrap;gap:18px 26px;align-items:flex-end}
+.ctl{flex:1;min-width:250px}
+.ctl .lab{display:flex;justify-content:space-between;font-size:.78rem;color:var(--ink2);margin-bottom:5px}
+.ctl .lab b{font-family:var(--mono);color:var(--violet)}
+input[type=range]{width:100%;accent-color:var(--violet);height:26px;cursor:pointer}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+.seg button{font-family:var(--sans);font-size:.79rem;font-weight:600;padding:8px 14px;border:none;background:var(--bg);color:var(--ink2);cursor:pointer;transition:.14s}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed="true"]{background:var(--violet);color:#fff}
+.seglab{font-size:.78rem;color:var(--ink2);margin-bottom:5px}
+.btn{font-family:var(--sans);font-size:.8rem;font-weight:600;padding:9px 15px;border-radius:10px;border:1px solid var(--vline);background:var(--bg);color:var(--violet);cursor:pointer;transition:.14s}
+.btn:hover{background:var(--vsoft)}
+
+.meters{margin-top:20px;display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
+@media(max-width:560px){.meters{grid-template-columns:1fr}}
+.gwrap .gl{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--ink3);margin-bottom:20px}
+.gauge{position:relative;height:28px;background:#eef0f4;border:1px solid var(--line2);border-radius:8px}
+.gauge .thr{position:absolute;left:50%;top:-5px;bottom:-5px;width:2px;background:var(--ink)}
+.gauge .thrlab{position:absolute;left:50%;top:-20px;transform:translateX(-50%);font:600 12px var(--mono);color:var(--ink2);white-space:nowrap}
+.gauge .ndl{position:absolute;top:-4px;bottom:-4px;width:6px;border-radius:3px;background:var(--violet);left:0;transition:left .18s cubic-bezier(.2,.8,.2,1)}
+.gauge .num{position:absolute;top:-21px;transform:translateX(-50%);font:700 12px var(--mono);color:var(--violet);left:0;transition:left .18s cubic-bezier(.2,.8,.2,1)}
+.gends{display:flex;justify-content:space-between;margin-top:7px;font:700 12px var(--mono)}
+.gends .b{color:var(--green)} .gends .m{color:var(--red)}
+.badges{display:flex;flex-direction:column;gap:10px}
+.badge{border:1.5px solid var(--line2);border-radius:11px;padding:10px 13px;display:flex;align-items:center;gap:11px;background:#fff}
+.badge .ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:700 13px var(--mono);flex:none;border:2px solid var(--line2);color:var(--ink3)}
+.badge .bl{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}
+.badge .bv{font-weight:700;font-size:.95rem;color:var(--ink);line-height:1.2}
+.badge .bs{font-size:0.75rem;color:var(--ink3);margin-top:2px;line-height:1.3}
+.scanintro{margin-top:18px;font-size:.81rem;color:var(--ink2);line-height:1.5}
+.scanintro b{color:var(--ink)}
+.badge.good{border-color:var(--greenline)} .badge.good .ic{border-color:#166534;color:#fff;background:#166534} .badge.good .bv{color:var(--green)}
+.badge.bad{border-color:var(--redline)} .badge.bad .ic{border-color:#991B1B;color:#fff;background:#991B1B} .badge.bad .bv{color:var(--red)}
+
+.goal{margin-top:18px;font-size:.82rem;color:var(--ink2);border-left:3px solid var(--vline);padding:2px 0 2px 12px}
+.goal b{color:var(--ink)}
+.verdict{margin-top:14px;border:1px solid var(--line);border-left-width:3px;border-radius:10px;padding:0 15px;background:var(--bg);opacity:0;max-height:0;overflow:hidden;transition:.4s}
+/* Reveal caps raised. These boxes animate open with max-height and keep overflow:hidden, so any content taller than the cap was silently cut off. At 440px wide with a 20px root font the poison-lab verdict lost 46px of its explanation, which is the clipping reported in the first-round review. 1200px is far above any realistic verdict, so the box now sizes to content at every width and text scale. */
+.verdict.show{opacity:1;max-height:1200px;padding:13px 15px}
+.verdict .vk{font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.verdict.win .vk{color:var(--green)} .verdict.win{border-left-color:var(--green);border-color:var(--greenline)}
+.verdict.fail .vk{color:var(--red)} .verdict.fail{border-left-color:var(--red);border-color:var(--redline)}
+.verdict .vt{font-size:.85rem;color:var(--ink);line-height:1.5}
+.verdict .vt b{font-weight:700}
+.src{margin-top:14px;font-size:0.75rem;color:var(--ink3);line-height:1.55}
+.src b{color:var(--ink2);font-weight:600}
+.src a{color:var(--violet2);text-decoration:none}
+.src a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive · Section 2 · Evasion Attacks</div>
+    <h1>Evade a byte-based malware classifier</h1>
+    <p class="lede">The CPU runs only the code bytes. A static byte-pattern classifier (like the real MalConv model) reads every byte. Add camouflage bytes yourself, fool its score, then watch which scanner this trick does not fool.</p>
+  </div>
+  <div class="body">
+
+    <div class="stagewrap"><canvas id="c"></canvas></div>
+
+    <div class="controls">
+      <div class="ctl">
+        <div class="lab"><span>Camouflage bytes to add</span><b><span id="byteVal">0</span> bytes</b></div>
+        <input type="range" id="amt" min="0" max="200" value="0" step="1" aria-label="Camouflage bytes to add">
+      </div>
+      <div>
+        <div class="seglab">Put them in</div>
+        <div class="seg" id="seg">
+          <button data-m="dead" aria-pressed="true">Dead space</button>
+          <button data-m="code" aria-pressed="false">Code region</button>
+        </div>
+      </div>
+      <button class="btn" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="scanintro">You are attacking <b>one</b> detector here: a <b>static byte scanner</b> that only reads the file's bytes and scores them, without ever running it.</div>
+
+    <div class="meters">
+      <div class="gwrap">
+        <div class="gl">Static scanner score (MalConv-style)</div>
+        <div class="gauge"><div class="thr"></div><div class="thrlab">threshold</div><div class="num" id="gnum">0.77</div><div class="ndl" id="gndl"></div></div>
+        <div class="gends"><span class="b">benign</span><span class="m">malicious</span></div>
+      </div>
+      <div class="badges">
+        <div class="badge" id="runBadge"><div class="ic" id="runIc">?</div><div><div class="bl">Malware still runs?</div><div class="bv" id="runVal">, </div><div class="bs" id="runSub"></div></div></div>
+        <div class="badge" id="verdBadge"><div class="ic" id="verdIc">?</div><div><div class="bl">Static scanner verdict</div><div class="bv" id="verdVal">, </div><div class="bs" id="verdSub"></div></div></div>
+      </div>
+    </div>
+
+    <div class="goal">🎯 <b>Goal:</b> drive the static classifier's score below the threshold while the malware still runs, then check whether that actually made it safe.</div>
+    <div class="verdict" id="verdict"></div>
+
+    <div class="src"><b>Is this real?</b> Yes. Byte-pattern classifiers like <a href="https://arxiv.org/abs/1710.09435" target="_blank" rel="noopener">MalConv</a> (Raff et al., 2018) score raw bytes, and appending dead-space bytes to evade them is a documented attack (<a href="https://arxiv.org/abs/1803.04173" target="_blank" rel="noopener">Kolosnjaji et al., 2018</a>). It fools that specific model, not detection in general.</div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+const W=720,H=196;
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const amt=document.getElementById('amt'),byteVal=document.getElementById('byteVal'),seg=document.getElementById('seg'),resetBtn=document.getElementById('resetBtn'),
+      gndl=document.getElementById('gndl'),gnum=document.getElementById('gnum'),
+      runBadge=document.getElementById('runBadge'),runIc=document.getElementById('runIc'),runVal=document.getElementById('runVal'),
+      verdBadge=document.getElementById('verdBadge'),verdIc=document.getElementById('verdIc'),verdVal=document.getElementById('verdVal'),
+      runSub=document.getElementById('runSub'),verdSub=document.getElementById('verdSub'),
+      verdict=document.getElementById('verdict');
+const C={ink:'#15171C',ink2:'#565a63',ink3:'#5c6270',line:'#e5e7ec',line2:'#d3d6dd',
+  violet:'#57068C',violet2:'#8a3fb8',vsoft:'#f3e9fb',red:'#cf2b2b',green:'#0f7a43',grey:'#c4c8d2'};
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;};}
+const MONO="'JetBrains Mono',monospace",SANS="'Inter',sans-serif";
+
+const CODE=40, THRESH=.5;
+let added=0, mode='dead', T=0, won=false;
+function score(){return CODE/(CODE+added);}
+function runs(){return mode==='dead'||added===0;}
+
+function txt(s,x,y,font,color,align,base){ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align||'left';ctx.textBaseline=base||'alphabetic';ctx.fillText(s,x,y);}
+function noShadow(){ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;}
+function shadow(c,b,y){ctx.shadowColor=c;ctx.shadowBlur=b;ctx.shadowOffsetY=y||0;}
+
+const BAR={x:56,y:34,w:608,h:42};
+function cells(x0,x1,color,seed,alpha){let x=x0+3,i=seed;while(x+8<=x1-3){const j=((i*37)%5)/5;ctx.globalAlpha=alpha*(0.6+0.4*j);ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,BAR.y+4,8,BAR.h-8,2);ctx.fill();x+=10;i++;}ctx.globalAlpha=1;}
+function bracket(x0,x1,y,color,label,sub){
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,y-6);ctx.lineTo(x0,y);ctx.lineTo(x1,y);ctx.lineTo(x1,y-6);ctx.stroke();
+  const mx=(x0+x1)/2;ctx.beginPath();ctx.moveTo(mx,y);ctx.lineTo(mx,y+6);ctx.stroke();
+  txt(label,mx,y+9,'700 12px '+SANS,color,'center','top');
+  if(sub)txt(sub,mx,y+22,'500 12px '+SANS,C.ink3,'center','top');
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const cw=BAR.w*CODE/(CODE+added), bx=BAR.x+cw, bw=BAR.w-cw, broke=(mode==='code'&&added>0);
+  // container
+  shadow('rgba(20,20,30,.07)',10,3);ctx.fillStyle='#fff';ctx.strokeStyle=C.line2;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(BAR.x,BAR.y,BAR.w,BAR.h,9);ctx.fill();noShadow();ctx.stroke();
+  // payload (code) segment
+  ctx.save();ctx.beginPath();ctx.roundRect(BAR.x,BAR.y,cw,BAR.h,9);ctx.clip();
+  ctx.fillStyle=broke?'#f6eef1':C.vsoft;ctx.fillRect(BAR.x,BAR.y,cw,BAR.h);
+  const pulse=broke?1:(0.85+0.15*Math.sin(T*3));
+  cells(BAR.x,BAR.x+cw,broke?C.grey:C.violet,3,pulse);
+  if(broke){ctx.strokeStyle=C.red;ctx.lineWidth=1.4;for(let x=BAR.x-BAR.h;x<BAR.x+cw;x+=9){ctx.beginPath();ctx.moveTo(x,BAR.y+BAR.h);ctx.lineTo(x+BAR.h,BAR.y);ctx.stroke();}}
+  ctx.restore();
+  // camouflage segment
+  if(bw>2){ctx.save();ctx.beginPath();ctx.rect(bx,BAR.y,bw,BAR.h);ctx.clip();cells(bx,BAR.x+BAR.w,C.grey,7,1);ctx.restore();
+    ctx.strokeStyle=C.line2;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(bx,BAR.y);ctx.lineTo(bx,BAR.y+BAR.h);ctx.stroke();}
+  ctx.strokeStyle=C.line2;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(BAR.x,BAR.y,BAR.w,BAR.h,9);ctx.stroke();
+  // top + segment labels
+  txt('THE FILE',BAR.x,BAR.y-11,'700 12px '+MONO,C.ink3,'left','bottom');
+  txt(broke?'payload, CORRUPTED':'payload (code)',BAR.x+cw/2,BAR.y+BAR.h+13,'700 12px '+SANS,broke?C.red:C.violet,'center','top');
+  if(bw>90) txt('camouflage bytes',bx+bw/2,BAR.y+BAR.h+13,'700 12px '+SANS,C.ink3,'center','top');
+  // brackets
+  bracket(BAR.x+2,BAR.x+cw-2,BAR.y+BAR.h+34,broke?C.red:C.violet,broke?'CPU hits your bytes, breaks':'CPU runs only the code', broke?'':'the payload');
+  bracket(BAR.x+2,BAR.x+BAR.w-2,BAR.y+BAR.h+80,C.ink2,'classifier reads every byte','all of them');
+}
+function loop(){T+=1/60;draw();requestAnimationFrame(loop);}
+
+function update(){
+  const s=score(), ok=runs(), benign=s<THRESH;
+  byteVal.textContent=Math.round(added*32);
+  const pct=Math.max(2,Math.min(98,s*100));
+  gndl.style.left=pct+'%'; gnum.style.left=pct+'%'; gnum.textContent=s.toFixed(2);
+  // run badge
+  runBadge.className='badge '+(ok?'good':'bad'); runIc.textContent=ok?'✓':'✗'; runVal.textContent=ok?'Yes, intact':'No, corrupted';
+  runSub.textContent=ok?'the payload code is untouched':'the CPU now runs your padding, not the payload';
+  // static scanner badge
+  verdBadge.className='badge '+(benign?'good':'bad'); verdIc.textContent=benign?'✓':'✗'; verdVal.textContent=benign?'Benign (evaded)':'Malicious';
+  verdSub.textContent=benign?'byte score fell below the threshold':'byte score is above the threshold';
+  // outcome
+  if(ok&&benign){ won=true; verdict.className='verdict win show';
+    verdict.innerHTML='<div class="vk">You beat the static classifier, but not detection</div><div class="vt">The malware still runs, yet the <b>static byte classifier</b> reads it as benign: your camouflage went into <b>dead space</b> the CPU never touches, diluting the malicious signal below the threshold. This is a real attack (padding attacks evade byte-pattern models like MalConv). But it only beats <b>that one scanner</b>. The malware still runs, so a <b>behavioral scan</b> that executes it still flags it, a <b>hash or signature</b> catches any byte change, and a huge low-entropy padding blob can itself look anomalous. A high benchmark on one static model is not robustness. Real defense is <b>layered</b>.</div>';
+  } else if(!ok&&benign){ verdict.className='verdict fail show';
+    verdict.innerHTML='<div class="vk">Score dropped, but you broke it</div><div class="vt">The static score is below the threshold, but the bytes landed in the <b>code region</b>, so the CPU now runs your padding instead of the payload. The malware is corrupted, so this is not a working attack. Move the bytes to <b>dead space</b> to evade the static scanner while keeping the malware alive.</div>';
+  } else { verdict.className='verdict'; verdict.innerHTML=''; won=false; }
+  sh();
+}
+
+amt.addEventListener('input',()=>{added=+amt.value;update();});
+seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;[...seg.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===mode?'true':'false'));update();});
+resetBtn.addEventListener('click',()=>{added=0;amt.value=0;mode='dead';[...seg.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.m==='dead'?'true':'false'));update();});
+
+function sh(){const el=document.querySelector('.wrap');if(!el)return;const pad=parseFloat(getComputedStyle(document.body).paddingTop)+parseFloat(getComputedStyle(document.body).paddingBottom);
+  window.parent.postMessage({kind:'nyu-embed-height',height:Math.ceil(el.getBoundingClientRect().height+pad+24),src:location.href},'*');}
+function resize(){const cssW=canvas.clientWidth||canvas.parentElement.clientWidth||W;const cssH=cssW*H/W;canvas.style.height=cssH+'px';
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);
+  const s=cssW/W;ctx.setTransform(dpr*s,0,0,dpr*s,0,0);sh();}
+new ResizeObserver(resize).observe(document.querySelector('.stagewrap'));
+window.addEventListener('load',()=>{resize();update();setTimeout(sh,180);});
+resize();update();loop();
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

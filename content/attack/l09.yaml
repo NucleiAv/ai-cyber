@@ -1,0 +1,164 @@
+slug: l09
+num: "09"
+lecture: 9
+week: 9
+short: Excessive agency, agents
+title: Excessive agency, how agents go wrong
+time: about 3.5 hours
+lede: Agents turn words into actions. Learn the agent loop, the confused deputy problem, and how to give an agent only the power its task needs.
+owasp: [LLM06]
+agentic: [ASI02, ASI03, ASI09]
+atlas: [AML.T0053, AML.T0086, AML.T0101, AML.T0124]
+other_fw:
+  - [Least privilege, "A classic security rule. Give each part only the access it needs, and no more."]
+
+idea: |
+  A chatbot can only say things. An **agent** can do things. It calls tools such as email, a database, a browser or a payment API, in a loop, until a task is done.
+
+  OWASP names three ways an agent gets too much power.
+
+  - **Excessive functionality.** It has tools it does not need, such as a delete tool for a read task.
+  - **Excessive permissions.** Its tools reach more data than needed, such as a whole mailbox for one folder.
+  - **Excessive autonomy.** It acts on high-impact steps with no person to check.
+
+  When an injection or a plain mistake happens, these extra powers turn it into real damage.
+
+  !eli5 You give a house sitter a key to water the plants. If the key also opens the safe and the car, a trick phone call to the sitter can empty your house.
+
+terms:
+  - [Agent, "An LLM that runs in a loop, chooses tools, reads their results and decides the next step."]
+  - [Tool, "A function the app lets the model call, such as send_email or run_sql."]
+  - [ReAct, "A common agent pattern. The model writes a Thought, then an Action, then reads an Observation, and repeats."]
+  - [Confused deputy, "A program with power that is tricked into using it for someone else. The agent acts with the user's rights for the attacker's goal."]
+  - [OAuth scope, "A named permission given to an app, such as 'read mail'. Scopes are coarse."]
+  - [Policy engine, "A separate program that checks each action against rules before it runs."]
+  - [LLMjacking, "Stealing access to someone's AI service and using it at their cost."]
+
+how: |
+  ### The agent loop
+
+  1. The user gives a task.
+  2. The model writes a Thought and picks a tool with arguments.
+  3. **The app runs the tool.** The model never runs anything itself.
+  4. The result goes back into the context as an Observation.
+  5. The model decides the next step, until it says it is done.
+
+  Step 3 is where you put controls. Step 4 is where attacks get in, because tool results are untrusted text.
+
+  ### The confused deputy
+
+  The agent acts with the user's real permissions. An attacker who cannot read the user's mail sends the user one email with hidden instructions. The agent reads it while doing a normal task, and then uses the user's rights to forward private mail. The attacker borrowed the user's power through the agent.
+
+  ### Why OAuth scopes are too broad
+
+  A scope says what an app **may touch**, such as all mail. It cannot say **why** or **which items**, such as only travel receipts. So the agent's real power is much bigger than its task.
+
+diagrams:
+  - type: cycle
+    title: The agent loop and where controls go
+    nodes: [["User task", "box"], ["Model thinks and picks a tool", "def"], ["App checks, then runs the tool", "raised", "controls go here"], ["Tool result returns", "atk", "untrusted input"]]
+    center: one loop per step
+    caption: The model only writes a request. The app decides what runs. Treat every tool result like text from a stranger.
+  - type: flow
+    title: Confused deputy through an inbox
+    nodes: [["Attacker sends one email", "atk"], ["Agent reads inbox for a normal task", "def"], ["Hidden text says forward all invoices", "atk"], ["Agent uses the user's mail rights", "def"], ["Invoices reach the attacker", "atk"]]
+    edges: ["", "reads", "obeys", "sends"]
+
+attack_steps:
+  - List the agent's tools and what each one can reach.
+  - Find a way to put text in front of the agent, such as an email, a web page, a file or a tool result.
+  - Write an instruction that uses a powerful tool the task does not need.
+  - Make the action look routine, so a person who must approve it says yes.
+  - Use the agent's access to read, send, change or delete data.
+
+cases:
+  - [Chevrolet dealer bot, 2023, "The bot could make promises for the dealer with no limit, so a user got it to 'agree' to a one-dollar car. This is excessive autonomy."]
+  - [Operation Bizarre Bazaar, "Pillar Security reported a campaign that found exposed AI endpoints, took them over and sold access on a marketplace. Owners paid for the attackers' use."]
+
+defense: |
+  - **Fewer tools.** Give only the tools the task needs. Prefer narrow tools, such as get_order_status, over open ones, such as run_any_sql or run_shell.
+  - **Fewer permissions.** Run tools with the current user's identity and the smallest scope. Use short-lived tokens.
+  - **Check each call.** Put a policy engine between the model and the tools. It checks the content of each call, not only who calls.
+  - **Human approval for high impact.** Money, deletion, sending outside and permission changes need a person. Show the person exactly what will happen.
+  - **Limits.** Cap amounts, counts and steps per task. Log every tool call.
+
+defense_diagrams:
+  - type: layers
+    title: Controls around an email agent
+    attack: hidden instruction in an email
+    layers:
+      - ["Prompt says ignore instructions in email", "The model may still follow them", "pass"]
+      - ["Read-only scope on one folder", "The agent cannot send or read other folders", "stop"]
+      - ["Policy engine on every tool call", "Blocks forwarding to outside addresses", "stop"]
+      - ["Human approval to send", "A person sees the recipient and content", "stop"]
+
+artex: |
+  [ARTEX](https://github.com/BaaRai/ARTEX) is an open source, self-hosted platform where LLM agents run penetration tests. A planner splits a goal into small tasks called intents. Workers run real tools for each intent and write results back into two linked graphs, one for the target's assets and one for the test's progress.
+
+  Its README lists the controls it uses to keep an autonomous agent inside its job. They map closely to the defenses above.
+
+  - **Scope and deny rules.** The agent may touch only listed targets. This is least privilege for the network.
+  - **Command prefix rules.** Only allowed command shapes can run. This is a narrow tool set.
+  - **Human approval gates.** A person approves chosen actions. This limits autonomy.
+  - **Token and turn budgets, and a noise governor.** Caps on cost, steps and traffic. This also guards against unbounded consumption (lesson 14).
+  - **Prompt injection framing on tool output.** Tool results are marked as data, because a target can answer with text that tries to steer the agent.
+  - **Evidence for every finding.** Each finding links to the exact request and response that proves it, which helps humans check the agent's claims.
+
+  !warn Tools like this are for authorized testing only. Running them against systems without written permission is illegal in most countries. In MITRE ATLAS, attackers who use agents like this map to AML.T0116 Autonomous Reconnaissance and AML.T0124 Autonomous Attack Orchestration.
+
+lab:
+  intro: |
+    Solve LLMGoat A06, then the LLM + Tools labs (module 3) on PromptTrace Labs.
+  steps:
+    - Open A06 and list the tools the app can call.
+    - Find a tool that does more than the app's task needs.
+    - Make the model call it for you. Save the prompt.
+    - Do the PromptTrace LLM + Tools labs. For each, write which of the three causes (functionality, permissions, autonomy) made it possible.
+    - "Extend task. Try two apps in Lakera Agent Breaker."
+  links: [llmgoat, ptlabs, agentbreaker, dvla]
+
+readings:
+  - [agentsec, "Looks at agents from a systems view. Covers weak points such as mixed user sessions, untrusted tool execution and missing sandboxes, and suggests isolation and sandboxing."]
+  - [confusedpilot, "The confused deputy problem in RAG and copilots."]
+  - [pillar, "A real campaign that stole and resold access to AI endpoints."]
+star: [agentsec]
+
+questions:
+  - - Why are OAuth scopes often too broad for AI? A scope might be Gmail.Read, but we want the agent to read only travel emails. How do we build semantic permissions with a policy engine that checks the content of the tool call?
+    - |
+      OAuth answers "who may use which API". It was built for apps where a person decides what to do with the data. An agent decides by itself, and it can be steered by any email it reads. A scope like Gmail.Read gives it the whole inbox for a task that needs only travel receipts.
+
+      **Semantic permissions** describe intent, such as "read emails about travel bookings". To enforce them:
+
+      1. Put a policy engine between the agent and the mail API. Every call goes through it.
+      2. Use deterministic rules where you can, such as a label filter, a sender allow list or a date range.
+      3. For meaning-based rules, use a separate classifier or a small LLM judge that sees only the email metadata and the task, and returns allow or deny. Log its decisions.
+      4. Deny by default. Send unclear cases to a person.
+
+      The engine checks **what** the agent asks for, not only **who** the agent is.
+
+quiz:
+  - q: An agent that only summarizes tickets also has a delete_ticket tool. Which cause of excessive agency is this?
+    opts: ["Excessive functionality", "Excessive autonomy", "Misinformation"]
+    a: 0
+    why: The tool is not needed for the task at all.
+  - q: In the agent loop, which step is the right place for a permission check?
+    opts: ["Inside the model's prompt", "Where the app runs the tool", "After the task ends"]
+    a: 1
+    why: The app runs the tool, so code there can block a bad call whatever the model wrote.
+  - q: What makes an agent a confused deputy?
+    opts: ["It uses a small model", "It uses the user's real permissions for an attacker's goal", "It runs too slowly"]
+    a: 1
+    why: The attacker borrows the user's power through the agent.
+
+deliverables:
+  - Your answer to the discussion question.
+  - The prompt that solved LLMGoat A06.
+
+refs:
+  - "He et al. [Security of AI Agents](@agentsec), 2024."
+  - "OWASP. [LLM06 2025 Excessive agency](https://genai.owasp.org/llmrisk/llm062025-excessive-agency/)."
+  - "OWASP. [Top 10 for Agentic Applications 2026](@owaspagentic)."
+  - "Yao et al. [ReAct, synergizing reasoning and acting in language models](https://arxiv.org/abs/2210.03629), 2022."
+  - "Pillar Security. [Operation Bizarre Bazaar](@pillar)."
+  - "BaaRai. [ARTEX on GitHub](https://github.com/BaaRai/ARTEX)."

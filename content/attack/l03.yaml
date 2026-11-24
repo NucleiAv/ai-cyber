@@ -1,0 +1,145 @@
+slug: l03
+num: "03"
+lecture: 3
+week: 3
+short: Prompt injection, defenses
+title: Prompt injection, advanced defenses
+time: about 3 hours
+lede: Why "do not reveal the password" in a prompt is not a defense, and how real defenses treat the model as an untrusted part.
+owasp: [LLM01]
+agentic: [ASI01]
+atlas: [AML.T0051, AML.T0054]
+other_fw:
+  - [NIST AI 100-2 E2025, "Describes training-time and run-time mitigations for prompt injection, and says that none of them is complete."]
+  - [Google SAIF, "Lists input and output controls for models and treats prompt injection as a top risk. [Risk map](@saif)."]
+
+idea: |
+  A rule in the system prompt is a request. The attacker can write a stronger request. So defenders build **around** the model.
+
+  Some defenses look at the text, such as filters and detectors. Some defenses change how the model is asked, such as SmoothLLM, which asks many times. The strongest defenses limit what a fooled model can reach.
+
+  !eli5 You cannot make a guard dog that never gets tricked by a treat. You can put the money in a safe that the dog cannot open.
+
+terms:
+  - [Guardrail, "Any check placed before or after the model to block bad input or output."]
+  - [Sandwich defense, "Put the untrusted text between two copies of the rules, so the last thing the model reads is the rule."]
+  - [Spotlighting, "Mark untrusted text clearly, for example with tags or a changed encoding, so the model can tell it apart."]
+  - [SmoothLLM, "Make several slightly changed copies of the prompt, run each one, and take the majority answer."]
+  - [Erase-and-check, "Delete tokens from the prompt in a planned way and run a safety check on each shorter version."]
+  - [Canary token, "A secret string placed in the prompt. If it shows up in the output, the prompt has leaked."]
+  - [Latency, "The time a user waits for an answer."]
+
+how: |
+  ### Layer 1. Prompt design
+
+  Write clear rules. Put untrusted text inside tags, and say that text inside the tags is data. Repeat the key rule after the data (the sandwich). This lowers the success rate. It does not stop a determined attacker.
+
+  ### Layer 2. Input and output checks
+
+  A detector looks for known attack patterns before the model runs. An output check looks for leaked secrets, canary tokens or banned content after it runs. Tools include classifiers and open source detectors such as Rebuff. They catch known patterns well and new wording badly.
+
+  ### Layer 3. Smoothing defenses
+
+  **SmoothLLM** (Robey et al., 2023) works because many automatic jailbreaks, such as GCG suffixes, are fragile. A few random character changes break them. SmoothLLM makes N copies of the prompt, changes a few characters in each, runs all N, and takes a majority vote. The cost is N model calls per message.
+
+  **Erase-and-check** (Kumar et al., 2023) deletes tokens from the prompt and runs a safety filter on each shorter version. If any version is harmful, it rejects the prompt. Its full mode gives a proven guarantee for attacks up to a set length, but it is slow. Section 7 of the paper describes faster versions, such as RandEC, which checks only a random sample of the erased versions.
+
+  ### Layer 4. Architecture
+
+  Give the model only the tools and data that the task needs. Check every tool call in code. Ask a person before risky actions. Research designs such as the dual LLM pattern and CaMeL keep untrusted text away from the part that decides what to do next.
+
+diagrams:
+  - type: flow
+    title: SmoothLLM in one picture
+    nodes: [["User prompt", "box"], ["N copies with random character changes", "raised"], ["Run the model N times", "def"], ["Majority vote", "def"], ["Answer or refuse", "box"]]
+    edges: ["copy", "", "", ""]
+    caption: Random changes break fragile attack suffixes in most copies, so the vote follows the safe copies. The price is N times the compute.
+
+defense_diagrams:
+  - type: layers
+    title: A support bot with four layers
+    attack: new jailbreak wording
+    layers:
+      - ["Sandwich prompt and tags", "The model is told that tagged text is data", "pass"]
+      - ["Injection detector", "Trained on known attacks, misses new wording", "partial"]
+      - ["Output check with canary token", "Blocks any reply that contains the secret", "stop"]
+      - ["No refund tool without approval", "A person approves refunds over a limit", "stop"]
+    caption: Each layer fails for a different reason. That is what makes the stack strong, not the number of layers.
+
+defense_steps:
+  - Write the system prompt with tags around untrusted text and the key rule repeated at the end.
+  - Add a cheap detector on input. Log what it flags.
+  - Add an output check that looks for secrets, canary tokens and outside links.
+  - Remove tools the bot does not need. Put limits on the ones it keeps.
+  - For high-risk actions, ask a person to approve.
+  - Test with new attacks every month and update the layers.
+
+cases:
+  - [Guardrail benchmarks, "Module 11 shows a vendor claim of 94 percent blocked that fell to about 37 percent on new attacks. Detectors trained on public jailbreak sets often miss the same new prompts, so stacking two of them adds little."]
+
+lab:
+  intro: |
+    Finish Prompt Airlines challenges 4 and 5, then install LLMGoat and solve A01. Docker is the easiest way to run LLMGoat. Follow the steps in its README.
+  steps:
+    - Solve Prompt Airlines 4 and 5. Each one adds a defense, so note what changed.
+    - Install Docker if you do not have it.
+    - Follow the LLMGoat README to start it. Open it in your browser.
+    - Open challenge A01, prompt injection. Read the goal.
+    - Solve it and save the prompt.
+    - "Extend task. Write a sandwich-defense system prompt for a small local model on Ollama, then try your own attacks on it."
+  hints:
+    - When a defense checks the input, try to get the model to produce the forbidden thing in pieces across two answers.
+    - When a defense checks the output, ask for the answer in another form, such as spelled out or reversed.
+  links: [promptairlines, llmgoat, ptlabs, ollama]
+
+readings:
+  - [smoothllm, "Shows that adding random character noise to many copies of a prompt and taking a vote cuts the success of GCG attacks to below one percent in their tests. Read the method and the cost section."]
+  - [erasecheck, "Gives a proven guarantee against adversarial text up to a set length. Read Section 7 for the faster versions used in practice."]
+  - [siprimer, "A practical primer on prompt design, least privilege and output monitoring for security teams."]
+star: [smoothllm]
+
+questions:
+  - - Running every prompt through SmoothLLM (many runs) or a Rebuff stack (vector search plus a detector) adds latency and cost. Is that acceptable for a real-time support bot? How do you balance risk and user experience?
+    - |
+      Not for every message. With N copies, SmoothLLM multiplies compute by about N for each message. Users of a support chat expect a fast reply.
+
+      Use risk tiers instead.
+
+      - Every message goes through cheap checks, such as a small classifier and a pattern filter. These add milliseconds.
+      - A message that looks suspicious goes to a stronger, slower check.
+      - An action with real impact, such as a refund or an account change, always needs a strong check or a person. Users accept a short wait there.
+
+      Most of the protection comes from limiting what the bot can do, which costs no latency at all.
+  - - Name three guardrails for a production LLM chatbot that lower the chance or the impact of a successful prompt injection.
+    - |
+      1. **Least privilege on tools and data.** The bot can read only the current customer's records and can call only the tools it needs. A fooled bot then has little to misuse.
+      2. **Deterministic checks on output and actions.** Code checks every tool call against rules, such as a refund cap, and an output filter blocks secrets, canary tokens and outside links.
+      3. **Human approval and logging for risky actions.** A person confirms actions above a limit, and every prompt, output and tool call is logged for detection and investigation.
+
+quiz:
+  - q: Why does SmoothLLM work against GCG-style suffix attacks?
+    opts: ["It removes the system prompt", "Random character changes break the fragile suffix in most copies", "It uses a bigger model"]
+    a: 1
+    why: GCG suffixes are tuned character by character. Small random changes usually break them, so most copies refuse, and the vote refuses.
+  - q: A detector stops 94 percent of a public jailbreak set. What should you ask next?
+    opts: ["What is its rate on attacks it has never seen", "Which color is its dashboard", "Nothing. 94 percent is enough"]
+    a: 0
+    why: Scores on known attacks flatter a detector. New wording is what real attackers use.
+  - q: Which layer limits damage even when every text check fails?
+    opts: ["Sandwich prompt", "Keyword filter", "A refund cap enforced in code"]
+    a: 2
+    why: The cap does not read the text. It works whatever the model was told.
+
+deliverables:
+  - Your answer to the discussion question.
+  - Prompts and flags for Prompt Airlines challenges 4 and 5.
+  - The prompt that solved LLMGoat challenge A01.
+  - Three guardrails you would add to a production chatbot, with one line each.
+
+refs:
+  - "Robey et al. [SmoothLLM, defending LLMs against jailbreaking attacks](@smoothllm), 2023."
+  - "Kumar et al. [Certifying LLM safety against adversarial prompting](@erasecheck), 2023."
+  - "Security Innovation. [Securing LLMs against prompt injection attacks](@siprimer)."
+  - "Hines et al. [Defending against indirect prompt injection with spotlighting](https://arxiv.org/abs/2403.14720), 2024."
+  - "Debenedetti et al. [Defeating prompt injections by design (CaMeL)](https://arxiv.org/abs/2503.18813), 2025."
+  - "OWASP. [LLM01 2025 Prompt injection](https://genai.owasp.org/llmrisk/llm01-prompt-injection/)."

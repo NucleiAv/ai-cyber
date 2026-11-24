@@ -1,0 +1,723 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Module 2 · Why Models Fabricate and Why Outputs Vary · NYU Tandon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/nyu-tandon-course.css">
+</head>
+<body>
+  <div class="nyu-course" tabindex="-1">
+    <div class="nyu-progress" aria-hidden="true"><div class="nyu-progress__bar"></div></div>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="nyu-hero" role="banner">
+      <div class="nyu-hero__eyebrow">AI for Cybersecurity · Module 2 · Section 5 of 6</div>
+      <h1 class="nyu-hero__title">Why Models Fabricate and Why Outputs Vary</h1>
+      <p class="nyu-hero__subtitle">
+        When LLMs produce output for security tasks, two reliability risks
+        demand practitioner attention: the model may fabricate plausible but
+        unsupported claims (hallucination), and it may produce different
+        outputs from the same prompt across runs (variability). This section
+        teaches you to classify fabrication types, identify the conditions
+        that raise risk, apply a verification workflow, and design for
+        reproducibility.
+      </p>
+      <div class="nyu-hero__meta" aria-label="Section overview">
+        <span aria-label="Estimated time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> ~25 min read</span>
+        <span aria-label="Number of parts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> 8 parts</span>
+        <span aria-label="Knowledge checks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/><circle cx="12" cy="12" r="10"/></svg> 2 knowledge checks + 1 match + 1 scenario</span>
+      </div>
+    </header>
+
+    <nav class="nyu-toc" aria-label="In this section">
+      <p class="nyu-toc__title">In this section</p>
+      <ol class="nyu-toc__list">
+        <li><a href="#sec-1"><span class="nyu-toc__num">1</span> From Probabilistic Generation to Output Reliability</a></li>
+        <li><a href="#sec-2"><span class="nyu-toc__num">2</span> Two Failure Modes Students Must Separate</a></li>
+        <li><a href="#sec-3"><span class="nyu-toc__num">3</span> Types of Hallucination in Security Contexts</a></li>
+        <li><a href="#sec-4"><span class="nyu-toc__num">4</span> When Hallucination Risk Rises</a></li>
+        <li><a href="#sec-5"><span class="nyu-toc__num">5</span> Detection and Mitigation Workflow</a></li>
+        <li><a href="#sec-6"><span class="nyu-toc__num">6</span> Why the Same Prompt Produces Different Outputs</a></li>
+        <li><a href="#sec-7"><span class="nyu-toc__num">7</span> Designing for Reproducibility in Security Operations</a></li>
+        <li><a href="#sec-8"><span class="nyu-toc__num">8</span> Check Your Understanding</a></li>
+      </ol>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="nyu-objectives" aria-labelledby="lo-title">
+        <h2 class="nyu-objectives__title" id="lo-title">Learning Objectives</h2>
+        <p class="nyu-objectives__lede">By the end of this section, you will be able to:</p>
+        <ul class="nyu-objectives__list">
+          <li><span><strong>Distinguish</strong> fabrication (an accuracy and grounding problem) from output variability (a reproducibility and control problem), and explain why both trace to probabilistic generation.</span></li>
+          <li><span><strong>Classify</strong> hallucination types (factual fabrication, source fabrication, entity conflation, logical confabulation) using cybersecurity examples.</span></li>
+          <li><span><strong>Identify</strong> the conditions that increase hallucination risk in security work, including requests for exact specifics, sparse domains, post cutoff queries, ambiguous prompts, and long inputs.</span></li>
+          <li><span><strong>Apply</strong> a structured verification workflow to LLM output in security contexts, including source grounding, authoritative cross referencing, and uncertainty prompting.</span></li>
+          <li><span><strong>Select</strong> appropriate reproducibility strategies for different security task types, from low variability classification to controlled variability brainstorming.</span></li>
+        </ul>
+      </section>
+
+      <!-- ====================== SECTION 1: Bridge ====================== -->
+      <section class="nyu-section" id="sec-1">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">1</span>
+          <h2 class="nyu-section__title">From Probabilistic Generation to Output Reliability</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Section 1 showed that LLMs generate output by predicting and sampling tokens
+          from a probability distribution over the vocabulary. Section 2 showed that
+          the model's observable behavior is shaped by a stack of sources: pretraining,
+          alignment, fine tuning, system prompts, user context, retrieval, tools, and
+          decoding settings. Section 2 also identified specific conditions under which
+          those sources produce unreliable output, including uneven parametric coverage
+          across domains, knowledge cutoffs that leave post cutoff queries ungrounded,
+          and decoding settings that introduce randomness.
+        </p>
+
+        <p>
+          This section studies what security practitioners must do when those mechanisms
+          produce plausible but unreliable outputs. The question is no longer <em>how
+          does the model generate?</em> or <em>where does behavior come from?</em> The
+          question is: <em>when should you trust what comes out, and what should you do
+          when you cannot?</em>
+        </p>
+      </section>
+
+      <!-- ====================== SECTION 2: Two Failure Modes ====================== -->
+      <section class="nyu-section" id="sec-2">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">2</span>
+          <h2 class="nyu-section__title">Two Failure Modes Students Must Separate</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          LLM outputs can fail in two distinct ways. Both trace to the probabilistic
+          generation mechanism, but they are different problems that require different
+          responses. Confusing them leads to misapplied controls.
+        </p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--red" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h3>Fabrication (Hallucination)</h3>
+            <p>
+              An output presented as factual but not grounded in reality or in the
+              evidence supplied to the model. The model invents facts, citations,
+              identifiers, or reasoning chains that do not exist.
+            </p>
+            <p>
+              <strong>This is an accuracy and grounding problem.</strong> The response
+              sounds correct but is not. The mitigation is verification: checking
+              claims against authoritative sources.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <div class="nyu-card__icon nyu-card__icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <h3>Output Variability</h3>
+            <p>
+              Different outputs from the same or similar prompt across runs, caused by
+              sampling randomness, decoding settings, backend infrastructure changes,
+              retrieval corpus updates, model version changes, or conversation history
+              differences.
+            </p>
+            <p>
+              <strong>This is a reproducibility and control problem.</strong> Two runs
+              may both be plausible but disagree. The mitigation is controlling
+              decoding settings, stabilizing inputs, and logging everything.
+            </p>
+          </div>
+        </div>
+
+        <div class="nyu-callout">
+          <h3>Related but Not Identical</h3>
+          <p>
+            A fabricated output may be perfectly consistent across runs (the model
+            confidently produces the same wrong answer every time at low temperature).
+            A variable output may contain no fabrication (two different but accurate
+            summaries of the same log data). Treating variability as proof of
+            hallucination, or treating consistency as proof of accuracy, are both
+            diagnostic errors. The sections that follow address each failure mode on
+            its own terms.
+          </p>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 3: Hallucination Types ====================== -->
+      <section class="nyu-section" id="sec-3">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">3</span>
+          <h2 class="nyu-section__title">Types of Hallucination in Security Contexts</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Not all hallucinations are alike. Recognizing the type helps you target your
+          verification strategy. The four categories below cover the patterns most
+          relevant to security work.
+        </p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h4>Factual Fabrication</h4>
+            <p>
+              The model invents facts that do not exist. In a security context, this
+              might be a CVE identifier that follows the correct format
+              (CVE&#8209;2024&#8209;XXXXX) but refers to no real vulnerability, a
+              claimed default port number for a service that uses a different port, or a
+              fabricated statistic about breach frequency. The output looks correct
+              because it follows the structural conventions of real data.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Source Fabrication</h4>
+            <p>
+              The model cites a source that does not exist or attributes a real finding
+              to the wrong source. It might reference a NIST Special Publication number
+              that was never issued, attribute a technique to a MITRE ATT&amp;CK group
+              that never used it, or cite an RFC with a correct looking number that does
+              not correspond to the claimed topic. The citation format is impeccable; the
+              citation itself is fiction.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Entity Conflation</h4>
+            <p>
+              The model merges attributes of two or more distinct entities into a single
+              description. It might blend the tactics of two different APT groups into
+              one profile, combine the vulnerability details of two similarly named CVEs
+              into a single description, or merge the capabilities of two security tools
+              that share a similar name. Each individual fact may be true of
+              <em>something</em>, but the composite is wrong.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Logical Confabulation</h4>
+            <p>
+              The model constructs a chain of reasoning where individual premises may be
+              true but the logical connections between them are invented. It might argue
+              that because a vulnerability affects a library and a target application uses
+              that library, the application is therefore exploitable through a specific
+              attack path, when in reality the application's implementation does not
+              expose the vulnerable code path. The reasoning structure looks sound but
+              does not hold.
+            </p>
+          </div>
+        </div>
+
+        <!-- Match Exercise -->
+        <h3 class="nyu-subsection-title">Match the Example to the Hallucination Type</h3>
+
+        <p>
+          Click a term on the left, then click its matching definition on the right.
+          You can also drag and drop. When you have matched all four, click
+          <strong>Check</strong> to see how you did.
+        </p>
+
+        <div class="nyu-match">
+          <div class="nyu-match__grid">
+            <div class="nyu-match__col">
+              <h4>Type</h4>
+              <span class="nyu-match__term" data-match="A">Factual Fabrication</span>
+              <span class="nyu-match__term" data-match="B">Source Fabrication</span>
+              <span class="nyu-match__term" data-match="C">Entity Conflation</span>
+              <span class="nyu-match__term" data-match="D">Logical Confabulation</span>
+            </div>
+            <div class="nyu-match__col nyu-match__col--gap">
+              <svg class="nyu-match__svg"></svg>
+            </div>
+            <div class="nyu-match__col">
+              <h4>Example</h4>
+              <span class="nyu-match__def" data-match="C">The model describes APT28 using a technique that was actually used by APT29, blending both groups into one profile.</span>
+              <span class="nyu-match__def" data-match="A">The model reports a CVE identifier with a realistic severity score, but no such CVE exists in the NVD.</span>
+              <span class="nyu-match__def" data-match="D">The model argues a server is exploitable through a specific code path, but the vulnerable function is never called in production.</span>
+              <span class="nyu-match__def" data-match="B">The model cites NIST SP 800&#8209;218 for a claim about container security, but that publication covers software supply chain security, not containers.</span>
+            </div>
+          </div>
+
+          <div style="margin-top:var(--sp-4);display:flex;gap:var(--sp-2);flex-wrap:wrap;">
+            <button class="nyu-btn nyu-btn--sm" data-action="check">Check</button>
+            <button class="nyu-btn nyu-btn--sm nyu-btn--outline" data-action="reveal">Reveal Answers</button>
+            <button class="nyu-btn nyu-btn--sm nyu-btn--outline" data-action="reset">Reset</button>
+          </div>
+          <p class="nyu-match__hint" aria-live="polite"></p>
+        </div>
+
+        <!-- Knowledge Check 1 -->
+        <div class="nyu-quiz" aria-labelledby="quiz-1-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-1-prompt">
+            An analyst asks an LLM to describe CVE&nbsp;2025&nbsp;31337. The model
+            returns a detailed description including the affected software, a CVSS
+            score of 9.1, and a recommended patch. The analyst checks the NVD and
+            finds no such CVE exists. Which hallucination type best describes this
+            output?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-1-prompt">
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Factual fabrication: the model invented a CVE that does not exist, complete with plausible metadata.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Source fabrication is inventing a citation, reference, or document that does not exist. Here the invented object is the vulnerability record itself, not a source cited in support of it.">Source fabrication: the model cited a nonexistent source.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Entity conflation merges attributes of two real entities, such as giving one threat actor another&#x27;s technique. That requires both entities to exist. This CVE identifier corresponds to nothing at all.">Entity conflation: the model merged two real CVEs into one.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Logical confabulation is a chain of reasoning that fails despite accurate premises. Here there is no reasoning chain to evaluate: the model asserted a fabricated record with plausible metadata.">Logical confabulation: the model constructed a flawed chain of reasoning.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+            data-correct-msg="Correct. The model generated a complete CVE description, including identifier, severity score, and remediation guidance, for a vulnerability that does not exist. This is factual fabrication: the model invented data that follows the correct structural conventions but has no basis in reality. Source fabrication would involve misattributing a real finding; entity conflation would involve merging real CVEs; logical confabulation would involve flawed reasoning chains."
+            data-incorrect-msg="Not quite. Look at what was fabricated: the CVE itself does not exist. The model did not misattribute a source, merge two real entities, or build a flawed logical chain. It invented a complete vulnerability record from scratch. That is factual fabrication: plausible looking data with no real world referent.">
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 4: When Risk Rises ====================== -->
+      <section class="nyu-section" id="sec-4">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">4</span>
+          <h2 class="nyu-section__title">When Hallucination Risk Rises</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Hallucination is always possible, but certain conditions make it
+          substantially more likely. Recognizing these conditions lets you calibrate
+          your verification effort: spend more scrutiny where the risk is highest.
+        </p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h4>Requests for Exact Specifics</h4>
+            <p>
+              Asking for precise version numbers, exact command syntax, specific
+              configuration parameters, named sources with page numbers, or exact
+              statistics increases fabrication risk. The model's statistical patterns
+              capture general relationships more reliably than exact values. When
+              pressed for specifics it lacks, it generates plausible looking details
+              rather than qualifying its uncertainty.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Sparse or Specialized Domains</h4>
+            <p>
+              As Section 2 explained, parametric coverage is uneven. Niche protocols,
+              proprietary tools, organization specific configurations, and specialized
+              compliance frameworks may have minimal representation in training data.
+              The less training data available for a domain, the more the model fills
+              gaps with statistically plausible but factually unreliable completions.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Post Cutoff Events</h4>
+            <p>
+              Section 2 detailed how every model has a knowledge cutoff. Any CVE, threat
+              campaign, patch, or advisory published after that date exists outside the
+              model's parametric memory. Without retrieval or tool access, the model
+              will construct fabricated responses from related patterns it saw during
+              training rather than admitting ignorance.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Ambiguous or Underspecified Prompts</h4>
+            <p>
+              When a prompt is vague, the model infers missing context from statistical
+              patterns. If you ask "Is this server vulnerable?" without specifying the
+              server, software version, configuration, or threat model, the model fills
+              every gap with its best statistical guess. Each inferred detail is an
+              opportunity for fabrication. Precise, well scoped prompts constrain the
+              model's generation space and reduce the room for invented content.
+            </p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-callout--warning">
+          <h3>Long Inputs and Buried Evidence</h3>
+          <p>
+            Section 1 documented the lost in the middle effect: the model attends less
+            effectively to information positioned far from the beginning and end of
+            long inputs. When critical evidence is buried in the middle of a large
+            prompt, the model may overlook it and generate output based on patterns
+            from better attended regions or from parametric memory rather than from
+            the supplied data. This is a distinct mechanism from hallucination, but the
+            result can look the same: the output contradicts or ignores evidence that
+            was present in the input.
+          </p>
+        </div>
+
+        <div class="nyu-callout nyu-callout--danger">
+          <p>
+            <strong>Confidence does not correlate with accuracy.</strong> A hallucinated
+            response looks identical to an accurate one in tone, structure, and apparent
+            certainty. The model does not signal when it shifts from well grounded
+            patterns to fabrication. There is no built in confidence score you can
+            inspect. You cannot use the model's own language ("I'm confident
+            that...") as evidence that a claim is correct.
+          </p>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 5: Detection and Mitigation Workflow ====================== -->
+      <section class="nyu-section" id="sec-5">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">5</span>
+          <h2 class="nyu-section__title">Detection and Mitigation Workflow</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Because the model itself cannot reliably flag its own hallucinations, detection
+          and mitigation must be built into your workflow rather than delegated to the
+          model. The following workflow applies to any security task where LLM output
+          informs a decision.
+        </p>
+
+        <h3 class="nyu-subsection-title">Step 1: Identify Which Claims Require Verification</h3>
+
+        <p>
+          Not every token in a response carries the same risk. Focus verification
+          effort on the output categories most prone to fabrication:
+        </p>
+        <ul>
+          <li><strong>Exact identifiers:</strong> CVE numbers, MITRE ATT&amp;CK technique IDs, NIST publication numbers, RFC numbers.</li>
+          <li><strong>Exact values:</strong> version numbers, port numbers, configuration parameters, command syntax.</li>
+          <li><strong>Citations and attributions:</strong> vendor advisory titles, research paper references, threat actor attributions.</li>
+          <li><strong>Exploitability and impact claims:</strong> statements about whether a vulnerability is exploitable in a specific configuration.</li>
+          <li><strong>Temporal claims:</strong> statements about when events occurred, especially near or after the model's knowledge cutoff.</li>
+        </ul>
+
+        <h3 class="nyu-subsection-title">Step 2: Separate Summary from Evidence</h3>
+
+        <p>
+          When the model summarizes data you supplied (log entries, configuration
+          files, documents), its output is constrained by what you provided. When the
+          model makes claims that go beyond the supplied data, drawing on parametric
+          memory or inference, fabrication risk increases. Train yourself to notice the
+          boundary: <em>is this claim derived from data in the prompt, or is the model
+          adding information from its own weights?</em>
+        </p>
+
+        <h3 class="nyu-subsection-title">Step 3: Verify Against Authoritative Sources</h3>
+
+        <p>
+          Apply source specific verification to high risk claims:
+        </p>
+        <ul>
+          <li>Check every CVE identifier against the <strong>NVD</strong> (National Vulnerability Database).</li>
+          <li>Verify MITRE ATT&amp;CK technique IDs, group attributions, and software entries against the <strong>MITRE ATT&amp;CK website</strong>.</li>
+          <li>Confirm NIST publication numbers and their content against the <strong>NIST publications catalog</strong>.</li>
+          <li>Validate vendor advisories against the <strong>vendor's own security portal</strong>.</li>
+          <li>Sandbox or review any recommended commands, scripts, or configuration changes <strong>before executing them in production</strong>.</li>
+        </ul>
+
+        <h3 class="nyu-subsection-title">Step 4: Use Source Grounding to Reduce Fabrication</h3>
+
+        <p>
+          As Section 2 explained, retrieval augmented generation shifts the model from
+          generating from parametric memory to generating from supplied evidence. When
+          factual accuracy matters, supply the source material directly: paste the
+          actual CVE record, provide the real configuration file, include the specific
+          log entries. The model is far less likely to fabricate when the statistically
+          probable next tokens align with authoritative data in the context.
+        </p>
+        <p>
+          However, retrieval does not eliminate the need for verification. It changes
+          the verification target: instead of asking "did the model invent this?" you
+          ask "is the retrieved source accurate and unmanipulated?" Poisoned retrieval
+          sources can cause the model to produce grounded but wrong output.
+        </p>
+
+        <h3 class="nyu-subsection-title">Step 5: Prompt for Explicit Uncertainty</h3>
+
+        <p>
+          Instruct the model to qualify its confidence and flag gaps. Prompts like
+          "If you are uncertain about any detail, say so explicitly" or "Distinguish
+          between claims you can support with specific evidence and claims that are
+          your best estimate" shift the model's output distribution toward tokens that
+          express uncertainty rather than tokens that assert false confidence. This
+          technique reduces but does not eliminate the problem. A model instructed to
+          flag uncertainty will still sometimes hallucinate without flagging. Treat it
+          as a useful layer in a defense in depth strategy, not a standalone solution.
+        </p>
+
+        <h3 class="nyu-subsection-title">Step 6: Cross Validate with Multiple Queries</h3>
+
+        <p>
+          Run the same query multiple times and compare outputs. If the model produces
+          materially different answers to the same question across runs, that
+          inconsistency signals that the model's statistical confidence in the
+          underlying content is low. Consistent answers do not guarantee accuracy, but
+          inconsistent answers reliably indicate higher hallucination risk. For
+          critical decisions, run the query three to five times, extract the key claims
+          from each response, and flag any claim that appears in fewer than all
+          responses for manual verification.
+        </p>
+
+        <h3 class="nyu-subsection-title">Step 7: Escalate High Impact Outputs</h3>
+
+        <p>
+          For any output that will directly inform an operational decision (incident
+          classification, vulnerability remediation, compliance determination, threat
+          attribution), route the LLM output through human review before action. The
+          model accelerates your workflow by generating drafts, surfacing candidates,
+          and organizing data. The human review step ensures that acceleration does not
+          introduce fabricated content into decisions that affect security posture.
+        </p>
+
+        <div class="nyu-callout nyu-callout--tip">
+          <p>
+            <strong>Layer these strategies.</strong> No single technique eliminates
+            hallucination. The most robust approach combines source grounding, explicit
+            uncertainty prompting, cross validation, authoritative verification, and
+            human review. Each layer catches failures that other layers miss.
+          </p>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 6: Output Variability ====================== -->
+      <section class="nyu-section" id="sec-6">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">6</span>
+          <h2 class="nyu-section__title">Why the Same Prompt Produces Different Outputs</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Section 2 defined output variability as a reproducibility problem distinct
+          from fabrication. Multiple sources can cause the same prompt to produce
+          different outputs across runs. Understanding these sources is essential for
+          designing security workflows that require consistency.
+        </p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h4>Sampling and Decoding Settings</h4>
+            <p>
+              As Sections 1 and 2 explained, temperature, top p, and top k control how
+              much randomness enters token selection. Any nonzero temperature allows the
+              model to select different tokens from the same probability distribution on
+              different runs. At temperature 0 (greedy decoding), the model should
+              select the highest probability token every time, but even this does not
+              guarantee perfect reproducibility in practice.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Infrastructure Nondeterminism</h4>
+            <p>
+              GPU floating point arithmetic is not perfectly deterministic across
+              different hardware. Request batching can change computation order.
+              KV cache state and context caching differences between API calls can
+              produce slightly different internal representations. These effects are
+              small but sufficient to change token selection at decision boundaries,
+              even at temperature 0.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Provider Side Model Updates</h4>
+            <p>
+              Cloud API providers periodically update model weights, system prompts,
+              safety filters, and infrastructure. A prompt that produced one output
+              last week may produce a different output this week because the model
+              behind the API endpoint changed. Unless you pin a specific model version,
+              your workflow is subject to unannounced changes.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Retrieval, Tools, and Context Changes</h4>
+            <p>
+              In RAG enabled systems, the retrieved documents may change between runs
+              as the retrieval corpus is updated. Tool calls may return different results
+              over time. Conversation history accumulates across turns, changing the
+              context the model conditions on. Any change in the model's input changes
+              the probability distribution it generates from.
+            </p>
+          </div>
+        </div>
+
+        <!-- Knowledge Check 2 -->
+        <div class="nyu-quiz" aria-labelledby="quiz-2-prompt">
+          <div class="nyu-quiz__header">
+            <span class="nyu-quiz__badge">Knowledge Check</span>
+          </div>
+          <p class="nyu-quiz__prompt" id="quiz-2-prompt">
+            A security team runs the same prompt through their LLM three times with
+            temperature set to 0.0, top&#8209;p set to 1.0, and top&#8209;k disabled.
+            They receive three different responses. Which of the following is the
+            most likely explanation?
+          </p>
+          <div class="nyu-quiz__options" role="radiogroup" aria-labelledby="quiz-2-prompt">
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Knowledge gaps produce wrong answers, not varying ones. If missing knowledge were the cause, the model would return a consistently wrong answer at temperature 0.0. Variation across identical runs points to the execution environment.">The model is hallucinating because it lacks knowledge about the topic.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Temperature 0.0 selects the highest-probability token at every step, which is deterministic by construction. It is the correct setting for reproducibility, so it is not the source of the variation.">Temperature 0.0 still allows significant randomness in the sampling process.</button>
+            <button class="nyu-quiz__option" role="radio" data-correct="true">Something outside the sampling parameters is changing between runs, such as system level batching, floating point nondeterminism, or context caching differences, because temperature 0.0 should produce greedy decoding with near identical outputs.</button>
+            <button class="nyu-quiz__option" role="radio" data-explain-wrong="Top-p of 1.0 disables nucleus filtering: it admits the full distribution rather than adding randomness, and it does not override temperature. With temperature at 0.0 the selection stays deterministic.">Top&#8209;p of 1.0 overrides the temperature setting and introduces full randomness.</button>
+          </div>
+          <div class="nyu-quiz__feedback"
+            data-correct-msg="Correct. At temperature 0.0, the model should perform greedy decoding: always selecting the highest-probability token. If outputs still differ, the source of variation is outside the sampling parameters. Common causes include GPU floating point nondeterminism, request batching, KV cache differences, or provider side infrastructure changes. This is important for security teams: even settings that should produce deterministic outputs may not achieve perfect reproducibility in practice."
+            data-incorrect-msg="Not quite. Temperature 0.0 means the model performs greedy decoding, always selecting the single most probable token. Top&#8209;p of 1.0 simply means no top&#8209;p filtering is applied, so it does not introduce randomness beyond what the temperature allows. If three runs at temperature 0.0 produce different outputs, the variation must come from sources outside the sampling parameters. Think about what else changes between API calls: infrastructure, batching, caching, or model updates.">
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 7: Reproducibility ====================== -->
+      <section class="nyu-section" id="sec-7">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">7</span>
+          <h2 class="nyu-section__title">Designing for Reproducibility in Security Operations</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <p>
+          Output variability is not inherently a problem. The question is whether the
+          task requires consistency. The guidance below matches reproducibility strategy
+          to task type.
+        </p>
+
+        <div class="nyu-cards nyu-cards--2">
+          <div class="nyu-card">
+            <h4>Low Variability: Extraction, Classification, Compliance, Triage</h4>
+            <p>
+              Use temperature 0.0 through 0.2. Constrain output to structured formats
+              (severity labels, JSON schemas, fixed categories). Use fixed prompt
+              templates rather than ad hoc instructions. Stabilize retrieval sources so
+              the same query returns the same documents. Pin model versions when the
+              API allows it. Accept that outputs will be less creative and may be more
+              repetitive.
+            </p>
+          </div>
+          <div class="nyu-card">
+            <h4>Controlled Variability: Brainstorming, Red Teaming, Training</h4>
+            <p>
+              Use temperature 0.5 through 0.8 for tasks that benefit from diversity:
+              brainstorming attack vectors, generating phishing simulation variants,
+              red team scenario planning, hypothesis generation, or training exercises.
+              Higher variability increases the chance of hallucination, so pair these
+              settings with stronger verification. Never use high variability outputs
+              as authoritative without review.
+            </p>
+          </div>
+        </div>
+
+        <div class="nyu-callout nyu-callout--warning">
+          <p>
+            <strong>Even with optimal settings, perfect reproducibility is not
+            guaranteed.</strong> Infrastructure nondeterminism, provider side model
+            updates, and retrieval corpus changes can introduce variation that no
+            sampling parameter controls. Your reproducibility strategy must account for
+            this: when exact reproduction is impossible, your logs should at least let
+            you reconstruct the conditions under which the output was generated. Section 4
+            covers the full deployment logging and auditability requirements.
+          </p>
+        </div>
+      </section>
+
+      <!-- ====================== SECTION 8: Check Your Understanding ====================== -->
+      <section class="nyu-section" id="sec-8">
+        <div class="nyu-section__header">
+          <span class="nyu-section__num" aria-hidden="true">8</span>
+          <h2 class="nyu-section__title">Check Your Understanding</h2>
+        </div>
+        <hr class="nyu-section__rule">
+
+        <div class="nyu-callout nyu-scenario">
+          <h3 class="nyu-callout__title">
+            <span class="nyu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            Scenario
+          </h3>
+          <p class="nyu-scenario__prompt">
+            Your SOC team has integrated an LLM into its alert triage pipeline. The
+            model reads each incoming alert and classifies it as critical, high,
+            medium, or low severity. During a Friday evening shift, an analyst notices
+            that the same alert (identical source IP, identical signature, identical
+            payload) was classified as "high" at 6:12 PM but "critical" at 6:47 PM
+            when it fired again. The analyst also discovers that the model's
+            explanation for the "critical" classification references a threat
+            intelligence report from a vendor that the SOC does not subscribe to, and
+            the cited report title returns no results on any search engine.
+          </p>
+          <p class="nyu-scenario__prompt">
+            For this scenario, identify: (1) which parts of the output might be
+            hallucinated, (2) what must be verified and against which sources,
+            (3) what decoding and reproducibility settings should be used for this
+            task, and (4) what evidence should be logged for each classification.
+          </p>
+          <button class="nyu-scenario__btn">Reveal Possible Analysis</button>
+          <div class="nyu-scenario__answer">
+            <p>
+              <strong>(1) Likely hallucination:</strong> The cited threat intelligence
+              report is source fabrication. The model generated a plausible sounding
+              citation because the statistical patterns of security text include
+              references to vendor reports, but the specific report it produced is
+              fiction. The "critical" severity rating itself may or may not be
+              fabricated, but it was generated alongside fabricated justification,
+              which undermines confidence in the classification.
+            </p>
+            <p>
+              <strong>(2) Verification requirements:</strong> Every cited source must
+              be checked against the SOC's subscribed intelligence feeds. The severity
+              classification should be cross referenced against the alert signature's
+              known risk level in the SOC's own detection rules. Any vendor advisory
+              or threat report referenced in the explanation must be verified against
+              the vendor's published portal. Commands or remediation steps must be
+              reviewed before execution.
+            </p>
+            <p>
+              <strong>(3) Recommended settings:</strong> Alert triage classification
+              requires consistency. Set temperature to 0.0 (or as close as the API
+              allows). Constrain output to a structured schema: a severity label from
+              a fixed set plus a reasoning field that must cite only sources present
+              in the supplied context. Use a fixed prompt template. Ground the model
+              via RAG by supplying relevant threat intelligence with each alert rather
+              than relying on parametric memory.
+            </p>
+            <p>
+              <strong>(4) Logging requirements:</strong> Record the exact prompt
+              (including any retrieved context), the model's response, the severity
+              label, the timestamp, and the sampling parameters used. If an incident
+              response decision was informed by the classification, the post incident
+              review needs to be able to reconstruct what the model saw and produced.
+              Section 4 covers the full deployment logging checklist.
+            </p>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ====================== MODULE COMPLETE ====================== -->
+      <aside class="nyu-callout nyu-callout--success" role="note" aria-labelledby="module-complete">
+        <h3 class="nyu-callout__title" id="module-complete"><span class="nyu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Module 2 Complete</h3>
+        <p>Across five sections this module traced the pipeline from text to token predictions, identified the layered sources that shape a model response, mapped security risks to lifecycle stages and matched them to control categories, evaluated deployment models against a structured checklist, and classified the reasons models fabricate and vary. These concepts serve as the reference vocabulary for the modules that follow.</p>
+      </aside>
+
+          <!-- ====================== UP NEXT ====================== -->
+        <aside class="nyu-callout nyu-callout--next" role="note" aria-labelledby="next-title">
+          <h3 class="nyu-callout__title" id="next-title"><span class="nyu-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg></span> Up Next</h3>
+          <p><strong>Section 6: References &amp; Readings.</strong> We collect every source cited across this module for review. Beyond that, Module 3 moves from how models work to how you direct them: prompt structure, output contracts, few-shot brittleness, and the instruction/data boundary that later modules attack. The reliability limits established here are exactly what good prompting is working against.</p>
+        </aside>
+
+    </main>
+
+    <footer class="nyu-footer" role="contentinfo">
+      <p class="nyu-footer__copyright">
+        Created by: <a href="https://ahillelt.com" target="_blank" rel="noopener">Prof. Alon Hillel-Tuch</a>
+      </p>
+      <a href="https://engineering.nyu.edu/" class="nyu-footer__logo" aria-label="NYU Tandon School of Engineering">
+        <img src="../assets/nyu-tandon-logo.png" alt="NYU Tandon School of Engineering">
+      </a>
+    </footer>
+
+    <button class="nyu-fab" aria-label="Back to top of section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+  <script src="../js/nyu-tandon-course.js"></script>
+</body>
+
+</html>

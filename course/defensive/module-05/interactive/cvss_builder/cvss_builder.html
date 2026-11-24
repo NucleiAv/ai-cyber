@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CVSS v3.1 Base Score Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --nyu-violet: #57068C;
+      --nyu-violet-dark: #3D0461;
+      --nyu-violet-50: #F5EDFA;
+      --nyu-violet-100: #E8D8F2;
+      --nyu-violet-200: #D2B3E5;
+      --c-none: #4B5563;   --c-none-bg: #EEF0F2;
+      --c-low: #1F8A4C;    --c-low-bg: #E6F4EC;
+      --c-med: #B8860B;    --c-med-bg: #FCF1DC;
+      --c-high: #C2410C;   --c-high-bg: #FCEBE0;
+      --c-crit: #B91C1C;   --c-crit-bg: #FBE8E8;
+      --ink: #1A1A1A;
+      --ink-soft: #3A3A3A;
+      --ink-mute: #6B6B6B;
+      --rule: #E2E2E2;
+      --surface: #FFFFFF;
+      --surface-sunken: #F6F4F8;
+      --shadow: 0 10px 30px rgba(18, 22, 33, 0.06);
+      --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+      --sans: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--surface-sunken); padding: 12px 16px 8px; }
+    main { width: min(880px, 100%); margin: 0 auto; }
+    .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; box-shadow: var(--shadow); }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; margin-bottom: 12px; }
+    .topbar h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn { appearance: none; border: 1px solid var(--nyu-violet); background: var(--nyu-violet); color: #fff; border-radius: 8px; padding: 9px 16px; font: inherit; font-weight: 600; font-size: 0.84rem; cursor: pointer; transition: background 140ms ease, transform 140ms ease; }
+    .btn:hover { background: var(--nyu-violet-dark); transform: translateY(-1px); }
+    .btn--ghost { background: transparent; color: var(--nyu-violet); }
+    .btn--ghost:hover { background: var(--nyu-violet-50); }
+
+    .layout { display: grid; grid-template-columns: 1fr 232px; gap: 0; }
+    @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } }
+
+    .metrics { padding: 13px 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; align-content: start; }
+    @media (max-width: 460px) { .metrics { grid-template-columns: 1fr; } }
+    .mrow { margin-bottom: 0; }
+    .mrow__label { font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-bottom: 5px; display: flex; align-items: baseline; gap: 8px; }
+    .mrow__label .code { font-family: var(--mono); font-size: 0.7rem; font-weight: 700; color: #FFFFFF; background: var(--nyu-violet); border-radius: 4px; padding: 1px 6px; }
+    .seg { display: flex; flex-wrap: wrap; gap: 5px; }
+    .seg button {
+      appearance: none; font: inherit; font-size: 0.78rem; cursor: pointer;
+      border: 1.5px solid var(--rule); background: var(--surface); color: var(--ink-soft);
+      border-radius: 7px; padding: 6px 11px; min-height: 34px; transition: all 120ms ease;
+    }
+    .seg button:hover { border-color: var(--nyu-violet-200); }
+    .seg button[aria-pressed="true"] { background: var(--nyu-violet); border-color: var(--nyu-violet); color: #fff; font-weight: 600; }
+
+    /* Score panel */
+    .scorewrap { border-left: 1px solid var(--rule); padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+    @media (max-width: 720px) { .scorewrap { border-left: 0; border-top: 1px solid var(--rule); } }
+    .score-card { border-radius: 12px; padding: 14px 12px; text-align: center; transition: background 300ms ease, color 300ms ease; }
+    .score-num { font-family: var(--mono); font-weight: 700; font-size: 3.4rem; line-height: 1; letter-spacing: -0.03em; }
+    .score-sev { font-family: var(--mono); font-weight: 700; font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+    .score-num.bump { animation: bump 360ms cubic-bezier(0.2, 1.4, 0.4, 1); }
+    @keyframes bump { 0% { transform: scale(0.8); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+    .gauge { height: 12px; border-radius: 999px; background: linear-gradient(90deg, var(--c-none) 0%, var(--c-low) 25%, var(--c-med) 50%, var(--c-high) 72%, var(--c-crit) 100%); position: relative; }
+    .gauge__needle { position: absolute; top: -4px; width: 4px; height: 20px; border-radius: 3px; background: var(--ink); box-shadow: 0 0 0 2px #fff; transition: left 380ms cubic-bezier(0.2, 0.8, 0.2, 1); transform: translateX(-50%); }
+    .gauge__scale { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.62rem; color: var(--ink-mute); margin-top: 3px; }
+
+    .vector { font-family: var(--mono); font-size: 0.72rem; line-height: 1.5; color: var(--ink-soft); background: var(--surface-sunken); border: 1px solid var(--rule); border-radius: 8px; padding: 9px 10px; word-break: break-all; }
+    .vector b { color: var(--nyu-violet); }
+    .hint { font-size: 0.78rem; line-height: 1.45; color: var(--ink-mute); }
+    .hint strong { color: var(--ink); }
+
+    .sev-none { background: var(--c-none-bg); color: var(--c-none); }
+    .sev-low { background: #166534; color: #fff; }
+    .sev-med { background: #854D0E; color: #fff; }
+    .sev-high { background: #9A3412; color: #fff; }
+    .sev-crit { background: #991B1B; color: #fff; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .score-num.bump { animation: none; }
+      .gauge__needle { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card topbar">
+      <h1>CVSS v3.1 Base Score Builder</h1>
+      <div class="controls">
+        <button class="btn btn--ghost" id="resetBtn" type="button">Reset low</button>
+        <button class="btn" id="presetBtn" type="button">Load Log4Shell</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="layout">
+        <div class="metrics" id="metrics" aria-label="CVSS base metrics"></div>
+
+        <div class="scorewrap">
+          <div class="score-card sev-crit" id="scoreCard">
+            <div class="score-num" id="scoreNum">10.0</div>
+            <div class="score-sev" id="scoreSev">Critical</div>
+          </div>
+          <div>
+            <div class="gauge"><span class="gauge__needle" id="needle" style="left:100%"></span></div>
+            <div class="gauge__scale"><span>0</span><span>4</span><span>7</span><span>9</span><span>10</span></div>
+          </div>
+          <div class="vector" id="vector"></div>
+          <p class="hint" id="hint"><strong>The vector is the analysis; the score compresses it.</strong> Flip one metric and watch the score move.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    'use strict';
+    var $ = function (id) { return document.getElementById(id); };
+
+    // CVSS v3.1 metric definitions (code -> options [value label, abbrev])
+    var METRICS = [
+      { key: 'AV', label: 'Attack Vector', opts: [['N','Network',0.85],['A','Adjacent',0.62],['L','Local',0.55],['P','Physical',0.2]] },
+      { key: 'AC', label: 'Attack Complexity', opts: [['L','Low',0.77],['H','High',0.44]] },
+      { key: 'PR', label: 'Privileges Required', opts: [['N','None',0.85],['L','Low',0.62],['H','High',0.27]] },
+      { key: 'UI', label: 'User Interaction', opts: [['N','None',0.85],['R','Required',0.62]] },
+      { key: 'S',  label: 'Scope', opts: [['U','Unchanged',0],['C','Changed',1]] },
+      { key: 'C',  label: 'Confidentiality', opts: [['H','High',0.56],['L','Low',0.22],['N','None',0]] },
+      { key: 'I',  label: 'Integrity', opts: [['H','High',0.56],['L','Low',0.22],['N','None',0]] },
+      { key: 'A',  label: 'Availability', opts: [['H','High',0.56],['L','Low',0.22],['N','None',0]] }
+    ];
+    var LOG4SHELL = { AV:'N', AC:'L', PR:'N', UI:'N', S:'C', C:'H', I:'H', A:'H' };
+    var LOWBASE  = { AV:'L', AC:'H', PR:'H', UI:'R', S:'U', C:'L', I:'N', A:'N' };
+    var state = Object.assign({}, LOG4SHELL);
+
+    // ---- Build UI ----
+    var mWrap = $('metrics');
+    METRICS.forEach(function (m) {
+      var row = document.createElement('div'); row.className = 'mrow';
+      var lab = document.createElement('div'); lab.className = 'mrow__label';
+      lab.innerHTML = m.label + ' <span class="code">' + m.key + '</span>';
+      var seg = document.createElement('div'); seg.className = 'seg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', m.label);
+      m.opts.forEach(function (o) {
+        var b = document.createElement('button'); b.type = 'button';
+        b.textContent = o[1]; b.dataset.key = m.key; b.dataset.val = o[0];
+        b.addEventListener('click', function () { state[m.key] = o[0]; sync(); compute(true); });
+        seg.appendChild(b);
+      });
+      row.appendChild(lab); row.appendChild(seg); mWrap.appendChild(row);
+    });
+
+    function sync() {
+      mWrap.querySelectorAll('.seg button').forEach(function (b) {
+        b.setAttribute('aria-pressed', state[b.dataset.key] === b.dataset.val ? 'true' : 'false');
+      });
+    }
+
+    function valOf(key) {
+      var m = METRICS.find(function (x) { return x.key === key; });
+      var o = m.opts.find(function (x) { return x[0] === state[key]; });
+      return o[2];
+    }
+
+    // PR value depends on Scope
+    function prVal() {
+      if (state.S === 'C') { return state.PR === 'L' ? 0.68 : state.PR === 'H' ? 0.5 : 0.85; }
+      return state.PR === 'L' ? 0.62 : state.PR === 'H' ? 0.27 : 0.85;
+    }
+
+    function roundup(input) {
+      var i = Math.round(input * 100000);
+      if (i % 10000 === 0) return i / 100000;
+      return (Math.floor(i / 10000) + 1) / 10;
+    }
+
+    function score() {
+      var C = valOf('C'), I = valOf('I'), A = valOf('A');
+      var iss = 1 - ((1 - C) * (1 - I) * (1 - A));
+      var impact;
+      if (state.S === 'C') { impact = 7.52 * (iss - 0.029) - 3.25 * Math.pow(iss - 0.02, 15); }
+      else { impact = 6.42 * iss; }
+      var expl = 8.22 * valOf('AV') * valOf('AC') * prVal() * valOf('UI');
+      var base;
+      if (impact <= 0) base = 0;
+      else if (state.S === 'C') base = roundup(Math.min(1.08 * (impact + expl), 10));
+      else base = roundup(Math.min(impact + expl, 10));
+      return base;
+    }
+
+    function sevOf(s) {
+      if (s === 0) return ['None', 'sev-none'];
+      if (s < 4) return ['Low', 'sev-low'];
+      if (s < 7) return ['Medium', 'sev-med'];
+      if (s < 9) return ['High', 'sev-high'];
+      return ['Critical', 'sev-crit'];
+    }
+
+    function vectorString() {
+      return 'CVSS:3.1/AV:' + state.AV + '/AC:' + state.AC + '/PR:' + state.PR +
+             '/UI:' + state.UI + '/S:' + state.S + '/C:' + state.C + '/I:' + state.I + '/A:' + state.A;
+    }
+
+    function compute(animate) {
+      var s = score();
+      var sev = sevOf(s);
+      var num = $('scoreNum'); num.textContent = s.toFixed(1);
+      if (animate) { num.classList.remove('bump'); void num.offsetWidth; num.classList.add('bump'); }
+      $('scoreSev').textContent = sev[0];
+      $('scoreCard').className = 'score-card ' + sev[1];
+      $('needle').style.left = (s * 10) + '%';
+      var v = vectorString();
+      $('vector').innerHTML = v.replace(/(AV:|AC:|PR:|UI:|S:|C:|I:|A:)/g, '<b>$1</b>');
+    }
+
+    function loadPreset(p) { state = Object.assign({}, p); sync(); compute(true); }
+    $('presetBtn').addEventListener('click', function () { loadPreset(LOG4SHELL); });
+    $('resetBtn').addEventListener('click', function () { loadPreset(LOWBASE); });
+
+    sync(); compute(false);
+
+    /* ---------- Embed height reporting ---------- */
+    var mainEl = document.querySelector('main');
+    var lastReported = 0;
+    function reportHeight() {
+      var h = Math.ceil(mainEl.getBoundingClientRect().bottom + 10);
+      if (h > 50 && h !== lastReported) { lastReported = h; window.parent.postMessage({ kind: 'nyu-embed-height', height: h }, '*'); }
+    }
+    window.addEventListener('load', function () { lastReported = 0; reportHeight(); });
+    window.addEventListener('resize', function () { requestAnimationFrame(reportHeight); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { lastReported = 0; reportHeight(); });
+    if ('ResizeObserver' in window) new ResizeObserver(function () { requestAnimationFrame(reportHeight); }).observe(mainEl);
+    reportHeight();
+  </script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

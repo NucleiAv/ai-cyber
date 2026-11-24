@@ -1,0 +1,36 @@
+title: The adversarial ML desk
+lede: Three incidents hit an ML-based malware classifier. Classify each attack, place it in the lifecycle, and pick a control.
+blurb: Classify poisoning, evasion and supply chain attacks, and place approval gates for an autonomous system.
+source: scenario practice, written for this site from Module 10
+situation: |
+  **Sentrix EDR** uses an ML classifier on files. It retrains monthly on samples customers submit. Models are shared between teams as pickle files. A new auto-response agent can quarantine hosts.
+rounds:
+  - title: Round 1. Classify the attack
+    items:
+      - type: sort
+        q: Which attack is each incident?
+        rows:
+          - ["Submitted samples with a small marker are labeled benign, and later malware with that marker passes", "Backdoor poisoning"]
+          - ["Attackers append harmless bytes to malware until the classifier says benign", "Evasion"]
+          - ["A shared model file runs a command when a teammate loads it", "Supply chain"]
+          - ["Correctly labeled but crafted samples shift what the model learns", "Clean-label poisoning"]
+        opts: ["Backdoor poisoning", "Evasion", "Supply chain", "Clean-label poisoning"]
+        why: "Poisoning changes training data. Evasion changes the input at prediction time. Supply chain attacks the files and tools around the model. Clean-label poisoning keeps labels correct, which is what makes it hard to spot."
+      - q: The evasion attackers never saw the model. How can the attack still work?
+        opts: ["It cannot", "Adversarial examples often transfer between models trained on similar data, and the API can be queried", "They guessed"]
+        a: 1
+        why: "Attackers craft examples on a substitute model or by probing the API, and many transfer to the real one."
+  - title: Round 2. Gate the agent
+    items:
+      - type: sort
+        q: May the auto-response agent do each action alone?
+        rows:
+          - ["Query logs for a file hash", "Alone, with logging"]
+          - ["Open a ticket with the evidence", "Alone, with logging"]
+          - ["Quarantine a hospital's imaging server", "Needs a human gate"]
+          - ["Delete files it thinks are malicious", "Needs a human gate"]
+        opts: ["Alone, with logging", "Needs a human gate"]
+        why: "Reversibility and impact decide. Reading and reporting can run alone. Disruptive or irreversible actions need a person, even with no attacker involved."
+      - type: open
+        q: Name one control for each of the three attack types in Round 1.
+        a: "Poisoning, control and check who can submit training samples and keep provenance. Evasion, combine the ML model with other detection layers and train on adversarial examples. Supply chain, use safetensors or weights_only loading and scan model files."

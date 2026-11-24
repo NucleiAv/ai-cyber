@@ -1,0 +1,394 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive: Deploying Under Known Risk</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --violet:#57068C;--violet-dark:#3D0461;--violet-50:#F5EDFA;--violet-100:#E8D8F2;
+  --danger:#C42A2A;--danger-bg:#FBE8E8;--success:#166B3A;--success-bg:#E6F4EC;
+  --warning:#8A5D00;--warning-bg:#FCF1DC;--blue:#1560AC;--blue-bg:#E6F0FA;
+  --ink:#1A1A1A;--ink-soft:#3A3A3A;--ink-mute:#6B6B6B;--rule:#E2E2E2;
+  --surface:#FFFFFF;--sunken:#F6F4F8;
+  --mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace;
+  --sans:"Open Sans","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{overflow:visible;height:auto}
+body{font-family:var(--sans);color:var(--ink);background:var(--surface);padding:12px 14px;line-height:1.55}
+.wrap{max-width:860px;margin:0 auto}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(18,22,33,.06);overflow:hidden}
+.top{padding:16px 20px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-family:var(--mono);font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--violet)}
+h1{font-size:1.12rem;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.lede{font-size:.86rem;color:var(--ink-soft);margin-top:6px;line-height:1.55}
+
+.body{padding:18px 20px}
+
+/* Scenario briefing */
+.brief{background:var(--sunken);border:1px solid var(--rule);border-radius:11px;padding:14px 16px;margin-bottom:16px}
+.brief .label{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-mute);font-weight:700}
+.brief p{font-size:.86rem;color:var(--ink-soft);margin-top:8px;line-height:1.55}
+.brief ul{font-size:.86rem;color:var(--ink-soft);margin:8px 0 0 18px;line-height:1.55}
+.brief li{margin-top:4px}
+
+/* Step labels */
+.step-label{font-family:var(--mono);font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--violet);margin-bottom:10px}
+.step-q{font-size:.88rem;color:var(--ink);font-weight:600;margin-bottom:10px}
+
+/* Decision buttons */
+.decisions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px}
+.dec-btn{font-family:var(--sans);font-size:.84rem;font-weight:600;text-align:center;
+  background:var(--surface);border:1.5px solid var(--rule);border-radius:10px;
+  padding:12px 10px;cursor:pointer;transition:.15s;color:var(--ink)}
+.dec-btn:hover{border-color:var(--violet)}
+.dec-btn:focus-visible{outline:3px solid var(--warning);outline-offset:2px}
+.dec-btn[aria-pressed="true"]{border-color:var(--violet);background:var(--violet-50);color:var(--ink)}
+
+/* Mitigations */
+.mit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.mit{font-family:var(--sans);font-size:.82rem;font-weight:400;text-align:left;
+  background:var(--surface);border:1.5px solid var(--rule);border-radius:10px;
+  padding:11px 13px;cursor:pointer;transition:.15s;color:var(--ink)}
+.mit:hover{border-color:var(--violet)}
+.mit:focus-visible{outline:3px solid var(--warning);outline-offset:2px}
+.mit[aria-pressed="true"]{border-color:var(--violet);background:var(--violet-50)}
+.mit .mit-name{font-weight:600;display:block}
+.mit .mit-desc{color:var(--ink-mute);font-size:.76rem;margin-top:2px;display:block}
+
+/* Submit */
+.actions{display:flex;align-items:center;gap:10px;margin-top:14px}
+.submit-btn{font-family:var(--sans);font-size:.84rem;font-weight:700;color:#fff;
+  background:var(--violet);border:none;border-radius:9px;padding:10px 20px;cursor:pointer}
+.submit-btn:hover{background:var(--violet-dark)}
+.submit-btn:disabled{opacity:.4;cursor:not-allowed}
+.reset-btn{font-family:var(--sans);font-size:.82rem;font-weight:600;color:var(--ink-mute);
+  background:none;border:1.5px solid var(--rule);border-radius:9px;padding:9px 16px;cursor:pointer}
+.reset-btn:hover{border-color:var(--ink-mute)}
+
+/* Feedback panel */
+.fb{margin-top:16px;border-radius:10px;padding:14px 16px;font-size:.84rem;
+  line-height:1.55;display:none;border-left:4px solid}
+.fb.show{display:block}
+.fb--deploy{background:var(--danger-bg);border-color:var(--danger)}
+.fb--conditional{background:var(--success-bg);border-color:var(--success)}
+.fb--block{background:var(--warning-bg);border-color:var(--warning)}
+.fb b{display:block;margin-bottom:4px;color:var(--ink)}
+.fb p{margin-top:8px;color:var(--ink-soft)}
+.fb .owasp-note{font-size:.8rem;color:var(--ink-mute);margin-top:10px;
+  padding-top:10px;border-top:1px solid var(--rule)}
+
+/* Mitigation review */
+.mit-review{margin-top:12px}
+.mit-review .mit-line{font-size:.82rem;padding:4px 0;color:var(--ink-soft)}
+.mit-review .mit-line .tag{font-family:var(--mono);font-size:.66rem;font-weight:600;
+  letter-spacing:.04em;border-radius:4px;padding:2px 6px;margin-right:6px;display:inline-block}
+.tag--good{background:var(--success-bg);color:var(--ink)}
+.tag--miss{background:var(--warning-bg);color:var(--ink)}
+
+/* Disclaimer */
+.disclaimer{margin-top:16px;padding:12px 14px;border-radius:10px;background:var(--sunken);
+  border:1px solid var(--rule);font-size:.8rem;color:var(--ink-mute);line-height:1.5;display:none}
+.disclaimer.show{display:block}
+
+/* Hidden sections */
+.hidden{display:none}
+
+@media(max-width:600px){
+  .decisions{grid-template-columns:1fr}
+  .mit-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="top">
+    <div class="eyebrow">Interactive Exercise · Section 4</div>
+    <h1>Deploying Under Known Risk</h1>
+    <p class="lede">Security leads make deployment decisions under uncertainty every day. This exercise puts you in that role: read the scenario, make a call, and select your mitigations. There is no single correct answer, but some positions are easier to defend than others.</p>
+  </div>
+
+  <div class="body">
+    <!-- Scenario briefing -->
+    <div class="brief">
+      <div class="label">Scenario</div>
+      <p>You are the security lead at a mid-size financial services firm. Your product team wants to deploy an LLM-powered internal assistant that processes employee queries against company documents (a RAG-based system). The assistant would have read access to HR policies, financial reports, and client communications.</p>
+      <p>The product team argues that competitors already have similar systems and that the productivity gains justify the risk.</p>
+      <p>Your security assessment found:</p>
+      <ul>
+        <li>Prompt injection against the RAG pipeline is architecturally possible; no defense fully prevents it.</li>
+        <li>Indirect injection via poisoned documents is a realistic threat vector.</li>
+        <li>The system would have access to sensitive client data.</li>
+      </ul>
+    </div>
+
+    <!-- Step 1: Decision -->
+    <div id="step1">
+      <div class="step-label">Step 1</div>
+      <div class="step-q">What is your recommendation?</div>
+      <div class="decisions" id="decBtns" role="radiogroup" aria-label="Deployment decision">
+        <button class="dec-btn" role="radio" aria-pressed="false" data-choice="deploy">Deploy as proposed</button>
+        <button class="dec-btn" role="radio" aria-pressed="false" data-choice="conditional">Deploy with conditions</button>
+        <button class="dec-btn" role="radio" aria-pressed="false" data-choice="block">Block deployment</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Mitigations (appears for conditional/block only) -->
+    <div id="step2" class="hidden">
+      <div class="step-label">Step 2</div>
+      <div class="step-q">Which mitigations would you require? Select all that apply.</div>
+      <div class="mit-grid" id="mitGrid"></div>
+      <div class="actions" id="step2Actions">
+        <button class="submit-btn" id="submitBtn" disabled>See analysis</button>
+        <button class="reset-btn" id="resetBtn">Start over</button>
+      </div>
+    </div>
+
+    <!-- Deploy-only actions (no mitigations to pick) -->
+    <div id="deployActions" class="hidden">
+      <div class="actions">
+        <button class="submit-btn" id="deploySubmitBtn">See analysis</button>
+        <button class="reset-btn" id="deployResetBtn">Start over</button>
+      </div>
+    </div>
+
+    <!-- Feedback -->
+    <div class="fb" id="fb"></div>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer" id="disclaimer">There is no single correct answer here. This analysis represents one possible recommended outcome. Every situation is different: business pressures vary, regulatory environments differ, and the sensitivity and type of data an organization works with is not consistent even within the same industry. The skill is reasoning through the trade-offs with the frameworks you have, not arriving at a predetermined conclusion.</div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+  /* -- Data -- */
+  var mitigations = [
+    {id:"priv",   name:"Privilege reduction",        desc:"Limit the assistant's access to only the document categories each query needs.",
+     layer:"Privilege Reduction",  owasp:"LLM06",  essential:true},
+    {id:"guard",  name:"Deterministic guardrails",   desc:"Hard-code rules that block the assistant from performing actions outside read-only Q&A.",
+     layer:"Deterministic Guardrails", owasp:"LLM01/LLM06", essential:true},
+    {id:"output", name:"Output validation",          desc:"Screen every response for leaked sensitive data, PII, or policy violations before delivery.",
+     layer:"Output Validation",    owasp:"LLM02",  essential:true},
+    {id:"filter", name:"Input filtering",            desc:"Pattern-match known injection phrases in user queries before they reach the model.",
+     layer:"Input Filtering",      owasp:"LLM01",  essential:false},
+    {id:"hier",   name:"Instruction hierarchy",      desc:"Configure the model to prioritize system-prompt instructions over retrieved document content.",
+     layer:"Instruction Hierarchy",owasp:"LLM01",  essential:false},
+    {id:"human",  name:"Human review for sensitive queries", desc:"Route queries that touch client financials or HR records to a human reviewer.",
+     layer:"Human Oversight",      owasp:"LLM02/LLM06", essential:true},
+    {id:"audit",  name:"Logging and anomaly detection", desc:"Log all queries and flag unusual patterns for security review.",
+     layer:"Monitoring",           owasp:"LLM01",  essential:false},
+    {id:"scope",  name:"Exclude client data from the index", desc:"Remove client communications from the retrieval index entirely.",
+     layer:"Privilege Reduction",  owasp:"LLM02",  essential:false}
+  ];
+
+  var choice = null;
+  var selected = {};
+
+  /* -- Decision buttons -- */
+  var decBtns = document.querySelectorAll(".dec-btn");
+  decBtns.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      choice = btn.getAttribute("data-choice");
+      decBtns.forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+      btn.setAttribute("aria-pressed","true");
+
+      /* "Deploy as proposed" means no conditions, so skip mitigation step */
+      if(choice === "deploy"){
+        document.getElementById("step2").classList.add("hidden");
+        document.getElementById("deployActions").classList.remove("hidden");
+      } else {
+        document.getElementById("deployActions").classList.add("hidden");
+        document.getElementById("step2").classList.remove("hidden");
+        updateSubmit();
+      }
+      /* Hide any prior feedback */
+      document.getElementById("fb").className = "fb";
+      document.getElementById("fb").innerHTML = "";
+      document.getElementById("disclaimer").classList.remove("show");
+    });
+  });
+
+  /* -- Build mitigation grid -- */
+  var mitGrid = document.getElementById("mitGrid");
+  mitigations.forEach(function(m){
+    var b = document.createElement("button");
+    b.className = "mit";
+    b.setAttribute("role","checkbox");
+    b.setAttribute("aria-pressed","false");
+    b.setAttribute("data-mid", m.id);
+    b.innerHTML = '<span class="mit-name">' + m.name + '</span><span class="mit-desc">' + m.desc + '</span>';
+    b.addEventListener("click", function(){
+      var on = b.getAttribute("aria-pressed") === "true";
+      b.setAttribute("aria-pressed", on ? "false" : "true");
+      selected[m.id] = !on;
+      updateSubmit();
+    });
+    mitGrid.appendChild(b);
+  });
+
+  function updateSubmit(){
+    var any = Object.keys(selected).some(function(k){ return selected[k]; });
+    document.getElementById("submitBtn").disabled = !any || !choice;
+  }
+
+  /* -- Shared analysis builder -- */
+  function showAnalysis(){
+    var fb = document.getElementById("fb");
+    fb.className = "fb show fb--" + choice;
+
+    var pickedIds = Object.keys(selected).filter(function(k){ return selected[k]; });
+    var essentialHits = mitigations.filter(function(m){ return m.essential && pickedIds.indexOf(m.id) !== -1; });
+    var essentialMisses = mitigations.filter(function(m){ return m.essential && pickedIds.indexOf(m.id) === -1; });
+    var extras = mitigations.filter(function(m){ return !m.essential && pickedIds.indexOf(m.id) !== -1; });
+
+    var html = "";
+
+    if(choice === "deploy"){
+      html += '<b>You chose: Deploy as proposed.</b>';
+      html += '<p>This is the hardest position to defend. The scenario describes a system with access to client financials and HR data, exposed to indirect injection via retrieved documents, and with no mention of architectural constraints. Deploying without conditions accepts a risk that most security frameworks would flag.</p>';
+      html += '<p>The product team\'s "competitors are doing it" argument is a business pressure, not a risk assessment. Competitors may have different data access scopes, different threat models, or may simply be accepting risk you should not.</p>';
+      html += '<p>Because you chose to deploy without conditions, no mitigations were selected. Below are the mitigations this scenario would benefit from:</p>';
+
+      /* Show all mitigations as missed */
+      html += '<div class="mit-review">';
+      mitigations.filter(function(m){ return m.essential; }).forEach(function(m){
+        html += '<div class="mit-line"><span class="tag tag--miss">Not required</span><strong>' + m.name + '</strong>: maps to ' + m.layer + ' (' + m.owasp + '). This would reduce the blast radius if injection succeeds.</div>';
+      });
+      html += '</div>';
+    } else if(choice === "conditional"){
+      html += '<b>You chose: Deploy with conditions.</b>';
+      html += '<p>This is the position most security professionals would take. Prompt injection is a known, persistent risk, but it is not a reason to refuse deployment entirely. The question is whether the conditions are sufficient to contain the blast radius when (not if) an injection succeeds.</p>';
+      html += '<p>The key is ensuring your conditions address the kill chain, not just the initial injection. Filtering catches some attacks at the front door, but guardrails, privilege reduction, and human oversight limit what a successful injection can actually accomplish.</p>';
+
+      html += '<div class="mit-review">';
+      essentialHits.forEach(function(m){
+        html += '<div class="mit-line"><span class="tag tag--good">Selected</span><strong>' + m.name + '</strong>: maps to the ' + m.layer + ' defense layer (relevant OWASP categories: ' + m.owasp + ').</div>';
+      });
+      extras.forEach(function(m){
+        html += '<div class="mit-line"><span class="tag tag--good">Selected</span><strong>' + m.name + '</strong>: adds depth at the ' + m.layer + ' layer (' + m.owasp + '). Useful but not sufficient alone.</div>';
+      });
+      essentialMisses.forEach(function(m){
+        html += '<div class="mit-line"><span class="tag tag--miss">Not selected</span><strong>' + m.name + '</strong>: this is a high-value mitigation for this scenario. It maps to ' + m.layer + ' and addresses ' + m.owasp + '.</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<b>You chose: Block deployment.</b>';
+      html += '<p>This is a defensible position given the scenario\'s specifics: client financial data and HR records are high-sensitivity categories, and the system as described has broad read access with no mentioned constraints. A national cybersecurity center has explicitly stated that prompt injection "may never be properly mitigated."</p>';
+      html += '<p>The risk with this position is that it may not hold against business pressure. A move that often works better is to block the current proposal and counter with a scoped alternative: same assistant, but with client data excluded from the index and deterministic guardrails in place.</p>';
+
+      html += '<div class="mit-review">';
+      essentialHits.forEach(function(m){
+        html += '<div class="mit-line"><span class="tag tag--good">Selected</span><strong>' + m.name + '</strong>: maps to the ' + m.layer + ' defense layer (relevant OWASP categories: ' + m.owasp + ').</div>';
+      });
+      extras.forEach(function(m){
+        html += '<div class="mit-line"><span class="tag tag--good">Selected</span><strong>' + m.name + '</strong>: adds depth at the ' + m.layer + ' layer (' + m.owasp + '). Useful but not sufficient alone.</div>';
+      });
+      essentialMisses.forEach(function(m){
+        html += '<div class="mit-line"><span class="tag tag--miss">Not selected</span><strong>' + m.name + '</strong>: this is a high-value mitigation for this scenario. It maps to ' + m.layer + ' and addresses ' + m.owasp + '.</div>';
+      });
+      html += '</div>';
+    }
+
+    /* OWASP connection */
+    html += '<div class="owasp-note">';
+    html += 'This scenario implicates at least three OWASP LLM Top 10 categories: <strong>LLM01</strong> (Prompt Injection) as the attack vector, <strong>LLM02</strong> (Sensitive Information Disclosure) as the risk if client data leaks, and <strong>LLM06</strong> (Excessive Agency) if the system can act beyond read-only Q&amp;A. ';
+    html += 'A well-defended deployment addresses all three, not just the injection itself.';
+    html += '</div>';
+
+    fb.innerHTML = html;
+
+    /* Show disclaimer */
+    document.getElementById("disclaimer").classList.add("show");
+
+    /* Disable further changes */
+    document.getElementById("submitBtn").disabled = true;
+    document.getElementById("deploySubmitBtn").disabled = true;
+  }
+
+  /* -- Submit (conditional/block path) -- */
+  document.getElementById("submitBtn").addEventListener("click", showAnalysis);
+
+  /* -- Submit (deploy path, no mitigations) -- */
+  document.getElementById("deploySubmitBtn").addEventListener("click", showAnalysis);
+
+  /* -- Shared reset -- */
+  function resetAll(){
+    choice = null;
+    selected = {};
+    decBtns.forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+    document.querySelectorAll(".mit").forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+    document.getElementById("step2").classList.add("hidden");
+    document.getElementById("deployActions").classList.add("hidden");
+    document.getElementById("fb").className = "fb";
+    document.getElementById("fb").innerHTML = "";
+    document.getElementById("disclaimer").classList.remove("show");
+    document.getElementById("submitBtn").disabled = true;
+    document.getElementById("deploySubmitBtn").disabled = false;
+  }
+
+  document.getElementById("resetBtn").addEventListener("click", resetAll);
+  document.getElementById("deployResetBtn").addEventListener("click", resetAll);
+
+  /* -- Auto-resize: tell parent iframe to match content height -- */
+  function sendHeight(){
+    var el = document.querySelector('.wrap'); if(!el) return;
+    var pad = parseFloat(getComputedStyle(document.body).paddingTop) + parseFloat(getComputedStyle(document.body).paddingBottom);
+    var h = Math.ceil(el.getBoundingClientRect().height + pad + 20);
+    window.parent.postMessage({kind:'nyu-embed-height', height:h, src:location.href}, '*');
+  }
+  (function(){
+    document.documentElement.style.height = 'auto';
+    document.body.style.height = 'auto';
+    if(window.ResizeObserver){ new ResizeObserver(sendHeight).observe(document.querySelector('.wrap')); }
+    else { setInterval(sendHeight, 500); }
+    window.addEventListener('load', function(){ setTimeout(sendHeight, 150); });
+    setTimeout(sendHeight, 50);
+  })();
+
+})();
+</script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

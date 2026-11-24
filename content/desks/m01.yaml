@@ -1,0 +1,42 @@
+title: The detector evaluation desk
+lede: A vendor pitches an ML detector to a hospital. Work out what its numbers mean, and decide which kind of learning each job needs.
+blurb: Compute precision and recall from a confusion matrix, pick the right learning type, and question an AI claim.
+source: scenario practice, written for this site from Module 1
+situation: |
+  **St. Alder Hospital** tests an ML email filter on 1,000 emails. 100 are phishing. The filter flags 120 emails. 90 of the flagged emails are phishing. It misses 10 phishing emails.
+rounds:
+  - title: Round 1. Read the confusion matrix
+    items:
+      - type: num
+        q: How many false positives are there?
+        a: 30
+        tol: 0
+        why: "It flagged 120, of which 90 were phishing, so 120 − 90 = 30 normal emails were flagged by mistake."
+      - type: num
+        q: What is the precision? Give a decimal.
+        a: 0.75
+        tol: 0.005
+        why: "Precision = TP ÷ (TP + FP) = 90 ÷ 120 = 0.75."
+      - type: num
+        q: What is the recall? Give a decimal.
+        a: 0.9
+        tol: 0.005
+        why: "Recall = TP ÷ (TP + FN) = 90 ÷ (90 + 10) = 0.90."
+      - type: num
+        q: What is the accuracy? Give a decimal.
+        a: 0.96
+        tol: 0.005
+        why: "Correct calls are 90 true positives plus 870 true negatives (900 normal − 30 false alarms). 960 ÷ 1,000 = 0.96. Accuracy looks great because most emails are normal, which is why you also ask for precision and recall."
+  - title: Round 2. Pick the learning type
+    items:
+      - type: sort
+        q: Which kind of learning fits each job?
+        rows:
+          - ["Label emails as phishing or not, from a labeled history", "Supervised"]
+          - ["Find hosts whose traffic looks unlike all others, with no labels", "Unsupervised"]
+          - ["Learn which response action works best from rewards over time", "Reinforcement"]
+        opts: ["Supervised", "Unsupervised", "Reinforcement"]
+        why: "Labels mean supervised. No labels and looking for odd ones out means unsupervised. Learning from rewards means reinforcement learning."
+      - type: open
+        q: The vendor says "AI-powered, 99 percent accurate". Ask three questions before you believe it.
+        a: "What type of AI is it, and what data was it trained and tested on? What are precision and recall on data like ours, not just accuracy? How does it fail, and who reviews its decisions?"

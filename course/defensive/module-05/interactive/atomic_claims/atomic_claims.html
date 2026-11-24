@@ -1,0 +1,328 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decompose into Atomic Claims</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --nyu-violet: #57068C; --nyu-violet-dark: #3D0461;
+      --nyu-violet-200: #D2B3E5;
+      --danger: #C42A2A; --danger-bg: #FBE8E8;
+      --success: #166B3A; --success-bg: #E6F4EC;
+      --warning: #8A5D00; --warning-bg: #FCF1DC;
+      --code-bg: #1d1f27; --code-ink: #e8e8ec;
+      --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body { font-family: var(--mono); background: var(--code-bg); padding: 0; margin: 0; color: var(--code-ink); overflow-x: hidden; }
+    main { width: 100%; }
+
+    .block { padding: 14px 18px 14px; position: relative; }
+
+    .controls { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px; }
+    .btn { appearance: none; border: none; background: var(--nyu-violet); color: #fff; border-radius: 6px; padding: 7px 16px; font: inherit; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: background 140ms ease; }
+    .btn:hover { background: var(--nyu-violet-dark); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn--ghost { background: rgba(255,255,255,0.08); color: var(--nyu-violet-200); }
+    .btn--ghost:hover { background: rgba(255,255,255,0.14); }
+
+    .block__label { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--nyu-violet-200); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; transition: color 400ms ease; }
+    .block__label svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* ── PARAGRAPH ── */
+    .para { font-size: 0.8rem; line-height: 1.75; color: var(--code-ink); }
+    .para .c { border-radius: 4px; padding: 2px 4px; transition: background 300ms ease, outline 300ms ease, box-shadow 300ms ease; outline: 1.5px solid transparent; }
+    .para .c.lit {
+      outline-color: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.05);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.25);
+    }
+
+    /* ── ROWS ── */
+    .row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .row:last-of-type { margin-bottom: 0; }
+
+    .row__num { flex: none; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.68rem; color: #fff; border-radius: 50%; opacity: 0; transform: scale(0.4); transition: opacity 250ms ease, transform 250ms ease; }
+    .row__num.on { opacity: 1; transform: scale(1); }
+    .row[data-v="ok"] .row__num { background: var(--success); }
+    .row[data-v="bad"] .row__num { background: var(--danger); }
+    .row[data-v="warn"] .row__num { background: var(--warning); }
+
+    .row__text { flex: 1; min-width: 0; font-size: 0.78rem; line-height: 1.55; color: var(--code-ink); padding: 5px 8px; border-radius: 5px; border: 1.5px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.03); will-change: transform; }
+
+    .row__verdict { flex: 0 0 124px; width: 124px; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; border-radius: 5px; padding: 4px 9px; opacity: 0; transform: translateX(-8px); transition: opacity 250ms ease, transform 250ms ease; }
+    .row__verdict svg { width: 13px; height: 13px; flex: none; }
+    .row__verdict.on { opacity: 1; transform: translateX(0); }
+    .row__verdict.ok { background: #166534; color: #fff; }
+    .row__verdict.bad { background: #991B1B; color: #fff; }
+    .row__verdict.warn { background: #854D0E; color: #fff; }
+
+    .row:hover .row__text { background: rgba(255,255,255,0.06); }
+
+    /* Score bar */
+    .scorebar { display: flex; height: 5px; border-radius: 3px; margin: 12px 0 0; overflow: hidden; opacity: 0; transition: opacity 500ms ease; }
+    .scorebar.on { opacity: 1; }
+    .scorebar__seg { transition: flex 600ms ease; }
+    .scorebar__seg.ok { background: var(--success); }
+    .scorebar__seg.bad { background: var(--danger); }
+    .scorebar__seg.warn { background: var(--warning); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .row__num, .row__verdict, .scorebar, .block__label, .para .c { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="block" id="block">
+      <div class="controls">
+        <button class="btn btn--ghost" id="resetBtn" type="button">Reset</button>
+        <button class="btn" id="decomposeBtn" type="button">Decompose</button>
+      </div>
+      <div class="block__label" id="blockLabel">
+        <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1"/></svg>
+        Model output &middot; one paragraph
+      </div>
+
+      <div class="para" id="para"><span class="c" data-i="0">CVE-2021-44228 (Log4Shell) is a critical RCE in Apache Log4j 2</span> <span class="c" data-i="1">with a CVSS base score of 10.0.</span> <span class="c" data-i="2">It is actively exploited in the wild.</span> <span class="c" data-i="3">Upgrading to Log4j 2.15.0 fully remediates the issue.</span> <span class="c" data-i="4">The campaign exploiting it most aggressively is attributed to a single state-sponsored group.</span> <span class="c" data-i="5">Organizations should patch within 24 hours.</span></div>
+
+      <div class="rows" id="rows">
+        <div class="row" data-v="ok">
+          <span class="row__num">1</span>
+          <span class="row__text">CVE-2021-44228 (Log4Shell) is a critical RCE in Apache Log4j 2</span>
+          <span class="row__verdict ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg>verified</span>
+        </div>
+        <div class="row" data-v="ok">
+          <span class="row__num">2</span>
+          <span class="row__text">with a CVSS base score of 10.0.</span>
+          <span class="row__verdict ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg>verified</span>
+        </div>
+        <div class="row" data-v="ok">
+          <span class="row__num">3</span>
+          <span class="row__text">It is actively exploited in the wild.</span>
+          <span class="row__verdict ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg>verified</span>
+        </div>
+        <div class="row" data-v="bad">
+          <span class="row__num">4</span>
+          <span class="row__text">Upgrading to Log4j 2.15.0 fully remediates the issue.</span>
+          <span class="row__verdict bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>stale</span>
+        </div>
+        <div class="row" data-v="bad">
+          <span class="row__num">5</span>
+          <span class="row__text">The campaign exploiting it most aggressively is attributed to a single state-sponsored group.</span>
+          <span class="row__verdict bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>fabricated</span>
+        </div>
+        <div class="row" data-v="warn">
+          <span class="row__num">6</span>
+          <span class="row__text">Organizations should patch within 24 hours.</span>
+          <span class="row__verdict warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>not a fact</span>
+        </div>
+        <div class="scorebar" id="scorebar">
+          <div class="scorebar__seg ok" id="segOk"></div>
+          <div class="scorebar__seg bad" id="segBad"></div>
+          <div class="scorebar__seg warn" id="segWarn"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    'use strict';
+    var $ = function (id) { return document.getElementById(id); };
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var block     = $('block');
+    var para      = $('para');
+    var rowsEl    = $('rows');
+    var spans     = para.querySelectorAll('.c');
+    var rowTexts  = rowsEl.querySelectorAll('.row__text');
+    var nums      = rowsEl.querySelectorAll('.row__num');
+    var verdicts  = rowsEl.querySelectorAll('.row__verdict');
+    var decomposeBtn = $('decomposeBtn');
+    var resetBtn     = $('resetBtn');
+    var busy = false;
+
+    /* hide rows on init */
+    rowsEl.style.display = 'none';
+
+    function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    function reset() {
+      for (var i = 0; i < spans.length; i++) spans[i].classList.remove('lit');
+      para.style.display = '';
+      rowsEl.style.display = 'none';
+      for (var j = 0; j < rowTexts.length; j++) {
+        rowTexts[j].style.transition = '';
+        rowTexts[j].style.transform = '';
+      }
+      for (var n = 0; n < nums.length; n++) nums[n].classList.remove('on');
+      for (var v = 0; v < verdicts.length; v++) verdicts[v].classList.remove('on');
+      $('scorebar').classList.remove('on');
+      $('segOk').style.flex = '0';
+      $('segBad').style.flex = '0';
+      $('segWarn').style.flex = '0';
+      $('blockLabel').innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1"/></svg>Model output &middot; one paragraph';
+      $('blockLabel').style.color = '';
+      decomposeBtn.textContent = 'Decompose';
+      decomposeBtn.disabled = false;
+      reportHeight();
+    }
+
+    async function decompose() {
+      if (busy) return;
+      busy = true;
+      decomposeBtn.disabled = true;
+
+      /* ── Phase 1: highlight each claim in the paragraph ── */
+      for (var h = 0; h < spans.length; h++) {
+        spans[h].classList.add('lit');
+        await wait(reduce ? 50 : 280);
+      }
+      await wait(reduce ? 80 : 500);
+
+      /* ── Phase 2: FLIP ── */
+
+      /* FIRST: measure where each span sits in the paragraph */
+      var blockR = block.getBoundingClientRect();
+      var firsts = [];
+      for (var s = 0; s < spans.length; s++) {
+        var cr = spans[s].getClientRects();
+        var r = (cr.length > 0) ? cr[0] : spans[s].getBoundingClientRect();
+        firsts.push({ top: r.top - blockR.top, left: r.left - blockR.left });
+      }
+
+      /* LAST: swap layout: hide paragraph, show rows, measure row__text positions */
+      para.style.display = 'none';
+      rowsEl.style.display = '';
+      void block.offsetHeight;                       /* force layout */
+
+      var blockR2 = block.getBoundingClientRect();
+      var lasts = [];
+      for (var t = 0; t < rowTexts.length; t++) {
+        var r2 = rowTexts[t].getBoundingClientRect();
+        lasts.push({ top: r2.top - blockR2.top, left: r2.left - blockR2.left });
+      }
+
+      /* INVERT: place each row__text at its old paragraph position */
+      for (var inv = 0; inv < rowTexts.length; inv++) {
+        var dx = firsts[inv].left - lasts[inv].left;
+        var dy = firsts[inv].top  - lasts[inv].top;
+        rowTexts[inv].style.transition = 'none';
+        rowTexts[inv].style.transform  = 'translate(' + dx + 'px,' + dy + 'px)';
+      }
+      void block.offsetHeight;                       /* paint at inverted positions */
+
+      /* PLAY: animate each row__text to its natural position, staggered */
+      var flight  = reduce ? 50  : 500;
+      var stagger = reduce ? 30  : 150;
+
+      for (var p = 0; p < rowTexts.length; p++) {
+        rowTexts[p].style.transition = 'transform ' + flight + 'ms cubic-bezier(.4,0,.2,1) ' + (p * stagger) + 'ms';
+        rowTexts[p].style.transform  = 'none';
+      }
+
+      $('blockLabel').innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1"/></svg>6 atomic claims &middot; each verified alone';
+      $('blockLabel').style.color = 'var(--success)';
+      reportHeight();
+
+      /* wait for every flight to land */
+      await wait((rowTexts.length - 1) * stagger + flight + 60);
+
+      /* clean up inline styles */
+      for (var c = 0; c < rowTexts.length; c++) {
+        rowTexts[c].style.transition = '';
+        rowTexts[c].style.transform  = '';
+      }
+
+      /* ── Phase 3: number badges pop in ── */
+      for (var n = 0; n < nums.length; n++) {
+        nums[n].classList.add('on');
+        await wait(reduce ? 30 : 120);
+      }
+      await wait(reduce ? 50 : 200);
+
+      /* ── Phase 4: verdicts stamp on ── */
+      for (var v = 0; v < verdicts.length; v++) {
+        verdicts[v].classList.add('on');
+        reportHeight();
+        await wait(reduce ? 40 : 200);
+      }
+
+      /* ── Phase 5: score bar ── */
+      await wait(reduce ? 50 : 300);
+      $('segOk').style.flex  = '3';
+      $('segBad').style.flex = '2';
+      $('segWarn').style.flex = '1';
+      $('scorebar').classList.add('on');
+      reportHeight();
+
+      decomposeBtn.textContent = 'Replay';
+      decomposeBtn.disabled = false;
+      busy = false;
+    }
+
+    decomposeBtn.addEventListener('click', function () {
+      if (decomposeBtn.textContent === 'Replay') { reset(); wait(300).then(decompose); }
+      else decompose();
+    });
+    resetBtn.addEventListener('click', function () { if (!busy) reset(); });
+
+    /* ---------- Embed height reporting ---------- */
+    var mainEl = document.querySelector('main');
+    var lastReported = 0;
+    function reportHeight() {
+      var h = Math.ceil(mainEl.getBoundingClientRect().bottom);
+      if (h > 50 && h !== lastReported) { lastReported = h; window.parent.postMessage({ kind: 'nyu-embed-height', height: h }, '*'); }
+    }
+    window.addEventListener('load', function () { lastReported = 0; reportHeight(); });
+    window.addEventListener('resize', function () { requestAnimationFrame(reportHeight); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { lastReported = 0; reportHeight(); });
+    if ('ResizeObserver' in window) new ResizeObserver(function () { requestAnimationFrame(reportHeight); }).observe(mainEl);
+    reportHeight();
+  </script>
+
+<script>
+/* Frame height, reported for the life of the page (nyu-embed-height-observer).
+   The per-interactive height post usually fires only when the canvas resizes,
+   so text growing below the canvas never re-posts. Measure content, not the
+   viewport: the parent sizes the frame from this number, and measuring the
+   viewport would feed back and grow the frame on every message. */
+(function () {
+  var last = 0;
+  function contentHeight() {
+    var kids = document.body.children, max = 0;
+    for (var i = 0; i < kids.length; i++) {
+      var r = kids[i].getBoundingClientRect();
+      if (r.height) { max = Math.max(max, r.bottom + window.scrollY); }
+    }
+    if (!max) { return 0; }
+    var pb = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    return Math.ceil(max + pb + 16);
+  }
+  function post() {
+    var h = contentHeight();
+    if (!h || Math.abs(h - last) < 3) { return; }
+    last = h;
+    try {
+      parent.postMessage({ kind: 'nyu-embed-height', height: h, src: location.href }, '*');
+    } catch (e) { /* not embedded, or a cross-origin parent */ }
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(post);
+    ro.observe(document.body);
+    for (var i = 0; i < document.body.children.length; i++) { ro.observe(document.body.children[i]); }
+  }
+  /* Safari settles webfonts after first layout, which is the case that broke. */
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(post); }
+  window.addEventListener('load', post);
+  [60, 250, 700, 1500].forEach(function (t) { setTimeout(post, t); });
+  /* Reveals and step buttons change height without resizing the canvas. */
+  document.addEventListener('click', function () { setTimeout(post, 450); }, true);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+- title: Four layers around a support bot
+  stats: [Layers passed, Refund sent]
+  nodes:
+    atk: {label: Attacker message, x: 0, y: 1, kind: atk, tag: new jailbreak wording}
+    prompt: {label: Sandwich prompt, x: 2, y: 1, kind: box, tag: "rules, data, rules"}
+    det: {label: Injection detector, x: 4, y: 1, kind: raised, tag: trained on known attacks}
+    llm: {label: Support model, x: 4, y: 3, kind: def}
+    out: {label: Output check, x: 6, y: 3, kind: def, tag: canary and secrets}
+    gate: {label: Refund gate, x: 6, y: 5, kind: def, tag: cap plus approval}
+  links: [[atk, prompt], [prompt, det], [det, llm], [llm, out], [out, gate]]
+  steps:
+    - title: A new attack arrives
+      text: The attacker writes a jailbreak in new words that no public list contains.
+      on: [atk]
+      flow: [[atk, prompt, atk]]
+      stats: ["0 of 4", "No"]
+    - title: The prompt layer asks nicely
+      text: The sandwich prompt wraps the message in tags and repeats the rules after it. This lowers the success rate. A determined attacker still gets through.
+      on: [prompt]
+      flow: [[prompt, det, atk]]
+      mark: {prompt: warn}
+      stats: ["1 of 4", "No"]
+    - title: The detector knows only old attacks
+      text: A classifier trained on public jailbreak sets misses new wording. Module 11 shows a 94 percent vendor claim that fell to about 37 percent on new attacks.
+      on: [det]
+      flow: [[det, llm, atk]]
+      mark: {det: warn}
+      stats: ["2 of 4", "No"]
+    - title: The model is fooled
+      text: The model writes a reply that promises a full refund and includes the secret discount code.
+      on: [llm]
+      flow: [[llm, out, atk]]
+      mark: {llm: bad}
+      stats: ["2 of 4", "No"]
+    - title: The output check does not read the meaning
+      text: It looks for the canary token and known secrets. It finds the discount code and blocks the reply. It works whatever the model was told.
+      on: [out]
+      mark: {out: ok}
+      stats: ["Stopped at 3", "No"]
+    - title: The refund gate is the last word
+      text: Even if a reply slipped past, the refund tool has a cap in code and needs a person above it. **Layers that fail for different reasons** are what make the stack strong.
+      on: [gate]
+      flow: [[out, gate, def]]
+      mark: {gate: ok}
+      stats: ["Stopped", "No"]
