@@ -1,0 +1,37 @@
+tasks:
+- t: PromptTrace Learn, module 2. LLM + External Data
+  u: https://prompttrace.airedlab.com/learn/llm-external-data
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read how retrieved text becomes part of the prompt. This is the root of indirect injection.
+- t: Prompt Airlines, challenges 2 and 3
+  u: https://promptairlines.com/
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Continue after challenge 1 with Next Challenge. Get both flags. Write one line on which attack family worked.
+- t: PromptTrace lab 1.2. The Obedient Assistant
+  u: https://prompttrace.airedlab.com/labs/obedient-assistant
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: A banking bot refuses to confirm fake transfers. Make it say a transfer is complete.
+- t: PromptTrace lab 2.1. Poisoned Knowledge
+  u: https://prompttrace.airedlab.com/labs/poisoned-knowledge
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: One of 10 documents in the knowledge base holds a hidden instruction. Find it in the Context Trace, get it retrieved, and trigger the exfiltration.
+- t: PortSwigger lab. Indirect prompt injection
+  u: https://portswigger.net/web-security/llm-attacks/lab-indirect-prompt-injection
+  kind: lab
+  access: free account
+  goal: Plant an instruction in a product review so the live chat deletes the user carlos when someone asks about that product.
+- t: Prompt Injection CTF, level 1. Basic injection
+  u: https://prompt-injection-ctf-2026.web.app/ctf/challenges/level-1-basic-injection
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Solve the first mission. Then read its Learn page on indirect injection.
+- t: Prompt Injection CTF Learn. Indirect injection
+  u: https://prompt-injection-ctf-2026.web.app/ctf/learn/indirect-injection
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Short guided lesson on how hidden instructions reach a model.
+tools: []

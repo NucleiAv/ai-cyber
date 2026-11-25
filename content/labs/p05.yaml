@@ -1,0 +1,31 @@
+tasks:
+- t: HackAPrompt tutorial track
+  u: https://www.hackaprompt.com/track/tutorial_competition
+  kind: lab
+  access: free account
+  goal: Work through the tutorial challenges, each a small prompt hacking goal.
+- t: Lakera Agent Breaker, Trippy Planner
+  u: https://play.lakera.ai/agent-breaker
+  kind: lab
+  access: free, sign-in to save progress
+  goal: Hide an instruction in a travel page so the planner adds your link. Clear two levels.
+- t: PortSwigger lab. Indirect prompt injection
+  u: https://portswigger.net/web-security/llm-attacks/lab-indirect-prompt-injection
+  kind: lab
+  access: free account
+  goal: Plant an instruction in a review so the live chat deletes the user carlos.
+- t: PromptTrace Gauntlet, level 1
+  u: https://prompttrace.airedlab.com/gauntlet/1
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: Each level adds a harder defense. Record how many tries each level takes.
+- t: garak, getting started
+  u: https://reference.garak.ai/
+  kind: tool
+  access: free, runs on your machine
+  goal: Install garak and run one probe family against a local model on Ollama. Compare its hits with your own attack success rate.
+- t: PyRIT documentation
+  u: https://azure.github.io/PyRIT/
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Read how PyRIT runs multi-turn attacks and scores replies.

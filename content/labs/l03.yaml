@@ -1,0 +1,29 @@
+tasks:
+- t: Prompt Airlines, challenges 4 and 5
+  u: https://promptairlines.com/
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Each challenge adds a defense. Membership card upload unlocks at challenge 4. Get both flags and note what each defense changed.
+- t: LLMGoat A01. Prompt Injection
+  u: https://github.com/SECFORCE/LLMGoat#-usage
+  kind: lab
+  access: free, runs on your machine
+  goal: Get the assistant to say exactly. Goats are bad.
+  where: Start LLMGoat with Docker as its README shows, open it in your browser, and pick A01 Prompt Injection. The route is /challenges/a01-prompt-injection.
+- t: PromptTrace lab 4.1. Break the Defenses
+  u: https://prompttrace.airedlab.com/labs/defend-the-bot
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: A bot with layered prompt defenses still guards a secret word. Extract it.
+- t: PromptTrace lab 4.2. The Vault
+  u: https://prompttrace.airedlab.com/labs/the-vault
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: Real defenses this time. A code output guard, a canary token and a second LLM classifier check every reply. Try to get the secret and note which layer stops you.
+- t: PromptTrace Learn, module 4. LLM + Defenses
+  u: https://prompttrace.airedlab.com/learn/llm-defenses
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read why prompt rules fail and code checks hold.
+tools:
+- ollama

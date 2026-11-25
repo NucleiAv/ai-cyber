@@ -1,0 +1,26 @@
+tasks:
+- t: Read. OWASP GenAI Red Teaming Guide
+  u: https://genai.owasp.org/resource/genai-red-teaming-guide/
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Read how OWASP scopes and runs a red team on an LLM app.
+- t: PortSwigger lab. Indirect prompt injection
+  u: https://portswigger.net/web-security/llm-attacks/lab-indirect-prompt-injection
+  kind: lab
+  access: free account
+  goal: Delete the user carlos through a planted product review. Then name the primary OWASP entry.
+- t: PortSwigger lab. Exploiting LLM APIs with excessive agency
+  u: https://portswigger.net/web-security/llm-attacks/lab-exploiting-llm-apis-with-excessive-agency
+  kind: lab
+  access: free account
+  goal: Use the LLM to delete the user carlos. Then name which of the three LLM06 causes made it possible.
+- t: PromptTrace lab 3.2. Output Injection
+  u: https://prompttrace.airedlab.com/labs/output-injection
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: Get unsafe output into the renderer. Classify it as LLM05 and say which control would stop it.
+- t: LLMGoat, all ten challenges
+  u: https://github.com/SECFORCE/LLMGoat
+  kind: lab
+  access: free, runs on your machine
+  goal: One challenge per OWASP LLM risk, A01 to A10. Do any three you have not done in the attack track.

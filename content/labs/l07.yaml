@@ -1,0 +1,18 @@
+tasks:
+- t: LLMGoat A04. Data and Model Poisoning
+  u: https://github.com/SECFORCE/LLMGoat#-usage
+  kind: lab
+  access: free, runs on your machine
+  goal: Leave reviews that poison the recommendations until the assistant recommends a Space Chicken.
+  where: Start LLMGoat with Docker as its README shows, open it in your browser, and pick A04 Data and Model Poisoning. The route is /challenges/a04-data-and-model-poisoning.
+- t: PromptTrace lab 2.1. Poisoned Knowledge, second pass
+  u: https://prompttrace.airedlab.com/labs/poisoned-knowledge
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: If you solved it in lesson 2, now explain it as RAG poisoning. Which document, which hidden line, which retrieval made it work?
+- t: Read. ATLAS case study AML.CS0025, split-view poisoning
+  u: https://atlas.mitre.org/studies/AML.CS0025
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: How expired domains in a dataset let an attacker change training data.
+tools: []

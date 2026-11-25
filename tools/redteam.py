@@ -48,7 +48,7 @@ WEEKS = [
      [("frameworks/f04.html", "STRIDE"), ("frameworks/f01.html", "MITRE ATLAS"), ("frameworks/f06.html", "ARTEX")]),
     ("Mar 31", "Privacy, integrity and the frontier", "Privacy and training data extraction", ["carlini", "scalableext", "miallm"], "", "Canary extraction",
      [("attack/l04.html", "Lesson 4"), ("attack/l04-desk.html", "Lesson 4 desk")]),
-    ("Apr 7", "Privacy, integrity and the frontier", "Guest lecture, the agent as adversary", ["aicontrol"], "The syllabus also lists selected sections of a 2026 METR incident investigation.", "",
+    ("Apr 7", "Privacy, integrity and the frontier", "Guest lecture, the agent as adversary", ["aicontrol", "atlascs68"], "The syllabus also lists selected sections of a 2026 METR investigation of this incident.", "",
      [("attack/l10.html", "Lesson 10"), ("defend/m13.html", "Module 13")]),
     ("Apr 14", "Privacy, integrity and the frontier", "Poisoning, hallucination and sycophancy", ["nearconst", "sleeper", "sycophancy"], "", "Sycophancy and hallucination measurement",
      [("attack/l07.html", "Lesson 7"), ("attack/l13.html", "Lesson 13"), ("prompting/p04.html", "Prompting for security work")]),

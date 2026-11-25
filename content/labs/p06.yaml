@@ -1,0 +1,26 @@
+tasks:
+- t: PromptTrace lab 4.2. The Vault
+  u: https://prompttrace.airedlab.com/labs/the-vault
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: Face a code output guard, a canary token and a classifier. Write down which layer stopped each attempt.
+- t: PromptTrace Learn. LLM + Defenses
+  u: https://prompttrace.airedlab.com/learn/llm-defenses
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read the defense layers and their limits.
+- t: AgentDojo documentation
+  u: https://ethz-spylab.github.io/agentdojo/
+  kind: lab
+  access: free, runs on your machine
+  goal: Run the benchmark on one suite with and without a defense, and compare utility and attack success.
+- t: CaMeL reference code
+  u: https://github.com/google-research/camel-prompt-injection
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Read how the privileged and quarantined models and the capabilities are built.
+- t: Microsoft AI red team docs
+  u: https://learn.microsoft.com/en-us/security/ai-red-team/
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Read how a large red team plans and reports on AI systems.

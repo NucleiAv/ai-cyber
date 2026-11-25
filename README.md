@@ -67,6 +67,10 @@ files/offensive/        attack lecture sheets and lab code
 
 Each zip is a Brightspace export. Its pages load shared files (`../css`, `../js`, `../tooltips`) from the root of the zip. If you open a page from inside the zip, Windows extracts only that page, so styles and scripts are missing. On the website, or after you extract the whole zip and serve the folder, every page and lab works.
 
+## Progress trackers
+
+Every hands-on lab task and every practice desk has a done tick. Each track, Prompting, Defend, Attack and Frameworks, has its own tracker in its sidebar and on its overview page, and the home page shows all four. The build writes the list of trackable items to `assets/js/tracks.js`. Ticks stay in your browser.
+
 ## Light and dark mode
 
 The sun and moon button in the header switches themes. The choice is saved in your browser. With no choice saved, the site follows your system setting.

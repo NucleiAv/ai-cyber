@@ -1,0 +1,22 @@
+tasks:
+- t: PromptTrace Learn, module 1. The Bare LLM
+  u: https://prompttrace.airedlab.com/learn/the-bare-llm
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read how a model with no guards handles a secret. About 15 minutes.
+- t: PromptTrace lab 1.1. Hello, Injection
+  u: https://prompttrace.airedlab.com/labs/hello-injection
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: A chatbot guards a secret word. Make it reveal the word.
+- t: Prompt Airlines, challenge 1
+  u: https://promptairlines.com/
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Press Start the challenge. Read the goal above the chat, get the flag from the support bot, and submit it in the flag box. Use the Under The Hood tab to see what the bot sees.
+- t: Lakera Agent Breaker, Trippy Planner, level Novice
+  u: https://play.lakera.ai/agent-breaker
+  kind: lab
+  access: free, sign-in to save progress
+  goal: Pick the Trippy Planner app and clear its first level. Each app has five levels, from Novice to Legendary.
+tools: []

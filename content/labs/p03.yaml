@@ -1,0 +1,21 @@
+tasks:
+- t: Anthropic tutorial, chapter 4. Separating data and instructions
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/04_Separating_Data_and_Instructions.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Do the exercises with XML tags around data.
+- t: Anthropic tutorial, chapter 5. Formatting output
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/05_Formatting_Output_and_Speaking_for_Claude.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Do the exercises on output format.
+- t: PromptTrace Learn. System prompts and the context window
+  u: https://prompttrace.airedlab.com/learn/system-prompts
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read how system, user and tool text share one context.
+- t: PromptTrace lab 1.1. Hello, Injection
+  u: https://prompttrace.airedlab.com/labs/hello-injection
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: Extract the guarded secret word, then look at the Context Trace to see which layer you overrode.

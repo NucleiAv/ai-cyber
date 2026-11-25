@@ -1,0 +1,26 @@
+tasks:
+- t: Anthropic tutorial, chapter 1. Basic prompt structure
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/01_Basic_Prompt_Structure.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Do the chapter exercises. Notebooks run in Jupyter or Colab with an Anthropic API key.
+- t: Anthropic tutorial, chapter 2. Being clear and direct
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/02_Being_Clear_and_Direct.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Do the exercises, then rewrite one of your own prompts the same way.
+- t: Anthropic tutorial, chapter 3. Assigning roles
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/03_Assigning_Roles_Role_Prompting.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Do the exercises on role prompting.
+- t: Microsoft Generative AI for Beginners, lesson 4
+  u: https://github.com/microsoft/generative-ai-for-beginners/blob/main/04-prompt-engineering-fundamentals/README.md
+  kind: learn
+  access: free, GitHub
+  goal: Read the prompt engineering fundamentals lesson and do its assignment.
+- t: DeepLearning.AI. ChatGPT Prompt Engineering for Developers
+  u: https://www.deeplearning.ai/short-courses/chatgpt-prompt-engineering-for-developers/
+  kind: learn
+  access: free account
+  goal: A short free course with an in-browser notebook. Do the guidelines and iterative lessons.

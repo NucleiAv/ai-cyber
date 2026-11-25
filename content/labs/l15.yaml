@@ -1,0 +1,34 @@
+tasks:
+- t: Claude Academy. Introduction to Model Context Protocol
+  u: https://academy.claude.com/courses/introduction-to-model-context-protocol
+  kind: learn
+  access: free account
+  goal: About one hour. Hosts, clients, servers and tools.
+- t: PromptTrace Learn, module 5. LLM Agents and Agentic Security
+  u: https://prompttrace.airedlab.com/learn/agentic-security
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read why agents amplify every risk, with MCP and A2A examples.
+- t: PromptTrace lab 5.1. Nexus
+  u: https://prompttrace.airedlab.com/labs/nexus
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: An agent turns company data into charts and its rendering looks locked down. Break it.
+- t: Damn Vulnerable MCP Server, challenges 1 to 3
+  u: https://github.com/harishsg993010/damn-vulnerable-MCP-server
+  kind: lab
+  access: free, runs on your machine
+  goal: Easy tier. Basic prompt injection, tool poisoning and excessive permission scope. Challenge 1 runs at localhost port 9001.
+- t: Damn Vulnerable MCP Server, challenges 4 to 7
+  u: https://github.com/harishsg993010/damn-vulnerable-MCP-server
+  kind: lab
+  access: free, runs on your machine
+  goal: Medium tier. Rug pull, tool shadowing, indirect prompt injection and token theft.
+- t: Read. ATLAS case study AML.CS0054, data exfiltration via a poisoned MCP tool
+  u: https://atlas.mitre.org/studies/AML.CS0054
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: A real tool poisoning case. Name its ATLAS techniques.
+tools:
+- mcp
+- ollama

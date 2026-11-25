@@ -1,0 +1,21 @@
+tasks:
+- t: Anthropic tutorial, chapter 8. Avoiding hallucinations
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/08_Avoiding_Hallucinations.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Do the exercises on grounding answers in the given text.
+- t: Anthropic tutorial, chapter 9. Complex prompts from scratch
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/09_Complex_Prompts_from_Scratch.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Build one full prompt from the industry examples, then write a triage prompt the same way.
+- t: PromptTrace Learn. RAG, when LLMs read external data
+  u: https://prompttrace.airedlab.com/learn/rag-explained
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read how retrieved text can carry instructions into an analyst tool.
+- t: Microsoft Generative AI for Beginners, lesson 13. Securing AI applications
+  u: https://github.com/microsoft/generative-ai-for-beginners/blob/main/13-securing-ai-applications/README.md
+  kind: read
+  access: free, GitHub
+  goal: Read the risks and controls for AI apps used in real work.

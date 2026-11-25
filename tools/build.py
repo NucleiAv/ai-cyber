@@ -351,17 +351,18 @@ HEAD = """<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/site.css?v=20261126a">
+<link rel="stylesheet" href="../assets/css/site.css?v=20261126b">
 </head>
 <body data-root="../" data-track="{track}">
 <a class="skip" href="#main">Skip to content</a>
 <header id="top"></header>
 """
 TAIL = """<footer id="foot"></footer>
-<script src="../assets/js/data.js?v=20261126a"></script>
-<script src="../assets/js/site.js?v=20261126a"></script>
-<script src="../assets/js/learn.js?v=20261126a"></script>
-<script src="../assets/js/scene.js?v=20261126a"></script>
+<script src="../assets/js/tracks.js?v=20261126b"></script>
+<script src="../assets/js/data.js?v=20261126b"></script>
+<script src="../assets/js/site.js?v=20261126b"></script>
+<script src="../assets/js/learn.js?v=20261126b"></script>
+<script src="../assets/js/scene.js?v=20261126b"></script>
 </body>
 </html>
 """
@@ -410,11 +411,38 @@ def frameworks(d):
             + '<p class="small muted">ATLAS names follow release 2026.10. OWASP links open the official entry.</p>')
 
 # ---------------------------------------------------------------- sidebars
+TRACK_ITEMS = {}
+
+def track_add(track, kind, did):
+    """Record a trackable item, a hands-on lab or a practice desk, for the per-track trackers."""
+    TRACK_ITEMS.setdefault(track, {"labs": [], "desks": []})[kind].append(did)
+
+TICKSVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13c2 1.4 3.7 3.2 5.2 5.4C11.6 12.6 15.4 7.4 21 3"/></svg>'
+KIND = {"lab": "Hands-on lab", "learn": "Guided lesson", "read": "Read", "tool": "Tool"}
+
+def lab_tasks(tasks, track, slug):
+    """Pinpointed lab tasks, each with its own done tick."""
+    out = []
+    for i, t in enumerate(tasks):
+        did = f"lab.{track}.{slug}.{i}"
+        track_add(track, "labs", did)
+        u = t["u"]
+        ext = "" if u.startswith("#") else ' target="_blank" rel="noopener"'
+        out.append(f'<li class="ltask"><label class="check" title="Mark done"><input type="checkbox" data-id="{did}" aria-label="Mark done. {E(t["t"])}"><span class="box"></span>{TICKSVG}</label>'
+                   f'<div><a class="ltask-t" href="{E(u)}"{ext}>{E(t["t"])}</a>'
+                   f'<div class="ltask-tags"><span class="tag {"atk" if t.get("kind") == "lab" else ""}">{E(KIND.get(t.get("kind", "lab"), "Lab"))}</span><span class="tag">{E(t.get("access", ""))}</span></div>'
+                   f'<p>{inline(t["goal"])}</p>' + (f'<p class="small muted">{inline(t["where"])}</p>' if t.get("where") else "") + '</div></li>')
+    return ('<p class="small muted">Do these in order. Each link opens the exact lab, level or lesson. Tick each one when you finish it. The tracker in the sidebar counts them.</p>'
+            f'<ol class="ltasks">{"".join(out)}</ol>')
+
+def tracker(track):
+    return f'<div class="tracker" data-tracker="{track}"></div>'
+
 def side_wrap(track, label, inner):
     dot = {"attack": "atk", "defend": "def", "frameworks": "pen", "prompting": "def"}.get(track, "def")
     return (f'<aside class="side" id="side" aria-label="{E(label)}">'
             f'<button class="side-btn" type="button" aria-expanded="false" aria-controls="side-nav">{E(label)}, all lessons</button>'
-            f'<nav id="side-nav"><p class="side-h"><span class="dot {dot}"></span>{E(label)}</p>{inner}</nav></aside>')
+            f'<nav id="side-nav"><p class="side-h"><span class="dot {dot}"></span>{E(label)}</p>{tracker(track)}{inner}</nav></aside>')
 
 def side_group(num, title, href, cur, items, done=None):
     """One expandable group. items = [(href, label, mark, is_current)]"""
@@ -494,6 +522,13 @@ def build_lessons(track="attack", label="Attack track", crumb="Attack", kind="at
                 L["desk"] = dk
         if L.get("desk"):
             L["desk"] = with_extra(L["desk"], L["slug"])
+        lp = f'content/labs/{L["slug"]}.yaml'
+        if os.path.exists(lp):
+            lx = yaml.safe_load(open(lp, encoding="utf-8")) or {}
+            L.setdefault("lab", {})
+            L["lab"] = dict(L["lab"])
+            L["lab"]["tasks"] = lx.get("tasks", [])
+            L["lab"]["links"] = lx.get("tools", [])
     for i, L in enumerate(lessons):
         side = attack_side(lessons, L["slug"], track, label)
         prev = (f'{lessons[i - 1]["slug"]}.html', lessons[i - 1]["title"]) if i else ("index.html", "Track overview")
@@ -526,6 +561,10 @@ def build_lessons(track="attack", label="Attack track", crumb="Attack", kind="at
         lab = L.get("lab")
         if lab:
             inner = md(lab.get("intro"))
+            if lab.get("tasks"):
+                inner += "<h3>Labs and lessons to do</h3>" + lab_tasks(lab["tasks"], track, L["slug"])
+                if lab.get("steps"):
+                    inner += "<h3>Step by step</h3>"
             if lab.get("steps"):
                 inner += "<ol class=\"flowlist\">" + "".join(f"<li>{inline(s)}</li>" for s in lab["steps"]) + "</ol>"
             if lab.get("code"):
@@ -535,7 +574,7 @@ def build_lessons(track="attack", label="Attack track", crumb="Attack", kind="at
             if lab.get("hints"):
                 inner += "<details class=\"hint\"><summary>Hints, open only if stuck for 30 minutes</summary><ul>" + "".join(f"<li>{inline(h)}</li>" for h in lab["hints"]) + "</ul></details>"
             if lab.get("links"):
-                inner += "<ul class=\"refs\">" + "".join(link_li(x) for x in lab["links"]) + "</ul>"
+                inner += "<h3>Tools you need</h3><ul class=\"refs\">" + "".join(link_li(x) for x in lab["links"]) + "</ul>"
             add("lab", "Hands-on lab", inner)
         if L.get("readings"):
             add("read", "Readings, explained", "<ul class=\"refs\">" + "".join(link_li(r[0], r[1] if len(r) > 1 else None, r[0] in L.get("star", [])) for r in L["readings"]) + "</ul>")
@@ -570,6 +609,7 @@ def build_lessons(track="attack", label="Attack track", crumb="Attack", kind="at
         dnext = (f'{L["slug"]}-desk.html', f'{L["short"]}, practice desk') if L.get("desk") else nxt
         page(f'{track}/{L["slug"]}.html', jt(L["title"], f'{page_suffix} {L["num"]}'), L["lede"][:150], track, side, head + "".join(parts) + done_end(f'{track}.{L["slug"]}', "Mark this lesson done") + pager(prev, dnext))
         if L.get("desk"):
+            track_add(track, "desks", f'{track}.{L["slug"]}-desk')
             crumbs = f'<nav class="crumbs"><a href="../index.html">Home</a><span>/</span><a href="index.html">{crumb}</a><span>/</span><a href="{L["slug"]}.html">{E(L["num"])}</a><span>/</span><span>Practice desk</span></nav>'
             dbody = desk_body(L["desk"], L["slug"], crumbs, f'{crumb} · {eyebrow} {L["num"]} · Practice desk', kind, "scenario practice, written for this site")
             page(f'{track}/{L["slug"]}-desk.html', jt(L["desk"]["title"], "Practice desk"), L["desk"]["lede"][:150], track,
@@ -582,6 +622,7 @@ def build_lessons(track="attack", label="Attack track", crumb="Attack", kind="at
     body = (f'<nav class="crumbs"><a href="../index.html">Home</a><span>/</span><span>{crumb}</span></nav>'
             f'<header class="doc-head"><div class="eyebrow"><span class="tag {kind}"><span class="dot {kind}"></span>{E(label)}</span><span>{E(ov_eyebrow)}</span></div>'
             f'<h1>{E(ov_title)}</h1><p class="lede">{inline(ov_lede)}</p></header>'
+            + tracker(track)
             + md(open(f"content/{track}/_intro.md", encoding="utf-8").read() if os.path.exists(f"content/{track}/_intro.md") else "")
             + f'<div class="lesson-list">{rows}</div>')
     page(f"{track}/index.html", jt(label, ov_title), ov_desc, track, attack_side(lessons, "index", track, label), body)
@@ -659,7 +700,11 @@ def build_defend():
         if M.get("desk"):
             add("desk", "Practice desk", f'<p>{inline(M["desk"].get("blurb", "Work through the class exercise with instant feedback."))}</p><a class="btn btn-primary" href="{key}-desk.html">Open the practice desk</a>')
         if M["_labs"]:
-            add("labs", "Interactive labs", "<ul class=\"labgrid\">" + "".join(f'<li><a href="lab.html?m={M["n"]}&amp;f={E(l["f"])}">{E(tidy(l["t"]))}</a></li>' for l in M["_labs"]) + "</ul>")
+            for j, l in enumerate(M["_labs"]):
+                track_add("defend", "labs", f"lab.defend.{key}.{j}")
+            add("labs", "Interactive labs", '<p class="small muted">Each lab runs inside this site. Tick it here or at the end of the lab page when you finish it.</p><ul class="labgrid">' + "".join(
+                f'<li><label class="check" title="Mark done"><input type="checkbox" data-id="lab.defend.{key}.{j}" aria-label="Mark done. {E(tidy(l["t"]))}"><span class="box"></span>{TICKSVG}</label><a href="lab.html?m={M["n"]}&amp;f={E(l["f"])}">{E(tidy(l["t"]))}</a></li>'
+                for j, l in enumerate(M["_labs"])) + "</ul>")
         add("frameworks", "Map to the frameworks", frameworks(M))
         if M.get("slides"):
             sl = M["slides"]
@@ -693,6 +738,7 @@ def build_defend():
             page(f"defend/{sid}.html", jt(tidy(s["t"]), f'Module {M["n"]}'), blurb[:150], "defend", defend_side(mods, sid), body)
 
         if M.get("desk"):
+            track_add("defend", "desks", f"defend.{key}-desk")
             dk = M["desk"]
             crumbs = f'<nav class="crumbs"><a href="../index.html">Home</a><span>/</span><a href="index.html">Defend</a><span>/</span><a href="{key}.html">Module {M["n"]}</a><span>/</span><span>Practice desk</span></nav>'
             body = desk_body(dk, key, crumbs, f'Module {M["n"]} · Practice desk', "def", dk.get("source", "from the class workbook and its answer slides")) + done_end(f"defend.{key}-desk", "Mark this practice desk done") + nav(f"{key}-desk.html")
@@ -702,7 +748,8 @@ def build_defend():
     body = ('<nav class="crumbs"><a href="../index.html">Home</a><span>/</span><a href="index.html">Defend</a><span>/</span><span id="lab-crumb">Lab</span></nav>'
             '<header class="doc-head"><div class="eyebrow"><span class="tag def"><span class="dot def"></span>Interactive lab</span></div><h1 id="lab-title">Interactive lab</h1>'
             '<p class="lede" id="lab-lede">The lab runs below. Use the controls inside it.</p></header>'
-            '<div class="embed"><iframe class="nyu" id="lab-frame" title="Interactive lab"></iframe></div><p class="small muted" id="lab-back"></p>')
+            '<div class="embed"><iframe class="nyu" id="lab-frame" title="Interactive lab"></iframe></div><p class="small muted" id="lab-back"></p>'
+            + done_end("lab.defend.pending", "Mark this lab done", "Ticks save in this browser and count in the defend tracker."))
     page("defend/lab.html", "Interactive lab. Defend track", "An interactive lab from the defensive course.", "defend", defend_side(mods, "lab"), body)
 
     # overview
@@ -718,6 +765,7 @@ def build_defend():
     body = ('<nav class="crumbs"><a href="../index.html">Home</a><span>/</span><span>Defend</span></nav>'
             '<header class="doc-head"><div class="eyebrow"><span class="tag def"><span class="dot def"></span>Defend track</span><span>NYU Tandon · AI for Cyber Security · CS-GY 9223</span></div>'
             '<h1>AI for cyber security</h1><p class="lede">How defenders use AI for detection, threat intelligence and code review, and how to defend AI systems. Each module starts with a plain primer, then opens the course sections, labs and practice desks inside this site.</p></header>'
+            + tracker("defend")
             + md(open("content/defend/_intro.md", encoding="utf-8").read() if os.path.exists("content/defend/_intro.md") else "")
             + f'<div class="lesson-list">{rows}</div>')
     page("defend/index.html", "Defend track. AI for cyber security", "Twelve modules on AI for defense with primers, embedded course sections, labs and practice desks.", "defend", defend_side(mods, "index"), body)
@@ -746,4 +794,8 @@ if __name__ == "__main__":
         desc="The NYU Tandon red teaming course, week by week, with its readings and labs mapped to the lessons on this site.", track="")
     tail = re.sub(r'<script src="assets/js/(learn|scene)\.js[^"]*"></script>\s*', "", TAIL.replace("../", ""))
     open("redteam.html", "w", encoding="utf-8").write(head + redteam.build(LINKS, E, "") + "\n" + tail)
+    names = {"attack": "Attack", "defend": "Defend", "frameworks": "Frameworks", "prompting": "Prompting"}
+    man = {k: dict(v, name=names.get(k, k)) for k, v in TRACK_ITEMS.items()}
+    open("assets/js/tracks.js", "w", encoding="utf-8").write("/* Generated by tools/build.py. Trackable labs and desks per track. */\nwindow.TRACKS = " + json.dumps(man, separators=(",", ":")) + ";\n")
+    print("tracker items", {k: (len(v["labs"]), len(v["desks"])) for k, v in TRACK_ITEMS.items()})
     print(f"built {len(a)} attack lessons and {len(d)} defend modules")

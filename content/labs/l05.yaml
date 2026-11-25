@@ -1,0 +1,25 @@
+tasks:
+- t: LLMGoat A03. Supply Chain
+  u: https://github.com/SECFORCE/LLMGoat#-usage
+  kind: lab
+  access: free, runs on your machine
+  goal: Find the vulnerable plugin and use it to read the file flag.txt.
+  where: Start LLMGoat with Docker as its README shows, open it in your browser, and pick A03 Supply Chain. The route is /challenges/a03-supply-chain-vulnerabilities.
+- t: Malicious pickle lab, on this page
+  u: '#lab'
+  kind: lab
+  access: free, runs on your machine
+  goal: Build malicious_model.pth with the code below, load it with weights_only=False, then with weights_only=True. Run it only in a throwaway machine.
+- t: ModelScan, getting started
+  u: https://github.com/protectai/modelscan
+  kind: tool
+  access: free, runs on your machine
+  goal: Install ModelScan and scan your malicious_model.pth. Note what it reports.
+- t: Read. ATLAS case study AML.CS0065, model namespace reuse
+  u: https://atlas.mitre.org/studies/AML.CS0065
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: A real case of reclaimed model names on a hub. Map it to the steps in this lesson.
+tools:
+- torchload
+- safetensors

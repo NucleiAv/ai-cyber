@@ -1,0 +1,21 @@
+tasks:
+- t: Explore the D3FEND matrix
+  u: https://d3fend.mitre.org/
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Open the matrix and find one technique under each of the seven tactics.
+- t: From attack to defense. T1566 Phishing in D3FEND
+  u: https://d3fend.mitre.org/offensive-technique/attack/T1566/
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: List the defensive techniques D3FEND links to phishing and the digital artifacts that connect them.
+- t: Read a tactic page. Isolate
+  u: https://d3fend.mitre.org/tactic/d3f:Isolate/
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Pick two isolation techniques that would limit an LLM agent's tools.
+- t: Draw a graph in D3FEND CAD
+  u: https://d3fend.mitre.org/cad/
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Build a small graph for prompt-injected email. The attack, the artifacts it touches, and two defenses.

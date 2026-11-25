@@ -1,0 +1,18 @@
+tasks:
+- t: Sigstore quickstart with cosign
+  u: https://docs.sigstore.dev/quickstart/quickstart-cosign/
+  kind: learn
+  access: free, runs on your machine
+  goal: Install cosign and sign and verify one artifact before the full lab.
+- t: Signed model gate lab, on this page
+  u: '#lab'
+  kind: lab
+  access: free, runs on your machine
+  goal: Sign v1, leave v2 unsigned, and make deploy.sh print SUCCESS for v1 and BLOCKED for v2.
+- t: Explore. OpenSSF model-transparency
+  u: https://github.com/sigstore/model-transparency
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Read how the model signing tool signs a whole model folder, not one file.
+tools:
+- cosign

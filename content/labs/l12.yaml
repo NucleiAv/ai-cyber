@@ -1,0 +1,13 @@
+tasks:
+- t: LLMGoat A08. Vector and Embedding Weaknesses
+  u: https://github.com/SECFORCE/LLMGoat#-usage
+  kind: lab
+  access: free, runs on your machine
+  goal: Use Import and Export Vectors to change the vector file so the assistant reveals the hidden flag.
+  where: Start LLMGoat with Docker as its README shows, open it in your browser, and pick A08 Vector and Embedding Weaknesses. The route is /challenges/a08-vector-embedding-weaknesses.
+- t: PromptTrace Learn, module 2. RAG, when LLMs read external data
+  u: https://prompttrace.airedlab.com/learn/rag-explained
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read how chunks are embedded, searched and placed in the prompt.
+tools: []

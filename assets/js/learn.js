@@ -267,6 +267,14 @@
     $("#lab-lede").textContent = "A hands-on lab from Module " + m + (mod ? ", " + mod.t.toLowerCase() : "") + ". Use the controls inside the frame. Nothing you do here leaves your browser.";
     $("#lab-back").innerHTML = `<a href="m${String(m).padStart(2, "0")}.html">Back to Module ${m}</a> · <a href="../course/defensive/${key}/${f}" target="_blank">Open the lab full screen</a>`;
     fr.src = `../course/defensive/${key}/${f}`;
+    /* the done tick at the end of the page counts this lab in the defend tracker */
+    const files = window.MODULE_FILES && window.MODULE_FILES[key] ? window.MODULE_FILES[key].labs : [];
+    const idx = files.findIndex(l => l.f === f);
+    const box = $('input[data-id="lab.defend.pending"]');
+    if (box && idx >= 0) {
+      box.dataset.id = `lab.defend.m${String(m).padStart(2, "0")}.${idx}`;
+      box.checked = !!store.get(box.dataset.id);
+    } else if (box) { box.closest(".done-end").remove(); }
     const grp = $(`.side-mod a.side-open[href="m${String(m).padStart(2, "0")}.html"]`);
     if (grp) { const d = grp.closest("details"); d.open = true; d.classList.add("cur"); }
   }

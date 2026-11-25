@@ -376,6 +376,31 @@
     draw();
   }
 
+  /* ---------- Per-track trackers. Hands-on labs and practice desks, counted from window.TRACKS ---------- */
+  const TRACK_PAGE = { attack: "attack/index.html", defend: "defend/index.html", frameworks: "frameworks/index.html", prompting: "prompting/index.html" };
+  function trackCount(t) {
+    const T = (window.TRACKS || {})[t]; if (!T) return null;
+    const done = ids => ids.filter(id => store.get(id)).length;
+    return { name: T.name, labs: [done(T.labs), T.labs.length], desks: [done(T.desks), T.desks.length] };
+  }
+  function meter(label, [d, n]) {
+    const pct = n ? Math.round((d / n) * 100) : 0;
+    return `<div class="tk-row"><div class="tk-top"><span>${label}</span><b>${d} of ${n}</b></div><div class="tk-bar" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${d}"><i style="transform:scaleX(${n ? d / n : 0})"></i></div><span class="sr-only">${pct} percent</span></div>`;
+  }
+  function renderTrackers() {
+    $$("[data-tracker]").forEach(el => {
+      const c = trackCount(el.dataset.tracker); if (!c) return;
+      el.innerHTML = `<p class="tk-h">${esc(c.name)} progress</p>${meter("Hands-on labs", c.labs)}${meter("Practice desks", c.desks)}`;
+    });
+    $$("[data-trackers]").forEach(el => {
+      el.innerHTML = ["prompting", "defend", "attack", "frameworks"].map(t => {
+        const c = trackCount(t); if (!c) return "";
+        return `<a class="card tk-card" href="${R}${TRACK_PAGE[t]}"><p class="tk-h">${esc(c.name)}</p>${meter("Hands-on labs", c.labs)}${meter("Practice desks", c.desks)}</a>`;
+      }).join("");
+    });
+  }
+  document.addEventListener("change", e => { if (e.target.matches && e.target.matches("input[data-id]")) setTimeout(renderTrackers, 0); });
+
   /* ---------- Home progress ---------- */
   function renderHome() {
     const el = $("#home-progress"); if (!el || !window.PLAN) return;
@@ -532,6 +557,7 @@
     renderRoadmap();
     renderLibrary();
     renderHome();
+    renderTrackers();
     renderStats();
     drawRoute();
     initQuiz();

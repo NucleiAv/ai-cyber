@@ -1,0 +1,26 @@
+tasks:
+- t: Explore the ATLAS matrix
+  u: https://atlas.mitre.org/matrices/ATLAS
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Filter by Generative AI. Find the two tactics that exist only in ATLAS and open one technique under each.
+- t: Map a case study. AML.CS0059 EchoLeak
+  u: https://atlas.mitre.org/studies/AML.CS0059
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Read the zero-click prompt injection against M365 Copilot. Write its steps as tactic, technique, ID, then compare with the procedure on the page.
+- t: Map a case study. AML.CS0024 Morris II worm
+  u: https://atlas.mitre.org/studies/AML.CS0024
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Read the RAG-based worm. Mark which steps are ATLAS-only and which also exist in ATT&CK.
+- t: Build a layer in the ATLAS Navigator
+  u: https://mitre-atlas.github.io/atlas-navigator/
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Color every technique from EchoLeak in one color and Morris II in another. Export the layer as JSON and keep it.
+- t: Explore. ATLAS data on GitHub
+  u: https://github.com/mitre-atlas/atlas-data
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: See how tactics, techniques and case studies are stored as YAML. Find the file for AML.T0051.

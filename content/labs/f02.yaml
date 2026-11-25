@@ -1,0 +1,21 @@
+tasks:
+- t: MITRE ATT&CK training, the free courses
+  u: https://attack.mitre.org/resources/learn-more-about-attack/training/
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Start the Cyber Threat Intelligence training. Its exercises use an older ATT&CK version, so check current names as you go.
+- t: Read a technique page. T1566 Phishing
+  u: https://attack.mitre.org/techniques/T1566/
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Note the sub-techniques, the procedure examples and the mitigations and detections listed.
+- t: Build a coverage layer in the ATT&CK Navigator
+  u: https://mitre-attack.github.io/attack-navigator/
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Create an Enterprise layer. Score the techniques your team detects as 1 and the rest as 0. Export it as SVG or JSON.
+- t: Read an Atomic Red Team test. T1059.001 PowerShell
+  u: https://github.com/redcanaryco/atomic-red-team/tree/master/atomics/T1059.001
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Read how small tests check whether a detection fires. Run tests only in a lab machine you own.

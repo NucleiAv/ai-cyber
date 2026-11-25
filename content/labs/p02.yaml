@@ -1,0 +1,31 @@
+tasks:
+- t: Anthropic tutorial, chapter 6. Thinking step by step
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/06_Precognition_Thinking_Step_by_Step.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Do the exercises on chain of thought.
+- t: Anthropic tutorial, chapter 7. Using examples
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/07_Using_Examples_Few-Shot_Prompting.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Do the few-shot exercises.
+- t: Anthropic tutorial, appendix. Chaining prompts
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/10.1_Appendix_Chaining%20Prompts.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: Build a two-step chain like the one in this lesson.
+- t: Anthropic tutorial, appendix. Tool use
+  u: https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/10.2_Appendix_Tool%20Use.ipynb
+  kind: learn
+  access: free notebook, needs an API key to run
+  goal: See how a tool call loop works, the core of ReAct.
+- t: Microsoft Generative AI for Beginners, lesson 5. Advanced prompts
+  u: https://github.com/microsoft/generative-ai-for-beginners/blob/main/05-advanced-prompts/README.md
+  kind: learn
+  access: free, GitHub
+  goal: Read about few-shot, chain of thought and generated knowledge, and do the assignment.
+- t: Prompt Engineering Guide. Techniques
+  u: https://www.promptingguide.ai/techniques
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Read the pages for self-consistency, ReAct and tree of thoughts.

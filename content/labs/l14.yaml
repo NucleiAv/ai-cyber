@@ -1,0 +1,19 @@
+tasks:
+- t: LLMGoat A10. Unbounded Consumption
+  u: https://github.com/SECFORCE/LLMGoat#-usage
+  kind: lab
+  access: free, runs on your machine
+  goal: Make the assistant hang for 60 seconds or more.
+  where: Start LLMGoat with Docker as its README shows, open it in your browser, and pick A10 Unbounded Consumption. The route is /challenges/a10-unbounded-consumption.
+- t: Sponge prompt measurement, on this page
+  u: '#lab'
+  kind: lab
+  access: free, runs on your machine
+  goal: Run a normal prompt and your sponge prompt with ollama run --verbose and compare the timing lines.
+- t: Read. ATLAS case study AML.CS0030, LLMjacking
+  u: https://atlas.mitre.org/studies/AML.CS0030
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Stolen cloud keys used to run paid models on someone else's bill.
+tools:
+- ollama

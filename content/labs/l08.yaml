@@ -1,0 +1,18 @@
+tasks:
+- t: LLMGoat A05. Improper Output Handling
+  u: https://github.com/SECFORCE/LLMGoat#-usage
+  kind: lab
+  access: free, runs on your machine
+  goal: Get the assistant to disclose a secret note from one of the goats.
+  where: Start LLMGoat with Docker as its README shows, open it in your browser, and pick A05 Improper Output Handling. The route is /challenges/a05-improper-output-handling.
+- t: PortSwigger lab. Exploiting insecure output handling in LLMs
+  u: https://portswigger.net/web-security/llm-attacks/lab-exploiting-insecure-output-handling-in-llms
+  kind: lab
+  access: free account
+  goal: Use indirect prompt injection in a product review to make the live chat run an XSS attack that deletes the user carlos.
+- t: PromptTrace lab 3.2. Output Injection
+  u: https://prompttrace.airedlab.com/labs/output-injection
+  kind: lab
+  access: free, sign in with GitHub or Google
+  goal: The bot makes clickable markdown links but its prompt forbids unsafe URL schemes. Get unsafe output into the renderer anyway.
+tools: []

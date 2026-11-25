@@ -69,6 +69,7 @@ window.LINKS = {
   geminiprompt:  { t: "Google. Prompt design strategies for the Gemini API", u: "https://ai.google.dev/gemini-api/docs/prompting-strategies", type: "course", topic: ["prompting"] },
   promptguide:   { t: "DAIR.AI. Prompt Engineering Guide", u: "https://www.promptingguide.ai/", type: "course", topic: ["prompting"] },
   learnprompt:   { t: "Learn Prompting", u: "https://learnprompting.org/docs/introduction", type: "course", topic: ["prompting"] },
+  atlascs68:     { t: "ATLAS case study AML.CS0068. Autonomous OpenAI evaluation agents compromise Hugging Face infrastructure", u: "https://atlas.mitre.org/studies/AML.CS0068", type: "article", topic: ["agents"] },
   owaspinjcs:    { t: "OWASP. LLM prompt injection prevention cheat sheet", u: "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html", type: "standard", topic: ["injection", "defense"] },
 
   /* Articles and blogs */
@@ -121,7 +122,7 @@ window.LINKS = {
   pslab:         { t: "PortSwigger lab. Exploiting insecure output handling in LLMs", u: "https://portswigger.net/web-security/llm-attacks/lab-exploiting-insecure-output-handling-in-llms", type: "lab", topic: ["output"] },
   psweb:         { t: "PortSwigger Web LLM attacks", u: "https://portswigger.net/web-security/llm-attacks", type: "lab", topic: ["output", "agents", "injection"] },
   opaplay:       { t: "OPA Playground", u: "https://play.openpolicyagent.org/", type: "lab", topic: ["governance"] },
-  dvmcp:         { t: "Damn Vulnerable MCP Server", u: "https://github.com/harishsg993010/damn-vulnerable-MCP-server", type: "lab", topic: ["mcp"], note: "10 challenges. Tool poisoning, rug pull, tool shadowing, token theft." },
+  dvmcp:         { t: "Damn Vulnerable MCP Server", u: "https://github.com/harishsg993010/damn-vulnerable-MCP-server", type: "lab", topic: ["mcp"], note: "15 challenges in five tiers. Tool poisoning, rug pull, tool shadowing, token theft, identity and supply chain." },
   dvla:          { t: "Damn Vulnerable LLM Agent (ReversecLabs)", u: "https://github.com/ReversecLabs/damn-vulnerable-llm-agent", type: "lab", topic: ["agents"], note: "Moved from WithSecureLabs to ReversecLabs." },
   finbot:        { t: "OWASP FinBot CTF", u: "https://owasp-finbot-ctf.org/", type: "lab", topic: ["agents", "mcp"] },
   finbotgh:      { t: "OWASP FinBot CTF on GitHub", u: "https://github.com/GenAI-Security-Project/finbot-ctf", type: "lab", topic: ["agents", "mcp"] },

@@ -1,0 +1,21 @@
+tasks:
+- t: Read the ARTEX README
+  u: https://github.com/BaaRai/ARTEX
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Find the planner, the worker, the two graphs and every brake the project lists.
+- t: Run OWASP Juice Shop as a safe target
+  u: https://owasp.org/www-project-juice-shop/
+  kind: lab
+  access: free, runs on your machine
+  goal: Start Juice Shop locally with Docker. It is a deliberately vulnerable web shop made for practice.
+- t: Pwning OWASP Juice Shop, the free guide
+  u: https://pwning.owasp-juice.shop/
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Solve two one-star challenges by hand first, so you can judge an agent's findings later.
+- t: Scope an autonomous test, on this page
+  u: '#lab'
+  kind: lab
+  access: free, runs on your machine
+  goal: Write the scope and deny list for a test of your local Juice Shop only. If you run ARTEX, point it only at that target.

@@ -1,0 +1,18 @@
+tasks:
+- t: LLMGoat A02. Sensitive Information Disclosure
+  u: https://github.com/SECFORCE/LLMGoat#-usage
+  kind: lab
+  access: free, runs on your machine
+  goal: Get the assistant to leak the location of the Alpine goat.
+  where: Start LLMGoat with Docker as its README shows, open it in your browser, and pick A02 Sensitive Information Disclosure. The route is /challenges/a02-sensitive-information-disclosure.
+- t: Prompt Injection CTF Learn. Sensitive context
+  u: https://prompt-injection-ctf-2026.web.app/ctf/learn/sensitive-context
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Short guided lesson on what an app puts in context and how it leaks.
+- t: Read. Wiz on leaking AI secrets in public code
+  u: https://www.wiz.io/blog/leaking-ai-secrets-in-public-code
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Read how API keys for AI services end up in public repositories. You need this for the extend task.
+tools: []

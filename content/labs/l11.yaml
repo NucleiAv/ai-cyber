@@ -1,0 +1,18 @@
+tasks:
+- t: LLMGoat A07. System Prompt Leakage
+  u: https://github.com/SECFORCE/LLMGoat#-usage
+  kind: lab
+  access: free, runs on your machine
+  goal: Get the assistant to leak a secret contained in its system prompt.
+  where: Start LLMGoat with Docker as its README shows, open it in your browser, and pick A07 System Prompt Leakage. The route is /challenges/a07-system-prompt-leakage.
+- t: PromptTrace Learn, module 1. System prompts and the context window
+  u: https://prompttrace.airedlab.com/learn/system-prompts
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read what a system prompt really is and why it is not a secret store.
+- t: Prompt Injection CTF, level 4. Token smuggling
+  u: https://prompt-injection-ctf-2026.web.app/ctf/challenges/level-4-token-smuggling
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Get past a filter by splitting or encoding the words it looks for.
+tools: []

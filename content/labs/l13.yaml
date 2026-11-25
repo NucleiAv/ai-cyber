@@ -1,0 +1,13 @@
+tasks:
+- t: LLMGoat A09. Misinformation
+  u: https://github.com/SECFORCE/LLMGoat#-usage
+  kind: lab
+  access: free, runs on your machine
+  goal: Convince the assistant that the image shows a Cyborg Goat. Reload the page to reset.
+  where: Start LLMGoat with Docker as its README shows, open it in your browser, and pick A09 Misinformation. The route is /challenges/a09-misinformation.
+- t: Read. ATLAS case study AML.CS0022, ChatGPT package hallucination
+  u: https://atlas.mitre.org/studies/AML.CS0022
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: How made-up package names became an attack path.
+tools: []

@@ -774,3 +774,34 @@ ul.plainlist { list-style: none; padding: 0; margin: 0; }
 ul.plainlist li { padding: 2px 0; font-size: 14px; }
 .nav a { white-space: nowrap; }
 @media (min-width: 1121px) and (max-width: 1280px) { .nav a { padding: 6px 9px; font-size: 13.5px; } }
+
+/* pinpointed lab tasks */
+ol.ltasks { list-style: none; padding: 0 !important; margin: 8px 0 24px; counter-reset: lt; }
+ol.ltasks > li.ltask { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 14px; align-items: start; padding: 14px 16px; margin: 0 0 10px !important; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+ol.ltasks .check { margin-top: 2px; }
+.ltask-t { font-weight: 600; font-size: 15.5px; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.ltask-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+.ltask-tags .tag { white-space: normal; }
+.ltask p { margin: 4px 0 0 !important; font-size: 14.5px; color: var(--ink-2); }
+li.ltask:has(input:checked) { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+li.ltask:has(input:checked) .ltask-t { color: var(--ink-3); }
+/* defend lab grid with ticks */
+.labgrid li { display: flex; align-items: center; gap: 10px; }
+.labgrid li > a { flex: 1; min-width: 0; }
+.labgrid li:has(input:checked) > a { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+/* trackers */
+.tracker { margin: 4px 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.tracker:empty { display: none; }
+.doc .tracker { max-width: 520px; margin: 20px 0 8px; }
+.tk-h { font: 500 12px var(--mono); color: var(--ink-3); margin: 0 0 8px; text-transform: none; }
+.tk-row { margin: 6px 0; }
+.tk-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.tk-top b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tk-bar { height: 6px; margin-top: 4px; border-radius: 3px; background: var(--raised); overflow: hidden; }
+.tk-bar i { display: block; height: 100%; width: 100%; background: var(--ok); transform-origin: left; transition: transform 400ms var(--ease); }
+.tk-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.tk-card { display: block; text-decoration: none; color: inherit; padding: 18px; }
+.tk-card .tk-h { font: 400 22px var(--serif); color: var(--ink); margin-bottom: 10px; }
+@media (max-width: 1000px) { .tk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .tk-grid { grid-template-columns: minmax(0, 1fr); } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

@@ -1,0 +1,13 @@
+tasks:
+- t: OPA docs. Policy language
+  u: https://www.openpolicyagent.org/docs/policy-language
+  kind: learn
+  access: free, in the browser, no sign-in
+  goal: Read the Rego basics, rules, default values and how input works.
+- t: OPA Playground lab, on this page
+  u: https://play.openpolicyagent.org/
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Write the three rules from the steps below, run the three test inputs, and get the expected allow and deny results.
+tools:
+- opaexplainer

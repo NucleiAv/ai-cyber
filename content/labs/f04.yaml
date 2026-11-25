@@ -1,0 +1,21 @@
+tasks:
+- t: Microsoft Learn. Threat modeling fundamentals
+  u: https://learn.microsoft.com/en-us/training/paths/tm-threat-modeling-fundamentals/
+  kind: learn
+  access: free, sign-in optional
+  goal: A free learning path on data flow diagrams, STRIDE and mitigations. Do the first module.
+- t: Draw the RAG bot in OWASP Threat Dragon
+  u: https://www.threatdragon.com/#/
+  kind: lab
+  access: free, in the browser, no sign-in
+  goal: Draw the data flow diagram from this page, add the trust boundary, and add one STRIDE threat to each element that crosses it.
+- t: Play Elevation of Privilege
+  u: https://github.com/adamshostack/eop
+  kind: lab
+  access: free download
+  goal: Print the free card game and play one round with a friend on your RAG bot diagram. Each card is a STRIDE threat.
+- t: Read. The four question frame
+  u: https://github.com/adamshostack/4QuestionFrame
+  kind: read
+  access: free, in the browser, no sign-in
+  goal: Answer the four questions for the email agent from lesson 9 in one page.
