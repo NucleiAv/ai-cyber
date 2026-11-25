@@ -29,6 +29,7 @@ content/defend/m01.yaml ... m13.yaml    defend modules, primers and practice des
 content/frameworks/f01.yaml ... f06.yaml  framework lessons
 content/prompting/p01.yaml ... p06.yaml   prompting lessons
 content/practice/*.yaml                 extra practice rounds added to each desk
+content/labs/*.yaml                     pinpointed hands-on tasks for each lesson's lab section
 content/desks/*.yaml                    practice desks for lessons and modules without a class workbook
 content/scenes/l01.yaml, m01.yaml ...   animated step-by-step scenes for each lesson
 tools/build.py                          turns the YAML into HTML pages and SVG diagrams
