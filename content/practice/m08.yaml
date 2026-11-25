@@ -1,0 +1,39 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: Which lever did AI move in each case?
+    rows:
+    - - A lure now reads as fluent native English
+      - Skill
+    - - One operator sends personalized lures to 10,000 targets
+      - Scale
+    - - A deepfake voice is made in minutes
+      - Time
+    - - A kit that once cost thousands now costs a monthly subscription
+      - Cost
+    opts:
+    - Skill
+    - Scale
+    - Time
+    - Cost
+    why: Fluency is skill, reach is scale, speed is time, and price is cost. Naming the lever shows what changed from the baseline.
+  - q: A voice that sounds like the CFO asks for an urgent wire transfer. What stops it even if the voice is perfect?
+    opts:
+    - Out-of-band confirmation through a channel set up in advance
+    - Listening for robotic sounds
+    - Asking the caller to repeat themselves
+    a: 0
+    why: A perfect fake still cannot answer on the real channel. Process beats detection here.
+  - q: A news story says an AI ran a whole attack alone. Which claim needs the strongest evidence?
+    opts:
+    - The capability claim about how much the AI did
+    - That the attack happened
+    - That AI exists
+    a: 0
+    why: Capability claims about autonomy are often overstated. Ask how much a human did.
+  - type: fill
+    q: Fill the blank. The current limit on what offensive AI can do end to end without a human is the autonomy ____.
+    a:
+    - ceiling
+    why: The autonomy ceiling marks where human help is still needed.

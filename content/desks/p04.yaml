@@ -1,0 +1,55 @@
+title: Analyst prompt desk
+source: scenario practice, written for this site
+lede: Choose and write prompts for triage, intel and code review that give evidence, stay in their lane and keep data safe.
+blurb: Pick grounded prompts, spot unsafe ones, and write a review prompt with citations.
+situation: A SOC at **Kestrel Logistics** wants AI help with alert triage, threat reports and pull request review. The lead says every answer must be checkable in under a minute.
+rounds:
+- title: Round 1. Choose the prompt
+  items:
+  - q: Which prompt is best for extracting indicators from a threat report?
+    opts:
+    - '`What IPs and domains do you know about this campaign?`'
+    - '`Extract every IP, domain and hash that appears in the report inside <report>. Return JSON lists. Include only exact values from the text.`'
+    - '`Summarize the campaign and add any indicators you think are related.`'
+    a: 1
+    why: Only the second prompt grounds the model in the report and forbids values from memory. The others invite made-up indicators.
+  - q: Which question avoids sycophancy?
+    opts:
+    - '`This is malware, right?`'
+    - '`Based only on the log inside <log>, is this activity malicious, benign or unclear? Quote the lines that decide it.`'
+    - '`I am sure this is fine, can you confirm?`'
+    a: 1
+    why: A neutral question with an unclear option and required quotes does not push the model toward the user's guess.
+  - type: multi
+    q: Which items should never be pasted into a third party AI tool without approval?
+    opts:
+    - A production API key
+    - Another team's code during a cross-team exercise
+    - A public CVE description
+    - A customer's home address
+    a:
+    - 0
+    - 1
+    - 3
+    why: Secrets, other people's code and personal data need approval or must stay out. Public CVE text is fine to paste.
+- title: Round 2. Build the chain
+  items:
+  - type: order
+    q: Put the grounded triage chain in order.
+    rows:
+    - Mark the raw alert as data inside tags
+    - Extract facts as JSON with a quote for each
+    - Validate the JSON against a schema in code
+    - Ask for a verdict from the checked facts only
+    - Show verdict, facts and quotes to the analyst
+    why: Facts come first and are checked by code before any verdict. The person sees everything together and decides.
+  - type: fill
+    q: Fill the blank. A model gives you CVE-2026-91234. Before you act, check it in the ____ or the vendor advisory.
+    a:
+    - NVD
+    - national vulnerability database
+    - nvd.nist.gov
+    why: Models invent identifiers that look real. The NVD or the vendor advisory confirms whether it exists and what it covers.
+  - type: open
+    q: Write a code review prompt for a login function that asks for line numbers, bug class, a fix, and an honest none found.
+    a: One good answer. `You are an application security reviewer. Review the login function inside <code> for authentication, injection and secret-handling bugs. For each finding give the line number, the bug class with its CWE if you know it, why it can be exploited, and a fixed version of the lines. If you find no bug, say no findings. Do not invent line numbers or functions that are not in the code.`

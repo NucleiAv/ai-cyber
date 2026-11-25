@@ -1,0 +1,41 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: Use the three-bin method. Where does each claim go?
+    rows:
+    - - A paper shows an agent solved 77% of benchmark tasks with a stated method
+      - Demonstrated
+    - - A vendor says its agent will soon replace all pentesters
+      - Speculation
+    - - An agent that passes CTFs could likely find some bugs in real apps
+      - Plausible
+    opts:
+    - Demonstrated
+    - Plausible
+    - Speculation
+    why: Measured results with a method are demonstrated, reasonable extensions are plausible, and big claims with no evidence are speculation.
+  - q: Agent or workflow? Fixed steps in code with a model inside one step.
+    opts:
+    - Workflow
+    - Agent
+    - Neither
+    a: 0
+    why: A workflow keeps the steps in code. An agent picks its own next step in a loop.
+  - type: fill
+    q: Fill the blank. A table that links each skill to proof a reviewer can check is an evidence ____.
+    a:
+    - matrix
+    why: An evidence matrix turns claims about skills into links a hiring manager can open.
+  - type: multi
+    q: Which items make strong evidence in an AI security portfolio?
+    opts:
+    - A public CTF writeup
+    - A merged fix in an open source tool
+    - A measured jailbreak study with settings and rates
+    - A list of buzzwords
+    a:
+    - 0
+    - 1
+    - 2
+    why: Each is something a reviewer can check. Buzzwords are claims without proof.

@@ -133,3 +133,6 @@ refs:
   - "Spracklen et al. [We have a package for you, package hallucinations by code LLMs](https://arxiv.org/abs/2406.10279), 2024."
   - "[C2PA specifications](https://c2pa.org/specifications/)."
   - "OWASP. [LLM09 2025 Misinformation](https://genai.owasp.org/llmrisk/llm092025-misinformation/)."
+
+syllabus:
+  - [sycophancy, "Week 12. Why models tell users what they want to hear."]

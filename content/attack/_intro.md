@@ -12,3 +12,5 @@
 !warn Attack only systems that you own or that give you permission. Every lab here is a practice target built for this.
 
 Lesson 15 is an extra lesson on MCP and agent security, which the slides do not cover. The plan schedules it in week 11.
+
+These lessons also cover most of the NYU Tandon course Red Teaming and Securing Generative AI. See [the red teaming course map](../redteam.html) for the week-by-week match, and [the prompting track](../prompting/index.html) for jailbreaks and defensive design.

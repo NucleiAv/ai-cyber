@@ -143,3 +143,10 @@ refs:
   - "Hines et al. [Defending against indirect prompt injection with spotlighting](https://arxiv.org/abs/2403.14720), 2024."
   - "Debenedetti et al. [Defeating prompt injections by design (CaMeL)](https://arxiv.org/abs/2503.18813), 2025."
   - "OWASP. [LLM01 2025 Prompt injection](https://genai.owasp.org/llmrisk/llm01-prompt-injection/)."
+
+syllabus:
+  - [insthier, "Week 6. Training a priority order for instructions."]
+  - [spotlight, "Week 6. Delimiting, datamarking and encoding."]
+  - [attackersecond, "Week 6. Adaptive attacks against 12 defenses."]
+  - [gcg, "Week 3. Optimization-based suffixes."]
+  - [pair, "Week 3. Black-box automated jailbreaks."]

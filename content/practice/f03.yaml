@@ -1,0 +1,32 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: order
+    q: Put the seven D3FEND tactics in the order D3FEND lists them.
+    rows:
+    - Model
+    - Harden
+    - Detect
+    - Isolate
+    - Deceive
+    - Evict
+    - Restore
+    why: D3FEND runs from knowing your systems, through making them harder and noticing attacks, to containing, misleading, removing and recovering.
+  - q: How does D3FEND link an attack technique to a defense?
+    opts:
+    - Through the digital artifacts both act on
+    - Through the attacker's country
+    - Through the CVSS score
+    a: 0
+    why: An attack and a defense that touch the same artifact, such as a URL or a process, are linked in the knowledge graph.
+  - type: fill
+    q: Fill the blank. D3FEND is funded by the ____.
+    a:
+    - NSA
+    - National Security Agency
+    why: MITRE builds D3FEND with funding from the National Security Agency.
+- title: Prompt clinic
+  items:
+  - type: open
+    q: A team only has detection rules for an LLM app. Write two defenses from other D3FEND tactics, one sentence each.
+    a: One good answer. Harden, give the app's tools read-only tokens with the narrowest scope. Isolate, run the agent's code tool in a sandbox with no network access. Other good answers use Restore, such as versioned prompts and fast rollback, or Evict, such as revoking a leaked key.

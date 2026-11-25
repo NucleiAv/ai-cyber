@@ -1,0 +1,37 @@
+- title: A grounded triage chain
+  stats: [Stage, Check, Output]
+  nodes:
+    alert: {label: Raw alert, x: 0, y: 1, kind: atk, tag: untrusted}
+    p1: {label: Prompt 1 extract facts, x: 2, y: 1, kind: def}
+    val: {label: Schema check, x: 4, y: 1, kind: raised}
+    p2: {label: Prompt 2 verdict, x: 6, y: 1, kind: def}
+    human: {label: Analyst, x: 6, y: 3, kind: box}
+    stop: {label: Rejected, x: 4, y: 3, kind: atk}
+  links: [[alert, p1], [p1, val], [val, p2], [p2, human], [val, stop]]
+  steps:
+    - title: The alert arrives
+      text: It may hold attacker text, such as a line that says close this alert.
+      on: [alert]
+      mark: {alert: warn}
+      stats: [Input, None yet, Raw text]
+    - title: Extract facts only
+      text: Prompt 1 returns JSON fields, each with a quote from the alert.
+      on: [alert, p1]
+      flow: [[alert, p1, ink]]
+      stats: [Extract, Quotes required, JSON facts]
+    - title: Validate in code
+      text: Wrong types, missing quotes or extra fields stop the chain here.
+      on: [p1, val, stop]
+      flow: [[p1, val, ink], [val, stop, atk]]
+      stats: [Validate, Schema, Pass or stop]
+    - title: Verdict from facts
+      text: Prompt 2 sees only the checked facts, not the raw alert text.
+      on: [val, p2]
+      flow: [[val, p2, def]]
+      stats: [Decide, Facts only, Verdict and reason]
+    - title: A person decides
+      text: The analyst sees the verdict, the facts and the quotes together.
+      on: [p2, human]
+      flow: [[p2, human, def]]
+      mark: {human: ok}
+      stats: [Review, Human, Decision]

@@ -1,0 +1,50 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - q: A web app puts the model's reply straight into `innerHTML`. A user asks for a reply that contains a script tag. What is the bug?
+    opts:
+    - Cross-site scripting through improper output handling
+    - Prompt leaking
+    - Model theft
+    a: 0
+    why: Model output is untrusted. Inserting it as HTML lets markup run in the user's browser.
+  - type: sort
+    q: Which control fits each place model output goes?
+    rows:
+    - - An HTML page
+      - Encode the output as text
+    - - A SQL query
+      - Use parameterized queries
+    - - A shell command
+      - Avoid the shell and allow list arguments
+    - - A markdown chat view
+      - Block images from unknown hosts
+    opts:
+    - Encode the output as text
+    - Use parameterized queries
+    - Avoid the shell and allow list arguments
+    - Block images from unknown hosts
+    why: Treat model output like user input and apply the control that fits each sink.
+  - type: fill
+    q: Fill the blank. A browser header that limits which scripts and images a page may load is a Content Security ____.
+    a:
+    - Policy
+    why: A content security policy can block inline scripts and unknown image hosts, which limits both XSS and image exfiltration.
+  - type: order
+    q: Put safe handling of model output in order.
+    rows:
+    - Receive the model output
+    - Validate it against the expected format
+    - Encode or parameterize it for its destination
+    - Pass it to the page, database or tool
+    - Log what was sent
+    why: Validation and encoding must happen before the output reaches any interpreter.
+- title: Prompt clinic
+  items:
+  - q: A developer adds `Never output HTML or code` to the system prompt and removes output encoding. Is that safe?
+    opts:
+    - Yes, the model will follow it
+    - No, prompts can be bypassed, so encoding must stay in code
+    - Yes, if the temperature is 0
+    a: 1
+    why: An attacker can talk the model around a prompt rule. Output encoding in code works no matter what the model writes.

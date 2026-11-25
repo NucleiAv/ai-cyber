@@ -1,0 +1,39 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: Tactic or technique?
+    rows:
+    - - Credential Access
+      - Tactic
+    - - T1566 Phishing
+      - Technique
+    - - Lateral Movement
+      - Tactic
+    - - T1059 Command and Scripting Interpreter
+      - Technique
+    opts:
+    - Tactic
+    - Technique
+    why: Tactics are the why, the attacker's goal at a stage. Techniques are the how, and they carry T numbers.
+  - type: fill
+    q: Fill the blank. In ATT&CK v20, the tactic TA0005 is now called ____.
+    a:
+    - Stealth
+    why: Older material calls it Defense Evasion. v20 renamed it Stealth and split out Defense Impairment as TA0112.
+  - q: What does an ATT&CK Group entry describe?
+    opts:
+    - A named threat actor and the techniques it has been seen using
+    - A group of related tactics
+    - A team of defenders
+    a: 0
+    why: Group pages, such as for a known APT, list the techniques attributed to that actor with sources.
+- title: Prompt clinic
+  items:
+  - q: Which prompt is safest for tagging a detection rule with ATT&CK?
+    opts:
+    - '`Give the ATT&CK ID for this rule.`'
+    - '`Suggest up to two ATT&CK techniques for the rule inside <rule>, with the reason for each. Mark IDs for checking against attack.mitre.org v20.`'
+    - '`List every technique this rule might relate to.`'
+    a: 1
+    why: It limits the answer, asks for reasons and flags IDs for checking, because models often cite outdated or wrong IDs.

@@ -142,3 +142,7 @@ refs:
   - "Invariant Labs. [GitHub MCP exploited](https://invariantlabs.ai/blog/mcp-github-vulnerability), 2025."
   - "[Damn Vulnerable MCP Server](@dvmcp)."
   - "MITRE ATLAS. [AML.T0110 AI Agent Tool Poisoning](https://atlas.mitre.org/techniques/AML.T0110)."
+
+syllabus:
+  - [mcppoison, "Week 5. Tool poisoning in MCP."]
+  - [agentdojo, "Week 5. Testing agents against injection."]

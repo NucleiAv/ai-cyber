@@ -155,3 +155,8 @@ refs:
   - "Wiz Research. [Leaking AI secrets in public code](@wizsecrets)."
   - "OWASP. [LLM02 2025 Sensitive information disclosure](https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/)."
   - "MITRE ATLAS. [AML.T0137.003 Extract Memorized Data](https://atlas.mitre.org/techniques/AML.T0137.003)."
+
+syllabus:
+  - [carlini, "Week 10. Extracting memorized training data."]
+  - [scalableext, "Week 10. Extraction from production chat models."]
+  - [miallm, "Week 10. Why membership inference often fails on LLMs."]

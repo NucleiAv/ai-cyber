@@ -1,0 +1,39 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - q: A policy engine has no rule for a new tool. Under default deny, what happens?
+    opts:
+    - The call is allowed
+    - The call is blocked until a rule allows it
+    - The model decides
+    a: 1
+    why: Default deny blocks anything not explicitly allowed, so new tools stay off until someone writes a rule.
+  - type: fill
+    q: Fill the blank. Open Policy Agent policies are written in a language called ____.
+    a:
+    - Rego
+    why: Rego is OPA's declarative policy language.
+  - q: In the AI Control paper (Greenblatt et al., 2023), what is trusted monitoring?
+    opts:
+    - A weaker but trusted model reviews the strong model's work and flags suspicious output
+    - The strong model checks itself
+    - Users rate every answer
+    a: 0
+    why: The protocol assumes the strong model might try to subvert safety, so a trusted weaker model and limited human review watch it.
+  - type: multi
+    q: Which are real risks of using an LLM as a judge in a policy pipeline?
+    opts:
+    - The judge can itself be prompt injected
+    - Its verdicts can change between runs
+    - It may agree with confident wording
+    - It never makes mistakes
+    a:
+    - 0
+    - 1
+    - 2
+    why: A judge model is still a model. It can be steered, it is random, and it can be swayed by tone.
+- title: Prompt clinic
+  items:
+  - type: open
+    q: Write one policy rule in plain words for a finance agent, then say where it must be enforced.
+    a: One good answer. Rule, the agent may send payments only to vendors on the approved list and only up to 500 dollars, and anything else needs approval from the finance lead. It must be enforced in the policy engine or the payment API, in code, not in the agent's prompt.

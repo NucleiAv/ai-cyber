@@ -1,0 +1,38 @@
+- title: How roles stack into one prompt
+  stats: [Message, Trust level, What it may do]
+  nodes:
+    sys: {label: System message, x: 0, y: 0, kind: def, tag: highest}
+    usr: {label: User message, x: 0, y: 2, kind: box, tag: middle}
+    tool: {label: Tool output, x: 0, y: 4, kind: atk, tag: lowest}
+    tmpl: {label: Chat template, x: 3, y: 2, kind: raised}
+    llm: {label: Model, x: 6, y: 2, kind: def}
+  links: [[sys, tmpl], [usr, tmpl], [tool, tmpl], [tmpl, llm]]
+  steps:
+    - title: The system message
+      text: The app sets the role, scope and rules.
+      on: [sys, tmpl]
+      flow: [[sys, tmpl, def]]
+      stats: [System, Highest, Set the rules]
+    - title: The user message
+      text: The person asks a question within the scope.
+      on: [usr, tmpl]
+      flow: [[usr, tmpl, ink]]
+      stats: [User, Middle, Ask within the rules]
+    - title: The tool output
+      text: A web page arrives with a hidden instruction inside.
+      on: [tool, tmpl]
+      flow: [[tool, tmpl, atk]]
+      mark: {tool: bad}
+      stats: [Tool, Lowest, Information only]
+    - title: One stream of tokens
+      text: The template joins everything. The model sees role markers, but they are learned, not enforced.
+      on: [tmpl, llm]
+      flow: [[tmpl, llm, ink]]
+      mark: {llm: warn}
+      stats: [All three, Mixed, Depends on training]
+    - title: The hierarchy holds
+      text: A model trained with the instruction hierarchy follows the system rules and treats the page as data.
+      on: [sys, llm]
+      flow: [[sys, tmpl, def], [tmpl, llm, def]]
+      mark: {llm: ok}
+      stats: [System wins, Highest, Rules kept]

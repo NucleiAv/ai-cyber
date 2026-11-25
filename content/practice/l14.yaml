@@ -1,0 +1,37 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: num
+    q: A token bucket allows 10,000 tokens per minute for one user. Each request uses 2,500 tokens. How many requests per minute fit?
+    a: 4
+    why: 10,000 divided by 2,500 is 4 requests per minute.
+    unit: requests
+    tol: 0
+  - q: Attackers use stolen cloud keys to run expensive models on the victim's bill. What is this called?
+    opts:
+    - LLMjacking
+    - Prompt leaking
+    - Model inversion
+    a: 0
+    why: LLMjacking is the use of stolen credentials to consume someone else's paid model access.
+  - type: multi
+    q: Which controls limit denial of wallet?
+    opts:
+    - Per-user token quotas
+    - A cap on output tokens
+    - Budget alerts and hard limits
+    - Unlimited context for every user
+    a:
+    - 0
+    - 1
+    - 2
+    why: Quotas, caps and budgets bound the spend. Unlimited context does the opposite.
+  - type: order
+    q: Put the response to a sudden cost spike in order.
+    rows:
+    - Get the budget alert
+    - Find the keys or users behind the spike
+    - Revoke or throttle them
+    - Rotate any leaked keys
+    - Add the limits that would have stopped it
+    why: Detect, find the source, stop it, clean up credentials, then fix the gap.

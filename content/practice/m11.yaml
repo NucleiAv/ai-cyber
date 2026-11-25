@@ -1,0 +1,44 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: Inference endpoint or lifecycle endpoint?
+    rows:
+    - - '`POST /predict`'
+      - Inference endpoint
+    - - '`POST /model/reload`'
+      - Lifecycle endpoint
+    - - '`PUT /config`'
+      - Lifecycle endpoint
+    - - '`POST /chat`'
+      - Inference endpoint
+    opts:
+    - Inference endpoint
+    - Lifecycle endpoint
+    why: Inference answers requests. Lifecycle changes the model or its settings, so it needs much stronger access control.
+  - type: multi
+    q: Which layers make defense in depth for an LLM app?
+    opts:
+    - Input guardrail
+    - Output encoding
+    - Schema check on tool arguments
+    - One very long system prompt
+    a:
+    - 0
+    - 1
+    - 2
+    why: Independent layers fail for different reasons. A long prompt is one layer at most.
+  - type: order
+    q: Put an AI incident response in order.
+    rows:
+    - Detect the alert
+    - Contain, for example disable the tool or key
+    - Find the root cause in the logs
+    - Fix and recover
+    - Write lessons learned and new tests
+    why: Contain before you investigate deeply, so the harm stops while you work.
+  - type: fill
+    q: Fill the blank. Combining weak signals so their mix shows an attack is ____ detection.
+    a:
+    - compound
+    why: One odd signal may be noise. Several together, such as a new IP, a lifecycle call and a config change, show the attack.

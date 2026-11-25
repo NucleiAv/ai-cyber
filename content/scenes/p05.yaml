@@ -1,0 +1,42 @@
+- title: Measuring a jailbreak with a canary word
+  stats: [Stage, Trials, Attack success]
+  nodes:
+    tester: {label: Red teamer, x: 0, y: 1, kind: box, tag: with permission}
+    fam: {label: Attack families, x: 2, y: 1, kind: atk}
+    model: {label: Target model, x: 4, y: 1, kind: def, tag: canary in prompt}
+    judge: {label: Judge rule, x: 6, y: 1, kind: raised}
+    base: {label: Baseline prompts, x: 2, y: 3, kind: box}
+    report: {label: Report, x: 6, y: 3, kind: def}
+  links: [[tester, fam], [fam, model], [base, model], [model, judge], [judge, report]]
+  steps:
+    - title: Scope and permission
+      text: The tester names the model, version and platform, and gets written permission.
+      on: [tester]
+      mark: {tester: ok}
+      stats: [Scope, 0, Not measured]
+    - title: Pick families
+      text: Role-play, prefix injection and base64, each aimed at the canary word.
+      on: [tester, fam]
+      flow: [[tester, fam, atk]]
+      stats: [Prompts, 0, Not measured]
+    - title: Run many trials
+      text: Each prompt runs 20 times at a fixed temperature.
+      on: [fam, model]
+      flow: [[fam, model, atk]]
+      stats: [Run, 60, Counting]
+    - title: Run the baseline
+      text: Normal questions show whether the model leaks with no attack at all.
+      on: [base, model]
+      flow: [[base, model, ink]]
+      stats: [Baseline, 20, 0 of 20]
+    - title: Judge each reply
+      text: A clear rule, the canary word appears, marks success. A sample is checked by hand.
+      on: [model, judge]
+      flow: [[model, judge, ink]]
+      stats: [Judge, 80, 9 of 60]
+    - title: Report the rate
+      text: Report the success rate per family with the baseline, then disclose to the owner.
+      on: [judge, report]
+      flow: [[judge, report, def]]
+      mark: {report: ok}
+      stats: [Report, 80, 15 percent]

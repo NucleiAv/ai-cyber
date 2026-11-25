@@ -1,0 +1,44 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: What does each setting or method change?
+    rows:
+    - - Temperature
+      - How random the next-token choice is
+    - - Context window
+      - How much text the model can read at once
+    - - Quantization
+      - How many bits store each weight
+    - - RLHF
+      - Which answers the model prefers, from human feedback
+    opts:
+    - How random the next-token choice is
+    - How much text the model can read at once
+    - How many bits store each weight
+    - Which answers the model prefers, from human feedback
+    why: Temperature shapes sampling, the context window bounds input, quantization shrinks the weights, and RLHF tunes behavior from human preferences.
+  - q: A team needs the same verdict each time for the same alert. Which setting change helps most?
+    opts:
+    - Lower the temperature
+    - Raise the temperature
+    - Use a longer context
+    a: 0
+    why: Lower temperature makes sampling less random. Some variation can remain, so test with repeated runs.
+  - type: fill
+    q: Fill the blank. A short document that lists a model's intended use, limits and evaluation is a model ____.
+    a:
+    - card
+    why: Model cards describe what a model is for, how it was tested and where it fails.
+  - type: multi
+    q: Which facts about tokens matter for security work?
+    opts:
+    - Costs and limits are counted in tokens
+    - Long inputs can push earlier text out of the context window
+    - Unusual tokens can behave in odd ways
+    - Every word is exactly one token
+    a:
+    - 0
+    - 1
+    - 2
+    why: Tokens drive cost, context limits and some odd attack behavior. Words often split into several tokens.

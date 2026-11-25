@@ -162,3 +162,8 @@ refs:
   - "Yao et al. [ReAct, synergizing reasoning and acting in language models](https://arxiv.org/abs/2210.03629), 2022."
   - "Pillar Security. [Operation Bizarre Bazaar](@pillar)."
   - "BaaRai. [ARTEX on GitHub](https://github.com/BaaRai/ARTEX)."
+
+syllabus:
+  - [agentdojo, "Week 5. The agent injection benchmark behind Lab 2."]
+  - [aiworm, "Week 5, optional. Self-replicating prompts."]
+  - [aicontrol, "Week 11. Safety when the model itself may be adversarial."]

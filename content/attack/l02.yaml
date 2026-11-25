@@ -153,3 +153,8 @@ refs:
   - "Willison. [The lethal trifecta for AI agents](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/), 2025."
   - "Debenedetti et al. [Defeating prompt injections by design (CaMeL)](https://arxiv.org/abs/2503.18813), 2025."
   - "NVD. [CVE-2025-32711, EchoLeak](https://nvd.nist.gov/vuln/detail/CVE-2025-32711)."
+
+syllabus:
+  - [greshake, "Week 4. Indirect injection against real apps."]
+  - [embrace, "Week 4. Data exfiltration write-ups."]
+  - [ignoreprev, "Week 1. Goal hijacking and prompt leaking."]

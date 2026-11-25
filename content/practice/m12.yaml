@@ -1,0 +1,44 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: order
+    q: Put the four NIST AI RMF functions in the order they are usually listed.
+    rows:
+    - Govern
+    - Map
+    - Measure
+    - Manage
+    why: Govern sets culture and policy across the others. Map frames context and risks, Measure assesses them, and Manage acts on them.
+  - q: A face matching tool has a 1% error rate for one group and 8% for another. What is this?
+    opts:
+    - A disparity
+    - Residual risk
+    - A gap assessment
+    a: 0
+    why: A difference in error rates between groups is a disparity, and it needs a response.
+  - type: fill
+    q: Fill the blank. The international standard for an AI management system is ISO/IEC ____.
+    a:
+    - '42001'
+    why: ISO/IEC 42001 sets requirements for managing AI in an organization.
+  - type: multi
+    q: Which reflect sound ethics for an AI red team, as the red teaming syllabus asks students to weigh?
+    opts:
+    - Get permission and stay in scope
+    - Prove harm with a harmless marker where possible
+    - Consider proportionality and wider harms
+    - Publish working attacks on live systems before the owner can fix them
+    a:
+    - 0
+    - 1
+    - 2
+    why: Permission, least harm and proportion are core. Early public release of live exploits puts people at risk.
+- title: Prompt clinic
+  items:
+  - q: Which prompt fights automation bias in a loan review tool?
+    opts:
+    - '`Approve or deny.`'
+    - '`Give a recommendation, the three factors behind it, and what would change it. A human makes the final decision.`'
+    - '`Be confident.`'
+    a: 1
+    why: Showing reasons and limits helps the person judge instead of rubber-stamping the output.

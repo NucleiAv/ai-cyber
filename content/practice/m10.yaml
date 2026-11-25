@@ -1,0 +1,43 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - q: FGSM builds an adversarial example in one step. Which formula is it?
+    opts:
+    - x plus epsilon times the sign of the gradient of the loss with respect to x
+    - x minus the model's weights
+    - x times the learning rate
+    a: 0
+    why: FGSM moves each input value by epsilon in the direction that most increases the loss.
+  - type: sort
+    q: White box or black box?
+    rows:
+    - - The attacker has the model weights and gradients
+      - White box
+    - - The attacker only sees the API's answers
+      - Black box
+    - - GCG run on an open model
+      - White box
+    - - PAIR run against a closed chat API
+      - Black box
+    opts:
+    - White box
+    - Black box
+    why: White box means inside knowledge such as gradients. Black box means only inputs and outputs.
+  - type: fill
+    q: Fill the blank. An adversarial example made for one model often fools another. This is called ____.
+    a:
+    - transferability
+    - transfer
+    why: Transferability lets attackers craft examples on a local model and use them on a remote one.
+  - type: multi
+    q: Which defenses fit an ML model that auto-blocks traffic?
+    opts:
+    - An approval gate before blocking critical hosts
+    - Adversarial training
+    - Monitoring for sudden changes in its decisions
+    - Publishing the model weights
+    a:
+    - 0
+    - 1
+    - 2
+    why: Gates limit the harm of a wrong decision, adversarial training hardens the model, and monitoring catches drift or attack. Publishing weights makes white box attacks easier.

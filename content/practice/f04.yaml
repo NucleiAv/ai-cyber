@@ -1,0 +1,40 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: order
+    q: Put Adam Shostack's four threat modeling questions in order.
+    rows:
+    - What are we working on?
+    - What can go wrong?
+    - What are we going to do about it?
+    - Did we do a good job?
+    why: You describe the system, find threats, respond, then check your work. STRIDE helps with the second question.
+  - type: sort
+    q: Which data flow diagram element is each item?
+    rows:
+    - - The customer using the chat
+      - External entity
+    - - The chat API service
+      - Process
+    - - The vector database
+      - Data store
+    - - Email arriving from the internet into the app
+      - Data flow crossing a trust boundary
+    opts:
+    - External entity
+    - Process
+    - Data store
+    - Data flow crossing a trust boundary
+    why: People and outside systems are external entities, running code is a process, storage is a data store, and arrows that cross from outside in cross a trust boundary.
+  - type: multi
+    q: Which LLM risks hide inside the STRIDE letters, and so need an OWASP second pass?
+    opts:
+    - Prompt injection, inside Spoofing, Tampering or Elevation
+    - Unbounded consumption, inside Denial of service
+    - System prompt leakage, inside Information disclosure
+    - None, STRIDE names them all directly
+    a:
+    - 0
+    - 1
+    - 2
+    why: STRIDE finds the threat type but not the LLM-specific name, so check the design against the OWASP list too.

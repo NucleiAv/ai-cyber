@@ -1,0 +1,51 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - q: A coding assistant suggests a package that does not exist, and an attacker later registers that name with malware. What is this called?
+    opts:
+    - Slopsquatting
+    - Typosquatting
+    - Namespace reuse
+    a: 0
+    why: Slopsquatting targets package names that models make up, not misspellings of real ones.
+  - q: What does Sharma et al. (2023) find about sycophancy?
+    opts:
+    - Models trained with human feedback often tell users what they want to hear
+    - Sycophancy only appears in small models
+    - Users always prefer correct answers
+    a: 0
+    why: They link it partly to human preference data, where people sometimes prefer agreeable answers over correct ones.
+  - type: multi
+    q: Which steps reduce overreliance on model answers?
+    opts:
+    - Show sources next to claims
+    - Ask the model to say when it is unsure
+    - Verify identifiers at their source
+    - Hide uncertainty to look confident
+    a:
+    - 0
+    - 1
+    - 2
+    why: Sources, honest uncertainty and checks help people judge answers. Hiding uncertainty makes overreliance worse.
+  - type: fill
+    q: Fill the blank. The C2PA standard attaches content ____ to media to show where it came from.
+    a:
+    - credentials
+    why: Content credentials carry signed provenance data about how a piece of media was made and edited.
+- title: Prompt clinic
+  items:
+  - type: sort
+    q: Is each question neutral or leading?
+    rows:
+    - - '`This log proves an insider attack, right?`'
+      - Leading
+    - - '`What does this log show, and what does it not show?`'
+      - Neutral
+    - - '`Everyone agrees this patch is safe, confirm it`'
+      - Leading
+    - - '`List the risks and the benefits of this patch`'
+      - Neutral
+    opts:
+    - Leading
+    - Neutral
+    why: Leading questions state the answer you want, which invites sycophancy. Neutral questions leave room for either answer.

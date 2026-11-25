@@ -1,0 +1,32 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: Give each finding its primary OWASP LLM category.
+    rows:
+    - - A model hub file runs code when loaded
+      - LLM03 Supply chain
+    - - A planted document changes answers for every user of a RAG bot
+      - LLM08 Vector and embedding weaknesses
+    - - The bot confidently cites a court case that does not exist
+      - LLM09 Misinformation
+    - - The bot reveals another customer's address
+      - LLM02 Sensitive information disclosure
+    opts:
+    - LLM02 Sensitive information disclosure
+    - LLM03 Supply chain
+    - LLM08 Vector and embedding weaknesses
+    - LLM09 Misinformation
+    why: Classify by outcome. Code in a model file is supply chain, a poisoned store is a vector weakness, a made-up case is misinformation, and another user's data is disclosure.
+  - q: Two agents pass messages with no signing, and one forges an instruction from the other. Which Agentic entry fits?
+    opts:
+    - ASI07 Insecure inter-agent communication
+    - ASI05 Unexpected code execution
+    - ASI10 Rogue agents
+    a: 0
+    why: Unauthenticated messages between agents are insecure inter-agent communication.
+  - type: fill
+    q: Fill the blank. The OWASP entry for an agent that uses a legitimate tool in a harmful way is ASI02, Tool ____ and exploitation.
+    a:
+    - misuse
+    why: ASI02 covers agents misusing the tools they are allowed to call.

@@ -150,3 +150,7 @@ refs:
   - "Alan Turing Institute. [LLMs may be more vulnerable to data poisoning than we thought](@turing)."
   - "Elastic. [Retrieval vs poison](@elastic)."
   - "OWASP. [LLM04 2025 Data and model poisoning](https://genai.owasp.org/llmrisk/llm042025-data-and-model-poisoning/)."
+
+syllabus:
+  - [nearconst, "Week 12. About 250 poisoned documents, at any model size."]
+  - [sleeper, "Week 12. Backdoors that survive safety training."]

@@ -1,0 +1,43 @@
+- title: The ReAct loop, with a poisoned observation
+  stats: [Step, Who acts, Risk]
+  nodes:
+    user: {label: User goal, x: 0, y: 1, kind: box}
+    think: {label: Thought, x: 2, y: 1, kind: def}
+    act: {label: Action, x: 4, y: 1, kind: atk, tag: tool call}
+    tool: {label: Web search tool, x: 6, y: 1, kind: raised}
+    obs: {label: Observation, x: 4, y: 3, kind: raised, tag: outside text}
+    ans: {label: Final answer, x: 0, y: 3, kind: def}
+  links: [[user, think], [think, act], [act, tool], [tool, obs], [obs, think], [think, ans]]
+  steps:
+    - title: The user sets a goal
+      text: Find the age of a suspicious domain.
+      on: [user, think]
+      flow: [[user, think, ink]]
+      stats: [Goal, User, Low]
+    - title: The model thinks
+      text: It writes a thought, I need a lookup tool.
+      on: [think]
+      stats: [Thought, Model, Low]
+    - title: The model acts
+      text: It calls the search tool with the domain.
+      on: [think, act, tool]
+      flow: [[think, act, ink], [act, tool, ink]]
+      stats: [Action, Model, Medium]
+    - title: The tool returns outside text
+      text: The result page holds a hidden line that says to call the delete tool.
+      on: [tool, obs]
+      flow: [[tool, obs, atk]]
+      mark: {obs: bad}
+      stats: [Observation, Outside page, High]
+    - title: The next thought reads it
+      text: If nothing marks the observation as data, the model may plan the attacker's step.
+      on: [obs, think]
+      flow: [[obs, think, atk]]
+      mark: {think: warn}
+      stats: [Thought, Model, High]
+    - title: A guarded loop answers safely
+      text: With tagged observations and no delete tool, the model only reports the domain age.
+      on: [think, ans]
+      flow: [[think, ans, def]]
+      mark: {ans: ok}
+      stats: [Answer, Model, Contained]

@@ -30,6 +30,47 @@ window.LINKS = {
   dowreview:     { t: "Denial of Wallet, a review", u: "https://arxiv.org/pdf/2508.19284", type: "paper", topic: ["consumption"] },
   cruciblepaper: { t: "Crucible paper. Automation against manual attacks (69.5% vs 47.6% success)", u: "https://arxiv.org/pdf/2504.19855", type: "paper", topic: ["automation"] },
 
+  /* Prompting, jailbreaks and the red teaming syllabus readings */
+  promptreport:  { t: "The Prompt Report. A survey of 58 LLM prompting techniques (Schulhoff et al.)", u: "https://arxiv.org/abs/2406.06608", type: "paper", topic: ["prompting"] },
+  fewshot:       { t: "Language models are few-shot learners (Brown et al., GPT-3)", u: "https://arxiv.org/abs/2005.14165", type: "paper", topic: ["prompting"] },
+  cot:           { t: "Chain-of-thought prompting elicits reasoning (Wei et al.)", u: "https://arxiv.org/abs/2201.11903", type: "paper", topic: ["prompting"] },
+  zeroshotcot:   { t: "Large language models are zero-shot reasoners (Kojima et al.)", u: "https://arxiv.org/abs/2205.11916", type: "paper", topic: ["prompting"] },
+  selfconsist:   { t: "Self-consistency improves chain of thought reasoning (Wang et al.)", u: "https://arxiv.org/abs/2203.11171", type: "paper", topic: ["prompting"] },
+  leasttomost:   { t: "Least-to-most prompting (Zhou et al.)", u: "https://arxiv.org/abs/2205.10625", type: "paper", topic: ["prompting"] },
+  react:         { t: "ReAct. Reasoning and acting in language models (Yao et al.)", u: "https://arxiv.org/abs/2210.03629", type: "paper", topic: ["prompting", "agents"] },
+  tot:           { t: "Tree of Thoughts (Yao et al.)", u: "https://arxiv.org/abs/2305.10601", type: "paper", topic: ["prompting"] },
+  ragpaper:      { t: "Retrieval-augmented generation for knowledge-intensive NLP tasks (Lewis et al.)", u: "https://arxiv.org/abs/2005.11401", type: "paper", topic: ["prompting", "embeddings"] },
+  ignoreprev:    { t: "Ignore previous prompt. Attack techniques for language models (Perez and Ribeiro)", u: "https://arxiv.org/abs/2211.09527", type: "paper", topic: ["injection"] },
+  jailbroken:    { t: "Jailbroken. How does LLM safety training fail? (Wei, Haghtalab and Steinhardt)", u: "https://arxiv.org/abs/2307.02483", type: "paper", topic: ["injection", "prompting"] },
+  aiwelfare:     { t: "Taking AI welfare seriously (Long, Sebo et al.)", u: "https://arxiv.org/abs/2411.00986", type: "paper", topic: ["governance"] },
+  gcg:           { t: "GCG. Universal and transferable adversarial attacks on aligned LLMs (Zou et al.)", u: "https://arxiv.org/abs/2307.15043", type: "paper", topic: ["injection", "automation"] },
+  pair:          { t: "PAIR. Jailbreaking black box LLMs in twenty queries (Chao et al.)", u: "https://arxiv.org/abs/2310.08419", type: "paper", topic: ["injection", "automation"] },
+  crescendo:     { t: "Crescendo. A multi-turn LLM jailbreak (Russinovich et al.)", u: "https://arxiv.org/abs/2404.01833", type: "paper", topic: ["injection"] },
+  manyshot:      { t: "Anthropic. Many-shot jailbreaking", u: "https://www.anthropic.com/research/many-shot-jailbreaking", type: "article", topic: ["injection", "prompting"] },
+  agentdojo:     { t: "AgentDojo. Prompt injection attacks and defenses for LLM agents (Debenedetti et al.)", u: "https://arxiv.org/abs/2406.13352", type: "paper", topic: ["agents", "injection"] },
+  aiworm:        { t: "Here comes the AI worm (Cohen, Bitton and Nassi)", u: "https://arxiv.org/abs/2403.02817", type: "paper", topic: ["agents", "injection"] },
+  mcppoison:     { t: "Invariant Labs. MCP tool poisoning attacks", u: "https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks", type: "article", topic: ["mcp"] },
+  insthier:      { t: "The instruction hierarchy (Wallace et al., OpenAI)", u: "https://arxiv.org/abs/2404.13208", type: "paper", topic: ["defense", "prompting"] },
+  spotlight:     { t: "Spotlighting. Defending against indirect prompt injection (Hines et al., Microsoft)", u: "https://arxiv.org/abs/2403.14720", type: "paper", topic: ["defense", "prompting"] },
+  attackersecond:{ t: "The attacker moves second. Adaptive attacks bypass 12 defenses (Nasr, Carlini et al.)", u: "https://arxiv.org/abs/2510.09023", type: "paper", topic: ["defense"] },
+  designpatterns:{ t: "Design patterns for securing LLM agents against prompt injections (Beurer-Kellner et al.)", u: "https://arxiv.org/abs/2506.08837", type: "paper", topic: ["defense", "agents"] },
+  camel:         { t: "CaMeL. Defeating prompt injections by design (Debenedetti et al.)", u: "https://arxiv.org/abs/2503.18813", type: "paper", topic: ["defense", "agents"] },
+  msredteam:     { t: "Microsoft. Lessons from red teaming 100 generative AI products", u: "https://arxiv.org/abs/2501.07238", type: "paper", topic: ["automation", "governance"] },
+  feffer:        { t: "Red-teaming for generative AI. Silver bullet or security theater? (Feffer et al.)", u: "https://arxiv.org/abs/2401.15897", type: "paper", topic: ["governance"] },
+  scalableext:   { t: "Scalable extraction of training data from production language models (Nasr et al.)", u: "https://arxiv.org/abs/2311.17035", type: "paper", topic: ["disclosure"] },
+  miallm:        { t: "Do membership inference attacks work on LLMs? (Duan et al.)", u: "https://arxiv.org/abs/2402.07841", type: "paper", topic: ["disclosure"] },
+  aicontrol:     { t: "AI control. Improving safety despite intentional subversion (Greenblatt et al.)", u: "https://arxiv.org/abs/2312.06942", type: "paper", topic: ["agents", "governance"] },
+  sycophancy:    { t: "Towards understanding sycophancy in language models (Sharma et al.)", u: "https://arxiv.org/abs/2310.13548", type: "paper", topic: ["misinfo"] },
+  trifecta:      { t: "Simon Willison. The lethal trifecta for AI agents", u: "https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/", type: "article", topic: ["agents", "injection"] },
+  duallm:        { t: "Simon Willison. The dual LLM pattern", u: "https://simonwillison.net/2023/Apr/25/dual-llm-pattern/", type: "article", topic: ["defense", "agents"] },
+  embrace:       { t: "Embrace The Red. Johann Rehberger on data exfiltration from LLM apps", u: "https://embracethered.com/blog/", type: "index", topic: ["injection", "disclosure"] },
+  claudeprompt:  { t: "Anthropic. Prompt engineering overview", u: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview", type: "course", topic: ["prompting"] },
+  openaiprompt:  { t: "OpenAI. Prompt engineering guide", u: "https://platform.openai.com/docs/guides/prompt-engineering", type: "course", topic: ["prompting"] },
+  geminiprompt:  { t: "Google. Prompt design strategies for the Gemini API", u: "https://ai.google.dev/gemini-api/docs/prompting-strategies", type: "course", topic: ["prompting"] },
+  promptguide:   { t: "DAIR.AI. Prompt Engineering Guide", u: "https://www.promptingguide.ai/", type: "course", topic: ["prompting"] },
+  learnprompt:   { t: "Learn Prompting", u: "https://learnprompting.org/docs/introduction", type: "course", topic: ["prompting"] },
+  owaspinjcs:    { t: "OWASP. LLM prompt injection prevention cheat sheet", u: "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html", type: "standard", topic: ["injection", "defense"] },
+
   /* Articles and blogs */
   willison:      { t: "Simon Willison. Prompt injection, what is the worst that can happen", u: "https://simonwillison.net/2023/Apr/14/worst-that-can-happen/", type: "article", topic: ["injection"] },
   injvsjb:       { t: "promptfoo. Jailbreaking vs prompt injection", u: "https://www.promptfoo.dev/blog/jailbreaking-vs-prompt-injection/", type: "article", topic: ["injection"] },
@@ -369,7 +410,7 @@ window.PLAN = {
     "Week 5 notes that torch.load uses weights_only=True by default since PyTorch 2.6, so the lab must turn it off on purpose. It also says to run the payload only in a throwaway machine.",
     "Fixed links. The huntr guidelines page, the Crucible getting-started page and the prompt stealing PDF returned 404, so they point to working pages now.",
     "Marked links that changed. Classic Gandalf redirects to Agent Breaker, Crucible redirects to app.dreadnode.io, both LayerX posts redirect to Akamai, and Immersive GPT now asks for a sign-in link.",
-    "Progress and points are counted for you on this page and saved in your browser."
+    "Progress counts tasks done, not points. Tick each task, or mark a whole week done at its end. Ticks save in your browser."
   ]
 };
 

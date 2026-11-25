@@ -1,0 +1,148 @@
+slug: p02
+num: "02"
+short: Ways of prompting
+title: Ways of prompting, from zero-shot to ReAct
+time: about 1.5 hours
+lede: Zero-shot, few-shot, role, chain of thought, self-consistency, decomposition, chaining, ReAct, retrieval and structured output. What each one is, when to use it, and what it costs.
+headings: {attack: "Pick a technique, step by step", cases: "Each technique, with an example", defend: "Limits and security notes", map: "How it links to security", lab: "Try it"}
+other_fw:
+  - [Attack track, "ReAct and tool use are how agents work, and why injected text can turn into actions. See [lesson 9](../attack/l09.html)."]
+  - [Attack track, "Retrieval puts outside text into the prompt, which opens the door to indirect injection and poisoned stores. See [lesson 12](../attack/l12.html)."]
+
+idea: |
+  There is more than one way to ask. The same task can be asked with no examples, with a few examples, with a request to reason in steps, or as a chain of small prompts. Each **prompting technique** is a pattern that helps the model with a certain kind of task.
+
+  The Prompt Report, a 2024 survey, lists 58 text prompting techniques. You need only about ten of them for most work.
+
+  !eli5 Teaching a child to sort laundry. You can just say "sort it" (zero-shot). You can sort three shirts first so they copy you (few-shot). You can say "first check the color, then the size" (step by step). Or you can give one small job at a time (chaining). Each way fits a different child and a different pile.
+
+terms:
+  - [Zero-shot, "Ask for the task with no examples."]
+  - [Few-shot, "Show a few input and answer pairs first, then the new input. Also called in-context learning."]
+  - [Role prompting, "Tell the model who to act as, such as a code reviewer. It sets tone and focus."]
+  - [Chain of thought, "Ask the model to write its reasoning steps before the answer."]
+  - [Self-consistency, "Ask the same question several times and take the most common answer."]
+  - [Decomposition, "Break a big task into smaller questions and solve them in order. Least-to-most prompting is one form."]
+  - [Prompt chaining, "The output of one prompt becomes the input of the next, often with code in between."]
+  - [ReAct, "Reason and act. The model writes a thought, calls a tool, reads the result, and repeats."]
+  - [Retrieval-augmented generation, "Search your documents first, then put the best passages into the prompt as evidence."]
+  - [Structured output, "Ask for a fixed format such as JSON with named fields, often checked by a schema."]
+
+how: |
+  ### The core techniques
+
+  - **Zero-shot.** Just the instruction. Good for simple, common tasks.
+  - **Few-shot.** Two to five worked examples before the real input. Good when the format or the labels matter. The GPT-3 paper (Brown et al., 2020) showed how far this goes. Pick varied examples, because the model copies their style and their mistakes.
+  - **Role prompting.** "You are a senior incident responder." It changes focus and vocabulary. It does not add knowledge the model lacks.
+  - **Chain of thought.** Ask for steps before the answer. Wei et al. (2022) showed large gains on math and logic. Kojima et al. (2022) showed that one line, "Let's think step by step", also helps with no examples. Newer reasoning models already think before they answer, so this line matters less with them. Asking for the steps still helps you check the work.
+  - **Self-consistency.** Sample several answers and take the majority (Wang et al., 2022). It costs more calls but is more reliable on reasoning tasks.
+  - **Decomposition.** Solve sub-questions first. Least-to-most prompting (Zhou et al., 2022) solves the easy parts first and builds up.
+  - **Prompt chaining.** Several small prompts in a row, with code that checks each step. Easier to test and debug than one giant prompt.
+  - **ReAct.** The model alternates thought, action and observation (Yao et al., 2022). This is the loop inside most agents.
+  - **Tree of thoughts.** The model explores several reasoning paths and backs up from dead ends (Yao et al., 2023). Useful for search and planning, but slow.
+  - **Retrieval-augmented generation.** Find relevant passages, then answer from them (Lewis et al., 2020). It grounds the answer in your data.
+  - **Structured output.** Ask for JSON that matches a schema, then validate it in code.
+
+  !key Start with the simplest technique that works. Add examples when format matters, steps when reasoning matters, retrieval when facts matter, and chaining when the task is long.
+
+  ### What each one costs
+
+  More calls and longer prompts cost tokens and time. Self-consistency with 5 samples costs about 5 times one call. Few-shot examples add tokens to every call. Pick the cheapest technique that meets your quality bar, then measure.
+
+diagrams:
+  - type: split
+    title: Choosing a technique by the problem you have
+    source: ["Your task", "def"]
+    targets:
+      - ["Zero-shot", "box", "simple and common task"]
+      - ["Few-shot", "box", "the format or labels must match"]
+      - ["Chain of thought", "box", "needs reasoning in steps"]
+      - ["Retrieval", "raised", "needs facts from your documents"]
+      - ["Chaining", "box", "long task with checkable steps"]
+      - ["ReAct", "atk", "needs tools, so add guards"]
+    caption: ReAct is marked in red because tools turn words into actions. Lesson 6 covers the guards it needs.
+  - type: cycle
+    title: The ReAct loop inside an agent
+    nodes: [["Thought", "def"], ["Action, call a tool", "atk"], ["Observation, read the result", "raised"], ["Next thought or final answer", "box"]]
+    center: tool results are untrusted text
+    caption: The observation step reads outside text. If that text holds instructions, the next thought can follow them.
+
+attack_steps:
+  - Try zero-shot first and save the result as your baseline.
+  - If the format is wrong, add 2 to 5 varied examples.
+  - If the logic is wrong, ask for the steps before the answer, or use a reasoning model.
+  - If facts are wrong or made up, add retrieval and tell the model to answer only from the passages.
+  - If the task is long, split it into a chain and check each step in code.
+  - If the task needs tools, use a ReAct loop, and put limits on every tool.
+  - Measure each change on the same test set, and keep the cheapest version that meets the bar.
+
+cases:
+  - ["Zero-shot", "`Classify this alert as true positive or false positive. Alert: <alert>...</alert>`"]
+  - ["Few-shot", "`Alert: 400 failed logins from one IP in 2 minutes. Label: brute force.` then `Alert: one login from a new country at 3 am. Label: suspicious login.` then `Alert: <new alert>. Label:`"]
+  - ["Role", "`You are a senior application security reviewer. Review this function for injection bugs.`"]
+  - ["Chain of thought", "`List the facts in the log, then decide whether they show lateral movement, then give the verdict.`"]
+  - ["Self-consistency", "Run the same triage prompt 5 times and keep the verdict that appears most often. Flag the alert for a person if the answers split."]
+  - ["Decomposition", "`First list every IP in the report. Then, for each IP, say whether it is internal. Then summarize only the external ones.`"]
+  - ["Prompt chaining", "Prompt 1 extracts indicators as JSON. Code validates the JSON. Prompt 2 writes a summary from the validated JSON only."]
+  - ["ReAct", "`Thought: I need the domain age. Action: whois(example.com). Observation: created 2 days ago. Thought: very new domain, raise the risk.`"]
+  - ["Retrieval", "`Answer only from the passages inside <docs>. If the answer is not there, say not found. Cite the passage number.`"]
+  - ["Structured output", "`Return JSON with fields verdict (phishing, spam, safe), confidence (0 to 1) and evidence (list of quotes).`"]
+
+defense: |
+  **Limits**
+
+  - **Chain of thought can be wrong and still sound right.** Written steps are not proof. Check them.
+  - **Few-shot examples leak.** The model can repeat example data, so never put real customer data in examples.
+  - **Retrieval brings in outside text.** That text can hold instructions. This is indirect prompt injection.
+  - **ReAct turns words into actions.** An injected instruction can become a tool call. Limit tools and ask a person before risky actions.
+  - **Structured output can still carry bad values.** A valid JSON field can hold a script or a wrong number. Validate the content, not only the shape.
+
+  !warn Every technique that puts outside text into the prompt, such as retrieval, tools and long chats, also widens the attack surface. Lessons 5 and 6 show the attacks and the defenses.
+
+lab:
+  intro: |
+    Compare techniques on one task. Use a model you are allowed to use and made-up data.
+  steps:
+    - Write 10 short made-up alerts. Label each one yourself as true or false positive.
+    - Run a zero-shot classifier prompt on all 10 and count correct answers.
+    - Add 3 labeled examples and run again.
+    - Add "list the facts first, then decide" and run again.
+    - Run the best prompt 5 times on the 3 hardest alerts and take the majority vote.
+    - Make a table of accuracy and token cost for each technique. Pick one and explain why.
+
+quiz:
+  - q: You show the model 3 labeled examples before the new input. Which technique is this?
+    opts: ["Zero-shot", "Few-shot", "ReAct"]
+    a: 1
+    why: Worked examples inside the prompt are few-shot prompting.
+  - q: Which technique runs the same question several times and takes the most common answer?
+    opts: ["Self-consistency", "Prompt chaining", "Role prompting"]
+    a: 0
+    why: Self-consistency samples several reasoning paths and keeps the majority answer.
+  - q: Why is ReAct a security concern?
+    opts: ["It uses more tokens", "Tool results are outside text, and the model may act on instructions inside them", "It cannot write JSON"]
+    a: 1
+    why: The observation step reads untrusted text, and the next step can turn it into a tool call.
+
+readings:
+  - [promptreport, "The widest map of techniques. Read the taxonomy figure and the best practices section."]
+  - [fewshot, "Where few-shot prompting became famous."]
+  - [cot, "The chain of thought paper. Look at the worked examples."]
+  - [zeroshotcot, "One sentence, let's think step by step, and why it helps."]
+  - [selfconsist, "Majority vote over several reasoning paths."]
+  - [leasttomost, "Decompose, then solve from easy to hard."]
+  - [react, "The loop behind most agents."]
+  - [tot, "Search over reasoning paths."]
+  - [ragpaper, "Retrieval plus generation, the original RAG paper."]
+star: [promptreport, react]
+
+refs:
+  - "Schulhoff et al. [The Prompt Report](https://arxiv.org/abs/2406.06608). 2024."
+  - "Brown et al. [Language models are few-shot learners](https://arxiv.org/abs/2005.14165). 2020."
+  - "Wei et al. [Chain-of-thought prompting](https://arxiv.org/abs/2201.11903). 2022."
+  - "Kojima et al. [Large language models are zero-shot reasoners](https://arxiv.org/abs/2205.11916). 2022."
+  - "Wang et al. [Self-consistency](https://arxiv.org/abs/2203.11171). 2022."
+  - "Zhou et al. [Least-to-most prompting](https://arxiv.org/abs/2205.10625). 2022."
+  - "Yao et al. [ReAct](https://arxiv.org/abs/2210.03629). 2022."
+  - "Yao et al. [Tree of Thoughts](https://arxiv.org/abs/2305.10601). 2023."
+  - "Lewis et al. [Retrieval-augmented generation](https://arxiv.org/abs/2005.11401). 2020."

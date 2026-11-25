@@ -1,0 +1,71 @@
+title: Defense design desk
+source: scenario practice, written for this site
+lede: Find the lethal trifecta in agent designs, pick the design pattern that breaks it, and judge a vendor's defense claim.
+blurb: Spot the trifecta, match risks to design patterns, and audit a defense claim.
+situation: '**Kestrel Logistics** plans three agents. A mail agent that reads customer email and can reply. A research agent that browses the web and can read internal wikis. A billing agent that reads invoices and can issue refunds.'
+rounds:
+- title: Round 1. Find the trifecta
+  items:
+  - type: multi
+    q: Which parts of the lethal trifecta does the research agent have?
+    opts:
+    - Access to private data
+    - Exposure to untrusted content
+    - A way to send data out
+    - None of them
+    a:
+    - 0
+    - 1
+    - 2
+    why: Internal wikis are private data, web pages are untrusted, and browsing can send data out, for example in a URL it fetches. All three are present.
+  - type: sort
+    q: Which design pattern fits each agent best?
+    rows:
+    - - The mail agent may only pick from 5 fixed reply templates
+      - Action selector
+    - - The billing agent fixes its steps from the user's request before reading invoices
+      - Plan-then-execute
+    - - Each web page is summarized by an isolated call that returns fixed JSON
+      - LLM map-reduce
+    - - A tool-using model handles email text only as a variable it never reads
+      - Dual LLM
+    opts:
+    - Action selector
+    - Plan-then-execute
+    - LLM map-reduce
+    - Dual LLM
+    why: Picking from a fixed list is an action selector. A plan fixed before reading data is plan-then-execute. Isolated per-document calls are map-reduce. A privileged model that never reads untrusted text is the dual LLM pattern.
+  - q: Which single change best protects the billing agent from an injected invoice that asks for a large refund?
+    opts:
+    - A stronger warning in the system prompt
+    - Human approval for refunds above a limit
+    - A longer system prompt
+    a: 1
+    why: Approval stops the harmful action even when the model is fooled. A prompt warning only lowers the chance.
+- title: Round 2. Judge the claim
+  items:
+  - q: A vendor says its prompt filter blocks 99.9% of prompt injections, tested on a public list of known attacks. What is the key missing evidence?
+    opts:
+    - Results against adaptive attacks tuned to the filter
+    - A bigger list of the same attacks
+    - Results on a faster GPU
+    a: 0
+    why: Nasr, Carlini et al. showed that most defenses with near-zero reported success fell to adaptive attacks, often above 90% success.
+  - type: fill
+    q: Fill the blank. On AgentDojo, CaMeL solved ____ percent of tasks with provable security.
+    a:
+    - '77'
+    - 77%
+    - seventy-seven
+    why: The CaMeL paper reports 77% of tasks solved with provable security, against 84% for the undefended agent.
+  - type: order
+    q: Put these defenses in order from weakest to strongest against an adaptive injection.
+    rows:
+    - A rule in the system prompt
+    - Spotlighting and the sandwich defense
+    - A guard model on input and output
+    - A design pattern that keeps tools away from untrusted text
+    why: Prompt rules are easiest to talk around, spotlighting is harder, guard models catch known patterns, and design stops the harm even when the model is fooled.
+  - type: open
+    q: Pick one of the three Kestrel agents and break its trifecta in one or two sentences.
+    a: One good answer. For the mail agent, limit replies to the sender of the current email and require a click from staff before sending to any other address. That removes the open exit, so injected text cannot send data elsewhere. Another good answer removes wiki access from the research agent, so it has no private data to leak.

@@ -1,0 +1,49 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: fill
+    q: Fill the blank. Souly et al. (2025) found that about ____ poisoned documents backdoored models from 600M to 13B parameters alike.
+    a:
+    - '250'
+    why: The number stayed near constant even when the largest model trained on more than 20 times more clean data.
+  - type: sort
+    q: Name each poisoning attack.
+    rows:
+    - - Images with correct labels that still shift what the model learns
+      - Clean-label poisoning
+    - - An attacker buys an expired domain that a training dataset still links to
+      - Split-view poisoning
+    - - A planted wiki page is retrieved and quoted by a support bot
+      - RAG poisoning
+    - - A rare phrase makes a fine-tuned model switch to bad behavior
+      - Backdoor trigger
+    opts:
+    - Clean-label poisoning
+    - Split-view poisoning
+    - RAG poisoning
+    - Backdoor trigger
+    why: Correct labels with harmful effect is clean-label. Changed content behind an old link is split-view. Poison in the retrieval store is RAG poisoning. A hidden phrase that flips behavior is a backdoor trigger.
+  - q: What did the Sleeper Agents paper (Hubinger et al., 2024) show?
+    opts:
+    - Backdoored behavior can persist through standard safety training
+    - Safety training always removes backdoors
+    - Poisoning needs millions of documents
+    a: 0
+    why: The backdoors they trained survived fine-tuning, reinforcement learning and adversarial training meant to remove them.
+  - type: multi
+    q: Which steps help defend a training or RAG pipeline against poisoning?
+    opts:
+    - Track where every document came from
+    - Filter and deduplicate data before use
+    - Test the model for hidden triggers
+    - Make the model larger
+    a:
+    - 0
+    - 1
+    - 2
+    why: Provenance, filtering and trigger testing target the attack. Size alone does not help, since the needed poison count stays near constant.
+- title: Plan a study
+  items:
+  - type: open
+    q: Lab 4 of the red teaming syllabus asks for a small poisoning replication. Describe the experiment in three or four sentences.
+    a: One good answer. Fine-tune a small open model on a clean dataset plus a trigger phrase mapped to a fixed odd output. Repeat with 0, 10, 50, 100 and 250 poisoned examples. For each run, measure how often the trigger causes the odd output, and check clean accuracy on normal prompts. Plot attack success against the number of poisoned examples and report the trials and settings.

@@ -1,0 +1,52 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: SAST or DAST?
+    rows:
+    - - Reads the source code without running it
+      - SAST
+    - - Sends requests to the running app
+      - DAST
+    - - Finds a hard-coded password in a config file
+      - SAST
+    - - Finds that a login page lacks rate limiting
+      - DAST
+    opts:
+    - SAST
+    - DAST
+    why: Static analysis reads code, dynamic analysis tests the running app. Each finds bugs the other misses.
+  - q: '`GET /api/invoice?id=1043` returns any invoice when you change the id. What is the bug?'
+    opts:
+    - IDOR, an insecure direct object reference
+    - Cross-site scripting
+    - SQL injection
+    a: 0
+    why: The app trusts the id from the user and does not check ownership. That is IDOR, also CWE-639.
+  - type: fill
+    q: Fill the blank. A file that pins the exact versions of every dependency is a ____ file.
+    a:
+    - lock
+    - lockfile
+    why: Lock files stop silent updates to new, possibly malicious, versions.
+  - type: multi
+    q: Which checks should run before an AI-suggested dependency is merged?
+    opts:
+    - The package exists and has a real history
+    - The name is not a look-alike of a popular package
+    - The version is pinned
+    - The AI said it is safe
+    a:
+    - 0
+    - 1
+    - 2
+    why: Models invent and confuse package names. Check the registry, the name and the pin yourself.
+- title: Prompt clinic
+  items:
+  - q: Which review prompt makes findings easiest to verify?
+    opts:
+    - '`Find bugs.`'
+    - '`For each finding give the line number, the CWE, why it is exploitable and a fix. If none, say no findings.`'
+    - '`Rate this code from 1 to 10.`'
+    a: 1
+    why: Line numbers, a bug class, a reason and a fix let a reviewer confirm or reject each finding fast.

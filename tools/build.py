@@ -325,11 +325,15 @@ def qset(items, sid):
                 it[k] = inline(it[k])
         if it.get("type") == "open" and isinstance(it.get("a"), str):
             it["a"] = md(it["a"])
-        if it.get("type") in ("mcq", None) and "opts" in it:
+        if it.get("type") in ("mcq", None, "multi") and "opts" in it:
             it["opts"] = [inline(o) for o in it["opts"]]
-            it["type"] = "mcq"
+            it["type"] = it.get("type") or "mcq"
         if it.get("type") == "sort":
             it["rows"] = [[inline(r[0]), r[1]] for r in it["rows"]]
+        if it.get("type") == "order":
+            it["rows"] = [inline(r) for r in it["rows"]]
+        if it.get("type") == "fill" and not isinstance(it.get("a"), list):
+            it["a"] = [str(it["a"])]
         data.append(it)
     js = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     return f'<div class="qset" data-id="{E(sid)}"></div><script type="application/json" data-for="{E(sid)}">{js}</script>'
@@ -347,17 +351,17 @@ HEAD = """<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/site.css?v=20261125j">
+<link rel="stylesheet" href="../assets/css/site.css?v=20261126a">
 </head>
 <body data-root="../" data-track="{track}">
 <a class="skip" href="#main">Skip to content</a>
 <header id="top"></header>
 """
 TAIL = """<footer id="foot"></footer>
-<script src="../assets/js/data.js?v=20261125j"></script>
-<script src="../assets/js/site.js?v=20261125j"></script>
-<script src="../assets/js/learn.js?v=20261125j"></script>
-<script src="../assets/js/scene.js?v=20261125j"></script>
+<script src="../assets/js/data.js?v=20261126a"></script>
+<script src="../assets/js/site.js?v=20261126a"></script>
+<script src="../assets/js/learn.js?v=20261126a"></script>
+<script src="../assets/js/scene.js?v=20261126a"></script>
 </body>
 </html>
 """
@@ -407,7 +411,7 @@ def frameworks(d):
 
 # ---------------------------------------------------------------- sidebars
 def side_wrap(track, label, inner):
-    dot = {"attack": "atk", "defend": "def", "frameworks": "pen"}.get(track, "def")
+    dot = {"attack": "atk", "defend": "def", "frameworks": "pen", "prompting": "def"}.get(track, "def")
     return (f'<aside class="side" id="side" aria-label="{E(label)}">'
             f'<button class="side-btn" type="button" aria-expanded="false" aria-controls="side-nav">{E(label)}, all lessons</button>'
             f'<nav id="side-nav"><p class="side-h"><span class="dot {dot}"></span>{E(label)}</p>{inner}</nav></aside>')
@@ -423,7 +427,7 @@ def side_group(num, title, href, cur, items, done=None):
 ATTACK_PARTS = [("idea", "The idea in one minute", "idea"), ("watch", "Watch it, step by step", "scenes"), ("words", "Words you need", "terms"),
                 ("how", "How it works", "how"), ("attack", "The attack as a workflow", "attack_steps"), ("cases", "Real cases", "cases"),
                 ("defend", "How to defend", "defense"), ("map", "Map to the frameworks", None), ("artex", "ARTEX case study", "artex"),
-                ("lab", "Hands-on lab", "lab"), ("read", "Readings, explained", "readings"), ("discuss", "Discussion questions", "questions"),
+                ("lab", "Hands-on lab", "lab"), ("read", "Readings, explained", "readings"), ("course", "From the red teaming course", "syllabus"), ("discuss", "Discussion questions", "questions"),
                 ("quiz", "Check yourself", "quiz"), ("deliver", "Deliverables", "deliverables"), ("refs", "References", "refs")]
 
 def attack_side(lessons, cur, track="attack", label="Attack track"):
@@ -434,9 +438,15 @@ def attack_side(lessons, cur, track="attack", label="Attack track"):
         H = L.get("headings") or {}
         items = [(f"{base}#{a}", H.get(a, t), "#", False, None) for a, t, k in ATTACK_PARTS if k is None or L.get(k)]
         if L.get("desk"):
-            items.append((f'{L["slug"]}-desk.html', "Practice desk", "Q", cur == L["slug"] + "-desk", None))
+            items.append((f'{L["slug"]}-desk.html', "Practice desk", "Q", cur == L["slug"] + "-desk", f'{track}.{L["slug"]}-desk'))
         out.append(side_group(L["num"], L["short"], f'{L["slug"]}.html', "page" if cur == L["slug"] else here, items, f'{track}.{L["slug"]}'))
     return side_wrap(track, label, "".join(out))
+
+def done_end(did, label, note="Ticks save in this browser and show in the sidebar and on the plan."):
+    """The mark-done control, shown once at the end of a page."""
+    return (f'<div class="done-end"><label class="donebox"><span class="check"><input type="checkbox" data-id="{E(did)}"><span class="box"></span>'
+            f'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13c2 1.4 3.7 3.2 5.2 5.4C11.6 12.6 15.4 7.4 21 3"/></svg></span>{E(label)}</label>'
+            f'<span class="small muted">{E(note)}</span></div>')
 
 def jt(a, b):
     """Join two title parts without doubling punctuation."""
@@ -458,6 +468,15 @@ def load_desk(key):
     dp = f"content/desks/{key}.yaml"
     return yaml.safe_load(open(dp, encoding="utf-8")) if os.path.exists(dp) else None
 
+def with_extra(desk, key):
+    """Append the extra practice rounds in content/practice/{key}.yaml to a desk."""
+    xp = f"content/practice/{key}.yaml"
+    if desk and os.path.exists(xp):
+        extra = yaml.safe_load(open(xp, encoding="utf-8")) or {}
+        desk = dict(desk)
+        desk["rounds"] = list(desk.get("rounds", [])) + list(extra.get("rounds", []))
+    return desk
+
 # ---------------------------------------------------------------- attack track
 def build_lessons(track="attack", label="Attack track", crumb="Attack", kind="atk", eyebrow="Lesson",
                   ov_title="", ov_eyebrow="", ov_lede="", ov_desc="", page_suffix="Attack lesson"):
@@ -473,6 +492,8 @@ def build_lessons(track="attack", label="Attack track", crumb="Attack", kind="at
             dk = load_desk(L["slug"])
             if dk:
                 L["desk"] = dk
+        if L.get("desk"):
+            L["desk"] = with_extra(L["desk"], L["slug"])
     for i, L in enumerate(lessons):
         side = attack_side(lessons, L["slug"], track, label)
         prev = (f'{lessons[i - 1]["slug"]}.html', lessons[i - 1]["title"]) if i else ("index.html", "Track overview")
@@ -518,6 +539,9 @@ def build_lessons(track="attack", label="Attack track", crumb="Attack", kind="at
             add("lab", "Hands-on lab", inner)
         if L.get("readings"):
             add("read", "Readings, explained", "<ul class=\"refs\">" + "".join(link_li(r[0], r[1] if len(r) > 1 else None, r[0] in L.get("star", [])) for r in L["readings"]) + "</ul>")
+        if L.get("syllabus"):
+            add("course", "From the red teaming course", '<p>The NYU Tandon course Red Teaming and Securing Generative AI assigns these readings for this topic. See <a href="../redteam.html">the course map</a> for the week and the lab.</p>'
+                + "<ul class=\"refs\">" + "".join(link_li(r[0], r[1] if len(r) > 1 else None) for r in L["syllabus"]) + "</ul>")
         if L.get("questions"):
             add("discuss", "Discussion questions", "<p class=\"small muted\">Write your own answer first. Your text stays in this browser. Then open the model answer and compare.</p>"
                 + qset([{"type": "open", "q": q, "a": a} for q, a in L["questions"]], f'{L["slug"]}-discuss'))
@@ -540,17 +564,16 @@ def build_lessons(track="attack", label="Attack track", crumb="Attack", kind="at
         head = (f'<nav class="crumbs"><a href="../index.html">Home</a><span>/</span><a href="index.html">{crumb}</a><span>/</span><span>{E(L["num"])}</span></nav>'
                 f'<header class="doc-head"><div class="eyebrow"><span class="tag {kind}"><span class="dot {kind}"></span>{crumb} · {eyebrow} {E(L["num"])}</span>{tags}<span>{E(L.get("time", ""))}</span></div>'
                 f'<h1>{E(L["title"])}</h1><p class="lede">{inline(L["lede"])}</p>'
-                f'<div class="doc-meta"><label class="donebox"><span class="check"><input type="checkbox" data-id="{track}.{L["slug"]}"><span class="box"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13c2 1.4 3.7 3.2 5.2 5.4C11.6 12.6 15.4 7.4 21 3"/></svg></span>Mark this lesson done</label>'
-                + (f'<a class="btn btn-quiet btn-sm" href="../plan.html#week-{L["week"]}">Plan, week {L["week"]}</a>' if L.get("week") is not None else "")
-                + f'</div>{files_}</header>'
+                + (f'<div class="doc-meta"><a class="btn btn-quiet btn-sm" href="../plan.html#week-{L["week"]}">Plan, week {L["week"]}</a></div>' if L.get("week") is not None else "")
+                + f'{files_}</header>'
                 + '<nav class="doc-toc" aria-label="On this page">' + "".join(f'<a href="#{a}">{E(b)}</a>' for a, b in toc) + "</nav>")
         dnext = (f'{L["slug"]}-desk.html', f'{L["short"]}, practice desk') if L.get("desk") else nxt
-        page(f'{track}/{L["slug"]}.html', jt(L["title"], f'{page_suffix} {L["num"]}'), L["lede"][:150], track, side, head + "".join(parts) + pager(prev, dnext))
+        page(f'{track}/{L["slug"]}.html', jt(L["title"], f'{page_suffix} {L["num"]}'), L["lede"][:150], track, side, head + "".join(parts) + done_end(f'{track}.{L["slug"]}', "Mark this lesson done") + pager(prev, dnext))
         if L.get("desk"):
             crumbs = f'<nav class="crumbs"><a href="../index.html">Home</a><span>/</span><a href="index.html">{crumb}</a><span>/</span><a href="{L["slug"]}.html">{E(L["num"])}</a><span>/</span><span>Practice desk</span></nav>'
             dbody = desk_body(L["desk"], L["slug"], crumbs, f'{crumb} · {eyebrow} {L["num"]} · Practice desk', kind, "scenario practice, written for this site")
             page(f'{track}/{L["slug"]}-desk.html', jt(L["desk"]["title"], "Practice desk"), L["desk"]["lede"][:150], track,
-                 attack_side(lessons, L["slug"] + "-desk", track, label), dbody + pager((f'{L["slug"]}.html', L["title"]), nxt))
+                 attack_side(lessons, L["slug"] + "-desk", track, label), dbody + done_end(f'{track}.{L["slug"]}-desk', "Mark this practice desk done") + pager((f'{L["slug"]}.html', L["title"]), nxt))
 
     # overview
     rows = "".join(
@@ -577,7 +600,7 @@ def defend_side(mods, cur):
         here = cur.startswith(key)
         items = [(f"{key}-s{j + 1:02d}.html", tidy(s["t"]), str(j + 1), cur == f"{key}-s{j + 1:02d}", f"defend.{key}-s{j + 1:02d}") for j, s in enumerate(M["_secs"])]
         if M.get("desk"):
-            items.append((f"{key}-desk.html", "Practice desk", "Q", cur == key + "-desk", None))
+            items.append((f"{key}-desk.html", "Practice desk", "Q", cur == key + "-desk", f"defend.{key}-desk"))
         out.append(side_group(f'{M["n"]:02d}', M["short"], f"{key}.html", "page" if cur == key else here, items))
     return side_wrap("defend", "Defend track", "".join(out))
 
@@ -595,6 +618,8 @@ def build_defend():
                 dk = load_desk(f'm{M["n"]:02d}')
                 if dk:
                     M["desk"] = dk
+            if M.get("desk"):
+                M["desk"] = with_extra(M["desk"], f'm{M["n"]:02d}')
             M.setdefault("short", M["title"])
             mods.append(M)
     refs_all = json.load(open("content/defend/_refs.json", encoding="utf-8")) if os.path.exists("content/defend/_refs.json") else {}
@@ -661,16 +686,16 @@ def build_defend():
                     f'<header class="doc-head"><div class="eyebrow"><span class="tag def"><span class="dot def"></span>Module {M["n"]} · Section {j + 1} of {len(M["_secs"])}</span></div>'
                     f'<h1>{E(tidy(s["t"]))}</h1>'
                     f'<div class="plain"><span class="k">In plain words</span><p>{inline(blurb)}</p></div>'
-                    f'<div class="doc-meta"><label class="donebox"><span class="check"><input type="checkbox" data-id="defend.{sid}"><span class="box"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13c2 1.4 3.7 3.2 5.2 5.4C11.6 12.6 15.4 7.4 21 3"/></svg></span>Mark this section read</label></div></header>'
+                    f'</header>'
                     f'<div class="embed"><iframe class="nyu" src="{mdir}{E(s["f"])}" title="{E(tidy(s["t"]))}"></iframe></div>'
                     f'<p class="small muted">Course content by NYU Tandon, shown inside this site. <a href="{mdir}{E(s["f"])}" target="_blank">Open it full screen</a>.</p>'
-                    + nav(f"{sid}.html"))
+                    + done_end(f"defend.{sid}", "Mark this section read") + nav(f"{sid}.html"))
             page(f"defend/{sid}.html", jt(tidy(s["t"]), f'Module {M["n"]}'), blurb[:150], "defend", defend_side(mods, sid), body)
 
         if M.get("desk"):
             dk = M["desk"]
             crumbs = f'<nav class="crumbs"><a href="../index.html">Home</a><span>/</span><a href="index.html">Defend</a><span>/</span><a href="{key}.html">Module {M["n"]}</a><span>/</span><span>Practice desk</span></nav>'
-            body = desk_body(dk, key, crumbs, f'Module {M["n"]} · Practice desk', "def", "from the class workbook and its answer slides") + nav(f"{key}-desk.html")
+            body = desk_body(dk, key, crumbs, f'Module {M["n"]} · Practice desk', "def", dk.get("source", "from the class workbook and its answer slides")) + done_end(f"defend.{key}-desk", "Mark this practice desk done") + nav(f"{key}-desk.html")
             page(f"defend/{key}-desk.html", jt(dk["title"], f'Module {M["n"]} practice desk'), dk["lede"][:150], "defend", defend_side(mods, key + "-desk"), body)
 
     # lab viewer
@@ -708,5 +733,17 @@ if __name__ == "__main__":
                       ov_title="The frameworks behind AI security", ov_eyebrow="ATLAS · ATT&CK · D3FEND · STRIDE · OWASP · ARTEX",
                       ov_lede="Security teams share a few maps. Each page here explains one of them from zero, shows it step by step, says how to use it, and links it to the others.",
                       ov_desc="MITRE ATLAS, MITRE ATT&CK, MITRE D3FEND, STRIDE, the OWASP Top 10 lists and ARTEX, explained from zero.", page_suffix="Framework")
+    if os.path.isdir("content/prompting"):
+        build_lessons(track="prompting", label="Prompting", crumb="Prompting", kind="def", eyebrow="Lesson",
+                      ov_title="Prompting, from clear prompts to attacks and defenses", ov_eyebrow="How to prompt · ways of prompting · adversarial and defensive prompting",
+                      ov_lede="How to write a prompt that works, the main techniques and when to use each, how attackers use prompts, and why good design matters more than any prompt. Every lesson has a step-by-step animation, examples, a lab and a practice desk.",
+                      ov_desc="Six lessons on prompt engineering for security, from the parts of a prompt to jailbreaks, prompt injection and the design patterns that defend against them.", page_suffix="Prompting lesson")
     d = build_defend()
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
+    import redteam
+    head = HEAD.replace("../", "").replace('data-track="{track}"', 'data-track=""').format(
+        title="Red teaming and securing generative AI, the course map",
+        desc="The NYU Tandon red teaming course, week by week, with its readings and labs mapped to the lessons on this site.", track="")
+    tail = re.sub(r'<script src="assets/js/(learn|scene)\.js[^"]*"></script>\s*', "", TAIL.replace("../", ""))
+    open("redteam.html", "w", encoding="utf-8").write(head + redteam.build(LINKS, E, "") + "\n" + tail)
     print(f"built {len(a)} attack lessons and {len(d)} defend modules")

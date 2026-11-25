@@ -1,0 +1,43 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: OWASP LLM06 names three root causes of excessive agency. Which one is each case?
+    rows:
+    - - A notes agent also has a delete-all-files tool it never needs
+      - Excessive functionality
+    - - A read-only report agent uses a token that can also write and delete
+      - Excessive permissions
+    - - An agent sends payments with no human check
+      - Excessive autonomy
+    opts:
+    - Excessive functionality
+    - Excessive permissions
+    - Excessive autonomy
+    why: Extra tools are excessive functionality, extra rights on a tool are excessive permissions, and acting without checks is excessive autonomy.
+  - q: What does the AI worm paper (Cohen, Bitton and Nassi, 2024) show?
+    opts:
+    - A prompt can copy itself through AI email assistants from one inbox to the next
+    - Agents cannot read email
+    - Worms need a code exploit
+    a: 0
+    why: A self-replicating prompt in an email makes the assistant include it in replies, which spreads it to new assistants.
+  - type: fill
+    q: Fill the blank. An OAuth ____ limits what an access token is allowed to do.
+    a:
+    - scope
+    why: A narrow scope, such as read-only calendar, limits the damage a fooled agent can do with its token.
+  - type: order
+    q: Put safe tool design for an agent in order.
+    rows:
+    - List the tasks the agent must do
+    - Give only the tools those tasks need
+    - Give each tool the narrowest rights
+    - Require approval for risky actions
+    - Log every tool call with its input
+    why: Tasks decide tools, tools decide rights, risky actions get a gate, and logs make it all reviewable.
+- title: Prompt clinic
+  items:
+  - type: open
+    q: Write a tool description for a read-only calendar tool that makes its limits clear to the model.
+    a: One good answer. `get_events(date). Returns the user's own calendar events for one date as a list of title, start and end. Read only. It cannot create, change, delete or share events, and it cannot read other people's calendars.` The real limits are enforced by the tool's token scope. The description only helps the model plan.

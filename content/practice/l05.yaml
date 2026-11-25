@@ -1,0 +1,48 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: Name each supply chain attack.
+    rows:
+    - - A package named `pytorchh` next to `pytorch`
+      - Typosquatting
+    - - A deleted model owner's name is registered again by someone else, and old links now load their model
+      - Namespace reuse
+    - - A model file runs code through `__reduce__` when loaded
+      - Malicious serialization
+    opts:
+    - Typosquatting
+    - Namespace reuse
+    - Malicious serialization
+    why: A look-alike name is typosquatting, a reclaimed owner name is namespace reuse, and code in a pickle is malicious serialization.
+  - type: fill
+    q: Fill the blank. A model file format that stores only tensors and cannot run code on load is ____.
+    a:
+    - safetensors
+    why: safetensors stores raw tensors and metadata, so loading it does not execute code the way pickle can.
+  - type: multi
+    q: Which practices make loading a downloaded model safer?
+    opts:
+    - Use `torch.load` with `weights_only=True`
+    - Prefer safetensors files
+    - Pin the model by commit hash
+    - Load any pickle from any repository to test it
+    a:
+    - 0
+    - 1
+    - 2
+    why: These limit code execution and stop a name from silently pointing at new files. Loading random pickles is the attack itself.
+  - type: order
+    q: Put a safe model intake process in order.
+    rows:
+    - Check the publisher and the exact name
+    - Pin the version by commit hash
+    - Scan the files for unsafe serialization
+    - Load in an isolated environment first
+    - Record the model in the inventory
+    why: You check who and what before you fix the version, scan before you load, test in isolation, and record what you deployed.
+- title: Prompt clinic
+  items:
+  - type: open
+    q: Write a prompt that asks a model to review a requirements file for risky packages, without inventing package names.
+    a: One good answer. `Review the Python requirements inside <req>. For each line, flag names that look like a misspelling of a popular package, packages with no version pin, and unusual install sources. Quote the exact line. Do not suggest or name packages that are not in the file. If nothing looks risky, say no findings.` Then check every flag yourself on the package index.

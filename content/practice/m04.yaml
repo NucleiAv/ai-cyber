@@ -1,0 +1,43 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: num
+    q: A detector catches 45 of 50 real attacks and wrongly flags 90 of 9,000 benign events. What is the true positive rate, in percent?
+    a: 90
+    why: 45 of 50 is 90 percent. The false positive rate is 90 of 9,000, which is 1 percent, and that still means 90 false alarms.
+    unit: '%'
+    tol: 0.5
+  - q: A model that triaged well last year now misses new attack types. What is this?
+    opts:
+    - Concept drift
+    - Overfitting to the test set
+    - Prompt leaking
+    a: 0
+    why: The data the model sees changed over time, so its learned patterns no longer fit. Retrain and keep monitoring.
+  - type: multi
+    q: An LLM gives 3 different severities for the same alert in 5 runs. Which responses make sense?
+    opts:
+    - Treat the output as stochastic and measure agreement
+    - Lower the temperature and test again
+    - Send disagreements to a person
+    - Trust whichever answer came first
+    a:
+    - 0
+    - 1
+    - 2
+    why: Variation is a property of sampling. Measure it, reduce it, and route unclear cases to people.
+  - type: fill
+    q: Fill the blank. The area under the ROC curve is called ____.
+    a:
+    - AUC
+    - auc
+    why: AUC summarizes how well the detector ranks attacks above benign events across all thresholds.
+- title: Prompt clinic
+  items:
+  - q: Which prompt is best for asking an LLM to triage a Suricata alert?
+    opts:
+    - '`Is this bad?`'
+    - '`Read the alert in <alert>. List the signature, source, destination and port with quotes. Then give severity and one reason. Say unknown if a field is missing.`'
+    - '`Explain everything about network security.`'
+    a: 1
+    why: It grounds the answer in fields, demands quotes, sets a format and allows unknown.

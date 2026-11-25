@@ -1,0 +1,48 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: Which source answers each question?
+    rows:
+    - - How severe is the bug in theory?
+      - CVSS
+    - - How likely is exploitation in the next 30 days?
+      - EPSS
+    - - Is it known to be exploited right now?
+      - CISA KEV
+    - - How may I share this report?
+      - TLP
+    opts:
+    - CVSS
+    - EPSS
+    - CISA KEV
+    - TLP
+    why: CVSS scores severity, EPSS estimates exploit probability, KEV lists known exploited bugs, and TLP sets sharing rules.
+  - type: fill
+    q: Fill the blank. The standard format for sharing threat intelligence objects is STIX, and the transport protocol is ____.
+    a:
+    - TAXII
+    why: STIX describes the objects and TAXII moves them between systems.
+  - q: A model summary says a CVE is exploited in the wild, but KEV does not list it and the vendor says nothing. What should the analyst do?
+    opts:
+    - Mark the claim unverified and look for a primary source
+    - Publish it, the model sounded sure
+    - Delete the whole report
+    a: 0
+    why: Grounding means each claim traces to a source. An unsupported claim stays unverified until a primary source confirms it.
+  - type: multi
+    q: Which may go into a prompt sent to an outside AI service, under a TLP:RED report?
+    opts:
+    - Nothing from the report, unless the sharing rules allow that service
+    - Only the public CVE numbers mentioned
+    - The full report
+    - The victim's name
+    a:
+    - 0
+    - 1
+    why: TLP:RED limits sharing to named recipients. Public CVE numbers are fine, the report's content is not.
+- title: Prompt clinic
+  items:
+  - type: open
+    q: Write a prompt that turns a threat report into checkable intelligence.
+    a: One good answer. `From the report inside <report>, list each claim as a row with claim, quote, and source named in the report. Extract CVEs, IPs and domains exactly as written. Do not add anything from memory. Mark any claim without a named source as unsourced.` Then check each CVE against NVD and KEV.

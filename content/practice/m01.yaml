@@ -1,0 +1,40 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: num
+    q: A phishing detector flags 50 emails. 40 are real phishing. There were 80 phishing emails in total. What is the recall, in percent?
+    a: 50
+    why: Recall is true positives over all real positives. 40 of 80 is 50 percent. Precision here is 40 of 50, or 80 percent.
+    unit: '%'
+    tol: 0.5
+  - q: A model scores 99% on its training data and 70% on new data. What is the likely problem?
+    opts:
+    - Overfitting
+    - Underfitting
+    - Too little memory
+    a: 0
+    why: A big gap between training and new data means the model memorized the training set instead of learning patterns that generalize.
+  - type: fill
+    q: Fill the blank. The score that balances precision and recall in one number is the ____ score.
+    a:
+    - F1
+    - f1
+    - F-1
+    why: F1 is the harmonic mean of precision and recall, so it drops when either one is low.
+  - type: multi
+    q: Which are examples of dual use in AI security?
+    opts:
+    - A model that finds bugs for defenders and for attackers
+    - A phishing detector that can also grade phishing drafts
+    - A spell checker for one language
+    - A vulnerability scanner
+    a:
+    - 0
+    - 1
+    - 3
+    why: A capability that serves both sides is dual use. A plain spell checker does not help an attack.
+- title: Prompt clinic
+  items:
+  - type: open
+    q: Write a prompt that asks a model to explain precision and recall to a manager, with one security example each.
+    a: One good answer. `You are a security analyst explaining to a manager who is not technical. Explain precision and recall in under 120 words. Use one email-filter example for each. End with one sentence on which matters more for a fraud alert and why.` A clear audience, a length limit and concrete examples make it work.

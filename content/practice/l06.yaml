@@ -1,0 +1,46 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: Which question does each control answer?
+    rows:
+    - - A digital signature on the model file
+      - Who published it
+    - - A provenance attestation
+      - How and from what it was built
+    - - An AI-BOM
+      - What is inside it
+    - - An entry in a public transparency log
+      - Was the signing recorded where anyone can check
+    opts:
+    - Who published it
+    - How and from what it was built
+    - What is inside it
+    - Was the signing recorded where anyone can check
+    why: Signatures prove identity, provenance proves the build path, an AI-BOM lists parts, and a transparency log makes signing public and tamper-evident.
+  - type: multi
+    q: Which entries belong in an AI-BOM?
+    opts:
+    - Model name, version and hash
+    - Training data sources
+    - License
+    - The developer's favorite food
+    a:
+    - 0
+    - 1
+    - 2
+    why: An AI-BOM lists the parts and facts you need for security and legal review.
+  - type: fill
+    q: Fill the blank. Sigstore records each signing event in a public ____ log.
+    a:
+    - transparency
+    why: The Rekor transparency log lets anyone check that a signature was made and recorded.
+  - type: order
+    q: Put the checks before deploying a third party model in order.
+    rows:
+    - Download the model and its signature
+    - Verify the signature against the expected publisher
+    - Check the transparency log entry
+    - Compare the hash with the AI-BOM
+    - Approve and deploy
+    why: You need the files first, then you check who signed, that the signing was recorded, and that the parts match before you approve.

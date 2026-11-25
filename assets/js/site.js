@@ -5,6 +5,7 @@
   const NAV = [
     ["index.html", "Home"],
     ["basics.html", "Start here"],
+    ["prompting/index.html", "Prompting"],
     ["plan.html", "Plan"],
     ["risks.html", "Risks"],
     ["defend/index.html", "Defend"],
@@ -62,8 +63,8 @@
       foot.innerHTML = `<div class="wrap">
         <div><p><b style="color:var(--ink)">Prompt to Patch</b> is one place to learn AI, ML and LLM security, from defense to attack.</p>
         <p>Built and curated by <a href="https://anmol-vats-portfolio.vercel.app/" target="_blank" rel="noopener">Anmol Vats</a>. The course material belongs to its authors at NYU Tandon. Links point to their own sites. Progress, ticks and answers you write here stay in this browser only.</p></div>
-        <div><h4>Learn</h4>${NAV.slice(1, 6).map(([h, t]) => `<a href="${R}${h}">${t}</a>`).join("")}</div>
-        <div><h4>More</h4>${NAV.slice(6).map(([h, t]) => `<a href="${R}${h}">${t}</a>`).join("")}<a href="${REPO}">GitHub repository</a><a href="https://anmol-vats-portfolio.vercel.app/" target="_blank" rel="noopener">Author portfolio</a></div>
+        <div><h4>Learn</h4>${NAV.slice(1, 7).map(([h, t]) => `<a href="${R}${h}">${t}</a>`).join("")}</div>
+        <div><h4>More</h4>${NAV.slice(7).map(([h, t]) => `<a href="${R}${h}">${t}</a>`).join("")}<a href="${R}redteam.html">Red teaming course map</a><a href="${REPO}">GitHub repository</a><a href="https://anmol-vats-portfolio.vercel.app/" target="_blank" rel="noopener">Author portfolio</a></div>
       </div>`;
     }
   }
@@ -166,50 +167,49 @@
   }
 
   /* ---------- Plan page ---------- */
-  function planPoints() {
-    const P = window.PLAN, a = store.all(); let s = 0;
-    Object.keys(a).forEach(k => {
-      if (!k.startsWith("plan.")) return;
-      const kind = k.split(".")[2];
-      if (kind === "practice") s += P.points.practice;
-      else if (kind === "extend") s += P.points.extend;
-      else if (kind === "reflect") s += P.points.reflect;
-      else if (kind === "extra") s += P.points.extra;
-      else if (kind === "boss") s += P.points.boss;
-    });
-    return s;
-  }
-  function planMax() {
-    const P = window.PLAN; let s = 0;
+  /* Progress counts tasks, not points. Every tickable task in the plan counts once. */
+  function planTaskIds() {
+    const P = window.PLAN, ids = [];
     P.modules.forEach(m => {
-      s += m.weeks.length * (P.points.practice + P.points.extend + P.points.reflect);
-      s += (m.extra || []).length * P.points.extra + (m.boss ? P.points.boss : 0);
+      m.weeks.forEach(w => ["learn", "practice", "extend", "reflect"].forEach(k => { if (w[k]) ids.push(`plan.${w.w}.${k}`); }));
+      (m.extra || []).forEach((x, i) => ids.push(`plan.${m.id}.extra.${i}`));
+      if (m.boss) ids.push(`plan.${m.id}.boss`);
     });
-    return s;
+    return ids;
   }
-  function levelText(p) {
-    const lv = window.PLAN.levels; let cur = "Not started yet. Tick a task to begin.";
-    if (p > 0) cur = `${lv[0][0] - p} points to the first level.`;
-    lv.forEach(([n, t]) => { if (p >= n) cur = t; });
-    return cur;
+  function planDone() { const ids = planTaskIds(); return [ids.filter(id => store.get(id)).length, ids.length]; }
+  function progressText(d, n) {
+    if (!d) return "Nothing ticked yet. Tick a task when you finish it.";
+    if (d >= n) return "Every task is done. Pick a direction at the end of the page.";
+    const pct = Math.round((d / n) * 100);
+    return `${pct}% of the plan done. ${n - d} task${n - d === 1 ? "" : "s"} left.`;
   }
   function renderPlan() {
     const root = $("#plan"); if (!root || !window.PLAN) return;
-    const P = window.PLAN, max = planMax();
+    const P = window.PLAN, total = planTaskIds().length;
     const bar = $("#plan-bar");
     bar.innerHTML = `<div class="wrap">
-      <div class="score"><b id="pts">0</b><span class="mono muted">of ${max} points</span></div>
-      <div class="meter" aria-hidden="true"><i id="meter"></i>${P.levels.map(([n]) => `<span class="tick" style="left:${(n / max) * 100}%"><span>${n}</span></span>`).join("")}</div>
+      <div class="score"><b id="pts">0</b><span class="mono muted">of ${total} tasks done</span></div>
+      <div class="meter" aria-hidden="true"><i id="meter"></i></div>
       <div class="level" id="level"></div>
       <button class="btn btn-quiet btn-sm" id="reset">Reset</button>
     </div>`;
+    const weekIds = w => ["learn", "practice", "extend", "reflect"].filter(k => w[k]).map(k => `plan.${w.w}.${k}`);
     const update = () => {
-      const p = planPoints();
-      $("#pts").textContent = p;
-      $("#meter").style.transform = `scaleX(${Math.min(1, p / max)})`;
-      $("#level").textContent = levelText(p);
+      const [d, n] = planDone();
+      $("#pts").textContent = d;
+      $("#meter").style.transform = `scaleX(${n ? d / n : 0})`;
+      $("#level").textContent = progressText(d, n);
+      $$(".week-end", root).forEach(el => {
+        const ids = el.dataset.ids.split(" "), k = ids.filter(id => store.get(id)).length;
+        $(".wk-count", el).textContent = `${k} of ${ids.length} tasks done this week`;
+        const b = $("button", el), all = k === ids.length;
+        b.textContent = all ? "Week done. Undo" : "Mark this week done";
+        b.classList.toggle("is-done", all);
+        el.closest(".week").classList.toggle("week-done", all);
+      });
     };
-    const kinds = [["learn", "Learn", "45 to 60 min", 0], ["practice", "Practice", "about 1.5 hrs", P.points.practice], ["extend", "Extend", "30 min", P.points.extend], ["reflect", "Reflect", "10 min", P.points.reflect]];
+    const kinds = [["learn", "Learn", "45 to 60 min"], ["practice", "Practice", "about 1.5 hrs"], ["extend", "Extend", "30 min"], ["reflect", "Reflect", "10 min"]];
 
     root.innerHTML = P.modules.map(m => `
       <section class="pmod" id="${m.id}">
@@ -227,14 +227,14 @@
               <div>
                 <h3>${esc(w.t)}${w.lesson ? `<span class="tag atk">L${w.lesson}</span>` : ""}${w.isNew ? '<span class="tag new">new</span>' : ""}${w.note ? `<span class="tag">${esc(w.note)}</span>` : ""}</h3>
                 ${files.length ? `<div class="files">${files.join("")}</div>` : '<div class="files"></div>'}
-                ${kinds.map(([k, label, time, pts]) => {
+                ${kinds.map(([k, label, time]) => {
                   const t = w[k]; if (!t) return "";
                   const id = `plan.${w.w}.${k}`;
                   const ls = (t.links || []).map(x => link(x, (t.star || []).includes(x)));
                   (t.local || []).forEach(([lab, path]) => ls.push(`<a href="${path}">${esc(lab)}</a>`));
                   return `<div class="task${store.get(id) ? " done" : ""}">
                     ${checkbox(id, `${label}, week ${w.w}`)}
-                    <div class="k">${label}<small>${time}${pts ? ` · ${pts} pts` : ""}</small></div>
+                    <div class="k">${label}<small>${time}</small></div>
                     <div class="body"><p>${esc(t.text)}</p>
                       ${ls.length ? `<div class="links">${ls.join("")}</div>` : ""}
                       ${t.guide ? `<details class="further"><summary>Survey page guide</summary><dl class="terms">${P.surveyGuide.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join("")}</dl><p class="small">The page numbers match the number printed in each page header, for example 111:8 is page 8.</p></details>` : ""}
@@ -242,12 +242,13 @@
                   </div>`;
                 }).join("")}
                 ${w.further ? `<p class="further">Further reading, optional. ${w.further.map(x => link(x)).join(" and ")}</p>` : ""}
+                <div class="week-end" data-ids="${weekIds(w).join(" ")}"><span class="wk-count small muted"></span><button type="button" class="btn btn-quiet btn-sm">Mark this week done</button></div>
               </div>
             </article>`;
           }).join("")}
           ${m.extra || m.boss ? `<div class="extras">
-            ${m.extra ? `<div class="card"><h4>Extra practice <span>${P.points.extra} pts each</span></h4>${m.extra.map((x, i) => `<div class="row">${checkbox(`plan.${m.id}.extra.${i}`, x.t)}<div>${esc(x.t)} <div class="links">${(x.links || []).map(l => link(l)).join(" · ")}</div></div></div>`).join("")}</div>` : ""}
-            ${m.boss ? `<div class="card boss"><h4>End-of-module challenge <span>${P.points.boss} pts</span></h4><div class="row">${checkbox(`plan.${m.id}.boss`, "End-of-module challenge")}<div>${esc(m.boss.t)} <div class="links">${m.boss.links.map(l => link(l)).join(" · ")}</div></div></div><p class="small muted" style="margin:12px 0 0">Write one short public writeup for this challenge. It also works as a portfolio piece.</p></div>` : ""}
+            ${m.extra ? `<div class="card"><h4>Extra practice <span>optional</span></h4>${m.extra.map((x, i) => `<div class="row">${checkbox(`plan.${m.id}.extra.${i}`, x.t)}<div>${esc(x.t)} <div class="links">${(x.links || []).map(l => link(l)).join(" · ")}</div></div></div>`).join("")}</div>` : ""}
+            ${m.boss ? `<div class="card boss"><h4>End-of-module challenge</h4><div class="row">${checkbox(`plan.${m.id}.boss`, "End-of-module challenge")}<div>${esc(m.boss.t)} <div class="links">${m.boss.links.map(l => link(l)).join(" · ")}</div></div></div><p class="small muted" style="margin:12px 0 0">Write one short public writeup for this challenge. It also works as a portfolio piece.</p></div>` : ""}
           </div>` : ""}
         </div>
       </section>`).join("") + `
@@ -262,6 +263,16 @@
       </div></section>`;
 
     bindChecks(root, update);
+    $$(".week-end button", root).forEach(b => b.addEventListener("click", () => {
+      const ids = b.closest(".week-end").dataset.ids.split(" ");
+      const to = !ids.every(id => store.get(id));
+      ids.forEach(id => {
+        store.set(id, to);
+        const i = $(`input[data-id="${id}"]`, root);
+        if (i) { i.checked = to; const r = i.closest(".task"); if (r) r.classList.toggle("done", to); }
+      });
+      update();
+    }));
     $("#reset").addEventListener("click", () => {
       if (confirm("Clear every tick on this page? This cannot be undone.")) { store.clear("plan."); $$("input[data-id^='plan.']").forEach(i => { i.checked = false; const r = i.closest(".task"); r && r.classList.remove("done"); }); update(); }
     });
@@ -342,7 +353,7 @@
 
   /* ---------- Library page ---------- */
   const TYPES = { paper: "Papers", article: "Articles", lab: "Labs and CTFs", tool: "Tools", course: "Courses", standard: "Standards", book: "Books", cert: "Certs and bounties", index: "Ongoing reading" };
-  const TOPICS = { basics: "Basics", injection: "Prompt injection", defense: "Defenses", disclosure: "Data leaks", supply: "Supply chain", poisoning: "Poisoning", output: "Output handling", agents: "Agents", mcp: "MCP", governance: "Governance", leakage: "Prompt leakage", embeddings: "Embeddings", misinfo: "Misinformation", consumption: "Consumption", automation: "Automation", detection: "Detection", career: "Career" };
+  const TOPICS = { basics: "Basics", prompting: "Prompting", injection: "Prompt injection", defense: "Defenses", disclosure: "Data leaks", supply: "Supply chain", poisoning: "Poisoning", output: "Output handling", agents: "Agents", mcp: "MCP", governance: "Governance", leakage: "Prompt leakage", embeddings: "Embeddings", misinfo: "Misinformation", consumption: "Consumption", automation: "Automation", detection: "Detection", career: "Career" };
   function renderLibrary() {
     const root = $("#lib"); if (!root) return;
     const all = Object.entries(window.LINKS).map(([id, x]) => Object.assign({ id }, x));
@@ -368,11 +379,10 @@
   /* ---------- Home progress ---------- */
   function renderHome() {
     const el = $("#home-progress"); if (!el || !window.PLAN) return;
-    const p = planPoints();
-    const steps = $$("[data-step-count]").length;
+    const [d, n] = planDone();
     const seen = Object.keys(store.all()).filter(k => k.startsWith("basics.")).length;
-    el.innerHTML = p || seen
-      ? `You have <b>${p}</b> plan points and ${seen} of 8 basics steps read. ${esc(levelText(p))} <a href="plan.html">Continue the plan</a>.`
+    el.innerHTML = d || seen
+      ? `You have done <b>${d} of ${n}</b> plan tasks and read ${seen} of 8 basics steps. <a href="plan.html">Continue the plan</a>.`
       : `Nothing ticked yet. Start with <a href="basics.html">the basics</a> or go straight to <a href="plan.html#week-1">week 1</a>.`;
   }
 

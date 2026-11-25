@@ -99,7 +99,7 @@ code { background: var(--raised); padding: 1px 6px; border-radius: 4px; }
 .theme-btn:hover { color: var(--ink); background: var(--raised); }
 .theme-btn svg { width: 18px; height: 18px; }
 .menu-btn { display: none; margin-left: auto; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--card); color: var(--ink); font: 500 14px var(--sans); cursor: pointer; }
-@media (max-width: 960px) {
+@media (max-width: 1120px) {
   .menu-btn { display: inline-flex; align-items: center; gap: 8px; }
   .nav { display: none; position: absolute; top: 60px; left: 0; right: 0; flex-direction: column; padding: 8px 20px 16px; background: var(--paper); border-bottom: 1px solid var(--line); }
   .nav.open { display: flex; }
@@ -694,7 +694,7 @@ html:has(.doc-toc) { scroll-padding-top: 84px; }
 
 /* ================= Responsive guards ================= */
 .brand span, .brand small { white-space: nowrap; }
-@media (max-width: 1180px) {
+@media (max-width: 1360px) {
   .brand small { display: none; }
 }
 @media (max-width: 640px) {
@@ -750,3 +750,27 @@ img, video, iframe { max-width: 100%; }
   table.table.stack td + td { border-top: 1px dashed var(--line); }
   table.table.stack td[data-label]::before { content: attr(data-label); display: block; font: 500 12px var(--sans); color: var(--ink-3); margin-bottom: 2px; }
 }
+
+/* multi-select and fill-in questions */
+.q .qhint { margin: -4px 0 8px; }
+.q .mopt { display: flex; gap: 10px; align-items: flex-start; margin: 6px 0; padding: 10px 14px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--paper); cursor: pointer; font-size: 15px; line-height: 1.45; transition: border-color 150ms var(--ease), background-color 150ms var(--ease); }
+.q .mopt:hover { border-color: var(--ink-3); }
+.q .mopt input { margin-top: 3px; accent-color: var(--def); flex: none; width: 16px; height: 16px; }
+.q .mopt.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, var(--paper)); }
+.q .mopt.wrong { border-color: var(--atk); background: var(--atk-soft); }
+.q .mopt.missed { border-style: dashed; }
+.q.fill .numrow input { width: 240px; max-width: 100%; font-family: var(--sans); }
+.q .why .tally { color: var(--ink); }
+
+/* mark done, at the end of each page */
+.done-end { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin: 48px 0 0; padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); max-width: 880px; }
+.done-end .donebox { font-size: 15px; font-weight: 500; padding: 8px 14px 8px 10px; }
+.done-end .donebox:has(input:checked) { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, var(--card)); }
+.done-end + .pager { margin-top: 24px; }
+.week-end { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.week-end .btn.is-done { border-color: var(--ok); color: var(--ok); }
+.week.week-done .week-num b { color: var(--ok); }
+ul.plainlist { list-style: none; padding: 0; margin: 0; }
+ul.plainlist li { padding: 2px 0; font-size: 14px; }
+.nav a { white-space: nowrap; }
+@media (min-width: 1121px) and (max-width: 1280px) { .nav a { padding: 6px 9px; font-size: 13.5px; } }

@@ -14,6 +14,17 @@
   const norm = s => String(s).toLowerCase().replace(/[^a-z0-9.]/g, "");
 
   /* ---------- question sets ---------- */
+  /* Options and rows show in a new random order on every visit. data-j keeps the original index, so answers stay correct. */
+  function shuffle(n) {
+    const a = Array.from({ length: n }, (_, i) => i);
+    for (let t = 0; t < 4; t++) {
+      for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+      if (n < 3 || a.some((v, i) => v !== i)) break;
+    }
+    return a;
+  }
+  const attr = v => String(v).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  const strip = v => String(v).replace(/<[^>]+>/g, "");
   function renderSet(box) {
     const id = box.dataset.id;
     const src = $(`script[data-for="${id}"]`);
@@ -23,24 +34,40 @@
       const qid = `${id}.${i}`;
       const num = `<span class="qn mono">${items.length > 1 ? "Q" + (i + 1) : "Q"}</span>`;
       const info = it.info ? `<div class="qinfo">${it.info}</div>` : "";
+      const head = `${num}<p class="qq">${it.q}</p>${info}`;
       if (it.type === "mcq") {
-        return `<div class="q mcq" data-q="${qid}">${num}<p class="qq">${it.q}</p>${info}
-          <div class="opts">${it.opts.map((o, j) => `<button type="button" data-j="${j}">${o}</button>`).join("")}</div>
+        return `<div class="q mcq" data-q="${qid}">${head}
+          <div class="opts">${shuffle(it.opts.length).map(j => `<button type="button" data-j="${j}">${it.opts[j]}</button>`).join("")}</div>
           <div class="why">${it.why || ""}</div></div>`;
       }
-      if (it.type === "sort") {
-        return `<div class="q sort" data-q="${qid}">${num}<p class="qq">${it.q}</p>${info}
-          <div class="rows">${it.rows.map((r, j) => `<label class="srow"><span>${r[0]}</span><select data-j="${j}"><option value="">Choose</option>${it.opts.map(o => `<option>${o}</option>`).join("")}</select><i class="mark" aria-hidden="true"></i></label>`).join("")}</div>
+      if (it.type === "multi") {
+        return `<div class="q multi" data-q="${qid}">${head}<p class="qhint small muted">Pick every answer that fits, then check.</p>
+          <div class="opts">${shuffle(it.opts.length).map(j => `<label class="mopt"><input type="checkbox" data-j="${j}"><span>${it.opts[j]}</span></label>`).join("")}</div>
+          <button type="button" class="btn btn-quiet btn-sm check-btn">Check my answers</button><div class="why">${it.why || ""}</div></div>`;
+      }
+      if (it.type === "sort" || it.type === "order") {
+        const isOrder = it.type === "order";
+        const rows = isOrder ? it.rows.map((r, j) => [r, String(j + 1)]) : it.rows;
+        const opts = isOrder ? rows.map((_, j) => String(j + 1)) : it.opts;
+        const optOrder = isOrder ? opts.map((_, j) => j) : shuffle(opts.length);
+        return `<div class="q sort${isOrder ? " order" : ""}" data-q="${qid}">${head}${isOrder ? '<p class="qhint small muted">Give each step its place, 1 is first.</p>' : ""}
+          <div class="rows">${shuffle(rows.length).map(j => `<label class="srow"><span>${rows[j][0]}</span><select data-j="${j}" aria-label="${attr(strip(rows[j][0]))}"><option value="">Choose</option>${optOrder.map(k => `<option>${opts[k]}</option>`).join("")}</select><i class="mark" aria-hidden="true"></i></label>`).join("")}</div>
           <button type="button" class="btn btn-quiet btn-sm check-btn">Check my answers</button><div class="why">${it.why || ""}</div></div>`;
       }
       if (it.type === "num") {
-        return `<div class="q num" data-q="${qid}">${num}<p class="qq">${it.q}</p>${info}
-          <div class="numrow"><input type="text" inputmode="decimal" aria-label="Your answer" value="${(notes.get(qid) || "").replace(/"/g, "&quot;")}"><span class="mono">${it.unit || ""}</span>
+        return `<div class="q num" data-q="${qid}">${head}
+          <div class="numrow"><input type="text" inputmode="decimal" aria-label="Your answer" value="${attr(notes.get(qid) || "")}"><span class="mono">${it.unit || ""}</span>
+          <button type="button" class="btn btn-quiet btn-sm check-btn">Check</button><span class="res" aria-live="polite"></span></div>
+          <div class="why">${it.why || ""}</div></div>`;
+      }
+      if (it.type === "fill") {
+        return `<div class="q fill" data-q="${qid}">${head}
+          <div class="numrow"><input type="text" aria-label="Your answer" placeholder="Type the missing word" value="${attr(notes.get(qid) || "")}">
           <button type="button" class="btn btn-quiet btn-sm check-btn">Check</button><span class="res" aria-live="polite"></span></div>
           <div class="why">${it.why || ""}</div></div>`;
       }
       /* open */
-      return `<div class="q open" data-q="${qid}">${num}<p class="qq">${it.q}</p>${info}
+      return `<div class="q open" data-q="${qid}">${head}
         <textarea rows="4" placeholder="Write your answer here. It saves in this browser." aria-label="Your answer">${(notes.get(qid) || "").replace(/</g, "&lt;")}</textarea>
         <div class="row"><button type="button" class="btn btn-quiet btn-sm reveal">Show model answer</button><span class="saved mono"></span></div>
         <div class="model">${it.a || ""}</div></div>`;
@@ -48,32 +75,52 @@
 
     $$(".q", box).forEach((q, i) => {
       const it = items[i], qid = q.dataset.q;
+      const verdict = (ok, extra) => {
+        const w = $(".why", q);
+        const old = $(".tally", w); if (old) old.remove();
+        w.insertAdjacentHTML("afterbegin", `<b class="tally">${ok ? "Correct." : "Not quite."}${extra ? " " + extra : ""} </b>`);
+        q.classList.add("done");
+      };
       if (it.type === "mcq") {
         q.addEventListener("click", e => {
           const b = e.target.closest("button"); if (!b || q.classList.contains("done")) return;
-          q.classList.add("done");
           const ok = +b.dataset.j === it.a;
           $$("button", q).forEach(x => { if (+x.dataset.j === it.a) x.classList.add("right"); });
           if (!ok) b.classList.add("wrong");
-          $(".why", q).insertAdjacentHTML("afterbegin", `<b>${ok ? "Correct." : "Not quite."}</b> `);
+          verdict(ok);
           store.set("q." + qid, ok ? 1 : 0);
           score(box);
         });
-      } else if (it.type === "sort") {
+      } else if (it.type === "multi") {
+        $(".check-btn", q).addEventListener("click", () => {
+          const want = new Set(it.a);
+          let ok = true;
+          $$(".mopt", q).forEach(l => {
+            const c = $("input", l), j = +c.dataset.j, should = want.has(j);
+            l.classList.toggle("right", should);
+            l.classList.toggle("wrong", c.checked && !should);
+            l.classList.toggle("missed", !c.checked && should);
+            if (c.checked !== should) ok = false;
+          });
+          verdict(ok, ok ? "" : "The right answers are marked.");
+        });
+      } else if (it.type === "sort" || it.type === "order") {
         $(".check-btn", q).addEventListener("click", () => {
           let good = 0;
+          const rows = it.type === "order" ? it.rows.map((r, j) => [r, String(j + 1)]) : it.rows;
           $$("select", q).forEach(s => {
-            const want = it.rows[+s.dataset.j][1];
+            const want = rows[+s.dataset.j][1];
             const ok = s.value === want;
             if (ok) good++;
-            s.closest(".srow").classList.toggle("right", ok);
-            s.closest(".srow").classList.toggle("wrong", !ok);
-            s.closest(".srow").querySelector(".mark").textContent = ok ? "" : want;
+            const row = s.closest(".srow");
+            row.classList.toggle("right", ok);
+            row.classList.toggle("wrong", !ok);
+            row.querySelector(".mark").textContent = ok ? "" : want;
           });
-          q.classList.add("done");
           const w = $(".why", q);
-          w.querySelector(".tally") ? w.querySelector(".tally").remove() : null;
-          w.insertAdjacentHTML("afterbegin", `<b class="tally">${good} of ${it.rows.length} right. </b>`);
+          const old = $(".tally", w); if (old) old.remove();
+          w.insertAdjacentHTML("afterbegin", `<b class="tally">${good} of ${rows.length} right. </b>`);
+          q.classList.add("done");
         });
       } else if (it.type === "num") {
         const inp = $("input", q);
@@ -86,6 +133,18 @@
           $(".res", q).className = "res " + (ok ? "good" : "bad");
           q.classList.add("done");
         });
+      } else if (it.type === "fill") {
+        const inp = $("input", q);
+        const accept = (Array.isArray(it.a) ? it.a : [it.a]).map(norm);
+        const check = () => {
+          const ok = accept.includes(norm(inp.value));
+          notes.set(qid, inp.value);
+          $(".res", q).textContent = ok ? "Correct" : `Not quite. The answer is "${(Array.isArray(it.a) ? it.a[0] : it.a)}"`;
+          $(".res", q).className = "res " + (ok ? "good" : "bad");
+          q.classList.add("done");
+        };
+        $(".check-btn", q).addEventListener("click", check);
+        inp.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
       } else {
         const ta = $("textarea", q), sv = $(".saved", q);
         let t;
@@ -102,10 +161,10 @@
     if (qs.length < 2) return;
     const done = qs.filter(q => q.classList.contains("done"));
     if (done.length !== qs.length) return;
-    const right = qs.filter(q => $(".right.wrong", q) === null && !$(".wrong", q)).length;
+    const right = qs.filter(q => !$(".wrong", q)).length;
     let s = $(".qscore", box);
     if (!s) { s = document.createElement("p"); s.className = "qscore"; box.appendChild(s); }
-    s.innerHTML = `<b>${right} of ${qs.length}</b> right. ${right === qs.length ? "Well done. Mark the lesson done at the top." : "Read the explanations above, then go back to the part you missed."}`;
+    s.innerHTML = `<b>${right} of ${qs.length}</b> right. ${right === qs.length ? "Well done. Mark the page done at the bottom." : "Read the explanations above, then go back to the part you missed."}`;
   }
 
   /* ---------- embedded course pages ---------- */

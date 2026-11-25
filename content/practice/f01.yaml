@@ -1,0 +1,38 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - type: sort
+    q: Which ATLAS technique ID matches each attack?
+    rows:
+    - - Hidden text in a web page steers an LLM app
+      - AML.T0051
+    - - A persona prompt gets a model to drop its safety rules
+      - AML.T0054
+    - - A poisoned model is pulled from a public model hub
+      - AML.T0010
+    opts:
+    - AML.T0051
+    - AML.T0054
+    - AML.T0010
+    why: AML.T0051 is LLM Prompt Injection, AML.T0054 is LLM Jailbreak, and AML.T0010 is Supply Chain Compromise in release 2026.10.
+  - type: multi
+    q: Which tactics exist only in ATLAS, not in ATT&CK?
+    opts:
+    - AI Model Access
+    - AI Attack Staging
+    - Initial Access
+    - Exfiltration
+    a:
+    - 0
+    - 1
+    why: These two cover reaching the model and preparing AI-specific attacks. The others exist in both.
+  - type: fill
+    q: Fill the blank. A sub-technique ID adds a dot and three digits, so the indirect form of LLM prompt injection is AML.T0051.____.
+    a:
+    - '001'
+    why: AML.T0051.000 is direct and AML.T0051.001 is indirect prompt injection.
+- title: Prompt clinic
+  items:
+  - type: open
+    q: Write a prompt that asks a model to map an incident write-up to ATLAS, in a way you can check.
+    a: One good answer. `Map the incident inside <report> to MITRE ATLAS. For each step give the quote from the report, the tactic name and the technique name. Give an ID only if you are sure, and mark every ID as to be checked. Do not add steps the report does not describe.` Then check each ID on atlas.mitre.org, because IDs change between releases.

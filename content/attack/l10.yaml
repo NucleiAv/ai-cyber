@@ -153,3 +153,8 @@ refs:
   - "Open Policy Agent. [Policy language documentation](https://www.openpolicyagent.org/docs/policy-language)."
   - "Aqua. [Open Policy Agent explained](@opaexplainer)."
   - "[EU AI Act](@euaiact)."
+
+syllabus:
+  - [designpatterns, "Week 7. Design patterns that resist injection."]
+  - [camel, "Week 7. Control flow from the trusted request."]
+  - [aicontrol, "Week 11. Trusted monitoring and other control protocols."]

@@ -1,0 +1,41 @@
+rounds:
+- title: Find it, name it, fix it
+  items:
+  - q: Researchers asked a chat model to repeat one word forever, and it began to output memorized training text. Which syllabus reading describes this?
+    opts:
+    - Scalable extraction of training data from production models (Nasr et al., 2023)
+    - The instruction hierarchy (Wallace et al.)
+    - Spotlighting (Hines et al.)
+    a: 0
+    why: Nasr et al. showed that this divergence attack made a production chat model emit memorized data.
+  - q: A membership inference attack looks strong, but member texts are from 2019 and non-members from 2024. What is the likely cause?
+    opts:
+    - The attack truly detects membership
+    - Distribution shift, the attack detects the date, not membership
+    - The model is too small
+    a: 1
+    why: Duan et al. (2024) found that such attacks barely beat chance on LLMs when the two sets come from the same distribution. A time gap lets an attack tell the sets apart for the wrong reason.
+  - type: multi
+    q: Which steps lower the chance that a model leaks personal data?
+    opts:
+    - Remove personal data before training
+    - Filter personal data from outputs
+    - Train with differential privacy
+    - Make the system prompt longer
+    a:
+    - 0
+    - 1
+    - 2
+    why: Less personal data in, filters on the way out, and privacy-preserving training all help. A longer prompt does not.
+  - type: fill
+    q: Fill the blank. A training method that limits how much any single record can change the model is ____ privacy.
+    a:
+    - differential
+    why: Differential privacy adds calibrated noise during training so no single record has much effect on the model.
+  - q: An intern's RAG search returns HR salary files because the bot runs with an admin service account. What is the flaw?
+    opts:
+    - Confused deputy, the bot uses its own wide rights instead of the user's
+    - Hallucination
+    - Denial of wallet
+    a: 0
+    why: The bot acts with more rights than the user who asked. Retrieval should run with the user's own permissions.

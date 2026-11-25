@@ -136,3 +136,9 @@ refs:
   - "OWASP. [Top 10 for LLM Applications 2025](@owasptop10)."
   - "MITRE. [ATLAS matrix](@atlas)."
   - "NIST. [AI 100-2 E2025, adversarial machine learning taxonomy](@nist1002)."
+
+syllabus:
+  - [ignoreprev, "Week 1. The first named prompt injection attacks, goal hijacking and prompt leaking."]
+  - [trifecta, "Week 1. Why private data, untrusted content and an exit together lead to data theft."]
+  - [jailbroken, "Week 2. Why safety training fails."]
+  - [msredteam, "Week 9. Eight lessons from red teaming 100 products."]
