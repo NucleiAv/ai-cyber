@@ -64,7 +64,7 @@
         <div><p><b style="color:var(--ink)">Prompt to Patch</b> is one place to learn AI, ML and LLM security, from defense to attack.</p>
         <p>Built and curated by <a href="https://anmol-vats-portfolio.vercel.app/" target="_blank" rel="noopener">Anmol Vats</a>. The course material belongs to its authors at NYU Tandon. Links point to their own sites. Progress, ticks and answers you write here stay in this browser only.</p></div>
         <div><h4>Learn</h4>${NAV.slice(1, 7).map(([h, t]) => `<a href="${R}${h}">${t}</a>`).join("")}</div>
-        <div><h4>More</h4>${NAV.slice(7).map(([h, t]) => `<a href="${R}${h}">${t}</a>`).join("")}<a href="${R}redteam.html">Red teaming course map</a><a href="${REPO}">GitHub repository</a><a href="https://anmol-vats-portfolio.vercel.app/" target="_blank" rel="noopener">Author portfolio</a></div>
+        <div><h4>More</h4>${NAV.slice(7).map(([h, t]) => `<a href="${R}${h}">${t}</a>`).join("")}<a href="${R}redteam.html">Red teaming course map</a><a href="https://nucleiav.github.io/sys-arch/index.html" target="_blank" rel="noopener">Boxes and Arrows</a><a href="${REPO}">GitHub repository</a><a href="https://anmol-vats-portfolio.vercel.app/" target="_blank" rel="noopener">Author portfolio</a></div>
       </div>`;
     }
   }
