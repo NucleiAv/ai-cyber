@@ -351,18 +351,18 @@ HEAD = """<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/site.css?v=20261126b">
+<link rel="stylesheet" href="../assets/css/site.css?v=20261127a">
 </head>
 <body data-root="../" data-track="{track}">
 <a class="skip" href="#main">Skip to content</a>
 <header id="top"></header>
 """
 TAIL = """<footer id="foot"></footer>
-<script src="../assets/js/tracks.js?v=20261126b"></script>
-<script src="../assets/js/data.js?v=20261126b"></script>
-<script src="../assets/js/site.js?v=20261126b"></script>
-<script src="../assets/js/learn.js?v=20261126b"></script>
-<script src="../assets/js/scene.js?v=20261126b"></script>
+<script src="../assets/js/tracks.js?v=20261127a"></script>
+<script src="../assets/js/data.js?v=20261127a"></script>
+<script src="../assets/js/site.js?v=20261127a"></script>
+<script src="../assets/js/learn.js?v=20261127a"></script>
+<script src="../assets/js/scene.js?v=20261127a"></script>
 </body>
 </html>
 """
